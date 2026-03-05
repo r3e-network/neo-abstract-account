@@ -11,3 +11,12 @@ By transitioning from standard ECDSA signatures to deterministic proxy contracts
 3. **Execution Limits:** Universal Blacklists, Whitelists, and Token Transfer Limits.
 4. **EIP-712 Compatibility:** Support for standard EVM wallets like MetaMask natively.
 5. **Custom Verifiers:** Build and deploy fully custom C# smart contracts to govern verification (e.g. ZK-proofs, time-locks).
+
+## Navigation Guide
+
+Use the sidebar to explore the technical depths of this protocol:
+* **Core Architecture**: Understand how deterministic proxies work.
+* **Workflow Lifecycle**: See the sequence of actions for deployment and Meta-Transactions.
+* **Data Flow & Storage**: Inspect how state is organized securely.
+* **Dome Recovery**: Learn how social recovery safely orchestrates a fallback.
+* **Custom Verifiers**: Explore how to write C# contracts that govern account verification.

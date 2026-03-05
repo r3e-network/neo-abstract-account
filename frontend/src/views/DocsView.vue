@@ -40,22 +40,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css';
+import mermaid from 'mermaid';
 
 // Import markdown files
 import docOverview from '@/assets/docs/overview.md?raw';
 import docArchitecture from '@/assets/docs/architecture.md?raw';
+import docWorkflow from '@/assets/docs/workflow.md?raw';
+import docDataFlow from '@/assets/docs/data-flow.md?raw';
 import docDome from '@/assets/docs/dome-recovery.md?raw';
 import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
+
+mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
 const marked = new Marked(
   markedHighlight({
     langPrefix: 'hljs language-',
     highlight(code, lang) {
+      if (lang === 'mermaid') {
+        return `<div class="mermaid">${code}</div>`;
+      }
       const language = hljs.getLanguage(lang) ? lang : 'plaintext';
       return hljs.highlight(code, { language }).value;
     }
@@ -65,6 +73,8 @@ const marked = new Marked(
 const docs = {
   overview: { title: 'Overview & Capabilities', content: docOverview },
   architecture: { title: 'Core Architecture', content: docArchitecture },
+  workflow: { title: 'Workflow Lifecycle', content: docWorkflow },
+  dataFlow: { title: 'Data Flow & Storage', content: docDataFlow },
   dome: { title: 'Dome Recovery', content: docDome },
   verifiers: { title: 'Custom Verifiers', content: docVerifiers }
 };
@@ -75,7 +85,30 @@ const compiledMarkdown = ref('');
 const renderMarkdown = async (key) => {
   try {
     const rawContent = docs[key]?.content || '# 404 Not Found';
+    
+    // We override marked's default code block renderer temporarily just for mermaid.
+    // The marked-highlight extension wraps output in <pre><code>, which breaks mermaid.
+    const renderer = new marked.Renderer();
+    const originalCode = renderer.code.bind(renderer);
+    renderer.code = (code, language, isEscaped) => {
+      if (language === 'mermaid') {
+        return `<div class="mermaid-wrapper"><div class="mermaid">${code}</div></div>`;
+      }
+      return originalCode(code, language, isEscaped);
+    };
+    
+    marked.use({ renderer });
+
     compiledMarkdown.value = await marked.parse(rawContent);
+
+    // After updating the DOM, tell mermaid to render the diagrams
+    await nextTick();
+    try {
+      await mermaid.run({ querySelector: '.mermaid' });
+    } catch (e) {
+      console.warn("Mermaid rendering warning", e);
+    }
+
   } catch (err) {
     console.error('Failed to load markdown', err);
     compiledMarkdown.value = '<p class="text-red-500">Documentation failed to load.</p>';
