@@ -10,35 +10,27 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { marked } from 'marked';
+import { Marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css';
 import docContent from '@/assets/architecture.md?raw';
 
-// Create a custom renderer to handle highlight.js
-const renderer = new marked.Renderer();
-renderer.code = function(code, language) {
-  const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
-  const highlighted = hljs.highlight(code, { language: validLanguage }).value;
-  return `<pre><code class="hljs ${validLanguage}">${highlighted}</code></pre>`;
-};
-
-marked.setOptions({
-  renderer: renderer,
-  highlight: function(code, lang) {
-    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-    return hljs.highlight(code, { language }).value;
-  },
-  langPrefix: 'hljs language-',
-  breaks: true,
-  gfm: true
-});
+const marked = new Marked(
+  markedHighlight({
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    }
+  })
+);
 
 const compiledMarkdown = ref('');
 
-onMounted(() => {
+onMounted(async () => {
   try {
-    compiledMarkdown.value = marked.parse(docContent);
+    compiledMarkdown.value = await marked.parse(docContent);
   } catch (err) {
     console.error('Failed to load markdown', err);
     compiledMarkdown.value = '<p>Documentation failed to load.</p>';
