@@ -64,13 +64,25 @@ const marked = new Marked(
     langPrefix: 'hljs language-',
     highlight(code, lang) {
       if (lang === 'mermaid') {
-        return `<div class="mermaid">${code}</div>`;
+        return code; // Do not highlight or wrap mermaid text
       }
       const language = hljs.getLanguage(lang) ? lang : 'plaintext';
       return hljs.highlight(code, { language }).value;
     }
   })
 );
+
+// We override marked's default code block renderer.
+// The marked-highlight extension wraps output in <pre><code>, which breaks mermaid.
+const renderer = new marked.Renderer();
+const originalCode = renderer.code.bind(renderer);
+renderer.code = (token) => {
+  if (token.lang === 'mermaid') {
+    return `<div class="mermaid-wrapper"><div class="mermaid">\n${token.text}\n</div></div>`;
+  }
+  return originalCode(token);
+};
+marked.use({ renderer });
 
 const docs = {
   overview: { title: 'Overview & Capabilities', content: docOverview },
@@ -89,20 +101,6 @@ const compiledMarkdown = ref('');
 const renderMarkdown = async (key) => {
   try {
     const rawContent = docs[key]?.content || '# 404 Not Found';
-    
-    // We override marked's default code block renderer temporarily just for mermaid.
-    // The marked-highlight extension wraps output in <pre><code>, which breaks mermaid.
-    const renderer = new marked.Renderer();
-    const originalCode = renderer.code.bind(renderer);
-    renderer.code = (token) => {
-      if (token.lang === 'mermaid') {
-        return `<div class="mermaid-wrapper"><div class="mermaid">${token.text}</div></div>`;
-      }
-      return originalCode(token);
-    };
-    
-    marked.use({ renderer });
-
     compiledMarkdown.value = await marked.parse(rawContent);
 
     // After updating the DOM, tell mermaid to render the diagrams
