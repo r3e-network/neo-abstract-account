@@ -13,6 +13,10 @@
           <span class="aa-dot" />
           <span>{{ walletConnected ? `Connected: ${connectedAccount}` : 'Wallet not connected' }}</span>
         </div>
+        <div class="aa-hero-actions">
+          <button v-if="!walletConnected" class="aa-primary" @click="connectWallet">Connect Wallet</button>
+          <button v-else class="aa-ghost" @click="disconnectWallet">Disconnect</button>
+        </div>
       </header>
 
       <nav class="aa-tabs animate-rise" style="--delay: 90ms">
@@ -304,14 +308,14 @@ import csharp from 'highlight.js/lib/languages/csharp';
 import hljsVuePlugin from '@highlightjs/vue-plugin';
 import 'highlight.js/styles/github-dark.css';
 
-import code_Main from '../../../contracts/AbstractAccount.cs?raw';
-import code_AccountLifecycle from '../../../contracts/AbstractAccount.AccountLifecycle.cs?raw';
-import code_Admin from '../../../contracts/AbstractAccount.Admin.cs?raw';
-import code_ExecutionAndPermissions from '../../../contracts/AbstractAccount.ExecutionAndPermissions.cs?raw';
-import code_MetaTx from '../../../contracts/AbstractAccount.MetaTx.cs?raw';
-import code_Oracle from '../../../contracts/AbstractAccount.Oracle.cs?raw';
-import code_StorageAndContext from '../../../contracts/AbstractAccount.StorageAndContext.cs?raw';
-import code_Upgrade from '../../../contracts/AbstractAccount.Upgrade.cs?raw';
+import code_Main from '@/contracts/AbstractAccount.cs?raw';
+import code_AccountLifecycle from '@/contracts/AbstractAccount.AccountLifecycle.cs?raw';
+import code_Admin from '@/contracts/AbstractAccount.Admin.cs?raw';
+import code_ExecutionAndPermissions from '@/contracts/AbstractAccount.ExecutionAndPermissions.cs?raw';
+import code_MetaTx from '@/contracts/AbstractAccount.MetaTx.cs?raw';
+import code_Oracle from '@/contracts/AbstractAccount.Oracle.cs?raw';
+import code_StorageAndContext from '@/contracts/AbstractAccount.StorageAndContext.cs?raw';
+import code_Upgrade from '@/contracts/AbstractAccount.Upgrade.cs?raw';
 
 hljs.registerLanguage('csharp', csharp);
 const highlightjs = hljsVuePlugin.component;
@@ -592,10 +596,7 @@ function resolveRpcUrl() {
     || walletService?.network?.rpcUrl
     || walletService?.network?.rpc
     || walletService?.providerRpc;
-  const fromEnv = import.meta.env.VITE_NEO_RPC_URL
-    || import.meta.env.VITE_RPC_URL
-    || import.meta.env.VITE_RPC_TESTNET_URL;
-  return fromWalletService || fromEnv || 'https://testnet1.neo.coz.io:443';
+  return fromWalletService || 'https://testnet1.neo.coz.io:443';
 }
 
 function getRpcClient() {
@@ -695,6 +696,38 @@ async function invokeOperation(label, operation, args) {
 
   pushTransaction(label, txid);
   toast.success(`${label} transaction submitted.`);
+}
+
+async function connectWallet() {
+  try {
+    if (window.neo3Dapi?.getAccount) {
+      const result = await window.neo3Dapi.getAccount();
+      const address = result?.address || result?.account?.address || '';
+      if (!address) throw new Error('Wallet did not return an account address.');
+      walletService.setConnected(address);
+      toast.success(`Connected: ${address}`);
+      return;
+    }
+
+    if (window.NEOLineN3?.getAccount) {
+      const result = await window.NEOLineN3.getAccount();
+      const address = result?.address || result?.account?.address || '';
+      if (!address) throw new Error('Wallet did not return an account address.');
+      walletService.setConnected(address);
+      toast.success(`Connected: ${address}`);
+      return;
+    }
+
+    throw new Error('No supported Neo wallet provider detected in browser.');
+  } catch (err) {
+    console.error(err);
+    toast.error(`Connect failed: ${formatErrorMessage(err)}`);
+  }
+}
+
+function disconnectWallet() {
+  walletService.setConnected('');
+  toast.info('Wallet disconnected.');
 }
 
 async function loadAccountConfiguration() {
@@ -1029,6 +1062,13 @@ function copyCode() {
   height: 8px;
   border-radius: 999px;
   background: currentColor;
+}
+
+.aa-hero-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .aa-tabs {
