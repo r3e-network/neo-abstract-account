@@ -7,16 +7,16 @@ The Abstract Account model centralizes all state inside the **Master Entry Contr
 The contract utilizes a unified internal storage mapping where keys are derived by concatenating a static `Prefix` with a hashed representation of the user's `accountId`.
 
 ```mermaid
-graph TD
-    A[Master Contract Storage] --> B(Admins Map)
-    A --> C(Managers Map)
-    A --> D(Dome Configuration)
-    A --> E(Limits & Restrictions)
+flowchart TD
+    A["Master Contract Storage"] --> B("Admins Map")
+    A --> C("Managers Map")
+    A --> D("Dome Configuration")
+    A --> E("Limits & Restrictions")
 
-    B --> B1[Prefix: 0x01 + sha256(accountId)]
-    C --> C1[Prefix: 0x03 + sha256(accountId)]
-    D --> D1[Prefix: 0x0E + sha256(accountId)]
-    E --> E1[Prefix: 0x09 + sha256(accountId) + targetContract]
+    B --> B1["Prefix: 0x01 + sha256(accountId)"]
+    C --> C1["Prefix: 0x03 + sha256(accountId)"]
+    D --> D1["Prefix: 0x0E + sha256(accountId)"]
+    E --> E1["Prefix: 0x09 + sha256(accountId) + targetContract"]
 ```
 
 ## Internal Data Flow during Execution
@@ -25,41 +25,41 @@ When an execution command (either native or meta-transaction) enters the Master 
 
 ```mermaid
 flowchart TD
-    Start([Transaction Payload Received]) --> HasID{Account ID Valid?}
+    Start(["Transaction Payload Received"]) --> HasID{"Account ID Valid?"}
     
-    HasID -- Yes --> ActiveLock{Execution Lock Active?}
-    HasID -- No --> Reject([Revert: Invalid ID])
+    HasID -- Yes --> ActiveLock{"Execution Lock Active?"}
+    HasID -- No --> Reject(["Revert: Invalid ID"])
     
-    ActiveLock -- Yes --> RejectLock([Revert: Re-entrancy Blocked])
-    ActiveLock -- No --> Lock[Apply Execution Lock]
+    ActiveLock -- Yes --> RejectLock(["Revert: Re-entrancy Blocked"])
+    ActiveLock -- No --> Lock["Apply Execution Lock"]
     
-    Lock --> CustomVer{Custom Verifier Set?}
+    Lock --> CustomVer{"Custom Verifier Set?"}
     
-    CustomVer -- Yes --> CallCustom[Contract.Call(Verifier, 'verify')]
+    CustomVer -- Yes --> CallCustom["Contract.Call(Verifier, 'verify')"]
     CallCustom --> AuthResult
     
-    CustomVer -- No --> CheckNative[Evaluate M-of-N Thresholds]
-    CheckNative --> AuthResult{Authorized?}
+    CustomVer -- No --> CheckNative["Evaluate M-of-N Thresholds"]
+    CheckNative --> AuthResult{"Authorized?"}
     
-    AuthResult -- Yes --> CheckBlacklist{Target Blacklisted?}
-    AuthResult -- No --> RejectAuth([Revert: Unauthorized])
+    AuthResult -- Yes --> CheckBlacklist{"Target Blacklisted?"}
+    AuthResult -- No --> RejectAuth(["Revert: Unauthorized"])
     
-    CheckBlacklist -- Yes --> RejectBL([Revert: Target Blacklisted])
-    CheckBlacklist -- No --> CheckWhitelist{Whitelist Enabled?}
+    CheckBlacklist -- Yes --> RejectBL(["Revert: Target Blacklisted"])
+    CheckBlacklist -- No --> CheckWhitelist{"Whitelist Enabled?"}
     
-    CheckWhitelist -- Yes --> InWhitelist{Target in Whitelist?}
-    InWhitelist -- No --> RejectWL([Revert: Not Whitelisted])
+    CheckWhitelist -- Yes --> InWhitelist{"Target in Whitelist?"}
+    InWhitelist -- No --> RejectWL(["Revert: Not Whitelisted"])
     InWhitelist -- Yes --> TokenCheck
     CheckWhitelist -- No --> TokenCheck
     
-    TokenCheck{Is Token Transfer?}
-    TokenCheck -- Yes --> OverLimit{Amount > Max Transfer?}
-    OverLimit -- Yes --> RejectLimit([Revert: Exceeds Limit])
+    TokenCheck{"Is Token Transfer?"}
+    TokenCheck -- Yes --> OverLimit{"Amount > Max Transfer?"}
+    OverLimit -- Yes --> RejectLimit(["Revert: Exceeds Limit"])
     OverLimit -- No --> Execute
     TokenCheck -- No --> Execute
     
-    Execute[Dynamic Call to Target Contract] --> Unlock[Remove Execution Lock]
-    Unlock --> End([Transaction Success])
+    Execute["Dynamic Call to Target Contract"] --> Unlock["Remove Execution Lock"]
+    Unlock --> End(["Transaction Success"])
 ```
 
 ## Storage Key Prefixes Table

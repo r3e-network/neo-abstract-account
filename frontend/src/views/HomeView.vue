@@ -53,22 +53,22 @@
                 </p>
               </div>
               <div class="mermaid flex justify-center">
-                graph TD
-                    A[User / dApp] -->|1. Sign MetaTx| B(Relayer)
-                    B -->|2. Submit Transaction| C{Neo N3 VM}
+                flowchart TD
+                    A["User / dApp"] -->|1. Sign MetaTx| B("Relayer")
+                    B -->|2. Submit Transaction| C{"Neo N3 VM"}
                     
                     A -.->|Direct Invocation| C
                     
-                    C -->|3. Verification Trigger| D(Deterministic Proxy Address)
-                    D -->|4. Forward Context| E[Master Entry Contract]
+                    C -->|3. Verification Trigger| D("Deterministic Proxy Address")
+                    D -->|4. Forward Context| E["Master Entry Contract"]
                     
-                    E --> F{Internal Checks}
-                    F -->|Check| G[(Roles: Admins / Managers)]
-                    F -->|Check| H[(Custom Verifiers)]
-                    F -->|Check| I[(Dome Recovery)]
+                    E --> F{"Internal Checks"}
+                    F -->|Check| G[("Roles: Admins / Managers")]
+                    F -->|Check| H[("Custom Verifiers")]
+                    F -->|Check| I[("Dome Recovery")]
                     
-                    F -->|Approved| J[Execution Phase]
-                    J --> K(Target NEP-17 Contract)
+                    F -->|Approved| J["Execution Phase"]
+                    J --> K("Target NEP-17 Contract")
                     
                     style E fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
                     style D fill:#14b8a6,stroke:#0f766e,stroke-width:2px,color:#fff

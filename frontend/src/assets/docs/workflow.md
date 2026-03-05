@@ -13,10 +13,10 @@ sequenceDiagram
     
     User->>Master: createAccountWithAddress(accountId, accountAddress, admins, managers)
     activate Master
-    Master->>Master: Assert: Ensure `accountId` is not already registered
-    Master->>Master: Compute: Verify `accountAddress` mathematically matches `accountId` script
+    Master->>Master: Assert: Ensure accountId is not already registered
+    Master->>Master: Compute: Verify accountAddress mathematically matches accountId script
     Master->>Master: Storage: Bind Admins and Managers to internal state maps
-    Master-->>User: Emit `AccountCreated` Event
+    Master-->>User: Emit AccountCreated Event
     deactivate Master
 ```
 
@@ -39,10 +39,10 @@ sequenceDiagram
     Node->>Proxy: Trigger: Verification
     Proxy->>Master: Forward Verification Context
     activate Master
-    Master->>Master: Extract `accountId` from executing script
+    Master->>Master: Extract accountId from executing script
     Master->>Master: Check Custom Verifier (if assigned)
     Master->>Master: Verify Signatures vs Admin/Manager Thresholds
-    Master-->>Node: Return `true` (Valid) or `false` (Invalid)
+    Master-->>Node: Return true (Valid) or false (Invalid)
     deactivate Master
 
     Note over Node,Target: Step 2: Execution Phase
