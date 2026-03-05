@@ -4,6 +4,28 @@ The Neo N3 Abstract Account protocol is a robust, enterprise-grade smart contrac
 
 By transitioning from standard ECDSA signatures to deterministic proxy contracts, developers and users can implement advanced multi-signature structures, EVM cross-chain execution capabilities, social recovery mechanisms, and fine-grained operational limits without sacrificing user experience.
 
+```mermaid
+mindmap
+  root((Abstract Account))
+    Identity
+      Deterministic Address
+      Zero Deployment Cost
+    Security & Permissions
+      Role-Based Access
+        Admins
+        Managers
+      Execution Limits
+        Whitelists
+        Blacklists
+        Token Transfer Limits
+    Extensibility
+      Custom Verifiers
+      EVM EIP-712 MetaTx
+    Recovery
+      Dome Social Network
+      Oracle Gating
+```
+
 ## Capabilities at a Glance
 
 1. **Role-Based Access Control:** Separate thresholds for Admins and Managers.
@@ -20,3 +42,5 @@ Use the sidebar to explore the technical depths of this protocol:
 * **Data Flow & Storage**: Inspect how state is organized securely.
 * **Dome Recovery**: Learn how social recovery safely orchestrates a fallback.
 * **Custom Verifiers**: Explore how to write C# contracts that govern account verification.
+* **Ethereum / EVM Integration**: Instructions for cross-chain users.
+* **SDK Usage**: A guide on how to integrate the JavaScript SDK into your dApps.
