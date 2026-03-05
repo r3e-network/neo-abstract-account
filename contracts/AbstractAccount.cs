@@ -41,6 +41,8 @@ namespace AbstractAccount
         "setDomeAccounts",
         "setDomeOracleByAddress",
         "setDomeOracle",
+        "setVerifierContractByAddress",
+        "setVerifierContract",
         "requestDomeActivationByAddress",
         "requestDomeActivation",
         "domeActivationCallback")]
@@ -66,6 +68,7 @@ namespace AbstractAccount
         private static readonly byte[] DomeThresholdPrefix = new byte[] { 0x0F };
         private static readonly byte[] DomeTimeoutPrefix = new byte[] { 0x10 };
         private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
+        private static readonly byte[] VerifierContractPrefix = new byte[] { 0x12 };
         private static readonly byte[] MetaTxContextPrefix = new byte[] { 0xFF };
 
         // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")

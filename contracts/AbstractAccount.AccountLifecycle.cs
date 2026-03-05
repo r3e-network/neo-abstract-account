@@ -36,6 +36,12 @@ namespace AbstractAccount
             // through the AA entrypoint and the immediate call target matches.
             if (!HasActiveVerifyContext(accountId, Runtime.CallingScriptHash)) return false;
 
+            UInt160 customVerifier = GetVerifierContract(accountId);
+            if (customVerifier != null && customVerifier != UInt160.Zero)
+            {
+                return (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+            }
+
             bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
             if (isAdmin) return true;
 

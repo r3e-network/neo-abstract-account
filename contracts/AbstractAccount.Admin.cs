@@ -331,6 +331,18 @@ namespace AbstractAccount
             BindAccountAddressInternal(accountId, accountAddress);
         }
 
+        public static void SetVerifierContract(ByteString accountId, UInt160 verifierContract)
+        {
+            AssertIsAdmin(accountId);
+            SetVerifierContractInternal(accountId, verifierContract);
+        }
+
+        public static void SetVerifierContractByAddress(UInt160 accountAddress, UInt160 verifierContract)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            SetVerifierContract(accountId, verifierContract);
+        }
+
         [Safe]
         public static ByteString GetAccountIdByAddress(UInt160 accountAddress)
         {

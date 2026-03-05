@@ -149,11 +149,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/AbstractAccount.csproj",
+      "projectUniqueName": "/home/neo/git/neo-abstract-account/contracts/AbstractAccount.csproj",
       "projectName": "AbstractAccount",
-      "projectPath": "/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/AbstractAccount.csproj",
+      "projectPath": "/home/neo/git/neo-abstract-account/contracts/AbstractAccount.csproj",
       "packagesPath": "/home/neo/.nuget/packages/",
-      "outputPath": "/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/",
+      "outputPath": "/home/neo/git/neo-abstract-account/contracts/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/neo/.nuget/NuGet/NuGet.Config"

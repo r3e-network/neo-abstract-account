@@ -36,23 +36,34 @@ namespace AbstractAccount
         private static void CheckPermissionsAndExecuteNative(ByteString accountId, UInt160 targetContract, string method, object[] args)
         {
             AssertAccountExists(accountId);
-            bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
-            bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
-            if (isAdmin || isManager)
+
+            UInt160 customVerifier = GetVerifierContract(accountId);
+            if (customVerifier != null && customVerifier != UInt160.Zero)
             {
+                bool isAuthorized = (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+                ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
             }
             else
             {
-                bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
-                ExecutionEngine.Assert(isDome, "Unauthorized");
-                
-                BigInteger timeout = GetDomeTimeout(accountId);
-                ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
-                
-                BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
-                ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
-                ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+                bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
+                bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
+                if (isAdmin || isManager)
+                {
+                    UpdateLastActiveTimestamp(accountId);
+                }
+                else
+                {
+                    bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
+                    ExecutionEngine.Assert(isDome, "Unauthorized");
+                    
+                    BigInteger timeout = GetDomeTimeout(accountId);
+                    ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
+                    
+                    BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
+                    ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
+                    ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+                }
             }
             EnforceRestrictions(accountId, targetContract, method, args);
         }
@@ -60,23 +71,34 @@ namespace AbstractAccount
         private static void CheckPermissionsAndExecute(ByteString accountId, UInt160[] verifiedSigners, UInt160 targetContract, string method, object[] args)
         {
             AssertAccountExists(accountId);
-            bool isAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
-            bool isManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
-            if (isAdmin || isManager)
+
+            UInt160 customVerifier = GetVerifierContract(accountId);
+            if (customVerifier != null && customVerifier != UInt160.Zero)
             {
+                bool isAuthorized = (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+                ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
             }
             else
             {
-                bool isDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), verifiedSigners);
-                ExecutionEngine.Assert(isDome, "Unauthorized");
-                
-                BigInteger timeout = GetDomeTimeout(accountId);
-                ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
-                
-                BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
-                ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
-                ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+                bool isAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
+                bool isManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
+                if (isAdmin || isManager)
+                {
+                    UpdateLastActiveTimestamp(accountId);
+                }
+                else
+                {
+                    bool isDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), verifiedSigners);
+                    ExecutionEngine.Assert(isDome, "Unauthorized");
+                    
+                    BigInteger timeout = GetDomeTimeout(accountId);
+                    ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
+                    
+                    BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
+                    ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
+                    ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+                }
             }
             EnforceRestrictions(accountId, targetContract, method, args);
         }

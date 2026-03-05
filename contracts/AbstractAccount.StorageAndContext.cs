@@ -198,5 +198,34 @@ namespace AbstractAccount
             if (!IsExecutionActive(accountId)) return;
             ExecutionEngine.Assert(Runtime.CallingScriptHash == Runtime.ExecutingScriptHash, "External mutation blocked during execute");
         }
+
+        private static void SetVerifierContractInternal(ByteString accountId, UInt160 verifierContract)
+        {
+            StorageMap map = new StorageMap(Storage.CurrentContext, VerifierContractPrefix);
+            if (verifierContract == null || verifierContract == UInt160.Zero)
+            {
+                map.Delete(GetStorageKey(accountId));
+            }
+            else
+            {
+                map.Put(GetStorageKey(accountId), verifierContract);
+            }
+        }
+
+        [Safe]
+        public static UInt160 GetVerifierContract(ByteString accountId)
+        {
+            StorageMap map = new StorageMap(Storage.CurrentContext, VerifierContractPrefix);
+            ByteString data = map.Get(GetStorageKey(accountId));
+            if (data == null) return UInt160.Zero;
+            return (UInt160)data;
+        }
+
+        [Safe]
+        public static UInt160 GetVerifierContractByAddress(UInt160 accountAddress)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            return GetVerifierContract(accountId);
+        }
     }
 }

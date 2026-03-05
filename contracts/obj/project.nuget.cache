@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "BWg82CemC58=",
+  "dgSpecHash": "ZSEfBTsNaFg=",
   "success": true,
-  "projectFilePath": "/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/AbstractAccount.csproj",
+  "projectFilePath": "/home/neo/git/neo-abstract-account/contracts/AbstractAccount.csproj",
   "expectedPackageFiles": [
     "/home/neo/.nuget/packages/neo.smartcontract.framework/3.9.1/neo.smartcontract.framework.3.9.1.nupkg.sha512"
   ],
