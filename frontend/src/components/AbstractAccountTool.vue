@@ -575,7 +575,9 @@ function removeRow(listRef, index) {
 }
 
 function generateUUID() {
-  createForm.value.accountId = crypto.randomUUID();
+  const timestamp = new Date().getTime().toString(16);
+  const randomStr = crypto.randomUUID().replace(/-/g, '');
+  createForm.value.accountId = `${timestamp}-${randomStr}`.substring(0, 32);
 }
 
 function normalizeAccountId(value) {
