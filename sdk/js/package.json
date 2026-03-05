@@ -1,0 +1,13 @@
+{
+  "name": "neo-abstract-account",
+  "version": "1.0.0",
+  "description": "Neo N3 Abstract Account SDK",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@cityofzion/neon-js": "^5.4.0",
+    "ethers": "^6.11.1"
+  }
+}

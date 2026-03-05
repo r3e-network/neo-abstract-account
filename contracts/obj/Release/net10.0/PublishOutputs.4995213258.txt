@@ -1,0 +1,4 @@
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Release/net10.0/publish/AbstractAccount.dll
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Release/net10.0/publish/AbstractAccount.deps.json
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Release/net10.0/publish/AbstractAccount.pdb
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Release/net10.0/publish/Neo.SmartContract.Framework.dll

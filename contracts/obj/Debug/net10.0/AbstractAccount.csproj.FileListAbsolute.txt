@@ -1,0 +1,13 @@
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.csproj.AssemblyReference.cache
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.GeneratedMSBuildEditorConfig.editorconfig
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.AssemblyInfoInputs.cache
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.AssemblyInfo.cs
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.csproj.CoreCompileInputs.cache
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.sourcelink.json
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Debug/net10.0/AbstractAccount.deps.json
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Debug/net10.0/AbstractAccount.dll
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/bin/Debug/net10.0/AbstractAccount.pdb
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.dll
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/refint/AbstractAccount.dll
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/AbstractAccount.pdb
+/home/neo/git/Neo-Explorer-UI/contracts/AbstractAccount/obj/Debug/net10.0/ref/AbstractAccount.dll
