@@ -244,6 +244,8 @@ namespace AbstractAccount
                 bool matched = false;
 
                 // 1. Check if it's an explicitly verified EVM signature
+                // This handles Meta-Transactions where an Ethereum user has signed an EIP-712 payload.
+                // The signature is passed in the args, recovered via ecrecover in ExecuteMetaTx, and passed here.
                 if (verifiedSigners != null)
                 {
                     foreach (var signer in verifiedSigners)
@@ -258,6 +260,9 @@ namespace AbstractAccount
                 }
 
                 // 2. If not matched explicitly, check if a native Neo witness is attached
+                // This allows a Relayer or a secondary Admin using a Neo wallet to attach their native
+                // signature to the transaction wrapper, securely aggregating N3 and EVM signatures 
+                // in the same execution pass to meet thresholds > 1.
                 if (!matched && Runtime.CheckWitness(roles[i]))
                 {
                     count++;
