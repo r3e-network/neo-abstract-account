@@ -3,6 +3,7 @@ import MainLayout from '@/components/layout/MainLayout.vue';
 import HomeView from '@/views/HomeView.vue';
 import AbstractAccountTool from '@/components/AbstractAccountTool.vue';
 import TransactionInfoView from '@/views/TransactionInfoView.vue';
+import DocsView from '@/views/DocsView.vue';
 
 const routes = [
   {
@@ -18,6 +19,11 @@ const routes = [
         path: 'studio',
         name: 'abstract-account-studio',
         component: AbstractAccountTool
+      },
+      {
+        path: 'docs',
+        name: 'documentation',
+        component: DocsView
       },
       {
         path: 'transaction-info/:txid',

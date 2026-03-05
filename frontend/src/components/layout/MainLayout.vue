@@ -19,6 +19,9 @@
               <router-link to="/studio" class="border-transparent text-slate-500 hover:text-neo-600 hover:border-neo-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200" active-class="border-neo-500 text-neo-700">
                 Studio
               </router-link>
+              <router-link to="/docs" class="border-transparent text-slate-500 hover:text-neo-600 hover:border-neo-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200" active-class="border-neo-500 text-neo-700">
+                Docs
+              </router-link>
             </div>
           </div>
           <div class="flex items-center">
