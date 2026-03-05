@@ -44,6 +44,38 @@
               </a>
             </div>
           </div>
+          <div class="relative mt-16 lg:mt-24">
+            <div class="relative rounded-2xl bg-white shadow-2xl border border-slate-200 p-8 md:p-12 overflow-hidden mx-auto max-w-5xl">
+              <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-slate-900">How Abstract Accounts Work on Neo N3</h3>
+                <p class="text-slate-500 mt-2 text-sm max-w-2xl mx-auto">
+                  A unified Master Contract acts as the global gateway, meaning zero deployment cost for new users. Accounts are simply deterministic Verification Scripts.
+                </p>
+              </div>
+              <div class="mermaid flex justify-center">
+                graph TD
+                    A[User / dApp] -->|1. Sign MetaTx| B(Relayer)
+                    B -->|2. Submit Transaction| C{Neo N3 VM}
+                    
+                    A -.->|Direct Invocation| C
+                    
+                    C -->|3. Verification Trigger| D(Deterministic Proxy Address)
+                    D -->|4. Forward Context| E[Master Entry Contract]
+                    
+                    E --> F{Internal Checks}
+                    F -->|Check| G[(Roles: Admins / Managers)]
+                    F -->|Check| H[(Custom Verifiers)]
+                    F -->|Check| I[(Dome Recovery)]
+                    
+                    F -->|Approved| J[Execution Phase]
+                    J --> K(Target NEP-17 Contract)
+                    
+                    style E fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
+                    style D fill:#14b8a6,stroke:#0f766e,stroke-width:2px,color:#fff
+                    style C fill:#f1f5f9,stroke:#cbd5e1,stroke-width:2px
+              </div>
+            </div>
+          </div>
         </main>
       </div>
     </div>
@@ -133,4 +165,11 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
+import mermaid from 'mermaid';
+
+onMounted(() => {
+  mermaid.initialize({ startOnLoad: false, theme: 'default' });
+  mermaid.run({ querySelector: '.mermaid' }).catch(e => console.warn(e));
+});
 </script>
