@@ -104,22 +104,20 @@ const renderMarkdown = async (key) => {
     const rawContent = docs[key]?.content || '# 404 Not Found';
     compiledMarkdown.value = await marked.parse(rawContent);
 
-    // Wait for Vue to inject the new raw HTML into the DOM
-    await nextTick();
-    
-    // Manually render each mermaid diagram using the programmatic API
-    // This avoids all Vue Virtual DOM conflicts with the document.querySelectorAll mutation method.
-    const containers = document.querySelectorAll('.mermaid-container');
-    for (const container of containers) {
-      try {
-        const rawCode = decodeURIComponent(container.getAttribute('data-mermaid-code'));
-        const { svg } = await mermaid.render(`${container.id}-svg`, rawCode);
-        container.innerHTML = svg;
-      } catch (err) {
-        console.warn("Failed to render specific mermaid diagram", err);
-        container.innerHTML = `<pre class="text-red-500 text-xs overflow-auto">${err.message}</pre>`;
+    // Wait for Vue's <transition mode="out-in"> to finish animating and mount the new DOM
+    setTimeout(async () => {
+      const containers = document.querySelectorAll('.mermaid-container');
+      for (const container of containers) {
+        try {
+          const rawCode = decodeURIComponent(container.getAttribute('data-mermaid-code'));
+          const { svg } = await mermaid.render(`${container.id}-svg`, rawCode);
+          container.innerHTML = svg;
+        } catch (err) {
+          console.warn("Failed to render specific mermaid diagram", err);
+          container.innerHTML = `<pre class="text-red-500 text-xs overflow-auto">${err.message}</pre>`;
+        }
       }
-    }
+    }, 250); // 250ms allows the CSS fade transition to complete
 
   } catch (err) {
     console.error('Failed to load markdown', err);
