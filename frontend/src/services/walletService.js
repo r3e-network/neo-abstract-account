@@ -37,6 +37,10 @@ class WalletService {
     return !!connectedAccount.value;
   }
 
+  get address() {
+    return connectedAccount.value || '';
+  }
+
   setConnected(address) {
     setConnectedAccount(address);
     this.account = address ? { address } : null;
@@ -47,22 +51,80 @@ class WalletService {
     }
   }
 
+  disconnect() {
+    this.setConnected('');
+  }
+
+  getConnectProvider() {
+    if (window.neo3Dapi?.getAccount) {
+      return {
+        name: 'neo3Dapi',
+        getAccount: () => window.neo3Dapi.getAccount()
+      };
+    }
+
+    if (window.NEOLineN3?.getAccount) {
+      return {
+        name: 'NEOLineN3',
+        getAccount: () => window.NEOLineN3.getAccount()
+      };
+    }
+
+    return null;
+  }
+
+  getInvokeProvider() {
+    if (window.neo3Dapi?.invoke) {
+      return {
+        name: 'neo3Dapi',
+        invoke: (params) => window.neo3Dapi.invoke(params)
+      };
+    }
+
+    if (window.NEOLineN3?.invoke) {
+      return {
+        name: 'NEOLineN3',
+        invoke: (params) => window.NEOLineN3.invoke(params)
+      };
+    }
+
+    if (window.aaWallet?.invoke) {
+      return {
+        name: 'aaWallet',
+        invoke: (params) => window.aaWallet.invoke(params)
+      };
+    }
+
+    return null;
+  }
+
+  async connect() {
+    const provider = this.getConnectProvider();
+    if (!provider) {
+      throw new Error('No supported Neo wallet provider detected in browser.');
+    }
+
+    const result = await provider.getAccount();
+    const address = result?.address || result?.account?.address || '';
+    if (!address) {
+      throw new Error('Wallet did not return an account address.');
+    }
+
+    this.setConnected(address);
+    return { provider: provider.name, address };
+  }
+
   async invoke(params) {
     if (!this.isConnected) {
       throw new Error('Wallet not connected. Connect a Neo wallet integration first.');
     }
 
-    if (window.neo3Dapi?.invoke) {
-      return window.neo3Dapi.invoke(params);
-    }
-    if (window.NEOLineN3?.invoke) {
-      return window.NEOLineN3.invoke(params);
-    }
-    if (window.aaWallet?.invoke) {
-      return window.aaWallet.invoke(params);
+    const provider = this.getInvokeProvider();
+    if (!provider) {
+      throw new Error('No browser wallet provider found (neo3Dapi / NEOLineN3 / aaWallet).');
     }
 
-    throw new Error('No browser wallet provider found (neo3Dapi / NEOLineN3 / aaWallet).');
+    return provider.invoke(params);
   }
 }
 

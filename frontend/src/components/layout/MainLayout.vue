@@ -65,51 +65,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { walletService } from '@/services/walletService';
-import { connectedAccount } from '@/utils/wallet';
-import { useToast } from 'vue-toastification';
+import { useWalletConnection } from '@/composables/useWalletConnection';
 
-const toast = useToast();
-
-const isConnected = computed(() => !!connectedAccount.value);
-const truncatedAddress = computed(() => {
-  if (!connectedAccount.value) return '';
-  const addr = connectedAccount.value;
-  return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
-});
-
-async function connect() {
-  try {
-    if (window.neo3Dapi?.getAccount) {
-      const result = await window.neo3Dapi.getAccount();
-      const address = result?.address || result?.account?.address || '';
-      if (!address) throw new Error('Wallet did not return an account address.');
-      walletService.setConnected(address);
-      toast.success(`Connected: ${address}`);
-      return;
-    }
-
-    if (window.NEOLineN3?.getAccount) {
-      const result = await window.NEOLineN3.getAccount();
-      const address = result?.address || result?.account?.address || '';
-      if (!address) throw new Error('Wallet did not return an account address.');
-      walletService.setConnected(address);
-      toast.success(`Connected: ${address}`);
-      return;
-    }
-
-    throw new Error('No supported Neo wallet provider detected in browser.');
-  } catch (err) {
-    console.error(err);
-    toast.error(`Connect failed: ${err.message || err}`);
-  }
-}
-
-function disconnect() {
-  walletService.setConnected('');
-  toast.info('Wallet disconnected.');
-}
+const { isConnected, truncatedAddress, connect, disconnect } = useWalletConnection();
 </script>
 
 <style scoped>

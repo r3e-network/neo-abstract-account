@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import MainLayout from '@/components/layout/MainLayout.vue';
-import HomeView from '@/views/HomeView.vue';
-import AbstractAccountTool from '@/components/AbstractAccountTool.vue';
-import TransactionInfoView from '@/views/TransactionInfoView.vue';
-import DocsView from '@/views/DocsView.vue';
+
+const MainLayout = () => import('@/components/layout/MainLayout.vue');
+const HomeView = () => import('@/views/HomeView.vue');
+const AbstractAccountTool = () => import('@/components/AbstractAccountTool.vue');
+const TransactionInfoView = () => import('@/views/TransactionInfoView.vue');
+const DocsView = () => import('@/views/DocsView.vue');
 
 const routes = [
   {
