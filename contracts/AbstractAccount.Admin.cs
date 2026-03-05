@@ -82,6 +82,7 @@ namespace AbstractAccount
             StorageMap tMap = new StorageMap(Storage.CurrentContext, AdminThresholdPrefix);
             adminsMap.Put(GetStorageKey(accountId), StdLib.Serialize(admins));
             tMap.Put(GetStorageKey(accountId), threshold);
+            OnRoleUpdated(accountId, "Admins", admins, threshold);
         }
 
         [Safe]
@@ -147,6 +148,7 @@ namespace AbstractAccount
             StorageMap tMap = new StorageMap(Storage.CurrentContext, ManagerThresholdPrefix);
             mMap.Put(GetStorageKey(accountId), StdLib.Serialize(managers));
             tMap.Put(GetStorageKey(accountId), threshold);
+            OnRoleUpdated(accountId, "Managers", managers, threshold);
         }
 
         [Safe]
@@ -219,6 +221,7 @@ namespace AbstractAccount
             tMap.Put(GetStorageKey(accountId), threshold);
             toMap.Put(GetStorageKey(accountId), timeoutPeriod);
             ResetDomeOracleState(accountId);
+            OnRoleUpdated(accountId, "Dome", domes, threshold);
         }
 
         [Safe]
@@ -275,6 +278,7 @@ namespace AbstractAccount
             StorageMap map = new StorageMap(Storage.CurrentContext, Helper.Concat(BlacklistPrefix, GetStorageKey(accountId)));
             if (isBlacklisted) map.Put(target, (ByteString)new byte[] { 1 });
             else map.Delete(target);
+            OnPolicyUpdated(accountId, "Blacklist", target, isBlacklisted ? (ByteString)new byte[] { 1 } : (ByteString)new byte[] { 0 });
         }
 
         public static void SetBlacklistByAddress(UInt160 accountAddress, UInt160 target, bool isBlacklisted)
@@ -289,6 +293,7 @@ namespace AbstractAccount
             StorageMap map = new StorageMap(Storage.CurrentContext, WhitelistEnabledPrefix);
             if (enabled) map.Put(GetStorageKey(accountId), (ByteString)new byte[] { 1 });
             else map.Delete(GetStorageKey(accountId));
+            OnPolicyUpdated(accountId, "WhitelistMode", UInt160.Zero, enabled ? (ByteString)new byte[] { 1 } : (ByteString)new byte[] { 0 });
         }
 
         public static void SetWhitelistModeByAddress(UInt160 accountAddress, bool enabled)
@@ -303,6 +308,7 @@ namespace AbstractAccount
             StorageMap map = new StorageMap(Storage.CurrentContext, Helper.Concat(WhitelistPrefix, GetStorageKey(accountId)));
             if (isWhitelisted) map.Put(target, (ByteString)new byte[] { 1 });
             else map.Delete(target);
+            OnPolicyUpdated(accountId, "Whitelist", target, isWhitelisted ? (ByteString)new byte[] { 1 } : (ByteString)new byte[] { 0 });
         }
 
         public static void SetWhitelistByAddress(UInt160 accountAddress, UInt160 target, bool isWhitelisted)
@@ -317,6 +323,7 @@ namespace AbstractAccount
             StorageMap map = new StorageMap(Storage.CurrentContext, Helper.Concat(MaxTransferPrefix, GetStorageKey(accountId)));
             if (maxAmount > 0) map.Put(token, (ByteString)maxAmount);
             else map.Delete(token);
+            OnPolicyUpdated(accountId, "MaxTransfer", token, (ByteString)maxAmount);
         }
 
         public static void SetMaxTransferByAddress(UInt160 accountAddress, UInt160 token, BigInteger maxAmount)

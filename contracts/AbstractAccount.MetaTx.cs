@@ -50,36 +50,6 @@ namespace AbstractAccount
             return CryptoLib.Keccak256((ByteString)argsSerialized);
         }
 
-        [Safe]
-        public static ByteString ComputeArgsHashForMetaTx(
-            ByteString accountId,
-            ByteString uncompressedPubKey,
-            UInt160 targetContract,
-            string method,
-            object[] args,
-            ByteString argsHash,
-            BigInteger nonce,
-            BigInteger deadline,
-            ByteString signature)
-        {
-            return ComputeArgsHash(args);
-        }
-
-        [Safe]
-        public static ByteString ComputeArgsHashForMetaTxByAddress(
-            UInt160 accountAddress,
-            ByteString uncompressedPubKey,
-            UInt160 targetContract,
-            string method,
-            object[] args,
-            ByteString argsHash,
-            BigInteger nonce,
-            BigInteger deadline,
-            ByteString signature)
-        {
-            return ComputeArgsHash(args);
-        }
-
         public static object ExecuteMetaTx(
             ByteString accountId,
             Neo.SmartContract.Framework.List<ByteString> uncompressedPubKeys,

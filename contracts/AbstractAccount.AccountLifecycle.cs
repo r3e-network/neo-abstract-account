@@ -29,39 +29,33 @@ namespace AbstractAccount
         [Safe]
         public static bool Verify(ByteString accountId)
         {
-            if (Runtime.Trigger != TriggerType.Verification) return false;
             AssertAccountExists(accountId);
 
-            // Proxy-account verification is valid only while this account is executing
-            // through the AA entrypoint and the immediate call target matches.
-            if (!HasActiveVerifyContext(accountId, Runtime.CallingScriptHash)) return false;
-
-            UInt160 customVerifier = GetVerifierContract(accountId);
-            if (customVerifier != null && customVerifier != UInt160.Zero)
+            if (Runtime.Trigger == TriggerType.Application)
             {
-                return (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+                // Proxy-account verification is valid during application execution
+                // if it's being called strictly by the target contract via CheckWitness.
+                if (HasActiveVerifyContext(accountId, Runtime.CallingScriptHash)) return true;
+                return false;
             }
 
-            bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
-            if (isAdmin) return true;
-
-            bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
-            if (isManager) return true;
-
-            ByteString metaSignerBytes = GetMetaTxContext(accountId);
-            if (metaSignerBytes != null)
+            if (Runtime.Trigger == TriggerType.Verification)
             {
-                UInt160 metaSigner = (UInt160)metaSignerBytes;
-                UInt160[] explicitSigners = new UInt160[] { metaSigner };
+                // Directly signed natively. Verify attached native signatures against policies.
+                UInt160 customVerifier = GetVerifierContract(accountId);
+                if (customVerifier != null && customVerifier != UInt160.Zero)
+                {
+                    return (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+                }
 
-                bool metaAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners);
-                if (metaAdmin) return true;
+                bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
+                if (isAdmin) return true;
 
-                bool metaManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners);
-                if (metaManager) return true;
-                
-                bool metaDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
-                if (metaDome)
+                bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
+                if (isManager) return true;
+
+                bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
+                if (isDome)
                 {
                     BigInteger timeout = GetDomeTimeout(accountId);
                     if (timeout > 0)
@@ -69,17 +63,6 @@ namespace AbstractAccount
                         BigInteger lastActive = GetLastActiveTimestamp(accountId);
                         if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return true;
                     }
-                }
-            }
-
-            bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
-            if (isDome)
-            {
-                BigInteger timeout = GetDomeTimeout(accountId);
-                if (timeout > 0)
-                {
-                    BigInteger lastActive = GetLastActiveTimestamp(accountId);
-                    if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return true;
                 }
             }
 

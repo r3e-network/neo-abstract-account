@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Numerics;
 using Neo;
 using Neo.SmartContract;
 using Neo.SmartContract.Framework;
@@ -115,11 +116,29 @@ namespace AbstractAccount
         [DisplayName("AccountCreated")]
         public static event OnAccountCreatedEvent OnAccountCreated = default!;
 
+        public delegate void OnRoleUpdatedEvent(ByteString accountId, string role, Neo.SmartContract.Framework.List<UInt160> members, int threshold);
+        [DisplayName("RoleUpdated")]
+        public static event OnRoleUpdatedEvent OnRoleUpdated = default!;
+
+        public delegate void OnPolicyUpdatedEvent(ByteString accountId, string policyType, UInt160 target, ByteString value);
+        [DisplayName("PolicyUpdated")]
+        public static event OnPolicyUpdatedEvent OnPolicyUpdated = default!;
+
         public static void _deploy(object data, bool update)
         {
             if (update) return;
             var tx = (Transaction)Runtime.Transaction;
             Storage.Put(Storage.CurrentContext, DeployerKey, tx.Sender);
+        }
+
+        public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
+        {
+            ExecutionEngine.Abort();
+        }
+
+        public static void OnNEP11Payment(UInt160 from, BigInteger amount, ByteString tokenId, object data)
+        {
+            ExecutionEngine.Abort();
         }
     }
 }

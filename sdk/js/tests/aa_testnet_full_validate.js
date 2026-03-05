@@ -150,22 +150,7 @@ async function computeArgsHashForMetaExecution({
   args,
   nonce,
 }) {
-  const operation = useAddress ? 'computeArgsHashForMetaTxByAddress' : 'computeArgsHashForMetaTx';
-  const dummyPubKey = `04${'00'.repeat(64)}`;
-  const zeroHash = '00'.repeat(32);
-  const zeroSig = '00'.repeat(64);
-  const res = await invokeRead(aaHash, operation, [
-    useAddress ? cpHash160(accountAddressHash) : cpByteArray(accountIdHex),
-    cpByteArrayRaw(dummyPubKey),
-    cpHash160(aaHash),
-    sc.ContractParam.string(method),
-    cpArray(args),
-    cpByteArrayRaw(zeroHash),
-    sc.ContractParam.integer(nonce),
-    sc.ContractParam.integer(0),
-    cpByteArrayRaw(zeroSig),
-  ]);
-  return decodeByteStringToHex(res.stack?.[0]);
+  return computeArgsHash(aaHash, args);
 }
 
 function buildTypedData({ chainId, verifyingContract, accountIdHex, targetContract, method, argsHashHex, nonce, deadline }) {

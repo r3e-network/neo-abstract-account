@@ -103,6 +103,20 @@ namespace AbstractAccount
             RequestDomeActivation(accountId);
         }
 
+        private static bool ContainsTrue(byte[] result)
+        {
+            if (result == null || result.Length < 4) return false;
+            byte[] trueBytes = new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
+            for (int i = 0; i <= result.Length - 4; i++)
+            {
+                if (result[i] == trueBytes[0] &&
+                    result[i + 1] == trueBytes[1] &&
+                    result[i + 2] == trueBytes[2] &&
+                    result[i + 3] == trueBytes[3]) return true;
+            }
+            return false;
+        }
+
         public static void DomeActivationCallback(string url, object userData, int responseCode, byte[] result)
         {
             ExecutionEngine.Assert(Runtime.CallingScriptHash == Oracle.Hash, "Unauthorized");
@@ -129,7 +143,7 @@ namespace AbstractAccount
                 return;
             }
 
-            if (responseCode == (int)OracleResponseCode.Success && (ByteString)result == (ByteString)"true")
+            if (responseCode == (int)OracleResponseCode.Success && ContainsTrue(result))
             {
                 StorageMap unlockMap = new StorageMap(Storage.CurrentContext, DomeOracleUnlockPrefix);
                 unlockMap.Put(key, (ByteString)new byte[] { 1 });

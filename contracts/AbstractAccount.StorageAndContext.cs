@@ -205,10 +205,12 @@ namespace AbstractAccount
             if (verifierContract == null || verifierContract == UInt160.Zero)
             {
                 map.Delete(GetStorageKey(accountId));
+                OnPolicyUpdated(accountId, "VerifierContract", UInt160.Zero, null);
             }
             else
             {
                 map.Put(GetStorageKey(accountId), verifierContract);
+                OnPolicyUpdated(accountId, "VerifierContract", verifierContract, null);
             }
         }
 
