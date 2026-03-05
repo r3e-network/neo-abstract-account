@@ -81,15 +81,15 @@ namespace AbstractAccount
             }
             else
             {
-                bool isAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
-                bool isManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
+                bool isAdmin = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
+                bool isManager = CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
                 if (isAdmin || isManager)
                 {
                     UpdateLastActiveTimestamp(accountId);
                 }
                 else
                 {
-                    bool isDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), verifiedSigners);
+                    bool isDome = CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), verifiedSigners);
                     ExecutionEngine.Assert(isDome, "Unauthorized");
                     
                     BigInteger timeout = GetDomeTimeout(accountId);
@@ -229,6 +229,37 @@ namespace AbstractAccount
                         count++;
                         break;
                     }
+                }
+            }
+            return count >= threshold;
+        }
+
+        private static bool CheckMixedSignatures(Neo.SmartContract.Framework.List<UInt160> roles, int threshold, UInt160[] verifiedSigners)
+        {
+            if (threshold <= 0 || roles == null || roles.Count == 0) return false;
+            int count = 0;
+            for (int i = 0; i < roles.Count; i++)
+            {
+                bool matched = false;
+
+                // 1. Check if it's an explicitly verified EVM signature
+                if (verifiedSigners != null)
+                {
+                    foreach (var signer in verifiedSigners)
+                    {
+                        if (roles[i] == signer)
+                        {
+                            count++;
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                // 2. If not matched explicitly, check if a native Neo witness is attached
+                if (!matched && Runtime.CheckWitness(roles[i]))
+                {
+                    count++;
                 }
             }
             return count >= threshold;

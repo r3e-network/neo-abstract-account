@@ -82,80 +82,88 @@ namespace AbstractAccount
 
         public static object ExecuteMetaTx(
             ByteString accountId,
-            ByteString uncompressedPubKey,
+            Neo.SmartContract.Framework.List<ByteString> uncompressedPubKeys,
             UInt160 targetContract,
             string method,
             object[] args,
             ByteString argsHash,
             BigInteger nonce,
             BigInteger deadline,
-            ByteString signature)
+            Neo.SmartContract.Framework.List<ByteString> signatures)
         {
-            return ExecuteMetaTxInternal(accountId, uncompressedPubKey, targetContract, method, args, argsHash, nonce, deadline, signature);
+            return ExecuteMetaTxInternal(accountId, uncompressedPubKeys, targetContract, method, args, argsHash, nonce, deadline, signatures);
         }
 
         public static object ExecuteMetaTxByAddress(
             UInt160 accountAddress,
-            ByteString uncompressedPubKey,
+            Neo.SmartContract.Framework.List<ByteString> uncompressedPubKeys,
             UInt160 targetContract,
             string method,
             object[] args,
             ByteString argsHash,
             BigInteger nonce,
             BigInteger deadline,
-            ByteString signature)
+            Neo.SmartContract.Framework.List<ByteString> signatures)
         {
             ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return ExecuteMetaTxInternal(accountId, uncompressedPubKey, targetContract, method, args, argsHash, nonce, deadline, signature);
+            return ExecuteMetaTxInternal(accountId, uncompressedPubKeys, targetContract, method, args, argsHash, nonce, deadline, signatures);
         }
 
         private static object ExecuteMetaTxInternal(
             ByteString accountId,
-            ByteString uncompressedPubKey,
+            Neo.SmartContract.Framework.List<ByteString> uncompressedPubKeys,
             UInt160 targetContract,
             string method,
             object[] args,
             ByteString argsHash,
             BigInteger nonce,
             BigInteger deadline,
-            ByteString signature)
+            Neo.SmartContract.Framework.List<ByteString> signatures)
         {
             AssertAccountExists(accountId);
-            UInt160 signerHash = DeriveEthAddress(uncompressedPubKey);
+            ExecutionEngine.Assert(uncompressedPubKeys != null && signatures != null, "Missing signers");
+            ExecutionEngine.Assert(uncompressedPubKeys.Count == signatures.Count, "Mismatched pubkeys and signatures");
+            ExecutionEngine.Assert(signatures.Count > 0, "At least one signature required");
 
             ExecutionEngine.Assert(nonce >= 0, "Invalid nonce");
             BigInteger normalizedDeadline = NormalizeDeadlineToMs(deadline);
             ExecutionEngine.Assert((BigInteger)Runtime.Time <= normalizedDeadline, "Signature expired");
 
-            BigInteger currentNonce = GetNonceForAccount(accountId, signerHash);
+            // We use the first signer's nonce to track execution
+            UInt160 primarySignerHash = DeriveEthAddress(uncompressedPubKeys[0]);
+            BigInteger currentNonce = GetNonceForAccount(accountId, primarySignerHash);
             ExecutionEngine.Assert(nonce == currentNonce, "Invalid Nonce");
 
             ToBytes32(argsHash, "Invalid args hash length");
             byte[] expectedArgsHash = (byte[])ComputeArgsHash(args);
 
-            byte[] sigBytes = (byte[])signature;
-            ExecutionEngine.Assert(sigBytes.Length == 64, "Invalid signature length");
-
             byte[] domainSeparator = BuildDomainSeparator(Runtime.GetNetwork(), Runtime.ExecutingScriptHash);
             byte[] structHash = BuildMetaTxStructHash(accountId, targetContract, method, expectedArgsHash, nonce, deadline);
             byte[] typedDataPayload = ConcatBytes(new byte[] { 0x19, 0x01 }, domainSeparator, structHash);
 
-            ECPoint compressedPubKey = CompressPubKey(uncompressedPubKey);
+            UInt160[] recoveredSigners = new UInt160[signatures.Count];
+            for (int i = 0; i < signatures.Count; i++)
+            {
+                byte[] sigBytes = (byte[])signatures[i];
+                ExecutionEngine.Assert(sigBytes.Length == 64, "Invalid signature length");
 
-            bool isValid = CryptoLib.VerifyWithECDsa(
-                (ByteString)typedDataPayload,
-                compressedPubKey,
-                signature,
-                NamedCurveHash.secp256k1Keccak256
-            );
-            ExecutionEngine.Assert(isValid, "Invalid EIP-712 signature");
+                ECPoint compressedPubKey = CompressPubKey(uncompressedPubKeys[i]);
+                bool isValid = CryptoLib.VerifyWithECDsa(
+                    (ByteString)typedDataPayload,
+                    compressedPubKey,
+                    signatures[i],
+                    NamedCurveHash.secp256k1Keccak256
+                );
+                ExecutionEngine.Assert(isValid, "Invalid EIP-712 signature");
+                recoveredSigners[i] = DeriveEthAddress(uncompressedPubKeys[i]);
+            }
 
-            IncrementNonce(accountId, signerHash);
-            CheckPermissionsAndExecute(accountId, new UInt160[] { signerHash }, targetContract, method, args);
+            IncrementNonce(accountId, primarySignerHash);
+            CheckPermissionsAndExecute(accountId, recoveredSigners, targetContract, method, args);
 
             // Scope authenticated signer by account for this execution path.
             EnterExecution(accountId);
-            SetMetaTxContext(accountId, signerHash);
+            SetMetaTxContext(accountId, primarySignerHash);
             SetVerifyContext(accountId, targetContract);
             try
             {
