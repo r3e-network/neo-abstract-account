@@ -1,12 +1,31 @@
 <template>
-  <section class="tx-info-page">
-    <div class="tx-card">
-      <h1>Transaction Details</h1>
-      <p class="tx-help">Use the transaction hash below in your preferred Neo block explorer.</p>
-      <code>{{ txid }}</code>
-      <RouterLink to="/" class="tx-back">Back to Studio</RouterLink>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="bg-white shadow sm:rounded-lg overflow-hidden border border-slate-200">
+      <div class="px-4 py-5 sm:p-6 text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-neo-100 mb-4">
+          <svg class="h-6 w-6 text-neo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">Transaction Submitted</h1>
+        <p class="text-sm text-slate-500 mb-6">Your transaction has been submitted to the network. You can view the details using the hash below.</p>
+        
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 inline-block mx-auto max-w-full">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 text-left">Transaction Hash</p>
+          <code class="block text-sm font-mono text-slate-800 break-all bg-white border border-slate-200 p-3 rounded">{{ txid }}</code>
+        </div>
+        
+        <div class="flex justify-center gap-4">
+          <RouterLink to="/studio" class="btn-secondary">
+            Return to Studio
+          </RouterLink>
+          <a :href="`https://testnet.ndoras.com/transaction/${txid}`" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            View in Explorer
+          </a>
+        </div>
+      </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup>
@@ -17,46 +36,3 @@ defineProps({
   }
 });
 </script>
-
-<style scoped>
-.tx-info-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, #f0f4ef, #f9f7ef);
-  padding: 1rem;
-}
-
-.tx-card {
-  width: min(760px, 100%);
-  border: 1px solid #ced8cd;
-  border-radius: 16px;
-  background: #fffef8;
-  padding: 1.2rem;
-  display: grid;
-  gap: 0.7rem;
-}
-
-h1 {
-  margin: 0;
-}
-
-.tx-help {
-  margin: 0;
-  color: #5f6a72;
-}
-
-code {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  background: #f2f7f2;
-  border: 1px solid #d1dbd2;
-  border-radius: 12px;
-  padding: 0.6rem;
-  word-break: break-all;
-}
-
-.tx-back {
-  color: #0e6962;
-  font-weight: 600;
-}
-</style>

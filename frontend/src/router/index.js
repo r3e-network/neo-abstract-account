@@ -1,18 +1,31 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import MainLayout from '@/components/layout/MainLayout.vue';
+import HomeView from '@/views/HomeView.vue';
 import AbstractAccountTool from '@/components/AbstractAccountTool.vue';
 import TransactionInfoView from '@/views/TransactionInfoView.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'abstract-account-studio',
-    component: AbstractAccountTool
-  },
-  {
-    path: '/transaction-info/:txid',
-    name: 'transaction-info',
-    component: TransactionInfoView,
-    props: true
+    component: MainLayout,
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: HomeView
+      },
+      {
+        path: 'studio',
+        name: 'abstract-account-studio',
+        component: AbstractAccountTool
+      },
+      {
+        path: 'transaction-info/:txid',
+        name: 'transaction-info',
+        component: TransactionInfoView,
+        props: true
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',

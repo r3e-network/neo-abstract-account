@@ -1,304 +1,395 @@
 <template>
-  <div class="tool-page aa-tool-page">
-    <section class="page-container aa-shell py-6 md:py-8">
-      <Breadcrumb :items="[{ label: 'Home', to: '/homepage' }, { label: 'Tools', to: '/tools' }, { label: 'Abstract Account Studio' }]" />
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+    <div class="mb-8">
+      <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight mb-2">Abstract Account Studio</h1>
+      <p class="text-lg text-slate-500 max-w-2xl">
+        Design deterministic abstract accounts, register them on-chain, and manage governance with ease.
+      </p>
+    </div>
 
-      <header class="aa-hero animate-rise" style="--delay: 30ms">
-        <div class="aa-hero__badge">Neo N3</div>
-        <h1 class="aa-hero__title">Abstract Account Studio</h1>
-        <p class="aa-hero__subtitle">
-          Design deterministic abstract accounts, register them on-chain, and manage governance with confidence.
-        </p>
-        <div class="aa-connection" :class="walletConnected ? 'connected' : 'disconnected'">
-          <span class="aa-dot" />
-          <span>{{ walletConnected ? `Connected: ${connectedAccount}` : 'Wallet not connected' }}</span>
-        </div>
-        <div class="aa-hero-actions">
-          <button v-if="!walletConnected" class="aa-primary" @click="connectWallet">Connect Wallet</button>
-          <button v-else class="aa-ghost" @click="disconnectWallet">Disconnect</button>
-        </div>
-      </header>
-
-      <nav class="aa-tabs animate-rise" style="--delay: 90ms">
+    <!-- Tabs -->
+    <div class="mb-8">
+      <nav class="flex space-x-2 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/60 w-fit" aria-label="Tabs">
         <button
           v-for="tab in tabs"
           :key="tab.key"
-          class="aa-tab"
-          :class="{ active: activePanel === tab.key }"
           @click="activePanel = tab.key"
+          :class="[
+            activePanel === tab.key
+              ? 'bg-neo-50 text-neo-700 shadow-sm ring-1 ring-neo-200'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+            'px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 transform active:scale-95'
+          ]"
         >
-          <span>{{ tab.label }}</span>
+          {{ tab.label }}
         </button>
       </nav>
+    </div>
 
-      <div class="aa-layout">
-        <main class="aa-main">
-          <section v-if="activePanel === 'create'" class="aa-card animate-rise" style="--delay: 130ms">
-            <div class="aa-card__head">
-              <h2>Create Abstract Account</h2>
-              <p>Configure identity and signer roles, then register with a single transaction.</p>
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <main class="lg:col-span-8 xl:col-span-9 space-y-6 relative">
+        <transition name="fade-slide" mode="out-in">
+          <!-- Create Panel -->
+          <section v-if="activePanel === 'create'" class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Create Abstract Account</h2>
+            <p class="text-sm text-slate-500 mb-8">Configure identity and signer roles, then register with a single transaction.</p>
+
+            <div class="space-y-8">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-2">
+                  <label class="block text-sm font-semibold text-slate-700">Account ID (UUID or EVM pubkey)</label>
+                  <div class="flex rounded-lg shadow-sm ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-neo-500 transition-shadow">
+                    <input
+                      v-model="createForm.accountId"
+                      type="text"
+                      class="flex-1 bg-transparent border-0 rounded-l-lg py-2.5 px-4 font-mono text-sm text-slate-800 focus:ring-0 placeholder:text-slate-400"
+                      :readonly="isEvmWallet"
+                      placeholder="550e8400-e29b-41d4..."
+                    />
+                    <button
+                      type="button"
+                      class="inline-flex items-center px-4 py-2.5 border-l border-slate-200 rounded-r-lg bg-slate-50 text-slate-600 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 transition-colors"
+                      @click="generateUUID"
+                      :disabled="isEvmWallet"
+                    >
+                      Generate
+                    </button>
+                  </div>
+                  <p class="mt-1 text-xs text-neo-600 font-medium" v-if="isEvmWallet">Using connected wallet public key.</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-semibold text-slate-700">Derived Account Address</label>
+                  <div class="relative">
+                    <input :value="computedAddress || '—'" readonly type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-4 font-mono text-sm text-slate-500 cursor-not-allowed" />
+                    <div v-if="computedAddress" class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Admins -->
+                <div class="bg-gradient-to-br from-slate-50 to-white p-5 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden group hover:border-neo-200 transition-colors duration-300">
+                  <div class="absolute top-0 right-0 w-32 h-32 bg-neo-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-neo-500/10 transition-colors"></div>
+                  <div class="flex justify-between items-center mb-4 relative z-10">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <svg class="w-4 h-4 text-neo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                      Admins
+                    </h3>
+                    <button type="button" class="text-xs text-neo-600 hover:text-neo-800 font-bold bg-neo-50 px-2 py-1 rounded-md transition-colors" @click="addRow(createForm.admins)">+ Add</button>
+                  </div>
+                  <div class="space-y-3 mb-5 relative z-10">
+                    <div v-for="(admin, index) in createForm.admins" :key="`create-admin-${index}`" class="flex gap-2 group/input">
+                      <input v-model="createForm.admins[index]" type="text" class="input-field font-mono text-sm py-2 px-3" placeholder="N... or 0x..." />
+                      <button type="button" class="inline-flex items-center p-2 border border-slate-200 rounded-lg bg-white text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors" @click="removeRow(createForm.admins, index)">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between border-t border-slate-200/60 pt-4 relative z-10">
+                    <label class="block text-xs font-semibold text-slate-600">Required Threshold</label>
+                    <input v-model.number="createForm.adminThreshold" type="number" min="1" :max="Math.max(1, validCreateAdmins.length)" class="input-field w-20 text-center py-1 text-sm font-bold text-slate-800" />
+                  </div>
+                </div>
+
+                <!-- Managers -->
+                <div class="bg-gradient-to-br from-slate-50 to-white p-5 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors duration-300">
+                  <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-blue-500/10 transition-colors"></div>
+                  <div class="flex justify-between items-center mb-4 relative z-10">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                      Managers
+                    </h3>
+                    <button type="button" class="text-xs text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded-md transition-colors" @click="addRow(createForm.managers)">+ Add</button>
+                  </div>
+                  <div class="space-y-3 mb-5 relative z-10">
+                    <div v-for="(manager, index) in createForm.managers" :key="`create-manager-${index}`" class="flex gap-2 group/input">
+                      <input v-model="createForm.managers[index]" type="text" class="input-field font-mono text-sm py-2 px-3" placeholder="N... or 0x..." />
+                      <button type="button" class="inline-flex items-center p-2 border border-slate-200 rounded-lg bg-white text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors" @click="removeRow(createForm.managers, index)">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between border-t border-slate-200/60 pt-4 relative z-10">
+                    <label class="block text-xs font-semibold text-slate-600">Required Threshold</label>
+                    <input v-model.number="createForm.managerThreshold" type="number" min="0" :max="Math.max(0, validCreateManagers.length)" class="input-field w-20 text-center py-1 text-sm font-bold text-slate-800" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="block text-sm font-semibold text-slate-700">Verification Script (Hex)</label>
+                <div class="relative rounded-lg overflow-hidden border border-slate-200">
+                  <textarea :value="computedScriptHex || ''" readonly class="w-full bg-slate-900 border-0 p-4 font-mono text-xs text-slate-300 placeholder:text-slate-600 focus:ring-0 resize-none h-24" placeholder="Script will appear here once valid..."></textarea>
+                </div>
+              </div>
+
+              <div class="pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center gap-4">
+                <button type="button" class="btn-primary w-full sm:w-auto" :disabled="isCreating || !canCreate" @click="createAccount">
+                  <svg v-if="isCreating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  {{ isCreating ? 'Submitting Transaction...' : 'Register Abstract Account' }}
+                </button>
+                <span class="text-xs text-slate-500 font-medium">Requires wallet signature and <code class="bg-slate-100 px-1 rounded text-slate-700">CalledByEntry</code> scope.</span>
+              </div>
             </div>
+          </section>
 
-            <div class="aa-grid two">
-              <div class="aa-field">
-                <label>Account ID (UUID or EVM pubkey)</label>
-                <div class="aa-inline">
+          <!-- Manage Panel -->
+          <section v-else-if="activePanel === 'manage'" class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Manage Governance</h2>
+            <p class="text-sm text-slate-500 mb-8">Operate policy and recovery controls for an existing abstract account.</p>
+
+            <div class="space-y-8">
+              <div class="bg-slate-50 p-5 rounded-xl border border-slate-200/60">
+                <label class="block text-sm font-semibold text-slate-800 mb-3">Target Account Address (Neo N3)</label>
+                <div class="flex flex-col sm:flex-row gap-4">
                   <input
-                    v-model="createForm.accountId"
+                    v-model="manageForm.accountAddress"
                     type="text"
-                    class="aa-input mono"
-                    :readonly="isEvmWallet"
-                    placeholder="550e8400-e29b-41d4-a716-446655440000"
+                    class="input-field flex-1 font-mono text-sm py-2.5 px-4"
+                    placeholder="N..."
                   />
+                  <button type="button" class="btn-primary sm:w-auto" :disabled="manageBusy.load || !canManageTarget" @click="loadAccountConfiguration">
+                    <svg v-if="manageBusy.load" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    {{ manageBusy.load ? 'Loading...' : 'Load Configuration' }}
+                  </button>
+                </div>
+              </div>
+
+              <transition name="fade">
+                <div v-if="manageSnapshot.loadedAt" class="bg-gradient-to-r from-neo-50 to-white rounded-xl p-5 border border-neo-100 shadow-sm relative overflow-hidden">
+                  <div class="absolute left-0 top-0 bottom-0 w-1 bg-neo-500"></div>
+                  <h4 class="text-xs font-bold text-neo-800 uppercase tracking-wider mb-4">Current State</h4>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div><span class="block text-slate-500 text-xs mb-1">Loaded At</span> <span class="font-semibold text-slate-900">{{ manageSnapshot.loadedAt }}</span></div>
+                    <div v-if="manageSnapshot.accountIdHex"><span class="block text-slate-500 text-xs mb-1">Account ID</span> <span class="font-mono text-xs font-semibold text-slate-900 truncate" :title="manageSnapshot.accountIdHex">{{ manageSnapshot.accountIdHex }}</span></div>
+                    <div><span class="block text-slate-500 text-xs mb-1">Last Active</span> <span class="font-semibold text-slate-900">{{ manageSnapshot.lastActiveMs }} ms</span></div>
+                    <div v-if="manageSnapshot.domeUnlocked !== null">
+                      <span class="block text-slate-500 text-xs mb-1">Dome Status</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold" :class="manageSnapshot.domeUnlocked ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'">
+                        {{ manageSnapshot.domeUnlocked ? 'Unlocked' : 'Locked' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </transition>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Update Admins -->
+                <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors">
+                  <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-sm font-bold text-slate-900">Admin Set</h3>
+                    <button type="button" class="text-xs text-neo-600 hover:text-neo-800 font-bold bg-neo-50 px-2 py-1 rounded-md" @click="addRow(manageForm.admins)">+ Add</button>
+                  </div>
+                  <div class="space-y-3 mb-6">
+                    <div v-for="(admin, index) in manageForm.admins" :key="`manage-admin-${index}`" class="flex gap-2">
+                      <input v-model="manageForm.admins[index]" type="text" class="input-field font-mono text-xs py-2 px-3" placeholder="N... or 0x..." />
+                      <button type="button" class="inline-flex items-center p-2 border border-slate-200 rounded-lg bg-white text-slate-400 hover:bg-red-50 hover:text-red-500" @click="removeRow(manageForm.admins, index)">
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between border-t border-slate-100 pt-5">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Threshold</label>
+                      <input v-model.number="manageForm.adminThreshold" type="number" min="1" :max="Math.max(1, validManageAdmins.length)" class="input-field w-16 text-center py-1.5 text-sm font-bold" />
+                    </div>
+                    <button type="button" class="btn-secondary text-sm px-4" :disabled="manageBusy.admins || !canManageTarget || validManageAdmins.length === 0" @click="setAdminsByAddress">
+                      Update Admins
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Update Managers -->
+                <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors">
+                  <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-sm font-bold text-slate-900">Manager Set</h3>
+                    <button type="button" class="text-xs text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded-md" @click="addRow(manageForm.managers)">+ Add</button>
+                  </div>
+                  <div class="space-y-3 mb-6">
+                    <div v-for="(manager, index) in manageForm.managers" :key="`manage-manager-${index}`" class="flex gap-2">
+                      <input v-model="manageForm.managers[index]" type="text" class="input-field font-mono text-xs py-2 px-3" placeholder="N... or 0x..." />
+                      <button type="button" class="inline-flex items-center p-2 border border-slate-200 rounded-lg bg-white text-slate-400 hover:bg-red-50 hover:text-red-500" @click="removeRow(manageForm.managers, index)">
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between border-t border-slate-100 pt-5">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Threshold</label>
+                      <input v-model.number="manageForm.managerThreshold" type="number" min="0" :max="Math.max(0, validManageManagers.length)" class="input-field w-16 text-center py-1.5 text-sm font-bold" />
+                    </div>
+                    <button type="button" class="btn-secondary text-sm px-4" :disabled="manageBusy.managers || !canManageTarget" @click="setManagersByAddress">
+                      Update Managers
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Dome Accounts -->
+                <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors">
+                  <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-sm font-bold text-slate-900">Dome Recovery Network</h3>
+                    <button type="button" class="text-xs text-amber-600 hover:text-amber-800 font-bold bg-amber-50 px-2 py-1 rounded-md" @click="addRow(manageForm.domeAccounts)">+ Add</button>
+                  </div>
+                  <div class="space-y-3 mb-6">
+                    <div v-for="(dome, index) in manageForm.domeAccounts" :key="`dome-${index}`" class="flex gap-2">
+                      <input v-model="manageForm.domeAccounts[index]" type="text" class="input-field font-mono text-xs py-2 px-3" placeholder="N... or 0x..." />
+                      <button type="button" class="inline-flex items-center p-2 border border-slate-200 rounded-lg bg-white text-slate-400 hover:bg-red-50 hover:text-red-500" @click="removeRow(manageForm.domeAccounts, index)">
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 mb-5">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Dome Threshold</label>
+                      <input v-model.number="manageForm.domeThreshold" type="number" min="0" :max="Math.max(0, validDomeAccounts.length)" class="input-field text-sm font-bold py-1.5" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Timeout (hours)</label>
+                      <input v-model.number="manageForm.domeTimeoutHours" type="number" min="0" step="1" class="input-field text-sm font-bold py-1.5" />
+                    </div>
+                  </div>
+                  <button type="button" class="btn-secondary w-full" :disabled="manageBusy.domeAccounts || !canManageTarget" @click="setDomeAccountsByAddress">
+                    {{ manageBusy.domeAccounts ? 'Updating...' : 'Update Recovery Rules' }}
+                  </button>
+                </div>
+
+                <!-- Dome Oracle -->
+                <div class="border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors flex flex-col">
+                  <h3 class="text-sm font-bold text-slate-900 mb-5">Dome Oracle & Activation</h3>
+                  <div class="mb-6 space-y-4">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-600 mb-1">Oracle Endpoint URL</label>
+                      <input v-model="manageForm.domeOracleUrl" type="text" class="input-field text-sm py-2 px-3" placeholder="https://oracle.example.com/status" />
+                    </div>
+                  </div>
+                  <div class="mt-auto space-y-3 pt-5 border-t border-slate-100">
+                    <button type="button" class="btn-secondary w-full" :disabled="manageBusy.domeOracle || !canManageTarget" @click="setDomeOracleByAddress">
+                      Set Oracle
+                    </button>
+                    <button type="button" class="btn-warning w-full" :disabled="manageBusy.domeActivation || !canManageTarget" @click="requestDomeActivationByAddress">
+                      Request Dome Unlock
+                    </button>
+                    <p class="text-[11px] text-slate-400 text-center font-medium leading-tight">Can only be activated once the designated inactivity timeout has elapsed.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Source Panel -->
+          <section v-else-if="activePanel === 'source'" class="bg-white shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200 flex flex-col h-[700px]">
+            <div class="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-bold text-slate-900">Contract Explorer</h2>
+                <p class="text-xs text-slate-500 font-medium">C# Smart Contract Modules</p>
+              </div>
+            </div>
+            <div class="flex flex-col md:flex-row flex-1 min-h-0">
+              <div class="md:w-72 bg-slate-50/50 border-r border-slate-200 overflow-y-auto hidden md:block">
+                <nav class="flex-1 p-3 space-y-1">
                   <button
-                    class="aa-ghost"
-                    @click="generateUUID"
-                    :disabled="isEvmWallet"
+                    v-for="(file, idx) in contractFiles"
+                    :key="file.name"
+                    @click="activeFileIdx = idx"
+                    :class="[
+                      activeFileIdx === idx ? 'bg-neo-100 text-neo-900 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium',
+                      'group w-full flex items-center px-3 py-2.5 text-[13px] rounded-lg font-mono text-left transition-all duration-200'
+                    ]"
                   >
-                    Generate
+                    <svg class="w-4 h-4 mr-2 opacity-70" :class="activeFileIdx === idx ? 'text-neo-600' : 'text-slate-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="truncate" :title="file.name">{{ file.name }}</span>
                   </button>
-                </div>
-                <p class="aa-help" v-if="isEvmWallet">Using connected wallet public key as account ID.</p>
+                </nav>
               </div>
-
-              <div class="aa-field">
-                <label>Derived Account Address</label>
-                <input :value="computedAddress || '—'" readonly type="text" class="aa-input mono" />
-              </div>
-            </div>
-
-            <div class="aa-grid two">
-              <article class="aa-subcard">
-                <div class="aa-subcard__head">
-                  <h3>Admins</h3>
-                  <button class="aa-link" @click="addRow(createForm.admins)">+ Add</button>
-                </div>
-                <div v-for="(admin, index) in createForm.admins" :key="`create-admin-${index}`" class="aa-row">
-                  <input v-model="createForm.admins[index]" type="text" class="aa-input mono" placeholder="N... or 0x..." />
-                  <button class="aa-icon-btn" @click="removeRow(createForm.admins, index)">✕</button>
-                </div>
-                <div class="aa-field compact">
-                  <label>Threshold</label>
-                  <input v-model.number="createForm.adminThreshold" type="number" min="1" :max="Math.max(1, validCreateAdmins.length)" class="aa-input" />
-                </div>
-              </article>
-
-              <article class="aa-subcard">
-                <div class="aa-subcard__head">
-                  <h3>Managers</h3>
-                  <button class="aa-link" @click="addRow(createForm.managers)">+ Add</button>
-                </div>
-                <div v-for="(manager, index) in createForm.managers" :key="`create-manager-${index}`" class="aa-row">
-                  <input v-model="createForm.managers[index]" type="text" class="aa-input mono" placeholder="N... or 0x..." />
-                  <button class="aa-icon-btn" @click="removeRow(createForm.managers, index)">✕</button>
-                </div>
-                <div class="aa-field compact">
-                  <label>Threshold</label>
-                  <input v-model.number="createForm.managerThreshold" type="number" min="0" :max="Math.max(0, validCreateManagers.length)" class="aa-input" />
-                </div>
-              </article>
-            </div>
-
-            <div class="aa-field">
-              <label>Verification Script (Hex)</label>
-              <textarea :value="computedScriptHex || ''" readonly class="aa-textarea mono" rows="4" />
-            </div>
-
-            <div class="aa-actions">
-              <button class="aa-primary" :disabled="isCreating || !canCreate" @click="createAccount">
-                {{ isCreating ? 'Submitting...' : 'Register Abstract Account' }}
-              </button>
-              <span class="aa-help">Requires wallet signature and CalledByEntry scope.</span>
-            </div>
-          </section>
-
-          <section v-if="activePanel === 'manage'" class="aa-card animate-rise" style="--delay: 130ms">
-            <div class="aa-card__head">
-              <h2>Manage Account Governance</h2>
-              <p>Operate policy and recovery controls for an existing abstract account.</p>
-            </div>
-
-            <div class="aa-field">
-              <label>Target Account Address (Neo N3)</label>
-              <input
-                v-model="manageForm.accountAddress"
-                type="text"
-                class="aa-input mono"
-                placeholder="N..."
-              />
-              <p class="aa-help">This address is used by all management transactions below.</p>
-            </div>
-
-            <div class="aa-actions manage-load-actions">
-              <button class="aa-secondary" :disabled="manageBusy.load || !canManageTarget" @click="loadAccountConfiguration">
-                {{ manageBusy.load ? 'Loading...' : 'Load Current Configuration' }}
-              </button>
-              <span class="aa-help">Reads current admin, manager, and dome settings from chain.</span>
-            </div>
-
-            <div v-if="manageSnapshot.loadedAt" class="manage-meta">
-              <p><strong>Loaded:</strong> {{ manageSnapshot.loadedAt }}</p>
-              <p v-if="manageSnapshot.accountIdHex"><strong>Account ID:</strong> <span class="mono">{{ manageSnapshot.accountIdHex }}</span></p>
-              <p><strong>Last Active (ms):</strong> {{ manageSnapshot.lastActiveMs }}</p>
-              <p v-if="manageSnapshot.domeUnlocked !== null">
-                <strong>Dome Oracle Unlocked:</strong> {{ manageSnapshot.domeUnlocked ? 'Yes' : 'No' }}
-              </p>
-            </div>
-
-            <div class="aa-grid two">
-              <article class="aa-subcard">
-                <div class="aa-subcard__head">
-                  <h3>Update Admin Set</h3>
-                  <button class="aa-link" @click="addRow(manageForm.admins)">+ Add</button>
-                </div>
-                <div v-for="(admin, index) in manageForm.admins" :key="`manage-admin-${index}`" class="aa-row">
-                  <input v-model="manageForm.admins[index]" type="text" class="aa-input mono" placeholder="N... or 0x..." />
-                  <button class="aa-icon-btn" @click="removeRow(manageForm.admins, index)">✕</button>
-                </div>
-                <div class="aa-field compact">
-                  <label>Threshold</label>
-                  <input v-model.number="manageForm.adminThreshold" type="number" min="1" :max="Math.max(1, validManageAdmins.length)" class="aa-input" />
-                </div>
-                <button class="aa-secondary" :disabled="manageBusy.admins || !canManageTarget || validManageAdmins.length === 0" @click="setAdminsByAddress">
-                  {{ manageBusy.admins ? 'Updating...' : 'Submit Admin Update' }}
-                </button>
-              </article>
-
-              <article class="aa-subcard">
-                <div class="aa-subcard__head">
-                  <h3>Update Manager Set</h3>
-                  <button class="aa-link" @click="addRow(manageForm.managers)">+ Add</button>
-                </div>
-                <div v-for="(manager, index) in manageForm.managers" :key="`manage-manager-${index}`" class="aa-row">
-                  <input v-model="manageForm.managers[index]" type="text" class="aa-input mono" placeholder="N... or 0x..." />
-                  <button class="aa-icon-btn" @click="removeRow(manageForm.managers, index)">✕</button>
-                </div>
-                <div class="aa-field compact">
-                  <label>Threshold</label>
-                  <input v-model.number="manageForm.managerThreshold" type="number" min="0" :max="Math.max(0, validManageManagers.length)" class="aa-input" />
-                </div>
-                <button class="aa-secondary" :disabled="manageBusy.managers || !canManageTarget" @click="setManagersByAddress">
-                  {{ manageBusy.managers ? 'Updating...' : 'Submit Manager Update' }}
-                </button>
-              </article>
-            </div>
-
-            <div class="aa-grid two">
-              <article class="aa-subcard">
-                <div class="aa-subcard__head">
-                  <h3>Dome Recovery Accounts</h3>
-                  <button class="aa-link" @click="addRow(manageForm.domeAccounts)">+ Add</button>
-                </div>
-                <div v-for="(dome, index) in manageForm.domeAccounts" :key="`dome-${index}`" class="aa-row">
-                  <input v-model="manageForm.domeAccounts[index]" type="text" class="aa-input mono" placeholder="N... or 0x..." />
-                  <button class="aa-icon-btn" @click="removeRow(manageForm.domeAccounts, index)">✕</button>
-                </div>
-                <div class="aa-grid two compact-grid">
-                  <div class="aa-field compact">
-                    <label>Dome Threshold</label>
-                    <input v-model.number="manageForm.domeThreshold" type="number" min="0" :max="Math.max(0, validDomeAccounts.length)" class="aa-input" />
+              <div class="flex-1 bg-[#0d1117] flex flex-col min-w-0">
+                <div class="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
+                  <div class="flex items-center gap-2">
+                    <div class="flex gap-1.5 mr-2">
+                      <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                    </div>
+                    <span class="text-xs font-mono text-slate-400">{{ contractFiles[activeFileIdx]?.name }}</span>
                   </div>
-                  <div class="aa-field compact">
-                    <label>Timeout (hours)</label>
-                    <input v-model.number="manageForm.domeTimeoutHours" type="number" min="0" step="1" class="aa-input" />
-                  </div>
-                </div>
-                <button class="aa-secondary" :disabled="manageBusy.domeAccounts || !canManageTarget" @click="setDomeAccountsByAddress">
-                  {{ manageBusy.domeAccounts ? 'Updating...' : 'Update Dome Configuration' }}
-                </button>
-              </article>
-
-              <article class="aa-subcard">
-                <div class="aa-subcard__head">
-                  <h3>Dome Oracle</h3>
-                </div>
-                <div class="aa-field">
-                  <label>Oracle URL</label>
-                  <input v-model="manageForm.domeOracleUrl" type="text" class="aa-input" placeholder="https://oracle.example.com/dome/status" />
-                </div>
-                <div class="aa-stack-actions">
-                  <button class="aa-secondary" :disabled="manageBusy.domeOracle || !canManageTarget" @click="setDomeOracleByAddress">
-                    {{ manageBusy.domeOracle ? 'Updating...' : 'Set Dome Oracle' }}
-                  </button>
-                  <button class="aa-warning" :disabled="manageBusy.domeActivation || !canManageTarget" @click="requestDomeActivationByAddress">
-                    {{ manageBusy.domeActivation ? 'Requesting...' : 'Request Dome Activation' }}
+                  <button type="button" class="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 transition-colors" @click="copyCode">
+                    {{ copied ? 'Copied!' : 'Copy Code' }}
                   </button>
                 </div>
-                <p class="aa-help">Use activation only when inactivity timeout has elapsed and recovery should be enabled.</p>
-              </article>
-            </div>
-          </section>
-
-          <section v-if="activePanel === 'source'" class="aa-card animate-rise" style="--delay: 130ms">
-            <div class="aa-card__head">
-              <h2>Contract Source Explorer</h2>
-              <p>Browse the exact contract modules shipped with this tool.</p>
-            </div>
-
-            <div class="code-shell">
-              <aside class="code-files">
-                <button
-                  v-for="(file, idx) in contractFiles"
-                  :key="file.name"
-                  class="code-file"
-                  :class="{ active: activeFileIdx === idx }"
-                  @click="activeFileIdx = idx"
-                >
-                  {{ file.name }}
-                </button>
-              </aside>
-              <div class="code-view">
-                <div class="code-head">
-                  <span>{{ contractFiles[activeFileIdx]?.name }}</span>
-                  <button class="aa-ghost mini" @click="copyCode">{{ copied ? 'Copied' : 'Copy' }}</button>
-                </div>
-                <div class="code-body">
+                <div class="flex-1 overflow-auto p-4 md:p-6 text-[13px] font-mono text-slate-300 custom-scrollbar">
                   <highlightjs autodetect :code="contractFiles[activeFileIdx]?.content" />
                 </div>
               </div>
             </div>
           </section>
-        </main>
+        </transition>
+      </main>
 
-        <aside class="aa-sidebar animate-rise" style="--delay: 180ms">
-          <article class="aa-card slim">
-            <h3>Checklist</h3>
-            <ul class="checklist">
-              <li :class="{ ok: walletConnected }">Wallet connected</li>
-              <li :class="{ ok: !!createForm.accountId }">Account ID prepared</li>
-              <li :class="{ ok: validCreateAdmins.length > 0 }">At least one admin</li>
-              <li :class="{ ok: !!computedAddress }">Deterministic address derived</li>
-              <li :class="{ ok: !!manageForm.accountAddress }">Manage target selected</li>
-            </ul>
-          </article>
+      <!-- Sidebar -->
+      <aside class="hidden lg:block lg:col-span-4 xl:col-span-3 space-y-6 animate-fade-in" style="animation-delay: 150ms;">
+        <div class="bg-white shadow-lg shadow-slate-200/40 rounded-2xl border border-slate-200/60 p-6 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-100 to-transparent rounded-bl-full -mr-4 -mt-4"></div>
+          <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-5">Pre-flight Checklist</h3>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <div :class="walletConnected ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'" class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors">
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+              </div>
+              <div>
+                <span :class="walletConnected ? 'text-slate-900 font-bold' : 'text-slate-500 font-medium'" class="block text-sm">Wallet Connected</span>
+                <span v-if="!walletConnected" class="text-xs text-slate-400">Connect to continue</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div :class="createForm.accountId ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'" class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors">
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+              </div>
+              <div>
+                <span :class="createForm.accountId ? 'text-slate-900 font-bold' : 'text-slate-500 font-medium'" class="block text-sm">Account ID</span>
+                <span v-if="!createForm.accountId" class="text-xs text-slate-400">Provide an identifier</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div :class="validCreateAdmins.length > 0 ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'" class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors">
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+              </div>
+              <div>
+                <span :class="validCreateAdmins.length > 0 ? 'text-slate-900 font-bold' : 'text-slate-500 font-medium'" class="block text-sm">Valid Admin</span>
+                <span v-if="validCreateAdmins.length === 0" class="text-xs text-slate-400">Add at least one</span>
+              </div>
+            </li>
+          </ul>
+        </div>
 
-          <article class="aa-card slim">
-            <h3>Recent Transactions</h3>
-            <div v-if="recentTransactions.length === 0" class="empty-note">No transactions yet.</div>
-            <ul v-else class="tx-list">
-              <li v-for="tx in recentTransactions" :key="tx.txid" class="tx-item">
-                <div>
-                  <p class="tx-label">{{ tx.label }}</p>
-                  <p class="tx-time">{{ tx.when }}</p>
-                </div>
-                <router-link :to="`/transaction-info/${tx.txid}`" class="tx-link">View</router-link>
-              </li>
-            </ul>
-          </article>
-
-          <article class="aa-card slim" v-if="lastTxHash">
-            <h3>Latest Tx Hash</h3>
-            <p class="mono hash">{{ lastTxHash }}</p>
-          </article>
-        </aside>
-      </div>
-    </section>
+        <div class="bg-white shadow-lg shadow-slate-200/40 rounded-2xl border border-slate-200/60 p-6">
+          <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-5">Recent Activity</h3>
+          <div v-if="recentTransactions.length === 0" class="flex flex-col items-center justify-center py-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <span class="text-sm text-slate-500 font-medium">No transactions yet</span>
+          </div>
+          <ul v-else class="space-y-3">
+            <li v-for="tx in recentTransactions" :key="tx.txid" class="text-sm border border-slate-100 rounded-xl bg-slate-50/50 p-4 hover:bg-slate-50 hover:border-slate-200 transition-colors">
+              <div class="flex justify-between items-start mb-2">
+                <p class="font-bold text-slate-800">{{ tx.label }}</p>
+                <router-link :to="`/transaction-info/${tx.txid}`" class="text-neo-600 hover:text-neo-800 font-bold text-[11px] uppercase tracking-wider bg-neo-100/50 px-2 py-1 rounded">View</router-link>
+              </div>
+              <p class="text-xs text-slate-500 font-medium">{{ tx.when }}</p>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
-import Breadcrumb from '@/components/common/Breadcrumb.vue';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
 import { useToast } from 'vue-toastification';
@@ -324,9 +415,9 @@ const toast = useToast();
 let neonJs = null;
 
 const tabs = [
-  { key: 'create', label: 'Create' },
-  { key: 'manage', label: 'Manage' },
-  { key: 'source', label: 'Source' }
+  { key: 'create', label: 'Create Account' },
+  { key: 'manage', label: 'Manage Governance' },
+  { key: 'source', label: 'View Source' }
 ];
 
 const activePanel = ref('create');
@@ -698,38 +789,6 @@ async function invokeOperation(label, operation, args) {
   toast.success(`${label} transaction submitted.`);
 }
 
-async function connectWallet() {
-  try {
-    if (window.neo3Dapi?.getAccount) {
-      const result = await window.neo3Dapi.getAccount();
-      const address = result?.address || result?.account?.address || '';
-      if (!address) throw new Error('Wallet did not return an account address.');
-      walletService.setConnected(address);
-      toast.success(`Connected: ${address}`);
-      return;
-    }
-
-    if (window.NEOLineN3?.getAccount) {
-      const result = await window.NEOLineN3.getAccount();
-      const address = result?.address || result?.account?.address || '';
-      if (!address) throw new Error('Wallet did not return an account address.');
-      walletService.setConnected(address);
-      toast.success(`Connected: ${address}`);
-      return;
-    }
-
-    throw new Error('No supported Neo wallet provider detected in browser.');
-  } catch (err) {
-    console.error(err);
-    toast.error(`Connect failed: ${formatErrorMessage(err)}`);
-  }
-}
-
-function disconnectWallet() {
-  walletService.setConnected('');
-  toast.info('Wallet disconnected.');
-}
-
 async function loadAccountConfiguration() {
   if (!requireWallet() || !canManageTarget.value) return;
   if (!neonJs) {
@@ -963,537 +1022,40 @@ function copyCode() {
 </script>
 
 <style scoped>
-.aa-tool-page {
-  --aa-ink: #13222d;
-  --aa-ink-soft: #52606a;
-  --aa-paper: #f4f6f2;
-  --aa-surface: #fffef8;
-  --aa-surface-alt: #eef3ea;
-  --aa-border: #d0d9cf;
-  --aa-accent: #0f766e;
-  --aa-accent-strong: #0b5f58;
-  --aa-warn: #c95b20;
-  --aa-shadow: 0 14px 38px rgba(16, 45, 45, 0.12);
-  background:
-    radial-gradient(circle at 10% 0%, #d8e7df 0%, transparent 42%),
-    radial-gradient(circle at 100% 18%, #f6dfc6 0%, transparent 38%),
-    linear-gradient(160deg, #f0f4ef 0%, #f9f7ef 100%);
-  min-height: 100vh;
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.aa-shell {
-  font-family: 'Space Grotesk', 'Avenir Next', 'Trebuchet MS', sans-serif;
-  color: var(--aa-ink);
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateX(-15px);
 }
 
-.aa-hero,
-.aa-card,
-.aa-tabs {
-  border: 1px solid var(--aa-border);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--aa-surface) 94%, white 6%);
-  box-shadow: var(--aa-shadow);
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(15px);
 }
 
-.aa-hero {
-  padding: 1.35rem 1.5rem;
-  margin-top: 1rem;
-  position: relative;
-  overflow: hidden;
+/* Base custom scrollbar for code explorer */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
-
-.aa-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, rgba(15, 118, 110, 0.08), rgba(201, 91, 32, 0.08));
-  pointer-events: none;
-}
-
-.aa-hero__badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: #d8ece8;
-  color: #0d5e57;
-  font-weight: 700;
-  font-size: 0.74rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.7rem;
-  margin-bottom: 0.75rem;
-}
-
-.aa-hero__title {
-  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
-  line-height: 1.15;
-  font-weight: 800;
-  margin: 0;
-}
-
-.aa-hero__subtitle {
-  margin-top: 0.55rem;
-  margin-bottom: 1rem;
-  color: var(--aa-ink-soft);
-  max-width: 54rem;
-}
-
-.aa-connection {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid var(--aa-border);
-  border-radius: 999px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  background: #ffffffcf;
-}
-
-.aa-connection.connected {
-  color: #0d5f58;
-}
-
-.aa-connection.disconnected {
-  color: #7a4b32;
-}
-
-.aa-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.aa-hero-actions {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.aa-tabs {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  padding: 0.5rem;
-}
-
-.aa-tab {
-  border: 1px solid transparent;
+.custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 12px;
-  padding: 0.65rem 0.8rem;
-  font-weight: 700;
-  color: var(--aa-ink-soft);
-  transition: all 160ms ease;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #30363d;
+  border-radius: 10px;
+  border: 2px solid #0d1117;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #484f58;
 }
 
-.aa-tab.active {
-  background: #ffffff;
-  border-color: #b7d0cb;
-  color: #084d47;
-}
-
-.aa-layout {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
-  gap: 1rem;
-}
-
-.aa-main,
-.aa-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.aa-card {
-  padding: 1.1rem;
-}
-
-.aa-card.slim {
-  padding: 1rem;
-}
-
-.aa-card__head h2,
-.aa-card__head h3 {
-  margin: 0;
-  font-weight: 800;
-}
-
-.aa-card__head p {
-  margin-top: 0.25rem;
-  color: var(--aa-ink-soft);
-  font-size: 0.92rem;
-}
-
-.aa-grid {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.aa-grid.two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.aa-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-top: 0.85rem;
-}
-
-.aa-field.compact {
-  margin-top: 0.45rem;
-}
-
-.aa-field label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #35515f;
-}
-
-.aa-input,
-.aa-textarea {
-  border: 1px solid #bdc9bf;
-  border-radius: 12px;
-  background: #fffffc;
-  padding: 0.62rem 0.72rem;
-  color: var(--aa-ink);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
-}
-
-.aa-input:focus,
-.aa-textarea:focus {
-  outline: none;
-  border-color: #0f766e;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.13);
-}
-
-.mono {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-}
-
-.aa-inline {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
-}
-
-.aa-help {
-  font-size: 0.79rem;
-  color: var(--aa-ink-soft);
-}
-
-.aa-subcard {
-  border: 1px solid #cad5cb;
-  border-radius: 15px;
-  background: #f8fbf6;
-  padding: 0.8rem;
-}
-
-.aa-subcard__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.aa-subcard__head h3 {
-  font-size: 0.98rem;
-}
-
-.aa-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.42rem;
-  margin-top: 0.45rem;
-}
-
-.aa-icon-btn,
-.aa-link,
-.aa-ghost,
-.aa-secondary,
-.aa-primary,
-.aa-warning {
-  border-radius: 11px;
-  border: 1px solid transparent;
-  font-weight: 700;
-  transition: all 150ms ease;
-}
-
-.aa-link {
-  border: none;
-  background: none;
-  color: #0e6962;
-  font-size: 0.8rem;
-}
-
-.aa-ghost {
-  border-color: #bdd1cc;
-  background: #ffffff;
-  color: #205c58;
-  padding: 0.58rem 0.75rem;
-}
-
-.aa-ghost.mini {
-  font-size: 0.78rem;
-  padding: 0.35rem 0.58rem;
-}
-
-.aa-icon-btn {
-  border-color: #d3dad4;
-  background: #ffffff;
-  color: #5e6f7a;
-  width: 2.2rem;
-}
-
-.aa-actions {
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.manage-load-actions {
-  margin-top: 0.25rem;
-}
-
-.manage-meta {
-  border: 1px solid #c6d7cf;
-  background: #eef7f3;
-  border-radius: 12px;
-  padding: 0.6rem 0.72rem;
-  margin-top: 0.5rem;
-  display: grid;
-  gap: 0.2rem;
-  font-size: 0.8rem;
-  color: #2a4f58;
-}
-
-.manage-meta p {
-  margin: 0;
-}
-
-.aa-primary,
-.aa-secondary,
-.aa-warning {
-  padding: 0.6rem 0.88rem;
-  cursor: pointer;
-}
-
-.aa-primary {
-  background: linear-gradient(120deg, var(--aa-accent), #1f8f86);
-  color: #f8ffff;
-}
-
-.aa-secondary {
-  background: #e4efea;
-  border-color: #bad0ca;
-  color: #0f5f58;
-  margin-top: 0.8rem;
-}
-
-.aa-warning {
-  background: #fbe4d6;
-  border-color: #e8b292;
-  color: #8a3e16;
-}
-
-.aa-stack-actions {
-  display: grid;
-  gap: 0.55rem;
-  margin-top: 0.4rem;
-}
-
-.aa-primary:disabled,
-.aa-secondary:disabled,
-.aa-warning:disabled,
-.aa-ghost:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.compact-grid {
-  margin-top: 0.4rem;
-}
-
-.code-shell {
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
-  border: 1px solid #2a3a3f;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.code-files {
-  background: #132126;
-  max-height: 520px;
-  overflow: auto;
-}
-
-.code-file {
-  width: 100%;
-  text-align: left;
-  border: none;
-  border-bottom: 1px solid rgba(179, 199, 193, 0.22);
-  background: transparent;
-  color: #b7cec7;
-  padding: 0.62rem 0.8rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78rem;
-}
-
-.code-file.active {
-  background: #20464a;
-  color: #dbf5ef;
-}
-
-.code-view {
-  background: #0b1113;
-  color: #d8e0dd;
-}
-
-.code-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(194, 208, 201, 0.18);
-  padding: 0.55rem 0.75rem;
-  font-size: 0.83rem;
-}
-
-.code-body {
-  max-height: 520px;
-  overflow: auto;
-  padding: 0.8rem;
-}
-
-:deep(.code-body pre) {
-  margin: 0;
+:deep(.hljs) {
   background: transparent !important;
-}
-
-.checklist,
-.tx-list {
-  list-style: none;
   padding: 0;
-  margin: 0.8rem 0 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.checklist li {
-  border-radius: 10px;
-  border: 1px solid #d3ddd4;
-  background: #fbfcf8;
-  padding: 0.46rem 0.58rem;
-  font-size: 0.85rem;
-  color: #4f606a;
-}
-
-.checklist li.ok {
-  color: #0f5f58;
-  border-color: #9ec8b9;
-  background: #eaf5f1;
-}
-
-.tx-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.6rem;
-  border: 1px solid #d3ddd4;
-  background: #fbfcf8;
-  border-radius: 10px;
-  padding: 0.5rem 0.55rem;
-}
-
-.tx-label {
-  margin: 0;
-  font-weight: 700;
-  font-size: 0.84rem;
-}
-
-.tx-time {
-  margin: 0.1rem 0 0;
-  font-size: 0.74rem;
-  color: #65757d;
-}
-
-.tx-link {
-  font-size: 0.78rem;
-  color: #0e6b64;
-  font-weight: 700;
-}
-
-.hash {
-  margin-top: 0.7rem;
-  word-break: break-all;
-  font-size: 0.74rem;
-  background: #f4f8f4;
-  border: 1px solid #d0dad1;
-  border-radius: 10px;
-  padding: 0.5rem;
-}
-
-.empty-note {
-  margin-top: 0.7rem;
-  font-size: 0.84rem;
-  color: #708089;
-}
-
-.animate-rise {
-  animation: rise-in 360ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
-  animation-delay: var(--delay, 0ms);
-}
-
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(9px) scale(0.992);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@media (max-width: 1100px) {
-  .aa-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 860px) {
-  .aa-grid.two,
-  .code-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .code-files {
-    max-height: 220px;
-  }
-}
-
-@media (max-width: 620px) {
-  .aa-tabs {
-    grid-template-columns: 1fr;
-  }
-
-  .aa-inline {
-    grid-template-columns: 1fr;
-  }
-
-  .aa-hero,
-  .aa-card {
-    border-radius: 15px;
-  }
 }
 </style>
