@@ -43,4 +43,5 @@ Use the sidebar to explore the technical depths of this protocol:
 * **Dome Recovery**: Learn how social recovery safely orchestrates a fallback.
 * **Custom Verifiers**: Explore how to write C# contracts that govern account verification.
 * **Ethereum / EVM Integration**: Instructions for cross-chain users.
+* **Mixed Multi-Sig (N3 + EVM)**: How to aggregate native Neo and MetaMask signatures simultaneously.
 * **SDK Usage**: A guide on how to integrate the JavaScript SDK into your dApps.

@@ -55,6 +55,7 @@ import docDataFlow from '@/assets/docs/data-flow.md?raw';
 import docDome from '@/assets/docs/dome-recovery.md?raw';
 import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
 import docEvm from '@/assets/docs/evm-integration.md?raw';
+import docMixed from '@/assets/docs/mixed-multisig.md?raw';
 import docSdk from '@/assets/docs/sdk-usage.md?raw';
 
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
@@ -93,6 +94,7 @@ const docs = {
   dome: { title: 'Dome Recovery', content: docDome },
   verifiers: { title: 'Custom Verifiers', content: docVerifiers },
   evm: { title: 'Ethereum / EVM Integration', content: docEvm },
+  mixed: { title: 'Mixed Multi-Sig (N3 + EVM)', content: docMixed },
   sdk: { title: 'SDK Integration', content: docSdk }
 };
 
