@@ -73,12 +73,13 @@ const marked = new Marked(
 );
 
 // We override marked's default code block renderer.
-// The marked-highlight extension wraps output in <pre><code>, which breaks mermaid.
 const renderer = new marked.Renderer();
 const originalCode = renderer.code.bind(renderer);
 renderer.code = (token) => {
   if (token.lang === 'mermaid') {
-    return `<div class="mermaid-wrapper"><div class="mermaid">\n${token.text}\n</div></div>`;
+    // Generate a unique ID for each diagram
+    const id = `mermaid-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    return `<div class="mermaid-container" id="${id}" data-mermaid-code="${encodeURIComponent(token.text)}">Loading diagram...</div>`;
   }
   return originalCode(token);
 };
@@ -103,12 +104,21 @@ const renderMarkdown = async (key) => {
     const rawContent = docs[key]?.content || '# 404 Not Found';
     compiledMarkdown.value = await marked.parse(rawContent);
 
-    // After updating the DOM, tell mermaid to render the diagrams
+    // Wait for Vue to inject the new raw HTML into the DOM
     await nextTick();
-    try {
-      await mermaid.run({ querySelector: '.mermaid' });
-    } catch (e) {
-      console.warn("Mermaid rendering warning", e);
+    
+    // Manually render each mermaid diagram using the programmatic API
+    // This avoids all Vue Virtual DOM conflicts with the document.querySelectorAll mutation method.
+    const containers = document.querySelectorAll('.mermaid-container');
+    for (const container of containers) {
+      try {
+        const rawCode = decodeURIComponent(container.getAttribute('data-mermaid-code'));
+        const { svg } = await mermaid.render(`${container.id}-svg`, rawCode);
+        container.innerHTML = svg;
+      } catch (err) {
+        console.warn("Failed to render specific mermaid diagram", err);
+        container.innerHTML = `<pre class="text-red-500 text-xs overflow-auto">${err.message}</pre>`;
+      }
     }
 
   } catch (err) {
