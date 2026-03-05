@@ -1,0 +1,7 @@
+node_modules/
+bin/
+obj/
+.env
+.idea/
+.vscode/
+dist/
