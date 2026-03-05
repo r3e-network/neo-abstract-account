@@ -20,13 +20,14 @@
             </div>
             
             <h1 class="text-5xl tracking-tight font-extrabold text-slate-900 sm:text-6xl md:text-7xl mb-6">
-              <span class="block mb-2">Deterministic & Secure</span>
+              <span class="block mb-2">Programmable Accounts</span>
               <span class="block bg-clip-text text-transparent bg-gradient-to-r from-neo-600 via-teal-500 to-blue-600 drop-shadow-sm">
-                Abstract Accounts
+                for the Neo N3 Era
               </span>
             </h1>
-            <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600 sm:text-xl md:mt-6 leading-relaxed">
-              Design deterministic abstract accounts, register them on-chain, and manage governance with absolute confidence. The next evolution of Neo asset management.
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600 sm:text-xl md:mt-6 leading-relaxed">
+              <strong>Why Abstract Accounts?</strong> Standard wallets rely on single, vulnerable private keys. Neo Abstract Accounts decouple identity from cryptography, transforming static addresses into <strong>programmable smart contract logic gates</strong>. <br/><br/>
+              <strong>The Benefit:</strong> Enjoy Enterprise-grade Multi-Sig, automated Social Recovery, Meta-Transactions (Gasless interactions), and customizable Verifiers—all while maintaining a clean, deterministic proxy address.
             </p>
             
             <div class="mt-8 max-w-md mx-auto sm:flex sm:justify-center md:mt-10 gap-4">
@@ -36,20 +37,20 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </router-link>
-              <a href="https://github.com/cityofzion/neo-abstract-account" target="_blank" rel="noopener noreferrer" class="mt-3 sm:mt-0 w-full sm:w-auto flex items-center justify-center px-8 py-3.5 border-2 border-slate-200 text-base font-semibold rounded-xl text-slate-700 bg-white/50 backdrop-blur-sm hover:bg-white hover:border-slate-300 md:py-4 md:text-lg md:px-10 shadow-sm transform transition-all hover:-translate-y-1 active:translate-y-0 active:scale-95">
-                <svg class="mr-2 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+              <router-link to="/docs" class="mt-3 sm:mt-0 w-full sm:w-auto flex items-center justify-center px-8 py-3.5 border-2 border-slate-200 text-base font-semibold rounded-xl text-slate-700 bg-white/50 backdrop-blur-sm hover:bg-white hover:border-slate-300 md:py-4 md:text-lg md:px-10 shadow-sm transform transition-all hover:-translate-y-1 active:translate-y-0 active:scale-95">
+                <svg class="mr-2 -ml-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                View Source
-              </a>
+                Read Documentation
+              </router-link>
             </div>
           </div>
           <div class="relative mt-16 lg:mt-24">
             <div class="relative rounded-2xl bg-white shadow-2xl border border-slate-200 p-8 md:p-12 overflow-hidden mx-auto max-w-5xl">
               <div class="text-center mb-8">
                 <h3 class="text-2xl font-bold text-slate-900">How Abstract Accounts Work on Neo N3</h3>
-                <p class="text-slate-500 mt-2 text-sm max-w-2xl mx-auto">
-                  A unified Master Contract acts as the global gateway, meaning zero deployment cost for new users. Accounts are simply deterministic Verification Scripts.
+                <p class="text-slate-500 mt-2 text-sm max-w-3xl mx-auto">
+                  Powered by Neo N3's unique Verification Scripts. Every account acts as a tiny proxy bytecode snippet that deterministically targets the Master Entry Contract. This ensures zero deployment costs while routing all execution through a highly configurable security pipeline.
                 </p>
               </div>
               <ArchitectureDiagram />
