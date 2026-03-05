@@ -15,14 +15,47 @@ namespace AbstractAccount
             AssertNoExternalMutationDuringExecution(accountId);
 
             // For Neo native signers
-            if (CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId))) return;
+            if (CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId)))
+            {
+                UpdateLastActiveTimestamp(accountId);
+                return;
+            }
+
+            // Check if Dome conditions are met
+            bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
+            if (isDome)
+            {
+                BigInteger timeout = GetDomeTimeout(accountId);
+                if (timeout > 0)
+                {
+                    BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
+                    if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return;
+                }
+            }
 
             // MetaTx admin context is only valid for internal self-calls from ExecuteMetaTx.
             ByteString metaSignerBytes = GetMetaTxContext(accountId);
             if (metaSignerBytes != null && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
                 UInt160 metaSigner = (UInt160)metaSignerBytes;
-                if (CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), new UInt160[] { metaSigner })) return;
+                UInt160[] explicitSigners = new UInt160[] { metaSigner };
+                if (CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners))
+                {
+                    UpdateLastActiveTimestamp(accountId);
+                    return;
+                }
+                
+                // MetaTx Dome Check
+                bool metaDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
+                if (metaDome)
+                {
+                    BigInteger timeout = GetDomeTimeout(accountId);
+                    if (timeout > 0)
+                    {
+                        BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
+                        if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return;
+                    }
+                }
             }
 
             ExecutionEngine.Assert(false, "Unauthorized admin");
@@ -146,6 +179,94 @@ namespace AbstractAccount
         {
             ByteString accountId = ResolveAccountIdByAddress(accountAddress);
             return GetManagerThreshold(accountId);
+        }
+
+        public static void SetDomeAccounts(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
+        {
+            AssertIsAdmin(accountId);
+            SetDomeAccountsInternal(accountId, domes, threshold, timeoutPeriod);
+        }
+
+        public static void SetDomeAccountsByAddress(UInt160 accountAddress, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            SetDomeAccounts(accountId, domes, threshold, timeoutPeriod);
+        }
+
+        private static void SetDomeAccountsInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
+        {
+            if (domes == null)
+            {
+                domes = new Neo.SmartContract.Framework.List<UInt160>();
+            }
+            AssertUniqueAccounts(domes);
+            if (domes.Count == 0)
+            {
+                ExecutionEngine.Assert(threshold == 0, "Invalid threshold");
+                ExecutionEngine.Assert(timeoutPeriod == 0, "Invalid timeout");
+            }
+            else
+            {
+                ExecutionEngine.Assert(threshold <= domes.Count && threshold > 0, "Invalid threshold");
+                ExecutionEngine.Assert(timeoutPeriod > 0, "Invalid timeout");
+            }
+
+            StorageMap dMap = new StorageMap(Storage.CurrentContext, DomePrefix);
+            StorageMap tMap = new StorageMap(Storage.CurrentContext, DomeThresholdPrefix);
+            StorageMap toMap = new StorageMap(Storage.CurrentContext, DomeTimeoutPrefix);
+
+            dMap.Put(GetStorageKey(accountId), StdLib.Serialize(domes));
+            tMap.Put(GetStorageKey(accountId), threshold);
+            toMap.Put(GetStorageKey(accountId), timeoutPeriod);
+            ResetDomeOracleState(accountId);
+        }
+
+        [Safe]
+        public static Neo.SmartContract.Framework.List<UInt160> GetDomeAccounts(ByteString accountId)
+        {
+            StorageMap dMap = new StorageMap(Storage.CurrentContext, DomePrefix);
+            ByteString data = dMap.Get(GetStorageKey(accountId));
+            if (data == null) return new Neo.SmartContract.Framework.List<UInt160>();
+            return (Neo.SmartContract.Framework.List<UInt160>)StdLib.Deserialize(data);
+        }
+
+        [Safe]
+        public static Neo.SmartContract.Framework.List<UInt160> GetDomeAccountsByAddress(UInt160 accountAddress)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            return GetDomeAccounts(accountId);
+        }
+
+        [Safe]
+        public static int GetDomeThreshold(ByteString accountId)
+        {
+            StorageMap tMap = new StorageMap(Storage.CurrentContext, DomeThresholdPrefix);
+            ByteString data = tMap.Get(GetStorageKey(accountId));
+            if (data == null) return 0;
+            return (int)(BigInteger)data;
+        }
+
+        [Safe]
+        public static int GetDomeThresholdByAddress(UInt160 accountAddress)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            return GetDomeThreshold(accountId);
+        }
+
+        [Safe]
+        public static BigInteger GetDomeTimeout(ByteString accountId)
+        {
+            StorageMap toMap = new StorageMap(Storage.CurrentContext, DomeTimeoutPrefix);
+            ByteString data = toMap.Get(GetStorageKey(accountId));
+            if (data == null) return 0;
+            return (BigInteger)data;
+        }
+
+        [Safe]
+        public static BigInteger GetDomeTimeoutByAddress(UInt160 accountAddress)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            return GetDomeTimeout(accountId);
         }
 
         public static void SetBlacklist(ByteString accountId, UInt160 target, bool isBlacklisted)

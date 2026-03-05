@@ -1,3 +1,4 @@
+using System.Numerics;
 using Neo;
 using Neo.SmartContract;
 using Neo.SmartContract.Framework;
@@ -42,16 +43,39 @@ namespace AbstractAccount
             if (isManager) return true;
 
             ByteString metaSignerBytes = GetMetaTxContext(accountId);
-            if (metaSignerBytes == null) return false;
+            if (metaSignerBytes != null)
+            {
+                UInt160 metaSigner = (UInt160)metaSignerBytes;
+                UInt160[] explicitSigners = new UInt160[] { metaSigner };
 
-            UInt160 metaSigner = (UInt160)metaSignerBytes;
-            UInt160[] explicitSigners = new UInt160[] { metaSigner };
+                bool metaAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners);
+                if (metaAdmin) return true;
 
-            bool metaAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners);
-            if (metaAdmin) return true;
+                bool metaManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners);
+                if (metaManager) return true;
+                
+                bool metaDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
+                if (metaDome)
+                {
+                    BigInteger timeout = GetDomeTimeout(accountId);
+                    if (timeout > 0)
+                    {
+                        BigInteger lastActive = GetLastActiveTimestamp(accountId);
+                        if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return true;
+                    }
+                }
+            }
 
-            bool metaManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners);
-            if (metaManager) return true;
+            bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
+            if (isDome)
+            {
+                BigInteger timeout = GetDomeTimeout(accountId);
+                if (timeout > 0)
+                {
+                    BigInteger lastActive = GetLastActiveTimestamp(accountId);
+                    if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return true;
+                }
+            }
 
             return false;
         }

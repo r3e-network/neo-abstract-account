@@ -38,7 +38,22 @@ namespace AbstractAccount
             AssertAccountExists(accountId);
             bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
             bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
-            ExecutionEngine.Assert(isAdmin || isManager, "Unauthorized");
+            if (isAdmin || isManager)
+            {
+                UpdateLastActiveTimestamp(accountId);
+            }
+            else
+            {
+                bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
+                ExecutionEngine.Assert(isDome, "Unauthorized");
+                
+                BigInteger timeout = GetDomeTimeout(accountId);
+                ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
+                
+                BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
+                ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
+                ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+            }
             EnforceRestrictions(accountId, targetContract, method, args);
         }
 
@@ -47,7 +62,22 @@ namespace AbstractAccount
             AssertAccountExists(accountId);
             bool isAdmin = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
             bool isManager = CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
-            ExecutionEngine.Assert(isAdmin || isManager, "Unauthorized");
+            if (isAdmin || isManager)
+            {
+                UpdateLastActiveTimestamp(accountId);
+            }
+            else
+            {
+                bool isDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), verifiedSigners);
+                ExecutionEngine.Assert(isDome, "Unauthorized");
+                
+                BigInteger timeout = GetDomeTimeout(accountId);
+                ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
+                
+                BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
+                ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
+                ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+            }
             EnforceRestrictions(accountId, targetContract, method, args);
         }
 
@@ -106,6 +136,12 @@ namespace AbstractAccount
             if (method == "setManagersByAddress") return Contract.Call(targetContract, "setManagersByAddress", ExecutionCallFlags, args);
             if (method == "setManagers") return Contract.Call(targetContract, "setManagers", ExecutionCallFlags, args);
             if (method == "bindAccountAddress") return Contract.Call(targetContract, "bindAccountAddress", ExecutionCallFlags, args);
+            if (method == "setDomeAccountsByAddress") return Contract.Call(targetContract, "setDomeAccountsByAddress", ExecutionCallFlags, args);
+            if (method == "setDomeAccounts") return Contract.Call(targetContract, "setDomeAccounts", ExecutionCallFlags, args);
+            if (method == "setDomeOracleByAddress") return Contract.Call(targetContract, "setDomeOracleByAddress", ExecutionCallFlags, args);
+            if (method == "setDomeOracle") return Contract.Call(targetContract, "setDomeOracle", ExecutionCallFlags, args);
+            if (method == "requestDomeActivationByAddress") return Contract.Call(targetContract, "requestDomeActivationByAddress", ExecutionCallFlags, args);
+            if (method == "requestDomeActivation") return Contract.Call(targetContract, "requestDomeActivation", ExecutionCallFlags, args);
 
             ExecutionEngine.Assert(false, "Method not allowed by policy");
             return null;
@@ -137,6 +173,12 @@ namespace AbstractAccount
             if (method == "setManagersByAddress") return;
             if (method == "setManagers") return;
             if (method == "bindAccountAddress") return;
+            if (method == "setDomeAccountsByAddress") return;
+            if (method == "setDomeAccounts") return;
+            if (method == "setDomeOracleByAddress") return;
+            if (method == "setDomeOracle") return;
+            if (method == "requestDomeActivationByAddress") return;
+            if (method == "requestDomeActivation") return;
 
             ExecutionEngine.Assert(false, "Method not allowed by policy");
         }

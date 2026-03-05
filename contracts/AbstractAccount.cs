@@ -36,7 +36,14 @@ namespace AbstractAccount
         "setAdmins",
         "setManagersByAddress",
         "setManagers",
-        "bindAccountAddress")]
+        "bindAccountAddress",
+        "setDomeAccountsByAddress",
+        "setDomeAccounts",
+        "setDomeOracleByAddress",
+        "setDomeOracle",
+        "requestDomeActivationByAddress",
+        "requestDomeActivation",
+        "domeActivationCallback")]
     public partial class UnifiedSmartWallet : SmartContract
     {
         private static readonly byte[] DeployerKey = new byte[] { 0x00 };
@@ -55,6 +62,10 @@ namespace AbstractAccount
         private static readonly byte[] AccountAddressToIdPrefix = new byte[] { 0x0B };
         private static readonly byte[] AccountIdToAddressPrefix = new byte[] { 0x0C };
         private static readonly byte[] ExecutionLockPrefix = new byte[] { 0x0D };
+        private static readonly byte[] DomePrefix = new byte[] { 0x0E };
+        private static readonly byte[] DomeThresholdPrefix = new byte[] { 0x0F };
+        private static readonly byte[] DomeTimeoutPrefix = new byte[] { 0x10 };
+        private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
         private static readonly byte[] MetaTxContextPrefix = new byte[] { 0xFF };
 
         // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
