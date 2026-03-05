@@ -90,11 +90,11 @@ const renderMarkdown = async (key) => {
     // The marked-highlight extension wraps output in <pre><code>, which breaks mermaid.
     const renderer = new marked.Renderer();
     const originalCode = renderer.code.bind(renderer);
-    renderer.code = (code, language, isEscaped) => {
-      if (language === 'mermaid') {
-        return `<div class="mermaid-wrapper"><div class="mermaid">${code}</div></div>`;
+    renderer.code = (token) => {
+      if (token.lang === 'mermaid') {
+        return `<div class="mermaid-wrapper"><div class="mermaid">${token.text}</div></div>`;
       }
-      return originalCode(code, language, isEscaped);
+      return originalCode(token);
     };
     
     marked.use({ renderer });
