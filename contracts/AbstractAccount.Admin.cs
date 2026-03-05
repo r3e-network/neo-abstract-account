@@ -29,16 +29,18 @@ namespace AbstractAccount
                 if (timeout > 0)
                 {
                     BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
-                    if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return;
+                    if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId))
+                    {
+                        UpdateLastActiveTimestamp(accountId);
+                        return;
+                    }
                 }
             }
 
             // MetaTx admin context is only valid for internal self-calls from ExecuteMetaTx.
-            ByteString metaSignerBytes = GetMetaTxContext(accountId);
-            if (metaSignerBytes != null && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
+            UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
+            if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                UInt160 metaSigner = (UInt160)metaSignerBytes;
-                UInt160[] explicitSigners = new UInt160[] { metaSigner };
                 if (CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners))
                 {
                     UpdateLastActiveTimestamp(accountId);
@@ -53,7 +55,11 @@ namespace AbstractAccount
                     if (timeout > 0)
                     {
                         BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
-                        if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return;
+                        if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId))
+                        {
+                            UpdateLastActiveTimestamp(accountId);
+                            return;
+                        }
                     }
                 }
             }

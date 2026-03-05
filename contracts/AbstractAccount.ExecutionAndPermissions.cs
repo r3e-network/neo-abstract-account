@@ -56,13 +56,14 @@ namespace AbstractAccount
                 {
                     bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
                     ExecutionEngine.Assert(isDome, "Unauthorized");
-                    
+
                     BigInteger timeout = GetDomeTimeout(accountId);
                     ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
-                    
+
                     BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
                     ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
                     ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+                    UpdateLastActiveTimestamp(accountId);
                 }
             }
             EnforceRestrictions(accountId, targetContract, method, args);
@@ -91,13 +92,14 @@ namespace AbstractAccount
                 {
                     bool isDome = CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), verifiedSigners);
                     ExecutionEngine.Assert(isDome, "Unauthorized");
-                    
+
                     BigInteger timeout = GetDomeTimeout(accountId);
                     ExecutionEngine.Assert(timeout > 0, "Dome account not configured");
-                    
+
                     BigInteger lastActive = GetLastActiveTimestampForAuth(accountId);
                     ExecutionEngine.Assert(Runtime.Time >= lastActive + timeout, "Dome account not active yet");
                     ExecutionEngine.Assert(IsDomeOracleUnlocked(accountId), "Dome account not unlocked by oracle");
+                    UpdateLastActiveTimestamp(accountId);
                 }
             }
             EnforceRestrictions(accountId, targetContract, method, args);
@@ -105,6 +107,8 @@ namespace AbstractAccount
 
         private static void EnforceRestrictions(ByteString accountId, UInt160 targetContract, string method, object[] args)
         {
+            AssertMethodAllowedByPolicy(targetContract, method);
+
             StorageMap blacklistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(BlacklistPrefix, GetStorageKey(accountId)));
             ByteString isBlacklisted = blacklistMap.Get(targetContract);
             ExecutionEngine.Assert(isBlacklisted == null || isBlacklisted != (ByteString)new byte[] { 1 }, "Target is blacklisted");
@@ -118,13 +122,13 @@ namespace AbstractAccount
                 ExecutionEngine.Assert(isWhitelisted != null && isWhitelisted == (ByteString)new byte[] { 1 }, "Target is not in whitelist");
             }
 
-            if (method == "transfer" && args.Length >= 3)
+            if (method == "transfer" || method == "approve")
             {
-                BigInteger amount = (BigInteger)args[2];
                 StorageMap maxMap = new StorageMap(Storage.CurrentContext, Helper.Concat(MaxTransferPrefix, GetStorageKey(accountId)));
                 ByteString maxValBytes = maxMap.Get(targetContract);
                 if (maxValBytes != null)
                 {
+                    BigInteger amount = GetRestrictedAmount(method, args);
                     BigInteger maxVal = (BigInteger)maxValBytes;
                     ExecutionEngine.Assert(maxVal <= 0 || amount <= maxVal, "Amount exceeds max limit");
                 }
@@ -134,6 +138,72 @@ namespace AbstractAccount
         private static object DispatchContractCall(UInt160 targetContract, string method, object[] args)
         {
             return Contract.Call(targetContract, method, ExecutionCallFlags, args);
+        }
+
+        private static BigInteger GetRestrictedAmount(string method, object[] args)
+        {
+            ExecutionEngine.Assert(args != null, "Invalid args");
+
+            if (method == "transfer")
+            {
+                ExecutionEngine.Assert(args.Length >= 3 && args[2] is BigInteger, "Invalid transfer amount");
+                return (BigInteger)args[2];
+            }
+
+            // Common signatures:
+            // - ERC20-like approve(spender, amount) => args[1]
+            // - Neo-style approve(from, spender, amount) => args[2]
+            if (args.Length >= 2 && args[1] is BigInteger) return (BigInteger)args[1];
+            if (args.Length >= 3 && args[2] is BigInteger) return (BigInteger)args[2];
+
+            ExecutionEngine.Assert(false, "Invalid approve amount");
+            return 0;
+        }
+
+        private static void AssertMethodAllowedByPolicy(UInt160 targetContract, string method)
+        {
+            ExecutionEngine.Assert(method != null && method.Length > 0, "Invalid method");
+            bool isSelfTarget = targetContract == Runtime.ExecutingScriptHash;
+
+            if (method == "transfer") return;
+            if (method == "balanceOf") return;
+            if (method == "symbol") return;
+            if (method == "decimals") return;
+            if (method == "totalSupply") return;
+            if (method == "allowance") return;
+            if (method == "approve") return;
+
+            if (method == "getNonce" ||
+                method == "getNonceForAccount" ||
+                method == "getNonceForAddress" ||
+                method == "setWhitelistByAddress" ||
+                method == "setWhitelistModeByAddress" ||
+                method == "setWhitelist" ||
+                method == "setWhitelistMode" ||
+                method == "setBlacklistByAddress" ||
+                method == "setBlacklist" ||
+                method == "setMaxTransferByAddress" ||
+                method == "setMaxTransfer" ||
+                method == "setAdminsByAddress" ||
+                method == "setAdmins" ||
+                method == "setManagersByAddress" ||
+                method == "setManagers" ||
+                method == "bindAccountAddress" ||
+                method == "setDomeAccountsByAddress" ||
+                method == "setDomeAccounts" ||
+                method == "setDomeOracleByAddress" ||
+                method == "setDomeOracle" ||
+                method == "setVerifierContractByAddress" ||
+                method == "setVerifierContract" ||
+                method == "requestDomeActivationByAddress" ||
+                method == "requestDomeActivation" ||
+                method == "domeActivationCallback")
+            {
+                ExecutionEngine.Assert(isSelfTarget, "Internal method requires self target");
+                return;
+            }
+
+            ExecutionEngine.Assert(false, "Method not allowed by policy");
         }
 
         private static bool CheckNativeSignatures(Neo.SmartContract.Framework.List<UInt160> roles, int threshold)

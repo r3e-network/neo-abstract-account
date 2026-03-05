@@ -94,8 +94,7 @@ namespace AbstractAccount
             int managerThreshold)
         {
             bool adminAuthorized = CheckNativeSignatures(admins, adminThreshold);
-            bool managerAuthorized = CheckNativeSignatures(managers, managerThreshold);
-            ExecutionEngine.Assert(adminAuthorized || managerAuthorized, "Unauthorized account initialization");
+            ExecutionEngine.Assert(adminAuthorized, "Unauthorized account initialization");
         }
 
         private static void SetVerifyContext(ByteString accountId, UInt160 targetContract)
@@ -118,22 +117,60 @@ namespace AbstractAccount
             map.Delete(GetStorageKey(accountId));
         }
 
-        private static void SetMetaTxContext(ByteString accountId, UInt160 signerHash)
+        private static void SetMetaTxContext(ByteString accountId, UInt160[] signerHashes)
         {
+            ExecutionEngine.Assert(signerHashes != null && signerHashes.Length > 0, "Missing meta-tx signers");
+            byte[] packed = PackSignerHashes(signerHashes);
             StorageMap map = new StorageMap(Storage.CurrentContext, MetaTxContextPrefix);
-            map.Put(GetStorageKey(accountId), signerHash);
+            map.Put(GetStorageKey(accountId), (ByteString)packed);
         }
 
-        private static ByteString GetMetaTxContext(ByteString accountId)
+        private static UInt160[] GetMetaTxContextSigners(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, MetaTxContextPrefix);
-            return map.Get(GetStorageKey(accountId));
+            ByteString data = map.Get(GetStorageKey(accountId));
+            if (data == null) return new UInt160[0];
+            return UnpackSignerHashes((byte[])data);
         }
 
         private static void ClearMetaTxContext(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, MetaTxContextPrefix);
             map.Delete(GetStorageKey(accountId));
+        }
+
+        private static byte[] PackSignerHashes(UInt160[] signerHashes)
+        {
+            byte[] packed = new byte[signerHashes.Length * 20];
+            for (int i = 0; i < signerHashes.Length; i++)
+            {
+                byte[] signer = (byte[])signerHashes[i];
+                ExecutionEngine.Assert(signer.Length == 20, "Invalid signer hash");
+                int offset = i * 20;
+                for (int j = 0; j < 20; j++)
+                {
+                    packed[offset + j] = signer[j];
+                }
+            }
+            return packed;
+        }
+
+        private static UInt160[] UnpackSignerHashes(byte[] packed)
+        {
+            ExecutionEngine.Assert(packed.Length % 20 == 0, "Corrupt meta-tx context");
+            int count = packed.Length / 20;
+            UInt160[] signerHashes = new UInt160[count];
+            for (int i = 0; i < count; i++)
+            {
+                byte[] signer = new byte[20];
+                int offset = i * 20;
+                for (int j = 0; j < 20; j++)
+                {
+                    signer[j] = packed[offset + j];
+                }
+                signerHashes[i] = (UInt160)signer;
+            }
+            return signerHashes;
         }
 
         private static void EnterExecution(ByteString accountId)

@@ -101,10 +101,36 @@ const docs = {
 const activeDoc = ref('overview');
 const compiledMarkdown = ref('');
 
+function sanitizeRenderedHtml(html) {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+
+  const blockedNodes = template.content.querySelectorAll('script, iframe, object, embed');
+  for (const node of blockedNodes) node.remove();
+
+  const nodes = template.content.querySelectorAll('*');
+  for (const node of nodes) {
+    for (const attr of Array.from(node.attributes)) {
+      const name = attr.name.toLowerCase();
+      const value = (attr.value || '').trim().toLowerCase();
+      if (name.startsWith('on')) {
+        node.removeAttribute(attr.name);
+        continue;
+      }
+      if ((name === 'href' || name === 'src') && value.startsWith('javascript:')) {
+        node.removeAttribute(attr.name);
+      }
+    }
+  }
+
+  return template.innerHTML;
+}
+
 const renderMarkdown = async (key) => {
   try {
     const rawContent = docs[key]?.content || '# 404 Not Found';
-    compiledMarkdown.value = await marked.parse(rawContent);
+    const rendered = await marked.parse(rawContent);
+    compiledMarkdown.value = sanitizeRenderedHtml(rendered);
 
     // Wait for Vue's <transition mode="out-in"> to finish animating and mount the new DOM
     setTimeout(async () => {

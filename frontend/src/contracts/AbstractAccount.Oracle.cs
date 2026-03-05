@@ -9,10 +9,10 @@ namespace AbstractAccount
 {
     public partial class UnifiedSmartWallet
     {
-        private static readonly byte[] DomeOracleUrlPrefix = new byte[] { 0x12 };
-        private static readonly byte[] DomeOracleUnlockPrefix = new byte[] { 0x13 };
-        private static readonly byte[] DomeOracleRequestCounterPrefix = new byte[] { 0x14 };
-        private static readonly byte[] DomeOraclePendingRequestPrefix = new byte[] { 0x15 };
+        private static readonly byte[] DomeOracleUrlPrefix = new byte[] { 0x20 };
+        private static readonly byte[] DomeOracleUnlockPrefix = new byte[] { 0x21 };
+        private static readonly byte[] DomeOracleRequestCounterPrefix = new byte[] { 0x22 };
+        private static readonly byte[] DomeOraclePendingRequestPrefix = new byte[] { 0x23 };
 
         private static void ResetDomeOracleState(ByteString accountId)
         {
@@ -30,12 +30,9 @@ namespace AbstractAccount
                 || CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
             if (nativeAuthorized) return;
 
-            ByteString metaSignerBytes = GetMetaTxContext(accountId);
-            if (metaSignerBytes != null && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
+            UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
+            if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                UInt160 metaSigner = (UInt160)metaSignerBytes;
-                UInt160[] explicitSigners = new UInt160[] { metaSigner };
-
                 bool metaAuthorized = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)
                     || CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)
                     || CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
@@ -103,6 +100,41 @@ namespace AbstractAccount
             RequestDomeActivation(accountId);
         }
 
+        private static bool IsStrictTrue(byte[] result)
+        {
+            if (result == null || result.Length == 0) return false;
+
+            int left = 0;
+            int right = result.Length - 1;
+            while (left <= right && IsWhitespace(result[left])) left++;
+            while (right >= left && IsWhitespace(result[right])) right--;
+            if (left > right) return false;
+
+            if (right - left + 1 == 4)
+            {
+                return EqualsIgnoreCase(result[left], (byte)'t')
+                    && EqualsIgnoreCase(result[left + 1], (byte)'r')
+                    && EqualsIgnoreCase(result[left + 2], (byte)'u')
+                    && EqualsIgnoreCase(result[left + 3], (byte)'e');
+            }
+
+            return false;
+        }
+
+        private static bool IsWhitespace(byte value)
+        {
+            return value == (byte)' ' || value == (byte)'\n' || value == (byte)'\r' || value == (byte)'\t';
+        }
+
+        private static bool EqualsIgnoreCase(byte value, byte expectedLowercase)
+        {
+            if (value >= (byte)'A' && value <= (byte)'Z')
+            {
+                value = (byte)(value + 32);
+            }
+            return value == expectedLowercase;
+        }
+
         public static void DomeActivationCallback(string url, object userData, int responseCode, byte[] result)
         {
             ExecutionEngine.Assert(Runtime.CallingScriptHash == Oracle.Hash, "Unauthorized");
@@ -129,7 +161,7 @@ namespace AbstractAccount
                 return;
             }
 
-            if (responseCode == (int)OracleResponseCode.Success && (ByteString)result == (ByteString)"true")
+            if (responseCode == (int)OracleResponseCode.Success && IsStrictTrue(result))
             {
                 StorageMap unlockMap = new StorageMap(Storage.CurrentContext, DomeOracleUnlockPrefix);
                 unlockMap.Put(key, (ByteString)new byte[] { 1 });

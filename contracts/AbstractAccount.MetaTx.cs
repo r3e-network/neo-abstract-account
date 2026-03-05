@@ -10,9 +10,9 @@ namespace AbstractAccount
 {
     public partial class UnifiedSmartWallet
     {
-        private static byte[] GetNonceKey(ByteString accountId, UInt160 signer)
+        private static byte[] GetNonceKey(ByteString accountId)
         {
-            return Helper.Concat(Helper.Concat(NoncePrefix, GetStorageKey(accountId)), signer);
+            return Helper.Concat(NoncePrefix, GetStorageKey(accountId));
         }
 
         [Safe]
@@ -24,7 +24,7 @@ namespace AbstractAccount
         [Safe]
         public static BigInteger GetNonceForAccount(ByteString accountId, UInt160 signer)
         {
-            byte[] key = GetNonceKey(accountId, signer);
+            byte[] key = GetNonceKey(accountId);
             ByteString data = Storage.Get(Storage.CurrentContext, key);
             return data == null ? 0 : (BigInteger)data;
         }
@@ -36,10 +36,10 @@ namespace AbstractAccount
             return GetNonceForAccount(accountId, signer);
         }
 
-        private static void IncrementNonce(ByteString accountId, UInt160 signer)
+        private static void IncrementNonce(ByteString accountId)
         {
-            byte[] key = GetNonceKey(accountId, signer);
-            BigInteger current = GetNonceForAccount(accountId, signer);
+            byte[] key = GetNonceKey(accountId);
+            BigInteger current = GetNonceForAccount(accountId, UInt160.Zero);
             Storage.Put(Storage.CurrentContext, key, current + 1);
         }
 
@@ -99,13 +99,13 @@ namespace AbstractAccount
             BigInteger normalizedDeadline = NormalizeDeadlineToMs(deadline);
             ExecutionEngine.Assert((BigInteger)Runtime.Time <= normalizedDeadline, "Signature expired");
 
-            // We use the first signer's nonce to track execution
-            UInt160 primarySignerHash = DeriveEthAddress(uncompressedPubKeys[0]);
-            BigInteger currentNonce = GetNonceForAccount(accountId, primarySignerHash);
+            // Replay protection is account-scoped to prevent signer-order/signer-selection replays.
+            BigInteger currentNonce = GetNonceForAccount(accountId, UInt160.Zero);
             ExecutionEngine.Assert(nonce == currentNonce, "Invalid Nonce");
 
-            ToBytes32(argsHash, "Invalid args hash length");
+            byte[] providedArgsHash = ToBytes32(argsHash, "Invalid args hash length");
             byte[] expectedArgsHash = (byte[])ComputeArgsHash(args);
+            ExecutionEngine.Assert(ByteArrayEquals(providedArgsHash, expectedArgsHash), "Args hash mismatch");
 
             byte[] domainSeparator = BuildDomainSeparator(Runtime.GetNetwork(), Runtime.ExecutingScriptHash);
             byte[] structHash = BuildMetaTxStructHash(accountId, targetContract, method, expectedArgsHash, nonce, deadline);
@@ -128,12 +128,12 @@ namespace AbstractAccount
                 recoveredSigners[i] = DeriveEthAddress(uncompressedPubKeys[i]);
             }
 
-            IncrementNonce(accountId, primarySignerHash);
+            IncrementNonce(accountId);
             CheckPermissionsAndExecute(accountId, recoveredSigners, targetContract, method, args);
 
             // Scope authenticated signer by account for this execution path.
             EnterExecution(accountId);
-            SetMetaTxContext(accountId, primarySignerHash);
+            SetMetaTxContext(accountId, recoveredSigners);
             SetVerifyContext(accountId, targetContract);
             try
             {
