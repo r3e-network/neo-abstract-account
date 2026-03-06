@@ -22,7 +22,7 @@ const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypt
 const { decodeByteStringToHex, decodeInteger, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
 const { computeArgsHash, buildTypedData, buildArgsHashCandidates, buildPubKeyCandidates, buildExecuteMetaTxArgs, signTypedDataNoRecovery } = bindMetaTxHelpers({ buildMetaTransactionTypedData, invokeRead, cpArray, cpHash160, cpByteArray, cpByteArrayRaw, decodeByteStringToHex, sanitizeHex, reverseHex: u.reverseHex, sc });
-const { buildSetWhitelistByAddressArgs, buildSetWhitelistByAddressAlternativeBuilders, buildSetWhitelistModeByAddressArgs, buildSetWhitelistModeByAddressAlternativeBuilders, buildSetWhitelistModeByAccountIdArgs, buildSetWhitelistModeByAccountIdAlternativeBuilders } = bindWhitelistArgBuilders({ cpHash160, cpByteArray, cpByteArrayRaw, cpArray, sc });
+const { buildSetWhitelistByAddressArgs, buildSetWhitelistModeByAddressArgs, buildSetWhitelistModeByAccountIdArgs } = bindWhitelistArgBuilders({ cpHash160, cpByteArray, cpByteArrayRaw, cpArray, sc });
 const { buildMetaExecutionVariants } = bindMetaSearchHelpers({ invokeRead, cpHash160, cpByteArray, sanitizeHex, decodeInteger, decodeByteStringToHex, buildPubKeyCandidates, buildArgsHashCandidates, buildTypedData, computeArgsHash, signTypedDataNoRecovery, buildExecuteMetaTxArgs });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
 
@@ -355,7 +355,6 @@ async function main() {
     signerWallet: ethSigner,
     method: 'setWhitelistByAddress',
     methodArgsBuilder: () => buildSetWhitelistByAddressArgs(accountC.addressScriptHash, aaHash, true),
-    methodArgsAlternativeBuilders: buildSetWhitelistByAddressAlternativeBuilders(accountC.addressScriptHash, aaHash, true),
   });
   summary.txs.push({ step: 'metaTxByAddress setWhitelistByAddress(C,aaHash,true)', ...meta1 });
 
@@ -372,12 +371,28 @@ async function main() {
     signerWallet: ethSigner,
     method: 'setWhitelistModeByAddress',
     methodArgsBuilder: () => buildSetWhitelistModeByAddressArgs(accountC.addressScriptHash, true),
-    methodArgsAlternativeBuilders: buildSetWhitelistModeByAddressAlternativeBuilders(accountC.addressScriptHash, true),
   });
   summary.txs.push({ step: 'metaTxByAddress setWhitelistModeByAddress(C,true)', ...meta2 });
 
   const nonceAfterMeta2 = await invokeRead(aaHash, 'getNonceForAddress', [cpHash160(accountC.addressScriptHash), cpHash160(ethSignerHex)]);
   check('C nonce after meta2 == 2', decodeInteger(nonceAfterMeta2.stack?.[0]) === 2);
+
+  const simExecCNonWhitelisted = await simulate(
+    aaHash,
+    'executeByAddress',
+    [
+      cpHash160(accountC.addressScriptHash),
+      cpHash160(GAS_TOKEN_HASH),
+      sc.ContractParam.string('balanceOf'),
+      cpArray([cpHash160(ownerScriptHash)]),
+    ],
+    ownerSigner
+  );
+  check(
+    'C executeByAddress FAULT for non-whitelisted GAS target while whitelist mode on',
+    simExecCNonWhitelisted.state === 'FAULT' && String(simExecCNonWhitelisted.exception || '').includes('whitelist'),
+    simExecCNonWhitelisted.exception || ''
+  );
 
   const simExecCWhitelisted = await simulate(aaHash, 'executeByAddress', [cpHash160(accountC.addressScriptHash), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);
   check('C executeByAddress HALT while whitelisted + whitelist mode on', simExecCWhitelisted.state === 'HALT', simExecCWhitelisted.exception || '');
@@ -411,7 +426,6 @@ async function main() {
     signerWallet: ethSigner,
     method: 'setWhitelistMode',
     methodArgsBuilder: () => buildSetWhitelistModeByAccountIdArgs(accountIdC, false),
-    methodArgsAlternativeBuilders: buildSetWhitelistModeByAccountIdAlternativeBuilders(accountIdC, false),
   });
   summary.txs.push({ step: 'metaTx(accountId) setWhitelistMode(C,false)', ...meta3 });
 
