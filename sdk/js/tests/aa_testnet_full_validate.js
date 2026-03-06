@@ -1,5 +1,6 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
+const { buildMetaTransactionTypedData } = require('../src/metaTx');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -154,31 +155,16 @@ async function computeArgsHashForMetaExecution({
 }
 
 function buildTypedData({ chainId, verifyingContract, accountIdHex, targetContract, method, argsHashHex, nonce, deadline }) {
-  const domain = {
-    name: 'Neo N3 Abstract Account',
-    version: '1',
+  return buildMetaTransactionTypedData({
     chainId,
-    verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
-  };
-  const types = {
-    MetaTransaction: [
-      { name: 'accountId', type: 'bytes' },
-      { name: 'targetContract', type: 'address' },
-      { name: 'methodHash', type: 'bytes32' },
-      { name: 'argsHash', type: 'bytes32' },
-      { name: 'nonce', type: 'uint256' },
-      { name: 'deadline', type: 'uint256' },
-    ],
-  };
-  const message = {
-    accountId: `0x${sanitizeHex(accountIdHex)}`,
-    targetContract: `0x${sanitizeHex(targetContract)}`,
-    methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method))),
-    argsHash: `0x${sanitizeHex(argsHashHex)}`,
-    nonce: String(nonce),
-    deadline: String(deadline),
-  };
-  return { domain, types, message };
+    verifyingContract,
+    accountIdHex,
+    targetContract,
+    method,
+    argsHashHex,
+    nonce,
+    deadline,
+  });
 }
 
 async function executeMetaTx({
@@ -280,14 +266,14 @@ async function executeMetaTx({
             operation,
             args: [
               useAddress ? cpHash160(accountAddressHash) : cpByteArray(accountIdHex),
-              cpByteArrayRaw(candidatePubKey),
+              cpArray([cpByteArrayRaw(candidatePubKey)]),
               cpHash160(aaHash),
               sc.ContractParam.string(method),
               cpArray(argsForCall),
               cpByteArrayRaw(candidateArgsHash),
               sc.ContractParam.integer(nonce),
               sc.ContractParam.integer(deadline),
-              cpByteArrayRaw(sigNoRecovery),
+              cpArray([cpByteArrayRaw(sigNoRecovery)]),
             ],
           });
           txResult.pubKeyHex = candidatePubKey;

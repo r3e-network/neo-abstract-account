@@ -1,5 +1,9 @@
-const { rpc, tx, sc, u, wallet } = require('@cityofzion/neon-js');
-const { ethers } = require('ethers');
+const { rpc, sc, u, wallet } = require('@cityofzion/neon-js');
+const {
+  buildMetaTransactionTypedData,
+  decodeByteStringStackHex,
+  sanitizeHex,
+} = require('./metaTx');
 
 /**
  * Neo N3 Abstract Account SDK
@@ -7,7 +11,7 @@ const { ethers } = require('ethers');
 class AbstractAccountClient {
   constructor(rpcUrl, masterContractHash) {
     this.rpcClient = new rpc.RPCClient(rpcUrl);
-    this.masterContractHash = masterContractHash;
+    this.masterContractHash = sanitizeHex(masterContractHash);
   }
 
   /**
@@ -20,7 +24,7 @@ class AbstractAccountClient {
     const verifyScript = sc.createScript({
       scriptHash: this.masterContractHash,
       operation: 'verify',
-      args: [ sc.ContractParam.byteArray(u.HexString.fromHex(pubKeyHex, false)) ]
+      args: [sc.ContractParam.byteArray(u.HexString.fromHex(pubKeyHex, false))],
     });
     const scriptHash = u.reverseHex(u.hash160(verifyScript));
     return wallet.getAddressFromScriptHash(scriptHash);
@@ -38,14 +42,13 @@ class AbstractAccountClient {
       return addr;
     };
 
-    const adminsParam = admins.map(addr => ({ type: 'Hash160', value: normalizeAddress(addr) }));
-    const managersParam = managers.map(addr => ({ type: 'Hash160', value: normalizeAddress(addr) }));
-    
-    // Address bounding check
+    const adminsParam = admins.map((addr) => ({ type: 'Hash160', value: normalizeAddress(addr) }));
+    const managersParam = managers.map((addr) => ({ type: 'Hash160', value: normalizeAddress(addr) }));
+
     const verifyScript = sc.createScript({
       scriptHash: this.masterContractHash,
       operation: 'verify',
-      args: [ sc.ContractParam.byteArray(u.HexString.fromHex(accountIdHex, false)) ]
+      args: [sc.ContractParam.byteArray(u.HexString.fromHex(accountIdHex, false))],
     });
     const computedAddressScriptHash = u.reverseHex(u.hash160(verifyScript));
 
@@ -55,47 +58,68 @@ class AbstractAccountClient {
       args: [
         sc.ContractParam.byteArray(accountIdHex),
         sc.ContractParam.hash160(computedAddressScriptHash),
-        sc.ContractParam.array(...adminsParam.map(p => sc.ContractParam.hash160(p.value))),
+        sc.ContractParam.array(...adminsParam.map((p) => sc.ContractParam.hash160(p.value))),
         sc.ContractParam.integer(adminThreshold),
-        sc.ContractParam.array(...managersParam.map(p => sc.ContractParam.hash160(p.value))),
-        sc.ContractParam.integer(managerThreshold)
-      ]
+        sc.ContractParam.array(...managersParam.map((p) => sc.ContractParam.hash160(p.value))),
+        sc.ContractParam.integer(managerThreshold),
+      ],
     };
+  }
+
+  async computeArgsHash(args = []) {
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'computeArgsHash',
+      args: [{ type: 'Array', value: args }],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') {
+      throw new Error(`computeArgsHash fault: ${response.exception || 'VM fault'}`);
+    }
+
+    const argsHashHex = decodeByteStringStackHex(response?.stack?.[0]);
+    if (!argsHashHex) {
+      throw new Error('computeArgsHash returned an empty result');
+    }
+
+    return argsHashHex;
   }
 
   /**
-   * Generates the EIP-712 payload for a Meta-Transaction signature.
+   * Generates the contract-aligned EIP-712 payload for a Meta-Transaction signature.
    */
-  async createEIP712Payload(chainId, targetContract, method, args, nonce) {
-    const domain = {
-      name: 'NeoAbstractAccount',
-      version: '1',
-      chainId: chainId,
-      verifyingContract: '0x' + u.reverseHex(this.masterContractHash)
-    };
+  async createEIP712Payload(options) {
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
+      throw new Error('createEIP712Payload expects an options object');
+    }
 
-    const types = {
-      MetaTransaction: [
-        { name: 'target', type: 'bytes20' },
-        { name: 'method', type: 'string' },
-        { name: 'argsHash', type: 'bytes32' },
-        { name: 'nonce', type: 'uint256' }
-      ]
-    };
+    const {
+      chainId,
+      accountIdHex,
+      targetContract,
+      method,
+      args = [],
+      nonce,
+      deadline,
+    } = options;
 
-    // Serialize args into Neo VM format to compute the hash
-    const script = sc.createScript({ scriptHash: targetContract, operation: method, args });
-    const argsHash = '0x' + u.sha256(script); // Simulating args hash. Use true Neo sha256.
-    
-    const message = {
-      target: '0x' + u.reverseHex(targetContract),
-      method: method,
-      argsHash: argsHash,
-      nonce: nonce
-    };
-
-    return { domain, types, message };
+    const argsHashHex = await this.computeArgsHash(args);
+    return buildMetaTransactionTypedData({
+      chainId,
+      verifyingContract: this.masterContractHash,
+      accountIdHex,
+      targetContract,
+      method,
+      argsHashHex,
+      nonce,
+      deadline,
+    });
   }
 }
 
-module.exports = { AbstractAccountClient };
+module.exports = {
+  AbstractAccountClient,
+  buildMetaTransactionTypedData,
+  sanitizeHex,
+};

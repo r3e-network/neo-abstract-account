@@ -1,6 +1,7 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const fs = require('fs');
 const path = require('path');
+const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
 
 const deployerWif = process.env.ABSTRACT_ACCOUNT_DEPLOYER_WIF
   || process.env.RELAYER_WIF
@@ -14,8 +15,7 @@ const account = new wallet.Account(deployerWif);
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 
-const nefPath = path.resolve(__dirname, '../../contracts/AbstractAccount/bin/sc/UnifiedSmartWalletV2.nef');
-const manifestPath = path.resolve(__dirname, '../../contracts/AbstractAccount/bin/sc/UnifiedSmartWalletV2.manifest.json');
+const { nefPath, manifestPath } = resolveContractArtifactPaths({ fromDir: __dirname });
 
 const nef = fs.readFileSync(nefPath);
 const manifestStr = fs.readFileSync(manifestPath, 'utf8');

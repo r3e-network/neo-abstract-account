@@ -1,6 +1,7 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const fs = require('fs');
 const path = require('path');
+const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
 
 function sanitizeHex(v) {
   return String(v || '').replace(/^0x/i, '').toLowerCase();
@@ -51,8 +52,7 @@ async function main() {
     throw new Error(`Invalid testnet AA hash: ${aaHashRaw}`);
   }
 
-  const nefPath = path.resolve(repoRoot, 'contracts/AbstractAccount/bin/sc/UnifiedSmartWalletV2.nef');
-  const manifestPath = path.resolve(repoRoot, 'contracts/AbstractAccount/bin/sc/UnifiedSmartWalletV2.manifest.json');
+  const { nefPath, manifestPath } = resolveContractArtifactPaths({ fromDir: repoRoot });
   const nefBase64 = fs.readFileSync(nefPath).toString('base64');
   const localManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
