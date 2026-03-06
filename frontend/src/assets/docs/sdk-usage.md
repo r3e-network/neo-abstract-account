@@ -20,7 +20,7 @@ classDiagram
       +string masterContractHash
       +deriveAddressFromEVM(pubKey) string
       +createAccountPayload(id, admins, managers) object
-      +createEIP712Payload(target, method, args, nonce) object
+      +createEIP712Payload(options) object
     }
     class NeonJS {
       <<Library>>
@@ -105,13 +105,18 @@ const args = [
 const nonce = 1;
 
 // 1. Generate the standard EIP-712 object
-const { domain, types, message } = await aaClient.createEIP712Payload(
-    chainId,
-    targetContract,
-    method,
-    args,
-    nonce
-);
+const deadline = Math.floor(Date.now() / 1000) + 3600;
+const accountIdHex = evmPubKey;
+
+const { domain, types, message } = await aaClient.createEIP712Payload({
+  chainId,
+  accountIdHex,
+  targetContract,
+  method,
+  args,
+  nonce,
+  deadline
+});
 
 // 2. Request signature from MetaMask
 // (Requires Ethers.js and window.ethereum)

@@ -53,7 +53,7 @@ The dApp coordinates this by collecting the EVM signature first, then passing it
 **Step 1: Collect Ethereum Signature (Admin A)**
 ```javascript
 // Admin A signs the EIP-712 payload using MetaMask
-const { domain, types, message } = await aaClient.createEIP712Payload(...);
+const { domain, types, message } = await aaClient.createEIP712Payload({ ...metaTx });
 const evmSignature = await ethersSigner.signTypedData(domain, types, message);
 ```
 

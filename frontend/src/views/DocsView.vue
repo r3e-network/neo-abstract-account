@@ -27,9 +27,9 @@
       <!-- Main Content Area -->
       <main class="flex-1 min-w-0">
         <div class="prose prose-slate prose-neo max-w-none bg-white p-8 sm:p-12 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60 min-h-[600px]">
-          <transition name="fade" mode="out-in">
+          <transition name="fade" mode="out-in" @after-enter="renderMermaidDiagrams">
             <div :key="activeDoc">
-              <div v-html="compiledMarkdown" class="markdown-body custom-scrollbar"></div>
+              <div ref="contentRoot" v-html="compiledMarkdown" class="markdown-body custom-scrollbar"></div>
             </div>
           </transition>
         </div>
@@ -40,23 +40,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css';
 import mermaid from 'mermaid';
-
-// Import markdown files
-import docOverview from '@/assets/docs/overview.md?raw';
-import docArchitecture from '@/assets/docs/architecture.md?raw';
-import docWorkflow from '@/assets/docs/workflow.md?raw';
-import docDataFlow from '@/assets/docs/data-flow.md?raw';
-import docDome from '@/assets/docs/dome-recovery.md?raw';
-import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
-import docEvm from '@/assets/docs/evm-integration.md?raw';
-import docMixed from '@/assets/docs/mixed-multisig.md?raw';
-import docSdk from '@/assets/docs/sdk-usage.md?raw';
+import { DOCS, DEFAULT_DOC_KEY } from '@/features/docs/registry';
+import { sanitizeRenderedHtml } from '@/features/docs/rendering';
 
 mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
@@ -86,44 +77,26 @@ renderer.code = (token) => {
 };
 marked.use({ renderer });
 
-const docs = {
-  overview: { title: 'Overview & Capabilities', content: docOverview },
-  architecture: { title: 'Core Architecture', content: docArchitecture },
-  workflow: { title: 'Workflow Lifecycle', content: docWorkflow },
-  dataFlow: { title: 'Data Flow & Storage', content: docDataFlow },
-  dome: { title: 'Dome Recovery', content: docDome },
-  verifiers: { title: 'Custom Verifiers', content: docVerifiers },
-  evm: { title: 'Ethereum / EVM Integration', content: docEvm },
-  mixed: { title: 'Mixed Multi-Sig (N3 + EVM)', content: docMixed },
-  sdk: { title: 'SDK Integration', content: docSdk }
-};
+const docs = DOCS;
 
-const activeDoc = ref('overview');
+const activeDoc = ref(DEFAULT_DOC_KEY);
 const compiledMarkdown = ref('');
+const contentRoot = ref(null);
+const hasInitialMermaidRender = ref(false);
 
-function sanitizeRenderedHtml(html) {
-  const template = document.createElement('template');
-  template.innerHTML = html;
+async function renderMermaidDiagrams() {
+  const containers = contentRoot.value?.querySelectorAll('.mermaid-container') || [];
 
-  const blockedNodes = template.content.querySelectorAll('script, iframe, object, embed');
-  for (const node of blockedNodes) node.remove();
-
-  const nodes = template.content.querySelectorAll('*');
-  for (const node of nodes) {
-    for (const attr of Array.from(node.attributes)) {
-      const name = attr.name.toLowerCase();
-      const value = (attr.value || '').trim().toLowerCase();
-      if (name.startsWith('on')) {
-        node.removeAttribute(attr.name);
-        continue;
-      }
-      if ((name === 'href' || name === 'src') && value.startsWith('javascript:')) {
-        node.removeAttribute(attr.name);
-      }
+  for (const container of containers) {
+    try {
+      const rawCode = decodeURIComponent(container.getAttribute('data-mermaid-code'));
+      const { svg } = await mermaid.render(`${container.id}-svg`, rawCode);
+      container.innerHTML = svg;
+    } catch (err) {
+      console.warn('Failed to render specific mermaid diagram', err);
+      container.innerHTML = `<pre class="text-red-500 text-xs overflow-auto">${err.message}</pre>`;
     }
   }
-
-  return template.innerHTML;
 }
 
 const renderMarkdown = async (key) => {
@@ -131,21 +104,11 @@ const renderMarkdown = async (key) => {
     const rawContent = docs[key]?.content || '# 404 Not Found';
     const rendered = await marked.parse(rawContent);
     compiledMarkdown.value = sanitizeRenderedHtml(rendered);
-
-    // Wait for Vue's <transition mode="out-in"> to finish animating and mount the new DOM
-    setTimeout(async () => {
-      const containers = document.querySelectorAll('.mermaid-container');
-      for (const container of containers) {
-        try {
-          const rawCode = decodeURIComponent(container.getAttribute('data-mermaid-code'));
-          const { svg } = await mermaid.render(`${container.id}-svg`, rawCode);
-          container.innerHTML = svg;
-        } catch (err) {
-          console.warn("Failed to render specific mermaid diagram", err);
-          container.innerHTML = `<pre class="text-red-500 text-xs overflow-auto">${err.message}</pre>`;
-        }
-      }
-    }, 250); // 250ms allows the CSS fade transition to complete
+    await nextTick();
+    if (!hasInitialMermaidRender.value) {
+      hasInitialMermaidRender.value = true;
+      await renderMermaidDiagrams();
+    }
 
   } catch (err) {
     console.error('Failed to load markdown', err);
@@ -154,12 +117,8 @@ const renderMarkdown = async (key) => {
 };
 
 watch(activeDoc, (newKey) => {
-  renderMarkdown(newKey);
-});
-
-onMounted(() => {
-  renderMarkdown(activeDoc.value);
-});
+  void renderMarkdown(newKey);
+}, { immediate: true });
 </script>
 
 <style>
