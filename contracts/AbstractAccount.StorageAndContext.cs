@@ -111,6 +111,69 @@ namespace AbstractAccount
             return (UInt160)expectedTarget == callingScriptHash;
         }
 
+        private static readonly byte[] ContractCallSyscall = new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 };
+
+        private static UInt160 GetWalletContractHash()
+        {
+            ByteString storedHash = Storage.Get(Storage.CurrentContext, ContractHashKey);
+            if (storedHash != null && storedHash.Length == 20) return (UInt160)storedHash;
+            return Runtime.ExecutingScriptHash;
+        }
+        private static bool IsAllowedProxyVerificationTransaction()
+        {
+            return IsSingleSelfCallScript((byte[])Runtime.Transaction.Script, (byte[])GetWalletContractHash());
+        }
+
+        internal static bool IsSingleSelfCallScript(byte[] script, byte[] contractHash)
+        {
+            if (script == null || contractHash == null || contractHash.Length != 20 || script.Length == 0) return false;
+            if (CountOccurrences(script, ContractCallSyscall) != 1) return false;
+
+            byte[] selfTargetSuffix = ConcatBytes(
+                new byte[] { 0x0C, 0x14 },
+                contractHash,
+                ContractCallSyscall
+            );
+            return EndsWith(script, selfTargetSuffix);
+        }
+
+        private static int CountOccurrences(byte[] source, byte[] value)
+        {
+            if (source == null || value == null || value.Length == 0 || source.Length < value.Length) return 0;
+
+            int count = 0;
+            for (int i = 0; i <= source.Length - value.Length; i++)
+            {
+                bool matched = true;
+                for (int j = 0; j < value.Length; j++)
+                {
+                    if (source[i + j] != value[j])
+                    {
+                        matched = false;
+                        break;
+                    }
+                }
+
+                if (matched)
+                {
+                    count++;
+                    i += value.Length - 1;
+                }
+            }
+            return count;
+        }
+
+        private static bool EndsWith(byte[] source, byte[] suffix)
+        {
+            if (source == null || suffix == null || suffix.Length > source.Length) return false;
+            int start = source.Length - suffix.Length;
+            for (int i = 0; i < suffix.Length; i++)
+            {
+                if (source[start + i] != suffix[i]) return false;
+            }
+            return true;
+        }
+
         private static void ClearVerifyContext(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, VerifyContextPrefix);

@@ -10,9 +10,9 @@ using Neo.SmartContract.Framework.Services;
 namespace AbstractAccount
 {
     [DisplayName("UnifiedSmartWalletV2")]
-    [ManifestExtra("Author", "R3E Neo Explorer")]
-    [ManifestExtra("Email", "dev@neo.org")]
-    [ManifestExtra("Description", "A global, unified permission-controlling abstract account gateway.")]
+    [ManifestExtra("Author", "R3E Network")]
+    [ManifestExtra("Email", "jimmy@r3e.network")]
+    [ManifestExtra("Description", "A global, unified permission-controlling programmable account gateway.")]
     [ContractPermission(
         "*",
         "transfer",
@@ -70,6 +70,7 @@ namespace AbstractAccount
         private static readonly byte[] DomeTimeoutPrefix = new byte[] { 0x10 };
         private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
         private static readonly byte[] VerifierContractPrefix = new byte[] { 0x12 };
+        private static readonly byte[] ContractHashKey = new byte[] { 0x13 };
         private static readonly byte[] MetaTxContextPrefix = new byte[] { 0xFF };
 
         // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
@@ -126,6 +127,7 @@ namespace AbstractAccount
 
         public static void _deploy(object data, bool update)
         {
+            Storage.Put(Storage.CurrentContext, ContractHashKey, Runtime.ExecutingScriptHash);
             if (update) return;
             var tx = (Transaction)Runtime.Transaction;
             Storage.Put(Storage.CurrentContext, DeployerKey, tx.Sender);

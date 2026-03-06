@@ -41,6 +41,8 @@ namespace AbstractAccount
 
             if (Runtime.Trigger == TriggerType.Verification)
             {
+                if (!IsAllowedProxyVerificationTransaction()) return false;
+
                 // Directly signed natively. Verify attached native signatures against policies.
                 UInt160 customVerifier = GetVerifierContract(accountId);
                 if (customVerifier != null && customVerifier != UInt160.Zero)
