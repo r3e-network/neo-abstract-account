@@ -47,6 +47,8 @@ Verified on **Neo N3 testnet** on **March 6, 2026** against hardened contract **
 
 Additional live authorization simulation confirmed `update` still HALTs for the deployer and FAULTs with `Not Deployer` for a non-deployer signer on the hardened deployment.
 
+Re-validated on **March 7, 2026** against the same hardened deployment with a fresh funded signer. The full six-script SDK testnet validation suite completed successfully, including `aa_testnet_full_validate.js`, after tightening the validator's whitelist-mode scenario to assert canonical postconditions.
+
 ### Security Checklist
 - [x] Unauthorized bootstrap account creation is rejected.
 - [x] Blacklisted targets are blocked from execution.
@@ -108,3 +110,7 @@ The legacy testnet deployment **`0xf3f706936e37eeaf6bf51b074e55e840f30d993a`** r
 - `frontend/`: Vue components demonstrating Account creation and signature workflows.
 - `sdk/js/`: JavaScript/TypeScript SDK for dApp integration.
 - `docs/`: Protocol design and specification standards.
+
+## Frontend Security Status
+
+As of **March 7, 2026**, `frontend` passes `npm audit --omit=dev` with **0 known production vulnerabilities**.
