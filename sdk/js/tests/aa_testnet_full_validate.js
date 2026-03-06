@@ -4,6 +4,7 @@ const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
+const { waitForTx } = require('./tx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
@@ -45,20 +46,6 @@ function normalizeReadByteString(hex) {
   const clean = sanitizeHex(hex);
   if (!clean) return '';
   return sanitizeHex(u.reverseHex(clean));
-}
-
-async function waitForTx(txid, timeoutMs = 180000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const appLog = await rpcClient.getApplicationLog(txid);
-      if (appLog?.executions?.length) {
-        return appLog;
-      }
-    } catch (_) {}
-    await new Promise((r) => setTimeout(r, 2500));
-  }
-  throw new Error(`Timed out waiting for tx ${txid}`);
 }
 
 async function invokeRead(aaHash, operation, args = [], signers = []) {
@@ -104,7 +91,7 @@ async function sendInvocation({ account, magic, aaHash, operation, args, witness
   transaction.sign(account, magic);
 
   const txid = await rpcClient.sendRawTransaction(transaction);
-  const appLog = await waitForTx(txid);
+  const appLog = await waitForTx(rpcClient, txid);
   const vmState = String(appLog.executions?.[0]?.vmstate || appLog.executions?.[0]?.vmState || 'UNKNOWN').toUpperCase();
   if (vmState !== 'HALT') {
     throw new Error(`${operation} tx vmstate ${vmState}`);

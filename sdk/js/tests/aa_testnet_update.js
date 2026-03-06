@@ -3,21 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
 const { parseEnvFile } = require('./env');
+const { waitForTx } = require('./tx');
 const { sanitizeHex } = require('../src/metaTx');
-
-async function waitForTx(rpcClient, txid, timeoutMs = 120000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const appLog = await rpcClient.getApplicationLog(txid);
-      if (appLog && Array.isArray(appLog.executions) && appLog.executions.length > 0) {
-        return appLog;
-      }
-    } catch (_) {}
-    await new Promise((r) => setTimeout(r, 3000));
-  }
-  throw new Error(`Timed out waiting for tx confirmation: ${txid}`);
-}
 
 async function main() {
   const wif = process.env.TEST_WIF;
@@ -89,7 +76,11 @@ async function main() {
   transaction.sign(account, magic);
 
   const txid = await rpcClient.sendRawTransaction(transaction);
-  const appLog = await waitForTx(rpcClient, txid);
+  const appLog = await waitForTx(rpcClient, txid, {
+    timeoutMs: 120000,
+    pollIntervalMs: 3000,
+    errorMessage: `Timed out waiting for tx confirmation: ${txid}`,
+  });
   const vmState = appLog.executions?.[0]?.vmstate || appLog.executions?.[0]?.vmState || 'UNKNOWN';
 
   console.log(JSON.stringify({

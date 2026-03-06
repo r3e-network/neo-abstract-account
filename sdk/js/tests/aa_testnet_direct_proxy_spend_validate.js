@@ -2,6 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
+const { waitForTx } = require('./tx');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
@@ -38,18 +39,6 @@ function deriveAaAddressFromId(aaHash, accountIdHex) {
   };
 }
 
-async function waitForTx(txid, timeoutMs = 180000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const appLog = await rpcClient.getApplicationLog(txid);
-      if (appLog?.executions?.length) return appLog;
-    } catch (_) {}
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-  }
-  throw new Error(`Timed out waiting for tx ${txid}`);
-}
-
 async function sendInvocation({ account, magic, scriptHash, operation, args }) {
   const signers = [{ account: account.scriptHash, scopes: tx.WitnessScope.CalledByEntry }];
   const script = sc.createScript({ scriptHash, operation, args });
@@ -78,7 +67,7 @@ async function sendInvocation({ account, magic, scriptHash, operation, args }) {
   transaction.sign(account, magic);
 
   const txid = await rpcClient.sendRawTransaction(transaction);
-  return waitForTx(txid);
+  return waitForTx(rpcClient, txid);
 }
 
 async function main() {
@@ -172,7 +161,7 @@ async function main() {
 
   try {
     const txid = await rpcClient.sendRawTransaction(transaction);
-    const appLog = await waitForTx(txid, 30000);
+    const appLog = await waitForTx(rpcClient, txid, { timeoutMs: 30000 });
     const result = {
       aaHash: `0x${aaHash}`,
       expectedBlocked,

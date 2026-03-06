@@ -2,6 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
+const { waitForTx } = require('./tx');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
@@ -57,18 +58,6 @@ function buildAaExecutionContext(aaHash, ownerScriptHash, accountInfo) {
   };
 }
 
-async function waitForTx(txid, timeoutMs = 180000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const appLog = await rpcClient.getApplicationLog(txid);
-      if (appLog?.executions?.length) return appLog;
-    } catch (_) {}
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-  }
-  throw new Error(`Timed out waiting for tx ${txid}`);
-}
-
 async function sendInvocation({
   account,
   magic,
@@ -109,7 +98,7 @@ async function sendInvocation({
   transaction.sign(account, magic);
 
   const txid = await rpcClient.sendRawTransaction(transaction);
-  const appLog = await waitForTx(txid);
+  const appLog = await waitForTx(rpcClient, txid);
   const vmState = String(appLog.executions?.[0]?.vmstate || appLog.executions?.[0]?.vmState || 'UNKNOWN').toUpperCase();
   if (vmState !== 'HALT') {
     throw new Error(`${operation} tx vmstate ${vmState}`);
