@@ -16,6 +16,10 @@ When a user "creates" an abstract account, no new smart contract is deployed on-
 
 This proxy address acts as the public face of the wallet. When the Neo N3 Virtual Machine triggers the `Verify` step for a transaction originating from this proxy address, the network intercepts the call and forwards the verification context to the Master Entry Contract. The Master Contract then queries its internal storage for the specific `Account ID`'s predefined ruleset (Admins, Managers, Custom Verifiers) to determine if the transaction signature is valid.
 
+As of the March 6, 2026 proxy-hardening update, proxy witness verification is additionally restricted to transaction scripts whose top-level payload is a single self-call back into the Master Entry Contract. This means raw external token transfers signed only by the deterministic proxy are rejected, and external interactions must flow through `execute`, `executeByAddress`, `executeMetaTx`, or related AA entrypoints where whitelist, blacklist, and max-transfer checks are enforced.
+
+This hardening path was verified twice on Neo N3 testnet on March 6, 2026: first on the hardened deployment `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423`, and again on a freshly deployed and then really updated instance `0x171359751dee7f56ea633586bd070a51c8d60e9c` (deploy tx `0x6ed39853b92ace9bf1a87e0b295aeb8455dd987c391a62c6ec28ef25ed9a9c54`, update tx `0x3390f58a10e2aed726d6b414c57eaf59f92216eed44b825f230cd48f57d77b9e`). In both cases, the full live validator suite passed and direct proxy-signed external spends were rejected while wrapper execution through AA entrypoints remained functional.
+
 This yields two massive benefits:
 1. **Zero Deployment Cost:** Users do not pay GAS to instantiate new smart contract logic.
 2. **Upgradability & Universality:** All accounts share the same highly audited logic, but isolate their distinct permissions and storage state securely.
