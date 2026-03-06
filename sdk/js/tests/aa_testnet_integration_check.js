@@ -3,27 +3,16 @@ const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
+const { bindRpcHelpers } = require('./rpc');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
+const { invokeRead } = bindRpcHelpers({ rpcClient, sc, u });
 
 function toHexFromStackByteString(item) {
   if (!item || item.type !== 'ByteString' || !item.value) return '';
   return Buffer.from(item.value, 'base64').toString('hex').toLowerCase();
-}
-
-async function invokeRead(aaHash, operation, args = [], signers = []) {
-  const script = sc.createScript({
-    scriptHash: aaHash,
-    operation,
-    args
-  });
-  const res = await rpcClient.invokeScript(u.HexString.fromHex(script), signers);
-  if (res.state === 'FAULT') {
-    throw new Error(`${operation} fault: ${res.exception}`);
-  }
-  return res;
 }
 
 async function sendInvocation({ account, magic, aaHash, operation, args }) {

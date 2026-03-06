@@ -5,9 +5,11 @@ const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
+const { bindRpcHelpers } = require('./rpc');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
+const { invokeRead, simulate } = bindRpcHelpers({ rpcClient, sc, u });
 
 function randomAccountIdHex(bytes = 16) {
   return crypto.randomBytes(bytes).toString('hex');
@@ -59,20 +61,6 @@ function buildSetWhitelistByAddressArgs(accountAddressHash, targetContractHash, 
     cpHash160(targetContractHash),
     sc.ContractParam.boolean(!!allowed),
   ];
-}
-
-async function invokeRead(aaHash, operation, args = [], signers = []) {
-  const script = sc.createScript({ scriptHash: aaHash, operation, args });
-  const res = await rpcClient.invokeScript(u.HexString.fromHex(script), signers);
-  if (res.state === 'FAULT') {
-    throw new Error(`${operation} fault: ${res.exception}`);
-  }
-  return res;
-}
-
-async function simulate(aaHash, operation, args = [], signers = []) {
-  const script = sc.createScript({ scriptHash: aaHash, operation, args });
-  return rpcClient.invokeScript(u.HexString.fromHex(script), signers);
 }
 
 async function sendInvocation({ account, magic, aaHash, operation, args, witnessScope = tx.WitnessScope.CalledByEntry }) {

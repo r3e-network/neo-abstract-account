@@ -3,10 +3,12 @@ const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
+const { bindRpcHelpers } = require('./rpc');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
+const { simulate } = bindRpcHelpers({ rpcClient, sc, u });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
 
 function randomAccountIdHex(bytes = 16) {
@@ -100,11 +102,6 @@ async function sendInvocation({
     networkFee,
     appLog,
   };
-}
-
-async function simulate(aaHash, operation, args = [], signers = []) {
-  const script = sc.createScript({ scriptHash: aaHash, operation, args });
-  return rpcClient.invokeScript(u.HexString.fromHex(script), signers);
 }
 
 async function getAssetBalance(address, assetHash) {
