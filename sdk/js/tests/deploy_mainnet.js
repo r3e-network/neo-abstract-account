@@ -1,5 +1,6 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const { readContractArtifacts } = require('../src/contractArtifacts');
+const { getNetworkMagic } = require('./rpc');
 const { buildDeployScript, buildInvokeScriptQuery } = require('./deployHelpers');
 
 const deployerWif = process.env.ABSTRACT_ACCOUNT_DEPLOYER_WIF;
@@ -55,8 +56,7 @@ async function deployContract() {
     console.log('Network Fee (estimated):', Number(transaction.networkFee) / 100000000, 'GAS');
 
     console.log('Signing...');
-    const versionRes = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
-    const magic = versionRes.protocol.network;
+    const magic = await getNetworkMagic({ rpcClient, rpc });
     transaction.sign(account, magic);
 
     console.log('Broadcasting...');

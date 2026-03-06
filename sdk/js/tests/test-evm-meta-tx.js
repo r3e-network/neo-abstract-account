@@ -1,6 +1,7 @@
 const { rpc, sc, u, tx, wallet } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
 const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
+const { getNetworkMagic } = require('./rpc');
 const { decodeByteStringToHex } = require('./stack');
 
 const aaHash = sanitizeHex(
@@ -44,11 +45,7 @@ async function main() {
     throw new Error('computeArgsHash returned empty stack');
   }
 
-  const version = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
-  const chainId = version?.protocol?.network;
-  if (!chainId) {
-    throw new Error('Unable to resolve network magic');
-  }
+  const chainId = await getNetworkMagic({ rpcClient, rpc, errorMessage: 'Unable to resolve network magic' });
 
   const { domain, types, message } = buildMetaTransactionTypedData({
     chainId,

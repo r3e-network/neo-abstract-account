@@ -3,12 +3,14 @@ const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { extractVmState, waitForTx, sendTransaction } = require('./tx');
+const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
+const { getNetworkMagic } = bindRpcHelpers({ rpcClient, rpc, sc, u });
 const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
@@ -51,9 +53,7 @@ async function main() {
   const fundingAmount = 400000000;
   const spendAmount = 200000000;
 
-  const version = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
-  const magic = version?.protocol?.network;
-  if (!magic) throw new Error('Missing network magic');
+  const magic = await getNetworkMagic();
 
   const accountIdHex = randomAccountIdHex(16);
   const accountInfo = deriveAaAddressFromId(aaHash, accountIdHex);

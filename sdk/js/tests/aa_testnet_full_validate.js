@@ -12,7 +12,7 @@ const { bindStackHelpers } = require('./stack');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
-const { invokeRead, simulate } = bindRpcHelpers({ rpcClient, sc, u });
+const { getNetworkMagic, invokeRead, simulate } = bindRpcHelpers({ rpcClient, rpc, sc, u });
 const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { decodeByteStringToHex, decodeInteger, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
@@ -333,9 +333,7 @@ async function main() {
 
   const owner = new wallet.Account(wif);
   const ownerScriptHash = sanitizeHex(owner.scriptHash);
-  const version = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
-  const magic = version?.protocol?.network;
-  if (!magic) throw new Error('Missing network magic');
+  const magic = await getNetworkMagic();
 
   const summary = {
     rpcUrl,

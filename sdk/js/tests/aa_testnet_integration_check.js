@@ -10,7 +10,7 @@ const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
-const { invokeRead } = bindRpcHelpers({ rpcClient, sc, u });
+const { getNetworkMagic, invokeRead } = bindRpcHelpers({ rpcClient, rpc, sc, u });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex });
 const { decodeByteStringToHex, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
 
@@ -64,9 +64,7 @@ async function main() {
   }
 
   const account = new wallet.Account(wif);
-  const version = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
-  const magic = version?.protocol?.network;
-  if (!magic) throw new Error('Unable to resolve testnet network magic');
+  const magic = await getNetworkMagic('Unable to resolve testnet network magic');
 
   const gasBalance = await getGasBalance(account.address);
 

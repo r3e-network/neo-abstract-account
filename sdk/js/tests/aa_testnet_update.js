@@ -2,6 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const { readContractArtifacts } = require('../src/contractArtifacts');
 const { parseEnvFile } = require('./env');
+const { getNetworkMagic } = require('./rpc');
 const { extractVmState, waitForTx, sendTransaction } = require('./tx');
 const { sanitizeHex } = require('../src/metaTx');
 
@@ -34,8 +35,7 @@ async function main() {
   const manifestString = JSON.stringify(localManifest);
 
   const account = new wallet.Account(wif);
-  const version = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
-  const magic = version?.protocol?.network;
+  const magic = await getNetworkMagic({ rpcClient, rpc });
 
   const script = sc.createScript({
     scriptHash: aaHash,

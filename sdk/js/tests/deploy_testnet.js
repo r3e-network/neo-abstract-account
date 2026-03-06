@@ -1,5 +1,6 @@
 const { tx, wallet, rpc, sc, u } = require('@cityofzion/neon-js');
 const { readContractArtifacts } = require('../src/contractArtifacts');
+const { getNetworkMagic } = require('./rpc');
 const { extractVmState } = require('./tx');
 const { buildSerializedDeployScript } = require('./deployHelpers');
 const { extractDeployedContractHash } = require('../src/deployLog');
@@ -12,8 +13,7 @@ const account = new wallet.Account(wif);
 
 async function main() {
   const client = new rpc.RPCClient(rpcUrl);
-  const version = await client.getVersion();
-  const magic = version.protocol.network;
+  const magic = await getNetworkMagic({ rpcClient: client });
 
   const { nefBytes, manifestString } = readContractArtifacts({ fromDir: __dirname });
   const nef = sc.NEF.fromBuffer(nefBytes);
