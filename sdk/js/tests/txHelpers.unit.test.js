@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { waitForTx } = require('./tx');
+const { assertVmStateHalt, extractVmState, waitForTx } = require('./tx');
 
 test('waitForTx returns the first application log with executions', async () => {
   const calls = [];
@@ -43,5 +43,20 @@ test('waitForTx throws after the timeout using the provided error message', asyn
       errorMessage: 'custom timeout',
     }),
     /custom timeout/
+  );
+});
+
+test('extractVmState normalizes execution vmstate to uppercase', () => {
+  assert.equal(extractVmState({ executions: [{ vmstate: 'HALT' }] }), 'HALT');
+  assert.equal(extractVmState({ executions: [{ vmState: 'fault' }] }), 'FAULT');
+  assert.equal(extractVmState({ executions: [] }), 'UNKNOWN');
+  assert.equal(extractVmState(null), 'UNKNOWN');
+});
+
+test('assertVmStateHalt returns HALT and throws a descriptive error otherwise', async () => {
+  assert.equal(assertVmStateHalt({ executions: [{ vmstate: 'HALT' }] }, 'deploy tx'), 'HALT');
+  assert.throws(
+    () => assertVmStateHalt({ executions: [{ vmState: 'FAULT' }] }, 'deploy tx'),
+    /deploy tx vmstate FAULT/
   );
 });

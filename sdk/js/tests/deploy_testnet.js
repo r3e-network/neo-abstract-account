@@ -1,5 +1,6 @@
 const { tx, wallet, rpc, sc, u } = require('@cityofzion/neon-js');
 const { readContractArtifacts } = require('../src/contractArtifacts');
+const { extractVmState } = require('./tx');
 const { buildSerializedDeployScript } = require('./deployHelpers');
 const { extractDeployedContractHash } = require('../src/deployLog');
 
@@ -47,7 +48,7 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  const vmState = String(log?.executions?.[0]?.vmstate || log?.executions?.[0]?.vmState || 'UNKNOWN').toUpperCase();
+  const vmState = extractVmState(log);
   if (vmState !== 'HALT') {
     console.log('FAILED or pending', log?.executions?.[0]?.exception);
     return;

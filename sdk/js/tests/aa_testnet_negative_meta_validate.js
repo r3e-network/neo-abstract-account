@@ -4,7 +4,7 @@ const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
-const { waitForTx, sendTransaction } = require('./tx');
+const { assertVmStateHalt, waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
@@ -46,10 +46,7 @@ async function sendInvocation({ account, magic, aaHash, operation, args, witness
     systemFee: sim.gasconsumed || '1000000',
   });
   const appLog = await waitForTx(rpcClient, txid);
-
-  if (vmState !== 'HALT') {
-    throw new Error(`${operation} tx vmstate ${vmState}`);
-  }
+  assertVmStateHalt(appLog, `${operation} tx`);
 
   return {
     txid,

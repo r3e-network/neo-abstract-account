@@ -2,7 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
-const { waitForTx, sendTransaction } = require('./tx');
+const { extractVmState, waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindAccountHelpers } = require('./account');
 const { bindStackHelpers } = require('./stack');
@@ -100,8 +100,8 @@ async function main() {
     pollIntervalMs: 3000,
     errorMessage: `Timed out waiting for tx confirmation: ${create.txid}`,
   });
-  const vmState = appLog.executions?.[0]?.vmstate || appLog.executions?.[0]?.vmState || 'UNKNOWN';
-  if (String(vmState).toUpperCase() !== 'HALT') {
+  const vmState = extractVmState(appLog);
+  if (vmState !== 'HALT') {
     throw new Error(`createAccountWithAddress tx vmstate not HALT: ${vmState}`);
   }
 

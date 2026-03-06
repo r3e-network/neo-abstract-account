@@ -2,6 +2,18 @@ function defaultSleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function extractVmState(appLog) {
+  return String(appLog?.executions?.[0]?.vmstate || appLog?.executions?.[0]?.vmState || 'UNKNOWN').toUpperCase();
+}
+
+function assertVmStateHalt(appLog, label = 'transaction') {
+  const vmState = extractVmState(appLog);
+  if (vmState !== 'HALT') {
+    throw new Error(`${label} vmstate ${vmState}`);
+  }
+  return vmState;
+}
+
 async function waitForTx(rpcClient, txid, options = {}) {
   const {
     timeoutMs = 180000,
@@ -67,6 +79,8 @@ async function sendTransaction({
 }
 
 module.exports = {
+  assertVmStateHalt,
+  extractVmState,
   waitForTx,
   sendTransaction,
 };

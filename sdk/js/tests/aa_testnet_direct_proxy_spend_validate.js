@@ -2,7 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
-const { waitForTx, sendTransaction } = require('./tx');
+const { extractVmState, waitForTx, sendTransaction } = require('./tx');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
 const { sanitizeHex } = require('../src/metaTx');
@@ -132,7 +132,7 @@ async function main() {
       expectedBlocked,
       blocked: false,
       txid,
-      vmState: String(appLog.executions?.[0]?.vmstate || appLog.executions?.[0]?.vmState || 'UNKNOWN').toUpperCase(),
+      vmState: extractVmState(appLog),
       stack: appLog.executions?.[0]?.stack || [],
       accountAddress: accountInfo.address,
       recipientAddress: recipient.address,

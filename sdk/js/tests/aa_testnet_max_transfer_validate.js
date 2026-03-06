@@ -2,7 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
-const { waitForTx, sendTransaction } = require('./tx');
+const { assertVmStateHalt, extractVmState, waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
@@ -65,10 +65,7 @@ async function sendInvocation({
     witnesses,
   });
   const appLog = await waitForTx(rpcClient, txid);
-
-  if (vmState !== 'HALT') {
-    throw new Error(`${operation} tx vmstate ${vmState}`);
-  }
+  assertVmStateHalt(appLog, `${operation} tx`);
 
   return {
     txid,
@@ -237,7 +234,7 @@ async function main() {
   });
   summary.txs.push({ step: 'executeByAddress GAS transfer at limit', txid: allowedTx.txid, systemFee: allowedTx.systemFee, networkFee: allowedTx.networkFee });
   summary.allowedExecution = {
-    vmState: String(allowedTx.appLog.executions?.[0]?.vmstate || allowedTx.appLog.executions?.[0]?.vmState || 'UNKNOWN').toUpperCase(),
+    vmState: extractVmState(allowedTx.appLog),
     stack: allowedTx.appLog.executions?.[0]?.stack || [],
   };
   check('allowed transfer execution returns true', allowedTx.appLog.executions?.[0]?.stack?.[0]?.type === 'Boolean' && allowedTx.appLog.executions?.[0]?.stack?.[0]?.value === true, JSON.stringify(allowedTx.appLog.executions?.[0]?.stack || []));
