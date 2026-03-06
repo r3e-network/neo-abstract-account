@@ -1,6 +1,7 @@
 const { rpc, sc, u, tx, wallet } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
 const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
+const { decodeByteStringToHex } = require('./stack');
 
 const aaHash = sanitizeHex(
   process.env.AA_HASH_TESTNET
@@ -38,7 +39,10 @@ async function main() {
     args: [{ type: 'Array', value: argsParam }],
   });
   const argsRes = await rpcClient.invokeScript(u.HexString.fromHex(argsScript), []);
-  const argsHash = Buffer.from(argsRes.stack[0].value, 'base64').toString('hex');
+  const argsHash = decodeByteStringToHex(argsRes.stack?.[0]);
+  if (!argsHash) {
+    throw new Error('computeArgsHash returned empty stack');
+  }
 
   const version = await rpcClient.execute(new rpc.Query({ method: 'getversion' }));
   const chainId = version?.protocol?.network;

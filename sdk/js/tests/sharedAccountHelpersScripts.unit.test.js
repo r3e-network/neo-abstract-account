@@ -8,6 +8,7 @@ const expectations = [
   { file: 'aa_testnet_full_validate.js' },
   { file: 'aa_testnet_max_transfer_validate.js' },
   { file: 'aa_testnet_direct_proxy_spend_validate.js' },
+  { file: 'aa_testnet_integration_check.js' },
 ];
 
 for (const { file } of expectations) {

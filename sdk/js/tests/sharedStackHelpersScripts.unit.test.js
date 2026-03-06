@@ -12,6 +12,14 @@ const expectations = [
     file: 'aa_testnet_full_validate.js',
     mustNotMatch: [/^function decodeInteger\(/m, /^function decodeByteStringToHex\(/m, /^function normalizeReadByteString\(/m],
   },
+  {
+    file: 'aa_testnet_integration_check.js',
+    mustNotMatch: [/^function toHexFromStackByteString\(/m],
+  },
+  {
+    file: 'test-evm-meta-tx.js',
+    mustNotMatch: [/Buffer\.from\(argsRes\.stack\[0\]\.value, 'base64'\)\.toString\('hex'\)/m],
+  },
 ];
 
 for (const { file, mustNotMatch } of expectations) {

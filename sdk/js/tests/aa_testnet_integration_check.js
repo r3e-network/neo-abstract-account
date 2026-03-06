@@ -4,16 +4,15 @@ const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
+const { bindAccountHelpers } = require('./account');
+const { bindStackHelpers } = require('./stack');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { invokeRead } = bindRpcHelpers({ rpcClient, sc, u });
-
-function toHexFromStackByteString(item) {
-  if (!item || item.type !== 'ByteString' || !item.value) return '';
-  return Buffer.from(item.value, 'base64').toString('hex').toLowerCase();
-}
+const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex });
+const { decodeByteStringToHex, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
 
 async function sendInvocation({ account, magic, aaHash, operation, args }) {
   const script = sc.createScript({ scriptHash: aaHash, operation, args });
@@ -71,24 +70,15 @@ async function main() {
 
   const gasBalance = await getGasBalance(account.address);
 
-  // Unique 16-byte accountId
-  const accountId = crypto.randomBytes(16).toString('hex');
-
-  // Compute proxy AA address: verify(accountId)
-  const verifyScript = sc.createScript({
-    scriptHash: aaHash,
-    operation: 'verify',
-    args: [sc.ContractParam.byteArray(u.HexString.fromHex(accountId, false))],
-  });
-  const accountAddressScriptHash = sanitizeHex(u.reverseHex(u.hash160(verifyScript)));
-  const accountAddress = wallet.getAddressFromScriptHash(accountAddressScriptHash);
+  const accountId = randomAccountIdHex(16);
+  const accountInfo = deriveAaAddressFromId(aaHash, accountId);
 
   const idBeforeRes = await invokeRead(
     aaHash,
     'getAccountIdByAddress',
-    [sc.ContractParam.hash160(accountAddressScriptHash)]
+    [sc.ContractParam.hash160(accountInfo.addressScriptHash)]
   );
-  const accountIdBefore = toHexFromStackByteString(idBeforeRes.stack[0]);
+  const accountIdBefore = decodeByteStringToHex(idBeforeRes.stack[0]);
 
   const create = await sendInvocation({
     account,
@@ -97,7 +87,7 @@ async function main() {
     operation: 'createAccountWithAddress',
     args: [
       sc.ContractParam.byteArray(u.HexString.fromHex(accountId, false)),
-      sc.ContractParam.hash160(accountAddressScriptHash),
+      sc.ContractParam.hash160(accountInfo.addressScriptHash),
       sc.ContractParam.array(sc.ContractParam.hash160(sanitizeHex(account.scriptHash))),
       sc.ContractParam.integer(1),
       sc.ContractParam.array(),
@@ -118,30 +108,28 @@ async function main() {
   const getIdRes = await invokeRead(
     aaHash,
     'getAccountIdByAddress',
-    [sc.ContractParam.hash160(accountAddressScriptHash)]
+    [sc.ContractParam.hash160(accountInfo.addressScriptHash)]
   );
-  const resolvedAccountId = toHexFromStackByteString(getIdRes.stack[0]);
+  const resolvedAccountId = decodeByteStringToHex(getIdRes.stack[0]);
 
   const getAddrRes = await invokeRead(
     aaHash,
     'getAccountAddress',
     [sc.ContractParam.byteArray(u.HexString.fromHex(accountId, false))]
   );
-  const resolvedAccountAddressHash = toHexFromStackByteString(getAddrRes.stack[0]);
-  const normalizedResolvedAccountId = resolvedAccountId ? sanitizeHex(u.reverseHex(resolvedAccountId)) : '';
-  const normalizedResolvedAccountAddressHash = resolvedAccountAddressHash
-    ? sanitizeHex(u.reverseHex(resolvedAccountAddressHash))
-    : '';
+  const resolvedAccountAddressHash = decodeByteStringToHex(getAddrRes.stack[0]);
+  const normalizedResolvedAccountId = normalizeReadByteString(resolvedAccountId);
+  const normalizedResolvedAccountAddressHash = normalizeReadByteString(resolvedAccountAddressHash);
 
   const adminsAfterRes = await invokeRead(
     aaHash,
     'getAdminsByAddress',
-    [sc.ContractParam.hash160(accountAddressScriptHash)]
+    [sc.ContractParam.hash160(accountInfo.addressScriptHash)]
   );
   const adminThresholdRes = await invokeRead(
     aaHash,
     'getAdminThresholdByAddress',
-    [sc.ContractParam.hash160(accountAddressScriptHash)]
+    [sc.ContractParam.hash160(accountInfo.addressScriptHash)]
   );
 
   const adminsAfter = adminsAfterRes?.stack?.[0]?.value || [];
@@ -155,8 +143,8 @@ async function main() {
     ownerGasBalance: gasBalance,
     createdAccount: {
       accountIdHex: accountId,
-      accountAddress,
-      accountAddressScriptHash: `0x${accountAddressScriptHash}`,
+      accountAddress: accountInfo.address,
+      accountAddressScriptHash: `0x${accountInfo.addressScriptHash}`,
     },
     tx: create,
     checks: {
@@ -166,7 +154,7 @@ async function main() {
       accountIdReadRawHex: resolvedAccountId || null,
       accountAddressReadRawHex: resolvedAccountAddressHash || null,
       accountIdBindingMatches: normalizedResolvedAccountId === accountId,
-      accountAddressBindingMatches: normalizedResolvedAccountAddressHash === accountAddressScriptHash,
+      accountAddressBindingMatches: normalizedResolvedAccountAddressHash === accountInfo.addressScriptHash,
     },
   };
 
