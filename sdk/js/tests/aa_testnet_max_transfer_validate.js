@@ -4,27 +4,17 @@ const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
+const { bindParamHelpers } = require('./params');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { simulate } = bindRpcHelpers({ rpcClient, sc, u });
+const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
 
 function randomAccountIdHex(bytes = 16) {
   return crypto.randomBytes(bytes).toString('hex');
-}
-
-function cpHash160(hex) {
-  return sc.ContractParam.hash160(sanitizeHex(hex));
-}
-
-function cpByteArray(hex) {
-  return sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(hex), false));
-}
-
-function cpArray(items = []) {
-  return sc.ContractParam.array(...items);
 }
 
 function deriveAaAddressFromId(aaHash, accountIdHex) {
