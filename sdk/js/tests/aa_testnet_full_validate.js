@@ -7,33 +7,16 @@ const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
+const { bindAccountHelpers } = require('./account');
+const { bindStackHelpers } = require('./stack');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { invokeRead, simulate } = bindRpcHelpers({ rpcClient, sc, u });
 const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
+const { decodeByteStringToHex, decodeInteger, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
-
-function randomAccountIdHex(bytes = 16) {
-  return crypto.randomBytes(bytes).toString('hex');
-}
-
-function decodeByteStringToHex(item) {
-  if (!item || item.type !== 'ByteString' || !item.value) return '';
-  return Buffer.from(item.value, 'base64').toString('hex').toLowerCase();
-}
-
-function decodeInteger(item) {
-  if (!item) return 0;
-  const v = Number(item.value);
-  return Number.isFinite(v) ? v : 0;
-}
-
-function normalizeReadByteString(hex) {
-  const clean = sanitizeHex(hex);
-  if (!clean) return '';
-  return sanitizeHex(u.reverseHex(clean));
-}
 
 async function sendInvocation({ account, magic, aaHash, operation, args, witnessScope = tx.WitnessScope.CalledByEntry }) {
   const signers = [{ account: account.scriptHash, scopes: witnessScope }];
@@ -337,17 +320,6 @@ function buildSetWhitelistModeByAccountIdArgsIntegerFlag(accountIdHex, enabled) 
     cpByteArray(accountIdHex),
     sc.ContractParam.integer(enabled ? 1 : 0),
   ];
-}
-
-function deriveAaAddressFromId(aaHash, accountIdHex) {
-  const verifyScript = sc.createScript({
-    scriptHash: aaHash,
-    operation: 'verify',
-    args: [cpByteArray(accountIdHex)],
-  });
-  const addressScriptHash = sanitizeHex(u.reverseHex(u.hash160(verifyScript)));
-  const address = wallet.getAddressFromScriptHash(addressScriptHash);
-  return { addressScriptHash, address };
 }
 
 async function main() {

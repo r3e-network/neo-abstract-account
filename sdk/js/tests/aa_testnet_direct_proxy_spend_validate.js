@@ -4,30 +4,14 @@ const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
 const { bindParamHelpers } = require('./params');
+const { bindAccountHelpers } = require('./account');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
-
-function randomAccountIdHex(bytes = 16) {
-  return crypto.randomBytes(bytes).toString('hex');
-}
-
-function deriveAaAddressFromId(aaHash, accountIdHex) {
-  const verificationScript = sc.createScript({
-    scriptHash: aaHash,
-    operation: 'verify',
-    args: [cpByteArray(accountIdHex)],
-  });
-  const addressScriptHash = sanitizeHex(u.reverseHex(u.hash160(verificationScript)));
-  return {
-    verificationScript,
-    addressScriptHash,
-    address: wallet.getAddressFromScriptHash(addressScriptHash),
-  };
-}
 
 async function sendInvocation({ account, magic, scriptHash, operation, args }) {
   const signers = [{ account: account.scriptHash, scopes: tx.WitnessScope.CalledByEntry }];

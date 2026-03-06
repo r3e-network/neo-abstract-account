@@ -7,39 +7,15 @@ const { parseEnvFile } = require('./env');
 const { waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
+const { bindAccountHelpers } = require('./account');
+const { bindStackHelpers } = require('./stack');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { invokeRead, simulate } = bindRpcHelpers({ rpcClient, sc, u });
 const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
-
-function randomAccountIdHex(bytes = 16) {
-  return crypto.randomBytes(bytes).toString('hex');
-}
-
-function decodeInteger(item) {
-  if (!item) return 0;
-  const parsed = Number(item.value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function decodeByteStringToHex(item) {
-  if (!item || item.type !== 'ByteString' || !item.value) return '';
-  return Buffer.from(item.value, 'base64').toString('hex').toLowerCase();
-}
-
-function deriveAaAddressFromId(aaHash, accountIdHex) {
-  const verifyScript = sc.createScript({
-    scriptHash: aaHash,
-    operation: 'verify',
-    args: [cpByteArray(accountIdHex)],
-  });
-  const addressScriptHash = sanitizeHex(u.reverseHex(u.hash160(verifyScript)));
-  return {
-    addressScriptHash,
-    address: wallet.getAddressFromScriptHash(addressScriptHash),
-  };
-}
+const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
+const { decodeByteStringToHex, decodeInteger } = bindStackHelpers({ sanitizeHex, u });
 
 function buildSetWhitelistByAddressArgs(accountAddressHash, targetContractHash, allowed) {
   return [
@@ -84,11 +60,11 @@ async function sendInvocation({ account, magic, aaHash, operation, args, witness
 
 async function computeArgsHash(aaHash, args) {
   const res = await invokeRead(aaHash, 'computeArgsHash', [cpArray(args)]);
-  const item = res.stack?.[0];
-  if (!item || item.type !== 'ByteString' || !item.value) {
+  const decoded = decodeByteStringToHex(res.stack?.[0]);
+  if (!decoded) {
     throw new Error('computeArgsHash returned empty stack');
   }
-  return Buffer.from(item.value, 'base64').toString('hex').toLowerCase();
+  return decoded;
 }
 
 function buildTypedData({ chainId, verifyingContract, accountIdHex, targetContract, method, argsHashHex, nonce, deadline }) {
