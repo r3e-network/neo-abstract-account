@@ -2,7 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const path = require('path');
 const crypto = require('crypto');
 const { parseEnvFile } = require('./env');
-const { waitForTx } = require('./tx');
+const { waitForTx, sendTransaction } = require('./tx');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
@@ -48,25 +48,16 @@ async function sendInvocation({ account, magic, scriptHash, operation, args }) {
   }
 
   const currentHeight = await rpcClient.getBlockCount();
-  let transaction = new tx.Transaction({
+  const { txid } = await sendTransaction({
+    rpcClient,
+    txModule: tx,
+    account,
+    magic,
     signers,
     validUntilBlock: currentHeight + 1000,
     script,
     systemFee: sim.gasconsumed || '1000000',
   });
-  transaction.sign(account, magic);
-
-  const networkFee = await rpcClient.calculateNetworkFee(transaction);
-  transaction = new tx.Transaction({
-    signers,
-    validUntilBlock: currentHeight + 1000,
-    script,
-    systemFee: sim.gasconsumed || '1000000',
-    networkFee,
-  });
-  transaction.sign(account, magic);
-
-  const txid = await rpcClient.sendRawTransaction(transaction);
   return waitForTx(rpcClient, txid);
 }
 

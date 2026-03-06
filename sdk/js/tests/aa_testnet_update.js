@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
 const { parseEnvFile } = require('./env');
-const { waitForTx } = require('./tx');
+const { waitForTx, sendTransaction } = require('./tx');
 const { sanitizeHex } = require('../src/metaTx');
 
 async function main() {
@@ -56,26 +56,16 @@ async function main() {
   }
 
   const currentHeight = await rpcClient.getBlockCount();
-  let transaction = new tx.Transaction({
+  const { txid, networkFee } = await sendTransaction({
+    rpcClient,
+    txModule: tx,
+    account,
+    magic,
     signers,
     validUntilBlock: currentHeight + 1000,
     script,
     systemFee: sim.gasconsumed || '100000000',
   });
-
-  transaction.sign(account, magic);
-  const networkFee = await rpcClient.calculateNetworkFee(transaction);
-
-  transaction = new tx.Transaction({
-    signers,
-    validUntilBlock: currentHeight + 1000,
-    script,
-    systemFee: sim.gasconsumed || '100000000',
-    networkFee,
-  });
-  transaction.sign(account, magic);
-
-  const txid = await rpcClient.sendRawTransaction(transaction);
   const appLog = await waitForTx(rpcClient, txid, {
     timeoutMs: 120000,
     pollIntervalMs: 3000,
@@ -91,7 +81,7 @@ async function main() {
     manifestName: localManifest.name,
     txid,
     systemFee: sim.gasconsumed,
-    networkFee: networkFee?.toString?.() || String(networkFee),
+    networkFee,
     vmState,
   }, null, 2));
 

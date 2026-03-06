@@ -27,6 +27,46 @@ async function waitForTx(rpcClient, txid, options = {}) {
   throw new Error(errorMessage);
 }
 
+async function sendTransaction({
+  rpcClient,
+  txModule,
+  account,
+  magic,
+  signers,
+  validUntilBlock,
+  script,
+  systemFee,
+  witnesses = [],
+}) {
+  const basePayload = {
+    signers,
+    validUntilBlock,
+    script,
+    systemFee,
+  };
+
+  if (Array.isArray(witnesses) && witnesses.length > 0) {
+    basePayload.witnesses = witnesses;
+  }
+
+  let transaction = new txModule.Transaction(basePayload);
+  transaction.sign(account, magic);
+
+  const networkFee = await rpcClient.calculateNetworkFee(transaction);
+  transaction = new txModule.Transaction({
+    ...basePayload,
+    networkFee,
+  });
+  transaction.sign(account, magic);
+
+  const txid = await rpcClient.sendRawTransaction(transaction);
+  return {
+    txid,
+    networkFee: networkFee?.toString?.() || String(networkFee),
+  };
+}
+
 module.exports = {
   waitForTx,
+  sendTransaction,
 };
