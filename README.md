@@ -4,8 +4,36 @@ This project contains the comprehensive standard, smart contract implementation,
 
 ## Features
 - **Deterministic Proxy Verification**: No deployment cost for new users; uses a global master contract.
+- **Hardened Policy-Gated Execution**: External interactions must flow through AA entrypoints where method policy, whitelist / blacklist, and transfer-limit controls are enforced.
 - **Cross-Chain EVM Compatibility**: Secp256k1 and Keccak256 native validation. Users can interact via MetaMask / EVM wallets using EIP-712 Meta-Transactions.
 - **Multi-Signature Access Control**: Isolated thresholds for Admins and Managers for modular security.
+
+## Quickstart
+
+### Prerequisites
+- `.NET SDK 10`
+- `Node.js 22+`
+
+### Install
+
+```bash
+cd frontend && npm ci
+cd ../sdk/js && npm ci
+```
+
+### Test
+
+```bash
+dotnet test neo-abstract-account.sln -c Release --nologo
+cd frontend && npm test
+cd sdk/js && npm test
+```
+
+### Build
+
+```bash
+cd frontend && npm run build
+```
 
 ## Verified Testnet Status
 

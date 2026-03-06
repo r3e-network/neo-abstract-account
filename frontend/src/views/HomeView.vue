@@ -145,5 +145,7 @@
 </template>
 
 <script setup>
-import ArchitectureDiagram from '@/components/ArchitectureDiagram.vue';
+import { defineAsyncComponent } from 'vue';
+
+const ArchitectureDiagram = defineAsyncComponent(() => import('@/components/ArchitectureDiagram.vue'));
 </script>

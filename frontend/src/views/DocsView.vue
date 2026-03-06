@@ -41,41 +41,75 @@
 
 <script setup>
 import { nextTick, ref, watch } from 'vue';
-import { Marked } from 'marked';
-import { markedHighlight } from 'marked-highlight';
-import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css';
-import mermaid from 'mermaid';
 import { DOCS, DEFAULT_DOC_KEY } from '@/features/docs/registry';
 import { sanitizeRenderedHtml } from '@/features/docs/rendering';
 
-mermaid.initialize({ startOnLoad: false, theme: 'default' });
+let docsRuntimePromise;
 
-const marked = new Marked(
-  markedHighlight({
-    langPrefix: 'hljs language-',
-    highlight(code, lang) {
-      if (lang === 'mermaid') {
-        return code; // Do not highlight or wrap mermaid text
-      }
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-      return hljs.highlight(code, { language }).value;
-    }
-  })
-);
+async function getDocsRuntime() {
+  if (!docsRuntimePromise) {
+    docsRuntimePromise = Promise.all([
+      await import('marked'),
+      await import('marked-highlight'),
+      await import('highlight.js/lib/core'),
+      await import('highlight.js/lib/languages/bash'),
+      await import('highlight.js/lib/languages/javascript'),
+      await import('highlight.js/lib/languages/csharp'),
+      await import('mermaid')
+    ]).then(([
+      markedModule,
+      markedHighlightModule,
+      hljsModule,
+      bashModule,
+      javascriptModule,
+      csharpModule,
+      mermaidModule
+    ]) => {
+      const { Marked } = markedModule;
+      const { markedHighlight } = markedHighlightModule;
+      const hljs = hljsModule.default;
+      const mermaid = mermaidModule.default;
 
-// We override marked's default code block renderer.
-const renderer = new marked.Renderer();
-const originalCode = renderer.code.bind(renderer);
-renderer.code = (token) => {
-  if (token.lang === 'mermaid') {
-    // Generate a unique ID for each diagram
-    const id = `mermaid-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-    return `<div class="mermaid-container" id="${id}" data-mermaid-code="${encodeURIComponent(token.text)}">Loading diagram...</div>`;
+      hljs.registerLanguage('bash', bashModule.default);
+      hljs.registerLanguage('shell', bashModule.default);
+      hljs.registerLanguage('javascript', javascriptModule.default);
+      hljs.registerLanguage('js', javascriptModule.default);
+      hljs.registerLanguage('csharp', csharpModule.default);
+      hljs.registerLanguage('cs', csharpModule.default);
+
+      mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+      const marked = new Marked(
+        markedHighlight({
+          langPrefix: 'hljs language-',
+          highlight(code, lang) {
+            if (lang === 'mermaid') {
+              return code;
+            }
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+          }
+        })
+      );
+
+      const renderer = new marked.Renderer();
+      const originalCode = renderer.code.bind(renderer);
+      renderer.code = (token) => {
+        if (token.lang === 'mermaid') {
+          const id = `mermaid-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          return `<div class="mermaid-container" id="${id}" data-mermaid-code="${encodeURIComponent(token.text)}">Loading diagram...</div>`;
+        }
+        return originalCode(token);
+      };
+      marked.use({ renderer });
+
+      return { marked, mermaid };
+    });
   }
-  return originalCode(token);
-};
-marked.use({ renderer });
+
+  return docsRuntimePromise;
+}
 
 const docs = DOCS;
 
@@ -85,6 +119,7 @@ const contentRoot = ref(null);
 const hasInitialMermaidRender = ref(false);
 
 async function renderMermaidDiagrams() {
+  const { mermaid } = await getDocsRuntime();
   const containers = contentRoot.value?.querySelectorAll('.mermaid-container') || [];
 
   for (const container of containers) {
@@ -101,6 +136,7 @@ async function renderMermaidDiagrams() {
 
 const renderMarkdown = async (key) => {
   try {
+    const { marked } = await getDocsRuntime();
     const rawContent = docs[key]?.content || '# 404 Not Found';
     const rendered = await marked.parse(rawContent);
     compiledMarkdown.value = sanitizeRenderedHtml(rendered);

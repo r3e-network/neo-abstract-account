@@ -9,6 +9,9 @@ namespace AbstractAccount
 {
     public partial class UnifiedSmartWallet
     {
+        private static readonly byte[] CanonicalShortAccountIdKeyPrefix = new byte[] { 0x00 };
+        private static readonly byte[] CanonicalLongAccountIdKeyPrefix = new byte[] { 0x01 };
+
         private static void AssertValidAccountId(ByteString accountId)
         {
             ExecutionEngine.Assert(accountId != null && accountId.Length > 0 && accountId.Length <= 128, "Invalid accountId");
@@ -16,8 +19,38 @@ namespace AbstractAccount
 
         private static ByteString GetStorageKey(ByteString accountId)
         {
+            byte[] accountIdBytes = (byte[])accountId;
+            byte[] canonicalBytes = GetCanonicalStorageKeyBytes(accountIdBytes);
+            ByteString canonicalKey = (ByteString)canonicalBytes;
+            if (HasAccountAtStorageKey(canonicalKey)) return canonicalKey;
+
+            ByteString legacyKey = GetLegacyStorageKey(accountId);
+            if (ByteArrayEquals(canonicalBytes, (byte[])legacyKey)) return canonicalKey;
+            if (HasAccountAtStorageKey(legacyKey)) return legacyKey;
+
+            return canonicalKey;
+        }
+
+        internal static byte[] GetCanonicalStorageKeyBytes(byte[] accountId)
+        {
+            if (accountId.Length <= 63)
+            {
+                return ConcatBytes(CanonicalShortAccountIdKeyPrefix, accountId);
+            }
+
+            return ConcatBytes(CanonicalLongAccountIdKeyPrefix, (byte[])CryptoLib.Sha256((ByteString)accountId));
+        }
+
+        private static ByteString GetLegacyStorageKey(ByteString accountId)
+        {
             if (accountId.Length <= 63) return accountId;
             return CryptoLib.Sha256(accountId);
+        }
+
+        private static bool HasAccountAtStorageKey(ByteString storageKey)
+        {
+            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
+            return adminsMap.Get(storageKey) != null;
         }
 
         private static void AssertValidAccountAddress(UInt160 accountAddress)
@@ -36,10 +69,10 @@ namespace AbstractAccount
         {
             AssertValidAccountAddress(accountAddress);
             StorageMap map = new StorageMap(Storage.CurrentContext, AccountAddressToIdPrefix);
-            ByteString accountId = map.Get(accountAddress);
+            ByteString? accountId = map.Get(accountAddress);
             ExecutionEngine.Assert(accountId != null && accountId.Length > 0, "Account address not registered");
-            AssertAccountExists(accountId);
-            return accountId;
+            AssertAccountExists(accountId!);
+            return accountId!;
         }
 
         private static void CreateAccountInternal(
@@ -53,7 +86,7 @@ namespace AbstractAccount
             AssertBootstrapAuthorization(admins, adminThreshold, managers, managerThreshold);
 
             StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
-            ByteString existing = adminsMap.Get(GetStorageKey(accountId));
+            ByteString? existing = adminsMap.Get(GetStorageKey(accountId));
             ExecutionEngine.Assert(existing == null, "Account already exists");
 
             SetAdminsInternal(accountId, admins, adminThreshold);
@@ -70,14 +103,14 @@ namespace AbstractAccount
             AssertValidAccountAddress(accountAddress);
 
             StorageMap addrToIdMap = new StorageMap(Storage.CurrentContext, AccountAddressToIdPrefix);
-            ByteString existingId = addrToIdMap.Get(accountAddress);
+            ByteString? existingId = addrToIdMap.Get(accountAddress);
             if (existingId != null)
             {
                 ExecutionEngine.Assert(existingId == accountId, "Account address already bound");
             }
 
             StorageMap idToAddrMap = new StorageMap(Storage.CurrentContext, AccountIdToAddressPrefix);
-            ByteString existingAddress = idToAddrMap.Get(GetStorageKey(accountId));
+            ByteString? existingAddress = idToAddrMap.Get(GetStorageKey(accountId));
             if (existingAddress != null)
             {
                 ExecutionEngine.Assert((UInt160)existingAddress == accountAddress, "Account already bound to different address");
@@ -106,7 +139,7 @@ namespace AbstractAccount
         private static bool HasActiveVerifyContext(ByteString accountId, UInt160 callingScriptHash)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, VerifyContextPrefix);
-            ByteString expectedTarget = map.Get(GetStorageKey(accountId));
+            ByteString? expectedTarget = map.Get(GetStorageKey(accountId));
             if (expectedTarget == null || callingScriptHash == null) return false;
             return (UInt160)expectedTarget == callingScriptHash;
         }
@@ -115,7 +148,7 @@ namespace AbstractAccount
 
         private static UInt160 GetWalletContractHash()
         {
-            ByteString storedHash = Storage.Get(Storage.CurrentContext, ContractHashKey);
+            ByteString? storedHash = Storage.Get(Storage.CurrentContext, ContractHashKey);
             if (storedHash != null && storedHash.Length == 20) return (UInt160)storedHash;
             return Runtime.ExecutingScriptHash;
         }
@@ -127,7 +160,7 @@ namespace AbstractAccount
         internal static bool IsSingleSelfCallScript(byte[] script, byte[] contractHash)
         {
             if (script == null || contractHash == null || contractHash.Length != 20 || script.Length == 0) return false;
-            if (CountOccurrences(script, ContractCallSyscall) != 1) return false;
+            if (CountSyscallOccurrences(script, ContractCallSyscall) != 1) return false;
 
             byte[] selfTargetSuffix = ConcatBytes(
                 new byte[] { 0x0C, 0x14 },
@@ -137,29 +170,65 @@ namespace AbstractAccount
             return EndsWith(script, selfTargetSuffix);
         }
 
-        private static int CountOccurrences(byte[] source, byte[] value)
+        private static int CountSyscallOccurrences(byte[] source, byte[] syscallId)
         {
-            if (source == null || value == null || value.Length == 0 || source.Length < value.Length) return 0;
+            if (source == null || syscallId == null || syscallId.Length != 5 || source.Length == 0) return 0;
 
             int count = 0;
-            for (int i = 0; i <= source.Length - value.Length; i++)
+            int index = 0;
+            while (index < source.Length)
             {
-                bool matched = true;
-                for (int j = 0; j < value.Length; j++)
+                byte opcode = source[index];
+
+                if (opcode == (byte)OpCode.PUSHDATA1)
                 {
-                    if (source[i + j] != value[j])
-                    {
-                        matched = false;
-                        break;
-                    }
+                    if (index + 1 >= source.Length) return 0;
+                    index += 2 + source[index + 1];
+                    continue;
                 }
 
-                if (matched)
+                if (opcode == (byte)OpCode.PUSHDATA2)
                 {
-                    count++;
-                    i += value.Length - 1;
+                    if (index + 2 >= source.Length) return 0;
+                    int length = source[index + 1] | (source[index + 2] << 8);
+                    index += 3 + length;
+                    continue;
                 }
+
+                if (opcode == (byte)OpCode.PUSHDATA4)
+                {
+                    if (index + 4 >= source.Length) return 0;
+                    int length = source[index + 1]
+                        | (source[index + 2] << 8)
+                        | (source[index + 3] << 16)
+                        | (source[index + 4] << 24);
+                    if (length < 0) return 0;
+                    index += 5 + length;
+                    continue;
+                }
+
+                if (opcode == syscallId[0])
+                {
+                    if (index + 4 >= source.Length) return 0;
+
+                    bool matched = true;
+                    for (int j = 1; j < syscallId.Length; j++)
+                    {
+                        if (source[index + j] != syscallId[j])
+                        {
+                            matched = false;
+                            break;
+                        }
+                    }
+
+                    if (matched) count++;
+                    index += 5;
+                    continue;
+                }
+
+                index++;
             }
+
             return count;
         }
 
@@ -183,7 +252,7 @@ namespace AbstractAccount
         private static void SetMetaTxContext(ByteString accountId, UInt160[] signerHashes)
         {
             ExecutionEngine.Assert(signerHashes != null && signerHashes.Length > 0, "Missing meta-tx signers");
-            byte[] packed = PackSignerHashes(signerHashes);
+            byte[] packed = PackSignerHashes(signerHashes!);
             StorageMap map = new StorageMap(Storage.CurrentContext, MetaTxContextPrefix);
             map.Put(GetStorageKey(accountId), (ByteString)packed);
         }
@@ -191,7 +260,7 @@ namespace AbstractAccount
         private static UInt160[] GetMetaTxContextSigners(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, MetaTxContextPrefix);
-            ByteString data = map.Get(GetStorageKey(accountId));
+            ByteString? data = map.Get(GetStorageKey(accountId));
             if (data == null) return new UInt160[0];
             return UnpackSignerHashes((byte[])data);
         }
@@ -240,7 +309,7 @@ namespace AbstractAccount
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, ExecutionLockPrefix);
             ByteString key = GetStorageKey(accountId);
-            ByteString active = map.Get(key);
+            ByteString? active = map.Get(key);
             ExecutionEngine.Assert(active == null, "Execution in progress");
             map.Put(key, (ByteString)new byte[] { 1 });
         }
@@ -268,7 +337,7 @@ namespace AbstractAccount
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, LastActivePrefix);
             ByteString key = GetStorageKey(accountId);
-            ByteString data = map.Get(key);
+            ByteString? data = map.Get(key);
             if (data != null) return (BigInteger)data;
 
             // Legacy accounts may not have an initialized timestamp; start inactivity window now.
@@ -281,7 +350,7 @@ namespace AbstractAccount
         public static BigInteger GetLastActiveTimestamp(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, LastActivePrefix);
-            ByteString data = map.Get(GetStorageKey(accountId));
+            ByteString? data = map.Get(GetStorageKey(accountId));
             if (data == null) return 0;
             return (BigInteger)data;
         }
@@ -305,12 +374,12 @@ namespace AbstractAccount
             if (verifierContract == null || verifierContract == UInt160.Zero)
             {
                 map.Delete(GetStorageKey(accountId));
-                OnPolicyUpdated(accountId, "VerifierContract", UInt160.Zero, null);
+                OnPolicyUpdated(accountId, "VerifierContract", UInt160.Zero, null!);
             }
             else
             {
                 map.Put(GetStorageKey(accountId), verifierContract);
-                OnPolicyUpdated(accountId, "VerifierContract", verifierContract, null);
+                OnPolicyUpdated(accountId, "VerifierContract", verifierContract, null!);
             }
         }
 
@@ -318,7 +387,7 @@ namespace AbstractAccount
         public static UInt160 GetVerifierContract(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, VerifierContractPrefix);
-            ByteString data = map.Get(GetStorageKey(accountId));
+            ByteString? data = map.Get(GetStorageKey(accountId));
             if (data == null) return UInt160.Zero;
             return (UInt160)data;
         }

@@ -10,6 +10,8 @@ import {
 
 const frontendRoot = path.resolve(import.meta.dirname, '..');
 const read = (relativePath) => fs.readFileSync(path.join(frontendRoot, relativePath), 'utf8');
+const readRepo = (relativePath) => fs.readFileSync(path.join(frontendRoot, '..', relativePath), 'utf8');
+const readFrontendPackage = () => JSON.parse(read('package.json'));
 
 test('isBlockedNodeName blocks executable embedded tags', () => {
   assert.equal(isBlockedNodeName('script'), true);
@@ -40,4 +42,84 @@ test('workflow doc explains wrapper execution after proxy hardening', () => {
 test('sdk doc references the verified hardened testnet hash', () => {
   const sdkDoc = read('src/assets/docs/sdk-usage.md');
   assert.match(sdkDoc, /0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423/i);
+});
+
+test('repo docs describe a hardened policy-gated execution surface', () => {
+  const readme = readRepo('README.md');
+  const architectureDoc = readRepo('docs/architecture.md');
+
+  assert.match(readme, /policy-gated/i);
+  assert.match(architectureDoc, /policy-gated/i);
+  assert.match(architectureDoc, /executeByAddress|executeMetaTx/);
+  assert.doesNotMatch(architectureDoc, /fully programmable logic gates/i);
+});
+
+test('repo README includes a quickstart covering install build and test workflows', () => {
+  const readme = readRepo('README.md');
+
+  assert.match(readme, /Quickstart/i);
+  assert.match(readme, /dotnet test/i);
+  assert.match(readme, /npm (ci|install)/i);
+  assert.match(readme, /npm run build/i);
+});
+
+test('custom verifier docs explain verifier approval does not bypass runtime restrictions', () => {
+  const verifierDoc = read('src/assets/docs/custom-verifiers.md');
+
+  assert.match(verifierDoc, /does not bypass/i);
+  assert.match(verifierDoc, /whitelist|blacklist|max-transfer|method policy/i);
+});
+
+test('DocsView lazy-loads heavy markdown and diagram dependencies', () => {
+  const docsViewSource = read('src/views/DocsView.vue');
+
+  assert.match(docsViewSource, /await import\('marked'\)/);
+  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/core'\)/);
+  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/languages\/bash'\)/);
+  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/languages\/javascript'\)/);
+  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/languages\/csharp'\)/);
+  assert.match(docsViewSource, /await import\('mermaid'\)/);
+  assert.doesNotMatch(docsViewSource, /await import\('highlight\.js'\)/);
+  assert.doesNotMatch(docsViewSource, /import mermaid from 'mermaid';/);
+});
+
+test('vite config defines manual chunk groups for heavy frontend dependencies', () => {
+  const viteConfigSource = read('vite.config.js');
+
+  assert.match(viteConfigSource, /manualChunks/);
+  assert.match(viteConfigSource, /vue-flow/);
+  assert.match(viteConfigSource, /ethers|neon-core/);
+  assert.doesNotMatch(viteConfigSource, /return 'mermaid'/);
+  assert.doesNotMatch(viteConfigSource, /return 'cytoscape'/);
+});
+
+test('studio controller loads neon-core instead of the full neon-js bundle', () => {
+  const controllerSource = read('src/features/studio/useStudioController.js');
+
+  assert.match(controllerSource, /await import\('@cityofzion\/neon-core'\)/);
+  assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-js'\)/);
+});
+
+test('frontend package depends on neon-core and not neon-js', () => {
+  const packageJson = readFrontendPackage();
+
+  assert.equal(typeof packageJson.dependencies['@cityofzion/neon-core'], 'string');
+  assert.equal(packageJson.dependencies['@cityofzion/neon-js'], undefined);
+});
+
+test('HomeView lazy-loads the architecture diagram component', () => {
+  const homeViewSource = read('src/views/HomeView.vue');
+
+  assert.match(homeViewSource, /defineAsyncComponent/);
+  assert.match(homeViewSource, /import\('\@\/components\/ArchitectureDiagram\.vue'\)/);
+  assert.doesNotMatch(homeViewSource, /import ArchitectureDiagram from/);
+});
+
+test('AbstractAccountTool lazy-loads heavy studio panels', () => {
+  const studioToolSource = read('src/components/AbstractAccountTool.vue');
+
+  assert.match(studioToolSource, /defineAsyncComponent/);
+  assert.match(studioToolSource, /import\('\@\/features\/studio\/components\/CreateAccountPanel\.vue'\)/);
+  assert.match(studioToolSource, /import\('\@\/features\/studio\/components\/ContractSourcePanel\.vue'\)/);
+  assert.doesNotMatch(studioToolSource, /import CreateAccountPanel from/);
 });

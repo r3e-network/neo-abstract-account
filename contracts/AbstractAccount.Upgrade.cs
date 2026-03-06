@@ -9,9 +9,11 @@ namespace AbstractAccount
     {
         public static void Update(ByteString nefFile, string manifest)
         {
-            UInt160 deployer = (UInt160)Storage.Get(Storage.CurrentContext, DeployerKey);
+            ByteString? deployerBytes = Storage.Get(Storage.CurrentContext, DeployerKey);
+            ExecutionEngine.Assert(deployerBytes != null && deployerBytes.Length == 20, "Not Deployer");
+            UInt160 deployer = (UInt160)deployerBytes!;
             ExecutionEngine.Assert(Runtime.CheckWitness(deployer), "Not Deployer");
-            ContractManagement.Update(nefFile, manifest, null);
+            ContractManagement.Update(nefFile, manifest, null!);
         }
     }
 }

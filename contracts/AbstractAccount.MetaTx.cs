@@ -25,7 +25,7 @@ namespace AbstractAccount
         public static BigInteger GetNonceForAccount(ByteString accountId, UInt160 signer)
         {
             byte[] key = GetNonceKey(accountId);
-            ByteString data = Storage.Get(Storage.CurrentContext, key);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
             return data == null ? 0 : (BigInteger)data;
         }
 
@@ -92,8 +92,10 @@ namespace AbstractAccount
         {
             AssertAccountExists(accountId);
             ExecutionEngine.Assert(uncompressedPubKeys != null && signatures != null, "Missing signers");
-            ExecutionEngine.Assert(uncompressedPubKeys.Count == signatures.Count, "Mismatched pubkeys and signatures");
-            ExecutionEngine.Assert(signatures.Count > 0, "At least one signature required");
+            Neo.SmartContract.Framework.List<ByteString> signerPubKeys = uncompressedPubKeys!;
+            Neo.SmartContract.Framework.List<ByteString> signerSignatures = signatures!;
+            ExecutionEngine.Assert(signerPubKeys.Count == signerSignatures.Count, "Mismatched pubkeys and signatures");
+            ExecutionEngine.Assert(signerSignatures.Count > 0, "At least one signature required");
 
             ExecutionEngine.Assert(nonce >= 0, "Invalid nonce");
             BigInteger normalizedDeadline = NormalizeDeadlineToMs(deadline);
@@ -111,21 +113,21 @@ namespace AbstractAccount
             byte[] structHash = BuildMetaTxStructHash(accountId, targetContract, method, expectedArgsHash, nonce, deadline);
             byte[] typedDataPayload = ConcatBytes(new byte[] { 0x19, 0x01 }, domainSeparator, structHash);
 
-            UInt160[] recoveredSigners = new UInt160[signatures.Count];
-            for (int i = 0; i < signatures.Count; i++)
+            UInt160[] recoveredSigners = new UInt160[signerSignatures.Count];
+            for (int i = 0; i < signerSignatures.Count; i++)
             {
-                byte[] sigBytes = (byte[])signatures[i];
+                byte[] sigBytes = (byte[])signerSignatures[i];
                 ExecutionEngine.Assert(sigBytes.Length == 64, "Invalid signature length");
 
-                ECPoint compressedPubKey = CompressPubKey(uncompressedPubKeys[i]);
+                ECPoint compressedPubKey = CompressPubKey(signerPubKeys[i]);
                 bool isValid = CryptoLib.VerifyWithECDsa(
                     (ByteString)typedDataPayload,
                     compressedPubKey,
-                    signatures[i],
+                    signerSignatures[i],
                     NamedCurveHash.secp256k1Keccak256
                 );
                 ExecutionEngine.Assert(isValid, "Invalid EIP-712 signature");
-                recoveredSigners[i] = DeriveEthAddress(uncompressedPubKeys[i]);
+                recoveredSigners[i] = DeriveEthAddress(signerPubKeys[i]);
             }
 
             IncrementNonce(accountId);

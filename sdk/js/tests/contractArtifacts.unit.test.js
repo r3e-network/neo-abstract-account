@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const { resolveContractArtifactPaths, readContractArtifacts } = require('../src/contractArtifacts');
@@ -34,4 +35,23 @@ test('readContractArtifacts returns both paths and loaded artifact contents', ()
   assert.equal(artifacts.nefBase64, artifacts.nefBytes.toString('base64'));
   assert.equal(typeof artifacts.manifestString, 'string');
   assert.equal(artifacts.manifestString.length > 0, true);
+});
+
+test('sdk package.json includes publish metadata and runtime constraints', () => {
+  const packageJsonPath = path.resolve(__dirname, '../package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+  assert.equal(typeof packageJson.license, 'string');
+  assert.equal(typeof packageJson.repository, 'object');
+  assert.equal(typeof packageJson.homepage, 'string');
+  assert.equal(typeof packageJson.engines, 'object');
+  assert.equal(typeof packageJson.engines.node, 'string');
+});
+
+test('sdk package.json exposes testnet validation runner scripts', () => {
+  const packageJsonPath = path.resolve(__dirname, '../package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+  assert.equal(packageJson.scripts['testnet:validate'], 'bash ./run_testnet_validation_suite.sh');
+  assert.equal(packageJson.scripts['testnet:validate:dry-run'], 'bash ./run_testnet_validation_suite.sh --dry-run');
 });

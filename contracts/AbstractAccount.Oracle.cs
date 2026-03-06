@@ -33,9 +33,9 @@ namespace AbstractAccount
             UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
             if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                bool metaAuthorized = CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)
-                    || CheckExplicitSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)
-                    || CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
+                bool metaAuthorized = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)
+                    || CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)
+                    || CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
                 if (metaAuthorized) return;
             }
 
@@ -77,21 +77,23 @@ namespace AbstractAccount
 
             ByteString key = GetStorageKey(accountId);
             StorageMap urlMap = new StorageMap(Storage.CurrentContext, DomeOracleUrlPrefix);
-            string url = urlMap.Get(key);
+            ByteString? urlBytes = urlMap.Get(key);
+            string? url = urlBytes == null ? null : (string)urlBytes!;
             ExecutionEngine.Assert(url != null && url != "", "Oracle URL not configured");
+            string requestUrl = url!;
             ExecutionEngine.Assert(!IsDomeOracleUnlocked(accountId), "Dome account already unlocked");
 
             StorageMap pendingMap = new StorageMap(Storage.CurrentContext, DomeOraclePendingRequestPrefix);
             ExecutionEngine.Assert(pendingMap.Get(key) == null, "Dome activation already pending");
 
             StorageMap counterMap = new StorageMap(Storage.CurrentContext, DomeOracleRequestCounterPrefix);
-            ByteString counterBytes = counterMap.Get(key);
+            ByteString? counterBytes = counterMap.Get(key);
             BigInteger requestId = counterBytes == null ? 1 : (BigInteger)counterBytes + 1;
             counterMap.Put(key, requestId);
             pendingMap.Put(key, requestId);
 
-            ByteString payload = StdLib.Serialize(new object[] { accountId, requestId, url });
-            Oracle.Request(url, "", "DomeActivationCallback", payload, 10000000);
+            ByteString payload = StdLib.Serialize(new object[] { accountId, requestId, requestUrl });
+            Oracle.Request(requestUrl, "", "DomeActivationCallback", payload, 10000000);
         }
 
         public static void RequestDomeActivationByAddress(UInt160 accountAddress)
@@ -135,33 +137,34 @@ namespace AbstractAccount
             return value == expectedLowercase;
         }
 
-        public static void DomeActivationCallback(string url, object userData, int responseCode, byte[] result)
+        public static void DomeActivationCallback(string? url, object? userData, int responseCode, byte[]? result)
         {
             ExecutionEngine.Assert(Runtime.CallingScriptHash == Oracle.Hash, "Unauthorized");
 
-            Neo.SmartContract.Framework.List<object> payload =
-                (Neo.SmartContract.Framework.List<object>)StdLib.Deserialize((ByteString)userData);
+            Neo.SmartContract.Framework.List<object>? payload =
+                (Neo.SmartContract.Framework.List<object>)StdLib.Deserialize((ByteString)userData!);
             if (payload == null || payload.Count != 3) return;
 
-            ByteString accountId = (ByteString)payload[0];
+            ByteString? accountId = (ByteString)payload[0];
             BigInteger requestId = (BigInteger)payload[1];
-            string expectedUrl = (string)payload[2];
-            if (accountId == null || accountId.Length == 0) return;
+            string? expectedUrl = (string)payload[2];
+            if (accountId == null || accountId.Length == 0 || expectedUrl == null || expectedUrl == "") return;
 
-            ByteString key = GetStorageKey(accountId);
+            ByteString key = GetStorageKey(accountId!);
             StorageMap pendingMap = new StorageMap(Storage.CurrentContext, DomeOraclePendingRequestPrefix);
-            ByteString pendingBytes = pendingMap.Get(key);
+            ByteString? pendingBytes = pendingMap.Get(key);
             if (pendingBytes == null || (BigInteger)pendingBytes != requestId) return;
 
             StorageMap urlMap = new StorageMap(Storage.CurrentContext, DomeOracleUrlPrefix);
-            string configuredUrl = urlMap.Get(key);
+            ByteString? configuredUrlBytes = urlMap.Get(key);
+            string? configuredUrl = configuredUrlBytes == null ? null : (string)configuredUrlBytes!;
             if (configuredUrl == null || configuredUrl == "" || configuredUrl != expectedUrl || configuredUrl != url)
             {
                 pendingMap.Delete(key);
                 return;
             }
 
-            if (responseCode == (int)OracleResponseCode.Success && IsStrictTrue(result))
+            if (responseCode == (int)OracleResponseCode.Success && result != null && IsStrictTrue(result))
             {
                 StorageMap unlockMap = new StorageMap(Storage.CurrentContext, DomeOracleUnlockPrefix);
                 unlockMap.Put(key, (ByteString)new byte[] { 1 });
@@ -174,11 +177,12 @@ namespace AbstractAccount
         public static bool IsDomeOracleUnlocked(ByteString accountId)
         {
             StorageMap urlMap = new StorageMap(Storage.CurrentContext, DomeOracleUrlPrefix);
-            string url = urlMap.Get(GetStorageKey(accountId));
+            ByteString? urlBytes = urlMap.Get(GetStorageKey(accountId));
+            string? url = urlBytes == null ? null : (string)urlBytes!;
             if (url == null || url == "") return true; // If no oracle configured, it's implicitly unlocked
 
             StorageMap unlockMap = new StorageMap(Storage.CurrentContext, DomeOracleUnlockPrefix);
-            ByteString unlocked = unlockMap.Get(GetStorageKey(accountId));
+            ByteString? unlocked = unlockMap.Get(GetStorageKey(accountId));
             return unlocked != null && unlocked == (ByteString)new byte[] { 1 };
         }
     }

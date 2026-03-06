@@ -110,22 +110,22 @@ namespace AbstractAccount
             AssertMethodAllowedByPolicy(targetContract, method);
 
             StorageMap blacklistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(BlacklistPrefix, GetStorageKey(accountId)));
-            ByteString isBlacklisted = blacklistMap.Get(targetContract);
+            ByteString? isBlacklisted = blacklistMap.Get(targetContract);
             ExecutionEngine.Assert(isBlacklisted == null || isBlacklisted != (ByteString)new byte[] { 1 }, "Target is blacklisted");
 
             StorageMap whitelistEnabledMap = new StorageMap(Storage.CurrentContext, WhitelistEnabledPrefix);
-            ByteString whitelistOnly = whitelistEnabledMap.Get(GetStorageKey(accountId));
+            ByteString? whitelistOnly = whitelistEnabledMap.Get(GetStorageKey(accountId));
             if (whitelistOnly != null && whitelistOnly == (ByteString)new byte[] { 1 })
             {
                 StorageMap whitelistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(WhitelistPrefix, GetStorageKey(accountId)));
-                ByteString isWhitelisted = whitelistMap.Get(targetContract);
+                ByteString? isWhitelisted = whitelistMap.Get(targetContract);
                 ExecutionEngine.Assert(isWhitelisted != null && isWhitelisted == (ByteString)new byte[] { 1 }, "Target is not in whitelist");
             }
 
             if (method == "transfer" || method == "approve")
             {
                 StorageMap maxMap = new StorageMap(Storage.CurrentContext, Helper.Concat(MaxTransferPrefix, GetStorageKey(accountId)));
-                ByteString maxValBytes = maxMap.Get(targetContract);
+                ByteString? maxValBytes = maxMap.Get(targetContract);
                 if (maxValBytes != null)
                 {
                     BigInteger amount = GetRestrictedAmount(method, args);
@@ -143,18 +143,19 @@ namespace AbstractAccount
         private static BigInteger GetRestrictedAmount(string method, object[] args)
         {
             ExecutionEngine.Assert(args != null, "Invalid args");
+            object[] validatedArgs = args!;
 
             if (method == "transfer")
             {
-                ExecutionEngine.Assert(args.Length >= 3 && args[2] is BigInteger, "Invalid transfer amount");
-                return (BigInteger)args[2];
+                ExecutionEngine.Assert(validatedArgs.Length >= 3 && validatedArgs[2] is BigInteger, "Invalid transfer amount");
+                return (BigInteger)validatedArgs[2];
             }
 
             // Common signatures:
             // - ERC20-like approve(spender, amount) => args[1]
             // - Neo-style approve(from, spender, amount) => args[2]
-            if (args.Length >= 2 && args[1] is BigInteger) return (BigInteger)args[1];
-            if (args.Length >= 3 && args[2] is BigInteger) return (BigInteger)args[2];
+            if (validatedArgs.Length >= 2 && validatedArgs[1] is BigInteger) return (BigInteger)validatedArgs[1];
+            if (validatedArgs.Length >= 3 && validatedArgs[2] is BigInteger) return (BigInteger)validatedArgs[2];
 
             ExecutionEngine.Assert(false, "Invalid approve amount");
             return 0;

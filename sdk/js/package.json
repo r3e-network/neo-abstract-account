@@ -2,13 +2,24 @@
   "name": "neo-abstract-account",
   "version": "1.0.0",
   "description": "Neo N3 Abstract Account SDK",
+  "license": "MIT",
   "main": "src/index.js",
   "exports": "./src/index.js",
+  "homepage": "https://github.com/r3e-network/neo-abstract-account",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r3e-network/neo-abstract-account.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "src"
   ],
   "scripts": {
-    "test": "node --test tests/*.unit.test.js"
+    "test": "node --test tests/*.unit.test.js",
+    "testnet:validate": "bash ./run_testnet_validation_suite.sh",
+    "testnet:validate:dry-run": "bash ./run_testnet_validation_suite.sh --dry-run"
   },
   "dependencies": {
     "@cityofzion/neon-js": "^5.4.0",

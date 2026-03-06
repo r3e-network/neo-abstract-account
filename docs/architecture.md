@@ -2,7 +2,7 @@
 
 ## 1. Description & Overview
 
-The Neo N3 Abstract Account protocol is a robust, enterprise-grade smart contract wallet standard designed to decouple account identities from their underlying cryptographic key pairs. Conceptually similar to Ethereum's ERC-4337, this architecture transforms standard accounts into fully programmable logic gates.
+The Neo N3 Abstract Account protocol is a robust, enterprise-grade smart contract wallet standard designed to decouple account identities from their underlying cryptographic key pairs. Conceptually similar to Ethereum's ERC-4337, this architecture transforms standard accounts into policy-gated programmable wallets.
 
 By transitioning from standard ECDSA signatures to deterministic proxy contracts, developers and users can implement advanced multi-signature structures, EVM cross-chain execution capabilities, social recovery mechanisms, and fine-grained operational limits without sacrificing user experience.
 
@@ -33,7 +33,7 @@ The protocol supports extensive configurations to meet the security needs of ind
 ### Role-Based Access Control (RBAC)
 The core system implements an Admin and Manager paradigm:
 - **Admins:** High-privilege actors capable of updating governance thresholds, modifying whitelists/blacklists, and altering structural configurations. 
-- **Managers:** Operational actors capable of performing day-to-day smart contract interactions and token transfers. They cannot alter the structural configuration.
+- **Managers:** Operational actors capable of performing day-to-day contract interactions and token transfers within the hardened method-policy surface. They cannot alter the structural configuration.
 - **Thresholds:** Both roles have distinct, customizable multisig thresholds requiring an `M-of-N` signature consensus to execute actions.
 
 ### Granular Execution Limits
@@ -64,7 +64,7 @@ Instead of relying on a centralized custodian, users define a list of trusted **
 
 While the default Role and Dome structures cover 95% of use cases, the Neo Abstract Account protocol is designed to be infinitely extensible. 
 
-Users can entirely bypass the standard `M-of-N` threshold logic by assigning a **Custom Verifier Contract**. When assigned, the Master Entry Contract defers all authorization checks directly to this custom logic. This enables arbitrary mathematical signature schemes, biometric gating, advanced multi-chain relayer networks, and automated algorithmic trading approvals.
+Users can bypass the standard `M-of-N` signature logic by assigning a **Custom Verifier Contract**. When assigned, the Master Entry Contract defers authorization checks to this custom logic before continuing through the same policy-gated execution pipeline. Custom verifiers do **not** bypass method policy, whitelist / blacklist checks, or max-transfer enforcement.
 
 ### How to Build a Custom Verifier
 
@@ -84,11 +84,11 @@ namespace MyCustomVerifier
             // Extract the transaction and signers
             var tx = (Transaction)Runtime.Transaction;
             
-            // ... implement custom logic ...
+            // ... implement custom authorization logic ...
             // Examples:
             // 1. Check if the current time is between 9 AM and 5 PM
             // 2. Validate a ZK-SNARK proof passed via transaction attributes
-            // 3. Ensure the transaction only interacts with a specific DeFi router
+            // 3. Inspect Runtime.Transaction and related state before approving
             
             // Return true if authorized, false to reject
             return true; 

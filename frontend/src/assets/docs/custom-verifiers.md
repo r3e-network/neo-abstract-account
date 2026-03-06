@@ -2,7 +2,7 @@
 
 While the default Role and Dome structures cover 95% of use cases, the Neo Abstract Account protocol is designed to be infinitely extensible. 
 
-Users can entirely bypass the standard `M-of-N` threshold logic by assigning a **Custom Verifier Contract**. When assigned, the Master Entry Contract defers all authorization checks directly to this custom logic. This enables arbitrary mathematical signature schemes, biometric gating, advanced multi-chain relayer networks, and automated algorithmic trading approvals.
+Users can bypass the standard `M-of-N` signature logic by assigning a **Custom Verifier Contract**. When assigned, the Master Entry Contract defers authorization checks directly to this custom logic, then continues through the same hardened policy-gated execution path. A custom verifier does not bypass method policy, whitelist / blacklist checks, or max-transfer enforcement.
 
 ## How to Build a Custom Verifier
 
@@ -22,11 +22,11 @@ namespace MyCustomVerifier
             // Extract the transaction and signers
             var tx = (Transaction)Runtime.Transaction;
             
-            // ... implement custom logic ...
+            // ... implement custom authorization logic ...
             // Examples:
             // 1. Check if the current time is between 9 AM and 5 PM
             // 2. Validate a ZK-SNARK proof passed via transaction attributes
-            // 3. Ensure the transaction only interacts with a specific DeFi router
+            // 3. Inspect Runtime.Transaction and related state before approving
             
             // Return true if authorized, false to reject
             return true; 
@@ -61,3 +61,8 @@ await walletService.invoke(payload);
 ```
 
 To remove a custom verifier and fallback to the native role-based logic, simply update the verifier configuration with an empty hash (`0x0000000000000000000000000000000000000000`).
+
+## Important Runtime Notes
+
+- The verifier receives only `accountId`; it must derive any extra context from `Runtime.Transaction`, contract storage, or other on-chain state.
+- Verifier approval does not bypass runtime restrictions such as method policy, whitelist / blacklist checks, or max-transfer limits.

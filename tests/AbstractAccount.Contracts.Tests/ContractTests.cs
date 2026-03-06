@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neo;
@@ -63,6 +64,40 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
         Assert.IsTrue(global::AbstractAccount.UnifiedSmartWallet.IsSingleSelfCallScript(script, Contract.Hash.ToArray()));
     }
 
+    [TestMethod]
+    public void ProxyWitnessScriptGateIgnoresSyscallBytesInsidePushData()
+    {
+        var embeddedSyscallBytes = new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 };
+        var script = BuildSelfCallScript(Contract.Hash, "getAdminThreshold", embeddedSyscallBytes);
+
+        Assert.IsTrue(global::AbstractAccount.UnifiedSmartWallet.IsSingleSelfCallScript(script, Contract.Hash.ToArray()));
+    }
+
+    [TestMethod]
+    public void StorageKeyPrefixesShortIdsToAvoidLegacyCollisions()
+    {
+        var shortAccountId = new byte[] { 0xAA, 0xBB, 0xCC, 0xDD };
+        var storageKey = global::AbstractAccount.UnifiedSmartWallet.GetCanonicalStorageKeyBytes(shortAccountId);
+
+        CollectionAssert.AreNotEqual(shortAccountId, storageKey);
+        Assert.AreEqual(shortAccountId.Length + 1, storageKey.Length);
+    }
+
+    [TestMethod]
+    public void SelfCallAuthorizationUsesMixedSignatureChecks()
+    {
+        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
+        var oracleSource = ReadRepoFile("contracts/AbstractAccount.Oracle.cs");
+
+        StringAssert.Contains(adminSource, "CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)");
+        StringAssert.Contains(adminSource, "CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners)");
+        StringAssert.DoesNotMatch(adminSource, new System.Text.RegularExpressions.Regex("CheckExplicitSignatures\\(GetAdmins\\(accountId\\), GetAdminThreshold\\(accountId\\), explicitSigners\\)"));
+
+        StringAssert.Contains(oracleSource, "CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)");
+        StringAssert.Contains(oracleSource, "CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)");
+        StringAssert.Contains(oracleSource, "CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners)");
+    }
+
     private static byte[] BuildTransferScript(UInt160 targetContract, UInt160 from, UInt160 to, BigInteger amount)
     {
         using var sb = new ScriptBuilder();
@@ -76,4 +111,11 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
         sb.EmitDynamicCall(walletHash, method, CallFlags.All, args);
         return sb.ToArray();
     }
+
+    private static string ReadRepoFile(string relativePath)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../", relativePath));
+        return File.ReadAllText(fullPath);
+    }
+
 }

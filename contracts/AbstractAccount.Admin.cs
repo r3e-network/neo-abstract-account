@@ -41,14 +41,14 @@ namespace AbstractAccount
             UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
             if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                if (CheckExplicitSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners))
+                if (CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners))
                 {
                     UpdateLastActiveTimestamp(accountId);
                     return;
                 }
                 
                 // MetaTx Dome Check
-                bool metaDome = CheckExplicitSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
+                bool metaDome = CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
                 if (metaDome)
                 {
                     BigInteger timeout = GetDomeTimeout(accountId);
@@ -82,20 +82,21 @@ namespace AbstractAccount
         private static void SetAdminsInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> admins, int threshold)
         {
             ExecutionEngine.Assert(admins != null && admins.Count > 0, "Admins are mandatory");
-            AssertUniqueAccounts(admins);
-            ExecutionEngine.Assert(threshold <= admins.Count && threshold > 0, "Invalid threshold");
+            Neo.SmartContract.Framework.List<UInt160> validatedAdmins = admins!;
+            AssertUniqueAccounts(validatedAdmins);
+            ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold > 0, "Invalid threshold");
             StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
             StorageMap tMap = new StorageMap(Storage.CurrentContext, AdminThresholdPrefix);
-            adminsMap.Put(GetStorageKey(accountId), StdLib.Serialize(admins));
+            adminsMap.Put(GetStorageKey(accountId), StdLib.Serialize(validatedAdmins));
             tMap.Put(GetStorageKey(accountId), threshold);
-            OnRoleUpdated(accountId, "Admins", admins, threshold);
+            OnRoleUpdated(accountId, "Admins", validatedAdmins, threshold);
         }
 
         [Safe]
         public static Neo.SmartContract.Framework.List<UInt160> GetAdmins(ByteString accountId)
         {
             StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
-            ByteString data = adminsMap.Get(GetStorageKey(accountId));
+            ByteString? data = adminsMap.Get(GetStorageKey(accountId));
             if (data == null) return new Neo.SmartContract.Framework.List<UInt160>();
             return (Neo.SmartContract.Framework.List<UInt160>)StdLib.Deserialize(data);
         }
@@ -111,7 +112,7 @@ namespace AbstractAccount
         public static int GetAdminThreshold(ByteString accountId)
         {
             StorageMap tMap = new StorageMap(Storage.CurrentContext, AdminThresholdPrefix);
-            ByteString data = tMap.Get(GetStorageKey(accountId));
+            ByteString? data = tMap.Get(GetStorageKey(accountId));
             if (data == null) return 1;
             return (int)(BigInteger)data;
         }
@@ -161,7 +162,7 @@ namespace AbstractAccount
         public static Neo.SmartContract.Framework.List<UInt160> GetManagers(ByteString accountId)
         {
             StorageMap mMap = new StorageMap(Storage.CurrentContext, ManagersPrefix);
-            ByteString data = mMap.Get(GetStorageKey(accountId));
+            ByteString? data = mMap.Get(GetStorageKey(accountId));
             if (data == null) return new Neo.SmartContract.Framework.List<UInt160>();
             return (Neo.SmartContract.Framework.List<UInt160>)StdLib.Deserialize(data);
         }
@@ -177,7 +178,7 @@ namespace AbstractAccount
         public static int GetManagerThreshold(ByteString accountId)
         {
             StorageMap tMap = new StorageMap(Storage.CurrentContext, ManagerThresholdPrefix);
-            ByteString data = tMap.Get(GetStorageKey(accountId));
+            ByteString? data = tMap.Get(GetStorageKey(accountId));
             if (data == null) return 1;
             return (int)(BigInteger)data;
         }
@@ -234,7 +235,7 @@ namespace AbstractAccount
         public static Neo.SmartContract.Framework.List<UInt160> GetDomeAccounts(ByteString accountId)
         {
             StorageMap dMap = new StorageMap(Storage.CurrentContext, DomePrefix);
-            ByteString data = dMap.Get(GetStorageKey(accountId));
+            ByteString? data = dMap.Get(GetStorageKey(accountId));
             if (data == null) return new Neo.SmartContract.Framework.List<UInt160>();
             return (Neo.SmartContract.Framework.List<UInt160>)StdLib.Deserialize(data);
         }
@@ -250,7 +251,7 @@ namespace AbstractAccount
         public static int GetDomeThreshold(ByteString accountId)
         {
             StorageMap tMap = new StorageMap(Storage.CurrentContext, DomeThresholdPrefix);
-            ByteString data = tMap.Get(GetStorageKey(accountId));
+            ByteString? data = tMap.Get(GetStorageKey(accountId));
             if (data == null) return 0;
             return (int)(BigInteger)data;
         }
@@ -266,7 +267,7 @@ namespace AbstractAccount
         public static BigInteger GetDomeTimeout(ByteString accountId)
         {
             StorageMap toMap = new StorageMap(Storage.CurrentContext, DomeTimeoutPrefix);
-            ByteString data = toMap.Get(GetStorageKey(accountId));
+            ByteString? data = toMap.Get(GetStorageKey(accountId));
             if (data == null) return 0;
             return (BigInteger)data;
         }
@@ -361,7 +362,7 @@ namespace AbstractAccount
         {
             AssertValidAccountAddress(accountAddress);
             StorageMap map = new StorageMap(Storage.CurrentContext, AccountAddressToIdPrefix);
-            return map.Get(accountAddress);
+            return map.Get(accountAddress)!;
         }
 
         [Safe]
@@ -369,12 +370,12 @@ namespace AbstractAccount
         {
             AssertAccountExists(accountId);
             StorageMap map = new StorageMap(Storage.CurrentContext, AccountIdToAddressPrefix);
-            ByteString data = map.Get(GetStorageKey(accountId));
+            ByteString? data = map.Get(GetStorageKey(accountId));
             if (data == null) return UInt160.Zero;
             return (UInt160)data;
         }
 
-        private static void AssertUniqueAccounts(Neo.SmartContract.Framework.List<UInt160> accounts)
+        private static void AssertUniqueAccounts(Neo.SmartContract.Framework.List<UInt160>? accounts)
         {
             if (accounts == null) return;
             for (int i = 0; i < accounts.Count; i++)

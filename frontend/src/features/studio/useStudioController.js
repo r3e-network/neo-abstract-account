@@ -138,14 +138,14 @@ export function useStudioController() {
   onMounted(async () => {
     restoreRecentTransactions();
     try {
-      neonJs = window.Neon || await import('@cityofzion/neon-js');
+      neonJs = window.Neon || await import('@cityofzion/neon-core');
       if (!isEvmWallet.value) {
         createForm.value.accountId = createGeneratedAccountId();
       }
       computeAA();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to load neon-js for address derivation.');
+      toast.error('Failed to load neon-core for address derivation.');
     }
   });
 
@@ -172,7 +172,7 @@ export function useStudioController() {
 
   function ensureNeonReady() {
     if (!neonJs) {
-      throw new Error('neon-js is not ready yet. Please retry.');
+      throw new Error('neon-core is not ready yet. Please retry.');
     }
     return neonJs;
   }

@@ -42,14 +42,14 @@
 </template>
 
 <script setup>
-import { provide } from 'vue';
+import { defineAsyncComponent, provide } from 'vue';
 import { useStudioController } from '@/features/studio/useStudioController';
 
-import CreateAccountPanel from '@/features/studio/components/CreateAccountPanel.vue';
-import ManageGovernancePanel from '@/features/studio/components/ManageGovernancePanel.vue';
-import PermissionsLimitsPanel from '@/features/studio/components/PermissionsLimitsPanel.vue';
-import ContractSourcePanel from '@/features/studio/components/ContractSourcePanel.vue';
-import StudioSidebar from '@/features/studio/components/StudioSidebar.vue';
+const CreateAccountPanel = defineAsyncComponent(() => import('@/features/studio/components/CreateAccountPanel.vue'));
+const ManageGovernancePanel = defineAsyncComponent(() => import('@/features/studio/components/ManageGovernancePanel.vue'));
+const PermissionsLimitsPanel = defineAsyncComponent(() => import('@/features/studio/components/PermissionsLimitsPanel.vue'));
+const ContractSourcePanel = defineAsyncComponent(() => import('@/features/studio/components/ContractSourcePanel.vue'));
+const StudioSidebar = defineAsyncComponent(() => import('@/features/studio/components/StudioSidebar.vue'));
 
 const studio = useStudioController();
 provide('studio', studio);
