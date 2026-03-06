@@ -1,5 +1,6 @@
 const { tx, wallet, rpc, sc, u } = require('@cityofzion/neon-js');
 const { readContractArtifacts } = require('../src/contractArtifacts');
+const { buildSerializedDeployScript } = require('./deployHelpers');
 const { extractDeployedContractHash } = require('../src/deployLog');
 
 const wif = process.env.TEST_WIF;
@@ -15,16 +16,12 @@ async function main() {
 
   const { nefBytes, manifestString } = readContractArtifacts({ fromDir: __dirname });
   const nef = sc.NEF.fromBuffer(nefBytes);
-
-  const managementContractHash = 'fffdc93764dbaddd97c48f252a53ea4643faa3fd';
-
-  const sb = new sc.ScriptBuilder();
-  sb.emitAppCall(managementContractHash, 'deploy', [
-    sc.ContractParam.byteArray(u.HexString.fromHex(nef.serialize(), true)),
-    sc.ContractParam.string(manifestString),
-    sc.ContractParam.any(null),
-  ]);
-  const script = sb.build();
+  const script = buildSerializedDeployScript({
+    sc,
+    u,
+    nefHex: nef.serialize(),
+    manifestString,
+  });
 
   const currentHeight = await client.getBlockCount();
 

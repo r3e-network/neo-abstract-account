@@ -1,6 +1,6 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const { readContractArtifacts } = require('../src/contractArtifacts');
-const { buildInvokeScriptQuery } = require('./deployHelpers');
+const { buildDeployScript, buildInvokeScriptQuery } = require('./deployHelpers');
 
 const deployerWif = process.env.ABSTRACT_ACCOUNT_DEPLOYER_WIF
   || process.env.RELAYER_WIF
@@ -21,20 +21,9 @@ console.log('Account ScriptHash:', account.scriptHash);
 
 async function deployContract() {
   try {
-    const contractManagementHash = '0xfffdc93764dbaddd97c48f252a53ea4643faa3fd';
-
     console.log('Creating transaction...');
 
-    const script = sc.createScript({
-      scriptHash: contractManagementHash,
-      operation: 'deploy',
-      args: [
-        sc.ContractParam.byteArray(nefBase64),
-        sc.ContractParam.string(manifestString),
-        sc.ContractParam.any(null),
-      ],
-    });
-
+    const script = buildDeployScript({ sc, nefBase64, manifestString });
     const currentHeight = await rpcClient.getBlockCount();
 
     const transaction = new tx.Transaction({
