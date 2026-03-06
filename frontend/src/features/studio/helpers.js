@@ -1,3 +1,8 @@
+import { sanitizeHex } from '../../utils/hex.js';
+
+export { sanitizeHex };
+
+
 export function sanitizeList(items = []) {
   return items
     .map((value) => String(value || '').trim())
@@ -58,9 +63,6 @@ export function toHashArray(values, neonJs) {
   return values.map((value) => ({ type: 'Hash160', value: hash160Param(value, neonJs) }));
 }
 
-export function sanitizeHex(value) {
-  return String(value || '').replace(/^0x/i, '').toLowerCase();
-}
 
 export function base64ToHex(base64Value) {
   if (!base64Value) return '';

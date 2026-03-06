@@ -1,9 +1,9 @@
+import { sanitizeHex } from '../utils/hex.js';
+
+export { sanitizeHex };
+
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423';
 export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
-
-export function sanitizeHex(value) {
-  return String(value || '').replace(/^0x/i, '').toLowerCase();
-}
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
