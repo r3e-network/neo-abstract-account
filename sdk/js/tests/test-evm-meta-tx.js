@@ -9,7 +9,7 @@ function sanitizeHex(v) {
 const aaHash = sanitizeHex(
   process.env.AA_HASH_TESTNET
   || process.env.VITE_AA_HASH_TESTNET
-  || '49c095ce04d38642e39155f5481615c58227a498'
+  || '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423'
 );
 
 async function main() {

@@ -26,6 +26,10 @@ test('resolveAbstractAccountHash falls back for invalid values', () => {
   assert.equal(resolveAbstractAccountHash('bad-value'), DEFAULT_ABSTRACT_ACCOUNT_HASH);
 });
 
+test('default abstract account hash tracks the hardened verified deployment', () => {
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423');
+});
+
 test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
   assert.equal(resolveRpcUrl('https://example.com/rpc'), 'https://example.com/rpc');
   assert.equal(resolveRpcUrl(''), DEFAULT_RPC_URL);

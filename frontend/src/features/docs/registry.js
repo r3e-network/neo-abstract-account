@@ -1,4 +1,4 @@
-import docOverview from '@/assets/docs/overview.md?raw';
+import docOverview from '@repo/README.md?raw';
 import docArchitecture from '@repo/docs/architecture.md?raw';
 import docWorkflow from '@/assets/docs/workflow.md?raw';
 import docDataFlow from '@/assets/docs/data-flow.md?raw';
@@ -11,7 +11,7 @@ import docSdk from '@/assets/docs/sdk-usage.md?raw';
 export const DEFAULT_DOC_KEY = 'overview';
 
 export const DOCS = {
-  overview: { title: 'Overview & Capabilities', content: docOverview },
+  overview: { title: 'Overview & Verified Status', content: docOverview },
   architecture: { title: 'Core Architecture', content: docArchitecture },
   workflow: { title: 'Workflow Lifecycle', content: docWorkflow },
   dataFlow: { title: 'Data Flow & Storage', content: docDataFlow },

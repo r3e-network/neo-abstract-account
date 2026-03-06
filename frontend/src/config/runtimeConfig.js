@@ -1,4 +1,4 @@
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '49c095ce04d38642e39155f5481615c58227a498';
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423';
 export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
 
 export function sanitizeHex(value) {
