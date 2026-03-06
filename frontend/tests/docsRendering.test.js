@@ -88,22 +88,24 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
 
   assert.match(viteConfigSource, /manualChunks/);
   assert.match(viteConfigSource, /vue-flow/);
-  assert.match(viteConfigSource, /ethers|neon-core/);
+  assert.match(viteConfigSource, /ethers/);
+  assert.doesNotMatch(viteConfigSource, /neon-core/);
   assert.doesNotMatch(viteConfigSource, /return 'mermaid'/);
   assert.doesNotMatch(viteConfigSource, /return 'cytoscape'/);
 });
 
-test('studio controller loads neon-core instead of the full neon-js bundle', () => {
+test('studio controller uses local neo helpers instead of Neon SDK bundles', () => {
   const controllerSource = read('src/features/studio/useStudioController.js');
 
-  assert.match(controllerSource, /await import\('@cityofzion\/neon-core'\)/);
+  assert.match(controllerSource, /from '\@\/utils\/neo\.js'/);
+  assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-core'\)/);
   assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-js'\)/);
 });
 
-test('frontend package depends on neon-core and not neon-js', () => {
+test('frontend package does not depend on Neon SDK bundles directly', () => {
   const packageJson = readFrontendPackage();
 
-  assert.equal(typeof packageJson.dependencies['@cityofzion/neon-core'], 'string');
+  assert.equal(packageJson.dependencies['@cityofzion/neon-core'], undefined);
   assert.equal(packageJson.dependencies['@cityofzion/neon-js'], undefined);
 });
 

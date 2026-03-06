@@ -1,4 +1,5 @@
 import { sanitizeHex } from '../../utils/hex.js';
+import { getScriptHashFromAddress } from '../../utils/neo.js';
 
 export { sanitizeHex };
 
@@ -38,12 +39,12 @@ export function normalizeAccountId(value, isEvmWallet) {
   return hex;
 }
 
-export function normalizeAddress(input, neonJs) {
+export function normalizeAddress(input) {
   const value = String(input || '').trim();
   if (!value) return value;
 
   if (value.startsWith('N') && value.length === 34) {
-    return neonJs.wallet.getScriptHashFromAddress(value);
+    return getScriptHashFromAddress(value);
   }
   if (value.startsWith('0x')) {
     return value.slice(2);
@@ -51,16 +52,16 @@ export function normalizeAddress(input, neonJs) {
   return value;
 }
 
-export function hash160Param(value, neonJs) {
-  const normalized = normalizeAddress(value, neonJs);
+export function hash160Param(value) {
+  const normalized = normalizeAddress(value);
   if (!/^[0-9a-fA-F]{40}$/.test(normalized)) {
     throw new Error(`Invalid address format: ${value}`);
   }
   return normalized;
 }
 
-export function toHashArray(values, neonJs) {
-  return values.map((value) => ({ type: 'Hash160', value: hash160Param(value, neonJs) }));
+export function toHashArray(values) {
+  return values.map((value) => ({ type: 'Hash160', value: hash160Param(value) }));
 }
 
 

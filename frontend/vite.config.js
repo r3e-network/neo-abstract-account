@@ -19,7 +19,6 @@ export default defineConfig({
           if (!id.includes('node_modules')) return;
           if (id.includes('@vue-flow')) return 'vue-flow';
           if (id.includes('ethers')) return 'ethers';
-          if (id.includes('@cityofzion/neon-core')) return 'neon-core';
           if (id.includes('katex')) return 'katex';
         }
       }

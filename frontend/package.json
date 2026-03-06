@@ -19,7 +19,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@cityofzion/neon-core": "^5.8.1",
     "@highlightjs/vue-plugin": "^2.1.0",
     "ethers": "^6.11.1",
     "highlight.js": "^11.11.1",

@@ -1,4 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue';
+import { createVerifyScript, getAddressFromScriptHash, hash160, invokeReadFunction, reverseHex } from '@/utils/neo.js';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
@@ -35,7 +36,6 @@ import {
 
 export function useStudioController() {
   const toast = useToast();
-  let neonJs = null;
 
   const tabs = STUDIO_TABS;
   const activePanel = ref('create');
@@ -57,8 +57,6 @@ export function useStudioController() {
   const computedScriptHex = ref('');
   const computedAddress = ref('');
 
-  const rpcClientRef = ref(null);
-  const rpcUrlRef = ref('');
 
   const contractFiles = CONTRACT_SOURCE_FILES;
 
@@ -135,18 +133,12 @@ export function useStudioController() {
     if (manageForm.value.domeThreshold > domeAccounts.length) manageForm.value.domeThreshold = domeAccounts.length;
   });
 
-  onMounted(async () => {
+  onMounted(() => {
     restoreRecentTransactions();
-    try {
-      neonJs = window.Neon || await import('@cityofzion/neon-core');
-      if (!isEvmWallet.value) {
-        createForm.value.accountId = createGeneratedAccountId();
-      }
-      computeAA();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to load neon-core for address derivation.');
+    if (!isEvmWallet.value) {
+      createForm.value.accountId = createGeneratedAccountId();
     }
+    void computeAA();
   });
 
   function restoreRecentTransactions() {
@@ -170,32 +162,14 @@ export function useStudioController() {
     createForm.value.accountId = createGeneratedAccountId();
   }
 
-  function ensureNeonReady() {
-    if (!neonJs) {
-      throw new Error('neon-core is not ready yet. Please retry.');
-    }
-    return neonJs;
-  }
-
-  function getRpcClient() {
-    const sdk = ensureNeonReady();
-    const rpcUrl = resolveRpcUrl(walletService);
-    if (rpcClientRef.value && rpcUrlRef.value === rpcUrl) return rpcClientRef.value;
-    rpcClientRef.value = new sdk.rpc.RPCClient(rpcUrl);
-    rpcUrlRef.value = rpcUrl;
-    return rpcClientRef.value;
-  }
 
   async function invokeReadOperation(operation, args = []) {
-    const sdk = ensureNeonReady();
     const aaHash = getAbstractAccountHash();
     if (!aaHash) {
       throw new Error('Master Abstract Account contract not found in environment config.');
     }
 
-    const script = sdk.sc.createScript({ scriptHash: aaHash, operation, args });
-    const rpcClient = getRpcClient();
-    const response = await rpcClient.invokeScript(sdk.u.HexString.fromHex(script), []);
+    const response = await invokeReadFunction(resolveRpcUrl(walletService), aaHash, operation, args);
     if (response?.state === 'FAULT') {
       throw new Error(`${operation} failed: ${response.exception || 'VM fault'}`);
     }
@@ -215,7 +189,7 @@ export function useStudioController() {
   }
 
   async function computeAA() {
-    if (!createForm.value.accountId || !neonJs) {
+    if (!createForm.value.accountId) {
       computedScriptHex.value = '';
       computedAddress.value = '';
       return;
@@ -226,15 +200,11 @@ export function useStudioController() {
       if (!aaHash) return;
 
       const accountIdHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
-      const script = neonJs.sc.createScript({
-        scriptHash: aaHash,
-        operation: 'verify',
-        args: [neonJs.sc.ContractParam.byteArray(accountIdHex)]
-      });
+      const script = createVerifyScript(aaHash, accountIdHex);
 
       computedScriptHex.value = script;
-      const scriptHash = neonJs.u.reverseHex(neonJs.u.hash160(script));
-      computedAddress.value = neonJs.wallet.getAddressFromScriptHash(scriptHash);
+      const scriptHash = reverseHex(hash160(script));
+      computedAddress.value = getAddressFromScriptHash(scriptHash);
     } catch (err) {
       console.error(err);
       computedScriptHex.value = '';
@@ -277,8 +247,7 @@ export function useStudioController() {
 
     manageBusy.value.load = true;
     try {
-      const sdk = ensureNeonReady();
-      const accountHash = hash160Param(manageForm.value.accountAddress, sdk);
+      const accountHash = hash160Param(manageForm.value.accountAddress);
 
       const [
         adminsRes,
@@ -366,16 +335,15 @@ export function useStudioController() {
 
     isCreating.value = true;
     try {
-      const sdk = ensureNeonReady();
       const accountIdHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
-      const accountScriptHash = hash160Param(computedAddress.value, sdk);
+      const accountScriptHash = hash160Param(computedAddress.value);
 
       await invokeOperation('Create account', 'createAccountWithAddress', [
         { type: 'ByteArray', value: accountIdHex },
         { type: 'Hash160', value: accountScriptHash },
-        { type: 'Array', value: toHashArray(validCreateAdmins.value, sdk) },
+        { type: 'Array', value: toHashArray(validCreateAdmins.value) },
         { type: 'Integer', value: createForm.value.adminThreshold },
-        { type: 'Array', value: toHashArray(validCreateManagers.value, sdk) },
+        { type: 'Array', value: toHashArray(validCreateManagers.value) },
         { type: 'Integer', value: createForm.value.managerThreshold }
       ]);
     } catch (err) {
@@ -395,10 +363,9 @@ export function useStudioController() {
 
     manageBusy.value.admins = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation('Set admins', 'setAdminsByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress, sdk) },
-        { type: 'Array', value: toHashArray(validManageAdmins.value, sdk) },
+        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
+        { type: 'Array', value: toHashArray(validManageAdmins.value) },
         { type: 'Integer', value: manageForm.value.adminThreshold }
       ]);
     } catch (err) {
@@ -414,10 +381,9 @@ export function useStudioController() {
 
     manageBusy.value.managers = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation('Set managers', 'setManagersByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress, sdk) },
-        { type: 'Array', value: toHashArray(validManageManagers.value, sdk) },
+        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
+        { type: 'Array', value: toHashArray(validManageManagers.value) },
         { type: 'Integer', value: manageForm.value.managerThreshold }
       ]);
     } catch (err) {
@@ -445,10 +411,9 @@ export function useStudioController() {
 
     manageBusy.value.domeAccounts = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation('Set dome accounts', 'setDomeAccountsByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress, sdk) },
-        { type: 'Array', value: toHashArray(validDomeAccounts.value, sdk) },
+        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
+        { type: 'Array', value: toHashArray(validDomeAccounts.value) },
         { type: 'Integer', value: manageForm.value.domeThreshold },
         { type: 'Integer', value: timeoutSeconds }
       ]);
@@ -465,9 +430,8 @@ export function useStudioController() {
 
     manageBusy.value.domeOracle = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation('Set dome oracle', 'setDomeOracleByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress, sdk) },
+        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
         { type: 'String', value: manageForm.value.domeOracleUrl.trim() }
       ]);
     } catch (err) {
@@ -483,9 +447,8 @@ export function useStudioController() {
 
     manageBusy.value.domeActivation = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation('Request dome activation', 'requestDomeActivationByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress, sdk) }
+        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) }
       ]);
     } catch (err) {
       console.error(err);
@@ -500,13 +463,12 @@ export function useStudioController() {
 
     permissionsBusy.value.verifier = true;
     try {
-      const sdk = ensureNeonReady();
       const verifierHash = permissionsForm.value.verifierContract.trim()
-        ? hash160Param(permissionsForm.value.verifierContract, sdk)
+        ? hash160Param(permissionsForm.value.verifierContract)
         : '0000000000000000000000000000000000000000';
 
       await invokeOperation('Set verifier contract', 'setVerifierContractByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress, sdk) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
         { type: 'Hash160', value: verifierHash }
       ]);
     } catch (err) {
@@ -522,9 +484,8 @@ export function useStudioController() {
 
     permissionsBusy.value.whitelistMode = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation('Set whitelist mode', 'setWhitelistModeByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress, sdk) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
         { type: 'Boolean', value: permissionsForm.value.whitelistMode }
       ]);
     } catch (err) {
@@ -544,10 +505,9 @@ export function useStudioController() {
 
     permissionsBusy.value.whitelist = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation(isAdding ? 'Add to whitelist' : 'Remove from whitelist', 'setWhitelistByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress, sdk) },
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.whitelistTarget, sdk) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.whitelistTarget) },
         { type: 'Boolean', value: isAdding }
       ]);
     } catch (err) {
@@ -567,10 +527,9 @@ export function useStudioController() {
 
     permissionsBusy.value.blacklist = true;
     try {
-      const sdk = ensureNeonReady();
       await invokeOperation(isAdding ? 'Add to blacklist' : 'Remove from blacklist', 'setBlacklistByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress, sdk) },
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.blacklistTarget, sdk) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.blacklistTarget) },
         { type: 'Boolean', value: isAdding }
       ]);
     } catch (err) {
@@ -590,12 +549,11 @@ export function useStudioController() {
 
     permissionsBusy.value.limit = true;
     try {
-      const sdk = ensureNeonReady();
       const amount = Number(permissionsForm.value.limitAmount) || 0;
 
       await invokeOperation('Set token transfer limit', 'setMaxTransferByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress, sdk) },
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.limitToken, sdk) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
+        { type: 'Hash160', value: hash160Param(permissionsForm.value.limitToken) },
         { type: 'Integer', value: amount }
       ]);
     } catch (err) {
