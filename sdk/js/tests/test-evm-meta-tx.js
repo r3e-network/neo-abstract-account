@@ -1,7 +1,9 @@
 const { rpc, sc, u, tx, wallet } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
 const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
-const { getNetworkMagic } = require('./rpc');
+const { bindRpcHelpers } = require('./rpc');
+const { bindParamHelpers } = require('./params');
+const { bindMetaTxHelpers } = require('./meta');
 const { decodeByteStringToHex } = require('./stack');
 
 const aaHash = sanitizeHex(
@@ -13,6 +15,9 @@ const aaHash = sanitizeHex(
 async function main() {
   const rpcUrl = 'https://testnet1.neo.coz.io:443';
   const rpcClient = new rpc.RPCClient(rpcUrl);
+  const { getNetworkMagic, invokeRead } = bindRpcHelpers({ rpcClient, rpc, sc, u });
+  const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+  const { computeArgsHash, buildTypedData, buildExecuteMetaTxArgs, signTypedDataNoRecovery } = bindMetaTxHelpers({ buildMetaTransactionTypedData, invokeRead, cpArray, cpHash160, cpByteArray, cpByteArrayRaw, decodeByteStringToHex, sanitizeHex, reverseHex: u.reverseHex, sc });
 
   console.log('Checking ExecuteMetaTx with valid EVM public key...');
 
@@ -34,20 +39,11 @@ async function main() {
     sc.ContractParam.hash160(deployerAccount.scriptHash),
   ];
 
-  const argsScript = sc.createScript({
-    scriptHash: aaHash,
-    operation: 'computeArgsHash',
-    args: [{ type: 'Array', value: argsParam }],
-  });
-  const argsRes = await rpcClient.invokeScript(u.HexString.fromHex(argsScript), []);
-  const argsHash = decodeByteStringToHex(argsRes.stack?.[0]);
-  if (!argsHash) {
-    throw new Error('computeArgsHash returned empty stack');
-  }
+  const argsHash = await computeArgsHash(aaHash, argsParam);
 
-  const chainId = await getNetworkMagic({ rpcClient, rpc, errorMessage: 'Unable to resolve network magic' });
+  const chainId = await getNetworkMagic('Unable to resolve network magic');
 
-  const { domain, types, message } = buildMetaTransactionTypedData({
+  const { domain, types, message } = buildTypedData({
     chainId,
     verifyingContract: aaHash,
     accountIdHex: accountId,
@@ -58,8 +54,7 @@ async function main() {
     deadline,
   });
 
-  const signatureWithRecovery = await evmWallet.signTypedData(domain, types, message);
-  const pureSignature = sanitizeHex(signatureWithRecovery).slice(0, 128);
+  const pureSignature = await signTypedDataNoRecovery(evmWallet, { domain, types, message });
 
   const sb = new sc.ScriptBuilder();
   sb.emitAppCall(aaHash, 'createAccount', [
@@ -76,23 +71,19 @@ async function main() {
     sc.ContractParam.integer(0),
   ]);
 
-  sb.emitAppCall(aaHash, 'executeMetaTx', [
-    sc.ContractParam.byteArray(u.HexString.fromHex(accountId, true)),
-    {
-      type: 'Array',
-      value: [sc.ContractParam.byteArray(u.HexString.fromHex(uncompressedPubKey, true))],
-    },
-    sc.ContractParam.hash160(targetContract),
-    sc.ContractParam.string(method),
-    { type: 'Array', value: argsParam },
-    sc.ContractParam.byteArray(u.HexString.fromHex(argsHash, true)),
-    sc.ContractParam.integer(nonce),
-    sc.ContractParam.integer(deadline),
-    {
-      type: 'Array',
-      value: [sc.ContractParam.byteArray(u.HexString.fromHex(pureSignature, true))],
-    },
-  ]);
+  sb.emitAppCall(aaHash, 'executeMetaTx', buildExecuteMetaTxArgs({
+    useAddress: false,
+    accountIdHex: accountId,
+    accountParam: sc.ContractParam.byteArray(u.HexString.fromHex(accountId, true)),
+    pubKeyHexes: [uncompressedPubKey],
+    targetContract,
+    method,
+    methodArgs: argsParam,
+    argsHashHex: argsHash,
+    nonce,
+    deadline,
+    signatureHexes: [pureSignature],
+  }));
 
   const execRes = await rpcClient.invokeScript(
     u.HexString.fromHex(sb.build()),

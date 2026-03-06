@@ -6,6 +6,7 @@ const { extractVmState, waitForTx, sendTransaction } = require('./tx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindAccountHelpers } = require('./account');
 const { bindStackHelpers } = require('./stack');
+const { bindInvocationHelpers } = require('./invoke');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
@@ -13,33 +14,7 @@ const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic, invokeRead } = bindRpcHelpers({ rpcClient, rpc, sc, u });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex });
 const { decodeByteStringToHex, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
-
-async function sendInvocation({ account, magic, aaHash, operation, args }) {
-  const script = sc.createScript({ scriptHash: aaHash, operation, args });
-  const signers = [{ account: account.scriptHash, scopes: tx.WitnessScope.CalledByEntry }];
-
-  const currentHeight = await rpcClient.getBlockCount();
-  const sim = await rpcClient.invokeScript(u.HexString.fromHex(script), signers);
-  if (sim.state === 'FAULT') {
-    throw new Error(`${operation} simulation fault: ${sim.exception}`);
-  }
-
-  const { txid, networkFee } = await sendTransaction({
-    rpcClient,
-    txModule: tx,
-    account,
-    magic,
-    signers,
-    validUntilBlock: currentHeight + 1000,
-    script,
-    systemFee: sim.gasconsumed || '1000000',
-  });
-  return {
-    txid,
-    systemFee: sim.gasconsumed,
-    networkFee,
-  };
-}
+const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction });
 
 async function getGasBalance(address) {
   const result = await rpcClient.execute(new rpc.Query({

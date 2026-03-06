@@ -9,6 +9,10 @@ const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
 const { bindStackHelpers } = require('./stack');
+const { bindInvocationHelpers } = require('./invoke');
+const { bindMetaTxHelpers } = require('./meta');
+const { bindWhitelistArgBuilders } = require('./whitelistArgs');
+const { bindMetaSearchHelpers } = require('./metaSearch');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
@@ -16,67 +20,11 @@ const { getNetworkMagic, invokeRead, simulate } = bindRpcHelpers({ rpcClient, rp
 const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { decodeByteStringToHex, decodeInteger, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
+const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
+const { computeArgsHash, buildTypedData, buildArgsHashCandidates, buildPubKeyCandidates, buildExecuteMetaTxArgs, signTypedDataNoRecovery } = bindMetaTxHelpers({ buildMetaTransactionTypedData, invokeRead, cpArray, cpHash160, cpByteArray, cpByteArrayRaw, decodeByteStringToHex, sanitizeHex, reverseHex: u.reverseHex, sc });
+const { buildSetWhitelistByAddressArgs, buildSetWhitelistByAddressAlternativeBuilders, buildSetWhitelistModeByAddressArgs, buildSetWhitelistModeByAddressAlternativeBuilders, buildSetWhitelistModeByAccountIdArgs, buildSetWhitelistModeByAccountIdAlternativeBuilders } = bindWhitelistArgBuilders({ cpHash160, cpByteArray, cpByteArrayRaw, cpArray, sc });
+const { buildMetaExecutionVariants } = bindMetaSearchHelpers({ invokeRead, cpHash160, cpByteArray, sanitizeHex, decodeInteger, decodeByteStringToHex, buildPubKeyCandidates, buildArgsHashCandidates, buildTypedData, computeArgsHash, signTypedDataNoRecovery, buildExecuteMetaTxArgs });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
-
-async function sendInvocation({ account, magic, aaHash, operation, args, witnessScope = tx.WitnessScope.CalledByEntry }) {
-  const signers = [{ account: account.scriptHash, scopes: witnessScope }];
-  const script = sc.createScript({ scriptHash: aaHash, operation, args });
-
-  const sim = await rpcClient.invokeScript(u.HexString.fromHex(script), signers);
-  if (sim.state === 'FAULT') {
-    throw new Error(`${operation} simulation fault: ${sim.exception}`);
-  }
-
-  const currentHeight = await rpcClient.getBlockCount();
-  const { txid, networkFee } = await sendTransaction({
-    rpcClient,
-    txModule: tx,
-    account,
-    magic,
-    signers,
-    validUntilBlock: currentHeight + 1000,
-    script,
-    systemFee: sim.gasconsumed || '1000000',
-  });
-  const appLog = await waitForTx(rpcClient, txid);
-  assertVmStateHalt(appLog, `${operation} tx`);
-
-  return {
-    txid,
-    systemFee: sim.gasconsumed,
-    networkFee,
-  };
-}
-
-async function computeArgsHash(aaHash, args) {
-  const res = await invokeRead(aaHash, 'computeArgsHash', [cpArray(args)]);
-  return decodeByteStringToHex(res.stack?.[0]);
-}
-
-async function computeArgsHashForMetaExecution({
-  aaHash,
-  useAddress,
-  accountIdHex,
-  accountAddressHash,
-  method,
-  args,
-  nonce,
-}) {
-  return computeArgsHash(aaHash, args);
-}
-
-function buildTypedData({ chainId, verifyingContract, accountIdHex, targetContract, method, argsHashHex, nonce, deadline }) {
-  return buildMetaTransactionTypedData({
-    chainId,
-    verifyingContract,
-    accountIdHex,
-    targetContract,
-    method,
-    argsHashHex,
-    nonce,
-    deadline,
-  });
-}
 
 async function executeMetaTx({
   account,
@@ -91,232 +39,55 @@ async function executeMetaTx({
   methodArgsBuilder,
   methodArgsAlternativeBuilders = [],
 }) {
-  const buildMethodArgs = typeof methodArgsBuilder === 'function'
-    ? methodArgsBuilder
-    : () => (Array.isArray(methodArgs) ? [...methodArgs] : []);
-  const allArgsBuilders = [buildMethodArgs, ...methodArgsAlternativeBuilders.filter((fn) => typeof fn === 'function')];
-  const signerAddressHex = sanitizeHex(signerWallet.address);
-  const nonceRes = await invokeRead(
+  const { attemptedArgsHashes, variants } = await buildMetaExecutionVariants({
     aaHash,
-    useAddress ? 'getNonceForAddress' : 'getNonceForAccount',
-    useAddress
-      ? [cpHash160(accountAddressHash), cpHash160(signerAddressHex)]
-      : [cpByteArray(accountIdHex), cpHash160(signerAddressHex)]
-  );
-  const nonce = decodeInteger(nonceRes.stack?.[0]);
-  let accountIdForSignature = sanitizeHex(accountIdHex);
-  if (accountAddressHash) {
-    const idByAddressRes = await invokeRead(aaHash, 'getAccountIdByAddress', [cpHash160(accountAddressHash)]);
-    const resolvedRawId = decodeByteStringToHex(idByAddressRes.stack?.[0]);
-    if (resolvedRawId) {
-      accountIdForSignature = resolvedRawId;
-    }
-  }
-
-  const deadline = Math.floor(Date.now() / 1000) + 7200;
-  const fullPubKey = sanitizeHex(signerWallet.signingKey.publicKey);
-  const pubKeyCandidates = [];
-  if (fullPubKey.length === 130) {
-    pubKeyCandidates.push(fullPubKey);
-    pubKeyCandidates.push(fullPubKey.slice(2)); // x||y (64-byte form)
-  } else if (fullPubKey.length === 128) {
-    pubKeyCandidates.push(fullPubKey);
-  } else {
-    throw new Error(`Unsupported signer public key length: ${fullPubKey.length}`);
-  }
+    useAddress,
+    accountIdHex,
+    accountAddressHash,
+    signerWallet,
+    magic,
+    method,
+    methodArgs,
+    methodArgsBuilder,
+    methodArgsAlternativeBuilders,
+    deadlineSeconds: 7200,
+  });
 
   const operation = useAddress ? 'executeMetaTxByAddress' : 'executeMetaTx';
   let txResult = null;
   let lastError = null;
-  let selectedArgsHash = null;
-  let selectedArgsVariant = null;
-  const attemptedArgsHashes = [];
-  for (let builderIdx = 0; builderIdx < allArgsBuilders.length; builderIdx++) {
-    const currentBuilder = allArgsBuilders[builderIdx];
-    const argsForHash = currentBuilder();
-    const argsHashHex = await computeArgsHashForMetaExecution({
-      aaHash,
-      useAddress,
-      accountIdHex,
-      accountAddressHash,
-      method,
-      args: argsForHash,
-      nonce,
-    });
-    if (!argsHashHex || argsHashHex.length !== 64) {
-      throw new Error(`Invalid args hash for ${method}: ${argsHashHex}`);
-    }
-    const argsHashCandidates = [argsHashHex];
-    const reversedArgsHash = sanitizeHex(u.reverseHex(argsHashHex));
-    if (reversedArgsHash && reversedArgsHash.length === 64 && reversedArgsHash !== argsHashHex) {
-      argsHashCandidates.push(reversedArgsHash);
-    }
-    attemptedArgsHashes.push(...argsHashCandidates);
+  let selectedVariant = null;
 
-    for (const candidateArgsHash of argsHashCandidates) {
-      const typedData = buildTypedData({
-        chainId: magic,
-        verifyingContract: aaHash,
-        accountIdHex: accountIdForSignature,
-        targetContract: aaHash,
-        method,
-        argsHashHex: candidateArgsHash,
-        nonce,
-        deadline,
+  for (const variant of variants) {
+    try {
+      txResult = await sendInvocation({
+        account,
+        magic,
+        aaHash,
+        operation,
+        args: variant.args,
       });
-      const signature = await signerWallet.signTypedData(typedData.domain, typedData.types, typedData.message);
-      const sigNoRecovery = sanitizeHex(signature).slice(0, 128);
-
-      for (const candidatePubKey of pubKeyCandidates) {
-        try {
-          const argsForCall = currentBuilder();
-          txResult = await sendInvocation({
-            account,
-            magic,
-            aaHash,
-            operation,
-            args: [
-              useAddress ? cpHash160(accountAddressHash) : cpByteArray(accountIdHex),
-              cpArray([cpByteArrayRaw(candidatePubKey)]),
-              cpHash160(aaHash),
-              sc.ContractParam.string(method),
-              cpArray(argsForCall),
-              cpByteArrayRaw(candidateArgsHash),
-              sc.ContractParam.integer(nonce),
-              sc.ContractParam.integer(deadline),
-              cpArray([cpByteArrayRaw(sigNoRecovery)]),
-            ],
-          });
-          txResult.pubKeyHex = candidatePubKey;
-          selectedArgsHash = candidateArgsHash;
-          selectedArgsVariant = builderIdx;
-          break;
-        } catch (e) {
-          lastError = e;
-        }
-      }
-      if (txResult) break;
+      selectedVariant = variant;
+      break;
+    } catch (error) {
+      lastError = error;
     }
-    if (txResult) break;
   }
+
   if (!txResult) {
     const attempted = attemptedArgsHashes.join(',');
     const baseMessage = lastError && lastError.message ? lastError.message : `Unable to execute ${operation}`;
     throw new Error(`${baseMessage} (argsHash attempts: ${attempted})`);
   }
 
-  return { ...txResult, argsHashHex: selectedArgsHash, argsVariant: selectedArgsVariant, nonceBefore: nonce, signerAddressHex };
-}
-
-function buildSetWhitelistByAddressArgs(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpHash160(accountAddressHash),
-    cpHash160(targetContractHash),
-    sc.ContractParam.boolean(!!allowed),
-  ];
-}
-
-function buildSetWhitelistByAddressArgsAsByteArray(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpByteArrayRaw(accountAddressHash),
-    cpByteArrayRaw(targetContractHash),
-    sc.ContractParam.boolean(!!allowed),
-  ];
-}
-
-function buildSetWhitelistByAddressArgsAsByteArrayReversed(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpByteArray(accountAddressHash),
-    cpByteArray(targetContractHash),
-    sc.ContractParam.boolean(!!allowed),
-  ];
-}
-
-function buildSetWhitelistByAddressArgsAsIntegerFlag(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpHash160(accountAddressHash),
-    cpHash160(targetContractHash),
-    sc.ContractParam.integer(allowed ? 1 : 0),
-  ];
-}
-
-function buildSetWhitelistByAddressArgsAsByteArrayIntegerFlag(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpByteArrayRaw(accountAddressHash),
-    cpByteArrayRaw(targetContractHash),
-    sc.ContractParam.integer(allowed ? 1 : 0),
-  ];
-}
-
-function buildSetWhitelistByAddressArgsAsByteArrayReversedIntegerFlag(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpByteArray(accountAddressHash),
-    cpByteArray(targetContractHash),
-    sc.ContractParam.integer(allowed ? 1 : 0),
-  ];
-}
-
-function buildSetWhitelistModeByAddressArgs(accountAddressHash, enabled) {
-  return [
-    cpHash160(accountAddressHash),
-    sc.ContractParam.boolean(!!enabled),
-  ];
-}
-
-function buildSetWhitelistModeByAddressArgsAsByteArray(accountAddressHash, enabled) {
-  return [
-    cpByteArrayRaw(accountAddressHash),
-    sc.ContractParam.boolean(!!enabled),
-  ];
-}
-
-function buildSetWhitelistModeByAddressArgsAsByteArrayReversed(accountAddressHash, enabled) {
-  return [
-    cpByteArray(accountAddressHash),
-    sc.ContractParam.boolean(!!enabled),
-  ];
-}
-
-function buildSetWhitelistModeByAddressArgsAsIntegerFlag(accountAddressHash, enabled) {
-  return [
-    cpHash160(accountAddressHash),
-    sc.ContractParam.integer(enabled ? 1 : 0),
-  ];
-}
-
-function buildSetWhitelistModeByAddressArgsAsByteArrayIntegerFlag(accountAddressHash, enabled) {
-  return [
-    cpByteArrayRaw(accountAddressHash),
-    sc.ContractParam.integer(enabled ? 1 : 0),
-  ];
-}
-
-function buildSetWhitelistModeByAddressArgsAsByteArrayReversedIntegerFlag(accountAddressHash, enabled) {
-  return [
-    cpByteArray(accountAddressHash),
-    sc.ContractParam.integer(enabled ? 1 : 0),
-  ];
-}
-
-function buildSetWhitelistModeByAccountIdArgs(accountIdHex, enabled) {
-  return [
-    cpByteArray(accountIdHex),
-    sc.ContractParam.boolean(!!enabled),
-  ];
-}
-
-function buildSetWhitelistModeByAccountIdArgsRaw(accountIdHex, enabled) {
-  return [
-    cpByteArrayRaw(accountIdHex),
-    sc.ContractParam.boolean(!!enabled),
-  ];
-}
-
-function buildSetWhitelistModeByAccountIdArgsIntegerFlag(accountIdHex, enabled) {
-  return [
-    cpByteArray(accountIdHex),
-    sc.ContractParam.integer(enabled ? 1 : 0),
-  ];
+  return {
+    ...txResult,
+    pubKeyHex: selectedVariant.pubKeyHex,
+    argsHashHex: selectedVariant.argsHashHex,
+    argsVariant: selectedVariant.argsVariant,
+    nonceBefore: selectedVariant.nonce,
+    signerAddressHex: selectedVariant.signerAddressHex,
+  };
 }
 
 async function main() {
@@ -443,7 +214,7 @@ async function main() {
     magic,
     aaHash,
     operation: 'setWhitelistMode',
-    args: [cpByteArray(accountIdA), sc.ContractParam.boolean(true)],
+    args: buildSetWhitelistModeByAccountIdArgs(accountIdA, true),
   }))});
 
   summary.txs.push({ step: 'setWhitelist(A,aaHash,true)', ...(await sendInvocation({
@@ -494,7 +265,7 @@ async function main() {
     magic,
     aaHash,
     operation: 'setWhitelistModeByAddress',
-    args: [cpHash160(accountA.addressScriptHash), sc.ContractParam.boolean(false)],
+    args: buildSetWhitelistModeByAddressArgs(accountA.addressScriptHash, false),
   }))});
 
   // Account B: create without address then bind
@@ -584,16 +355,7 @@ async function main() {
     signerWallet: ethSigner,
     method: 'setWhitelistByAddress',
     methodArgsBuilder: () => buildSetWhitelistByAddressArgs(accountC.addressScriptHash, aaHash, true),
-    methodArgsAlternativeBuilders: [
-      () => buildSetWhitelistByAddressArgsAsByteArray(accountC.addressScriptHash, aaHash, true),
-      () => buildSetWhitelistByAddressArgsAsByteArrayReversed(accountC.addressScriptHash, aaHash, true),
-      () => buildSetWhitelistByAddressArgsAsIntegerFlag(accountC.addressScriptHash, aaHash, true),
-      () => buildSetWhitelistByAddressArgsAsByteArrayIntegerFlag(accountC.addressScriptHash, aaHash, true),
-      () => buildSetWhitelistByAddressArgsAsByteArrayReversedIntegerFlag(accountC.addressScriptHash, aaHash, true),
-      () => [cpArray(buildSetWhitelistByAddressArgs(accountC.addressScriptHash, aaHash, true))],
-      () => [cpArray(buildSetWhitelistByAddressArgsAsByteArray(accountC.addressScriptHash, aaHash, true))],
-      () => [cpArray(buildSetWhitelistByAddressArgsAsByteArrayReversed(accountC.addressScriptHash, aaHash, true))],
-    ],
+    methodArgsAlternativeBuilders: buildSetWhitelistByAddressAlternativeBuilders(accountC.addressScriptHash, aaHash, true),
   });
   summary.txs.push({ step: 'metaTxByAddress setWhitelistByAddress(C,aaHash,true)', ...meta1 });
 
@@ -610,16 +372,7 @@ async function main() {
     signerWallet: ethSigner,
     method: 'setWhitelistModeByAddress',
     methodArgsBuilder: () => buildSetWhitelistModeByAddressArgs(accountC.addressScriptHash, true),
-    methodArgsAlternativeBuilders: [
-      () => buildSetWhitelistModeByAddressArgsAsByteArray(accountC.addressScriptHash, true),
-      () => buildSetWhitelistModeByAddressArgsAsByteArrayReversed(accountC.addressScriptHash, true),
-      () => buildSetWhitelistModeByAddressArgsAsIntegerFlag(accountC.addressScriptHash, true),
-      () => buildSetWhitelistModeByAddressArgsAsByteArrayIntegerFlag(accountC.addressScriptHash, true),
-      () => buildSetWhitelistModeByAddressArgsAsByteArrayReversedIntegerFlag(accountC.addressScriptHash, true),
-      () => [cpArray(buildSetWhitelistModeByAddressArgs(accountC.addressScriptHash, true))],
-      () => [cpArray(buildSetWhitelistModeByAddressArgsAsByteArray(accountC.addressScriptHash, true))],
-      () => [cpArray(buildSetWhitelistModeByAddressArgsAsByteArrayReversed(accountC.addressScriptHash, true))],
-    ],
+    methodArgsAlternativeBuilders: buildSetWhitelistModeByAddressAlternativeBuilders(accountC.addressScriptHash, true),
   });
   summary.txs.push({ step: 'metaTxByAddress setWhitelistModeByAddress(C,true)', ...meta2 });
 
@@ -634,7 +387,7 @@ async function main() {
     magic,
     aaHash,
     operation: 'setWhitelistByAddress',
-    args: [cpHash160(accountC.addressScriptHash), cpHash160(aaHash), sc.ContractParam.boolean(false)],
+    args: buildSetWhitelistByAddressArgs(accountC.addressScriptHash, aaHash, false),
   }))});
 
   const simExecCBlocked = await simulate(aaHash, 'executeByAddress', [cpHash160(accountC.addressScriptHash), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);
@@ -645,7 +398,7 @@ async function main() {
     magic,
     aaHash,
     operation: 'setWhitelistByAddress',
-    args: [cpHash160(accountC.addressScriptHash), cpHash160(aaHash), sc.ContractParam.boolean(true)],
+    args: buildSetWhitelistByAddressArgs(accountC.addressScriptHash, aaHash, true),
   }))});
 
   const meta3 = await executeMetaTx({
@@ -658,12 +411,7 @@ async function main() {
     signerWallet: ethSigner,
     method: 'setWhitelistMode',
     methodArgsBuilder: () => buildSetWhitelistModeByAccountIdArgs(accountIdC, false),
-    methodArgsAlternativeBuilders: [
-      () => buildSetWhitelistModeByAccountIdArgsRaw(accountIdC, false),
-      () => buildSetWhitelistModeByAccountIdArgsIntegerFlag(accountIdC, false),
-      () => [cpArray(buildSetWhitelistModeByAccountIdArgs(accountIdC, false))],
-      () => [cpArray(buildSetWhitelistModeByAccountIdArgsRaw(accountIdC, false))],
-    ],
+    methodArgsAlternativeBuilders: buildSetWhitelistModeByAccountIdAlternativeBuilders(accountIdC, false),
   });
   summary.txs.push({ step: 'metaTx(accountId) setWhitelistMode(C,false)', ...meta3 });
 

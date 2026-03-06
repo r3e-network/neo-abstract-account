@@ -6,6 +6,7 @@ const { assertVmStateHalt, extractVmState, waitForTx, sendTransaction } = requir
 const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
+const { bindInvocationHelpers } = require('./invoke');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
@@ -13,6 +14,7 @@ const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic, simulate } = bindRpcHelpers({ rpcClient, rpc, sc, u });
 const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
+const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
 
 function buildAaExecutionContext(aaHash, ownerScriptHash, accountInfo) {
@@ -31,47 +33,6 @@ function buildAaExecutionContext(aaHash, ownerScriptHash, accountInfo) {
         verificationScript: accountInfo.verificationScript,
       },
     ],
-  };
-}
-
-async function sendInvocation({
-  account,
-  magic,
-  scriptHash,
-  operation,
-  args,
-  witnessScope = tx.WitnessScope.CalledByEntry,
-  signers,
-  witnesses = [],
-}) {
-  const resolvedSigners = signers || [{ account: account.scriptHash, scopes: witnessScope }];
-  const script = sc.createScript({ scriptHash, operation, args });
-
-  const sim = await rpcClient.invokeScript(u.HexString.fromHex(script), resolvedSigners);
-  if (sim.state === 'FAULT') {
-    throw new Error(`${operation} simulation fault: ${sim.exception}`);
-  }
-
-  const currentHeight = await rpcClient.getBlockCount();
-  const { txid, networkFee } = await sendTransaction({
-    rpcClient,
-    txModule: tx,
-    account,
-    magic,
-    signers: resolvedSigners,
-    validUntilBlock: currentHeight + 1000,
-    script,
-    systemFee: sim.gasconsumed || '1000000',
-    witnesses,
-  });
-  const appLog = await waitForTx(rpcClient, txid);
-  assertVmStateHalt(appLog, `${operation} tx`);
-
-  return {
-    txid,
-    systemFee: sim.gasconsumed,
-    networkFee,
-    appLog,
   };
 }
 

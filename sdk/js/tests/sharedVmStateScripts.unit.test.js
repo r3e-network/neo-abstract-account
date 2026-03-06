@@ -29,7 +29,8 @@ for (const file of haltFiles) {
   test(`${file} uses the shared assertVmStateHalt helper`, () => {
     const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
     assert.match(source, /require\('\.\/tx'\)/);
-    assert.match(source, /assertVmStateHalt\(/);
+    assert.match(source, /require\('\.\/invoke'\)/);
+    assert.match(source, /assertVmStateHalt\b/);
     assert.doesNotMatch(source, /if \(vmState !== 'HALT'\)/);
   });
 }

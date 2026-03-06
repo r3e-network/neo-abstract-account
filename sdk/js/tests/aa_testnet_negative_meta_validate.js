@@ -9,6 +9,10 @@ const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindAccountHelpers } = require('./account');
 const { bindStackHelpers } = require('./stack');
+const { bindInvocationHelpers } = require('./invoke');
+const { bindMetaTxHelpers } = require('./meta');
+const { bindWhitelistArgBuilders } = require('./whitelistArgs');
+const { bindMetaSearchHelpers } = require('./metaSearch');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
@@ -16,147 +20,29 @@ const { getNetworkMagic, invokeRead, simulate } = bindRpcHelpers({ rpcClient, rp
 const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { decodeByteStringToHex, decodeInteger } = bindStackHelpers({ sanitizeHex, u });
-
-function buildSetWhitelistByAddressArgs(accountAddressHash, targetContractHash, allowed) {
-  return [
-    cpHash160(accountAddressHash),
-    cpHash160(targetContractHash),
-    sc.ContractParam.boolean(!!allowed),
-  ];
-}
-
-async function sendInvocation({ account, magic, aaHash, operation, args, witnessScope = tx.WitnessScope.CalledByEntry }) {
-  const signers = [{ account: account.scriptHash, scopes: witnessScope }];
-  const script = sc.createScript({ scriptHash: aaHash, operation, args });
-
-  const sim = await rpcClient.invokeScript(u.HexString.fromHex(script), signers);
-  if (sim.state === 'FAULT') {
-    throw new Error(`${operation} simulation fault: ${sim.exception}`);
-  }
-
-  const currentHeight = await rpcClient.getBlockCount();
-  const { txid, networkFee } = await sendTransaction({
-    rpcClient,
-    txModule: tx,
-    account,
-    magic,
-    signers,
-    validUntilBlock: currentHeight + 1000,
-    script,
-    systemFee: sim.gasconsumed || '1000000',
-  });
-  const appLog = await waitForTx(rpcClient, txid);
-  assertVmStateHalt(appLog, `${operation} tx`);
-
-  return {
-    txid,
-    systemFee: sim.gasconsumed,
-    networkFee,
-  };
-}
-
-async function computeArgsHash(aaHash, args) {
-  const res = await invokeRead(aaHash, 'computeArgsHash', [cpArray(args)]);
-  const decoded = decodeByteStringToHex(res.stack?.[0]);
-  if (!decoded) {
-    throw new Error('computeArgsHash returned empty stack');
-  }
-  return decoded;
-}
-
-function buildTypedData({ chainId, verifyingContract, accountIdHex, targetContract, method, argsHashHex, nonce, deadline }) {
-  return buildMetaTransactionTypedData({
-    chainId,
-    verifyingContract,
-    accountIdHex,
-    targetContract,
-    method,
-    argsHashHex,
-    nonce,
-    deadline,
-  });
-}
-
-function buildExecuteMetaTxByAddressArgs({
-  accountAddressHash,
-  pubKeyHexes,
-  targetContract,
-  method,
-  methodArgs,
-  argsHashHex,
-  nonce,
-  deadline,
-  signatureHexes,
-}) {
-  return [
-    cpHash160(accountAddressHash),
-    cpArray(pubKeyHexes.map((hex) => cpByteArrayRaw(hex))),
-    cpHash160(targetContract),
-    sc.ContractParam.string(method),
-    cpArray(methodArgs),
-    cpByteArrayRaw(argsHashHex),
-    sc.ContractParam.integer(nonce),
-    sc.ContractParam.integer(deadline),
-    cpArray(signatureHexes.map((hex) => cpByteArrayRaw(hex))),
-  ];
-}
+const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
+const { computeArgsHash, buildTypedData, buildArgsHashCandidates, buildPubKeyCandidates, buildExecuteMetaTxArgs, signTypedDataNoRecovery } = bindMetaTxHelpers({ buildMetaTransactionTypedData, invokeRead, cpArray, cpHash160, cpByteArray, cpByteArrayRaw, decodeByteStringToHex, sanitizeHex, reverseHex: u.reverseHex, sc });
+const { buildSetWhitelistByAddressArgs } = bindWhitelistArgBuilders({ cpHash160, cpByteArray, cpByteArrayRaw, cpArray, sc });
+const { buildMetaExecutionVariants } = bindMetaSearchHelpers({ invokeRead, cpHash160, cpByteArray, sanitizeHex, decodeInteger, decodeByteStringToHex, buildPubKeyCandidates, buildArgsHashCandidates, buildTypedData, computeArgsHash, signTypedDataNoRecovery, buildExecuteMetaTxArgs });
 
 async function findValidMetaPayload({ owner, magic, aaHash, accountIdHex, accountAddressHash, signerWallet, method, methodArgs }) {
-  const signerAddressHex = sanitizeHex(signerWallet.address);
-  const nonceRes = await invokeRead(aaHash, 'getNonceForAddress', [cpHash160(accountAddressHash), cpHash160(signerAddressHex)]);
-  const nonce = decodeInteger(nonceRes.stack?.[0]);
-  const accountIdByAddress = await invokeRead(aaHash, 'getAccountIdByAddress', [cpHash160(accountAddressHash)]);
-  const accountIdForSignature = decodeByteStringToHex(accountIdByAddress.stack?.[0]) || sanitizeHex(accountIdHex);
-  const deadline = Math.floor(Date.now() / 1000) + 3600;
-  const argsHashHex = await computeArgsHash(aaHash, methodArgs);
-
-  const fullPubKey = sanitizeHex(signerWallet.signingKey.publicKey);
-  const pubKeyCandidates = fullPubKey.length === 130 ? [fullPubKey, fullPubKey.slice(2)] : [fullPubKey];
-  const argsHashCandidates = [argsHashHex];
-  const reversedArgsHash = sanitizeHex(u.reverseHex(argsHashHex));
-  if (reversedArgsHash && reversedArgsHash.length === 64 && reversedArgsHash !== argsHashHex) {
-    argsHashCandidates.push(reversedArgsHash);
-  }
+  const { variants } = await buildMetaExecutionVariants({
+    aaHash,
+    useAddress: true,
+    accountIdHex,
+    accountAddressHash,
+    signerWallet,
+    magic,
+    method,
+    methodArgs,
+    deadlineSeconds: 3600,
+  });
 
   const signerScope = [{ account: owner.scriptHash, scopes: tx.WitnessScope.CalledByEntry }];
-  for (const candidateArgsHash of argsHashCandidates) {
-    const typedData = buildTypedData({
-      chainId: magic,
-      verifyingContract: aaHash,
-      accountIdHex: accountIdForSignature,
-      targetContract: aaHash,
-      method,
-      argsHashHex: candidateArgsHash,
-      nonce,
-      deadline,
-    });
-    const signatureWithRecovery = await signerWallet.signTypedData(typedData.domain, typedData.types, typedData.message);
-    const signatureHex = sanitizeHex(signatureWithRecovery).slice(0, 128);
-
-    for (const candidatePubKey of pubKeyCandidates) {
-      const args = buildExecuteMetaTxByAddressArgs({
-        accountAddressHash,
-        pubKeyHexes: [candidatePubKey],
-        targetContract: aaHash,
-        method,
-        methodArgs,
-        argsHashHex: candidateArgsHash,
-        nonce,
-        deadline,
-        signatureHexes: [signatureHex],
-      });
-      const res = await simulate(aaHash, 'executeMetaTxByAddress', args, signerScope);
-      if (res.state === 'HALT') {
-        return {
-          nonce,
-          deadline,
-          argsHashHex: candidateArgsHash,
-          pubKeyHex: candidatePubKey,
-          signatureHex,
-          accountIdForSignature,
-          signerAddressHex,
-        };
-      }
+  for (const variant of variants) {
+    const res = await simulate(aaHash, 'executeMetaTxByAddress', variant.args, signerScope);
+    if (res.state === 'HALT') {
+      return variant;
     }
   }
 
@@ -252,7 +138,7 @@ async function main() {
       magic,
       aaHash,
       operation: 'executeMetaTxByAddress',
-      args: buildExecuteMetaTxByAddressArgs({
+      args: buildExecuteMetaTxArgs({ useAddress: true,
         accountAddressHash: accountInfo.addressScriptHash,
         pubKeyHexes: [baseline.pubKeyHex],
         targetContract: aaHash,
@@ -279,7 +165,7 @@ async function main() {
 
   await expectFault(
     'replay stale nonce',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex],
       targetContract: aaHash,
@@ -297,42 +183,21 @@ async function main() {
   const futureDeadline = Math.floor(Date.now() / 1000) + 3600;
   const expiredDeadline = Math.floor(Date.now() / 1000) - 60;
 
-  const expiredSignature = sanitizeHex((await evmSigner.signTypedData(
-    buildTypedData({
-      chainId: magic,
-      verifyingContract: aaHash,
-      accountIdHex: baseline.accountIdForSignature,
-      targetContract: aaHash,
-      method,
-      argsHashHex: baseline.argsHashHex,
-      nonce: currentNonce,
-      deadline: expiredDeadline,
-    }).domain,
-    buildTypedData({
-      chainId: magic,
-      verifyingContract: aaHash,
-      accountIdHex: baseline.accountIdForSignature,
-      targetContract: aaHash,
-      method,
-      argsHashHex: baseline.argsHashHex,
-      nonce: currentNonce,
-      deadline: expiredDeadline,
-    }).types,
-    buildTypedData({
-      chainId: magic,
-      verifyingContract: aaHash,
-      accountIdHex: baseline.accountIdForSignature,
-      targetContract: aaHash,
-      method,
-      argsHashHex: baseline.argsHashHex,
-      nonce: currentNonce,
-      deadline: expiredDeadline,
-    }).message
-  ))).slice(0, 128);
+  const expiredTypedData = buildTypedData({
+    chainId: magic,
+    verifyingContract: aaHash,
+    accountIdHex: baseline.accountIdForSignature,
+    targetContract: aaHash,
+    method,
+    argsHashHex: baseline.argsHashHex,
+    nonce: currentNonce,
+    deadline: expiredDeadline,
+  });
+  const expiredSignature = await signTypedDataNoRecovery(evmSigner, expiredTypedData);
 
   await expectFault(
     'expired deadline',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex],
       targetContract: aaHash,
@@ -357,11 +222,11 @@ async function main() {
     nonce: currentNonce,
     deadline: futureDeadline,
   });
-  const tamperedArgsHashSignature = sanitizeHex((await evmSigner.signTypedData(tamperedTypedData.domain, tamperedTypedData.types, tamperedTypedData.message))).slice(0, 128);
+  const tamperedArgsHashSignature = await signTypedDataNoRecovery(evmSigner, tamperedTypedData);
 
   await expectFault(
     'tampered args hash',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex],
       targetContract: aaHash,
@@ -385,11 +250,11 @@ async function main() {
     nonce: currentNonce,
     deadline: futureDeadline,
   });
-  const wrongChainSignature = sanitizeHex((await evmSigner.signTypedData(wrongChainTypedData.domain, wrongChainTypedData.types, wrongChainTypedData.message))).slice(0, 128);
+  const wrongChainSignature = await signTypedDataNoRecovery(evmSigner, wrongChainTypedData);
 
   await expectFault(
     'wrong chain id signature',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex],
       targetContract: aaHash,
@@ -413,11 +278,11 @@ async function main() {
     nonce: currentNonce,
     deadline: futureDeadline,
   });
-  const wrongVerifyingSignature = sanitizeHex((await evmSigner.signTypedData(wrongVerifyingTypedData.domain, wrongVerifyingTypedData.types, wrongVerifyingTypedData.message))).slice(0, 128);
+  const wrongVerifyingSignature = await signTypedDataNoRecovery(evmSigner, wrongVerifyingTypedData);
 
   await expectFault(
     'wrong verifying contract signature',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex],
       targetContract: aaHash,
@@ -443,11 +308,11 @@ async function main() {
     nonce: currentNonce,
     deadline: futureDeadline,
   });
-  const correctSignature = sanitizeHex((await evmSigner.signTypedData(correctTypedData.domain, correctTypedData.types, correctTypedData.message))).slice(0, 128);
+  const correctSignature = await signTypedDataNoRecovery(evmSigner, correctTypedData);
 
   await expectFault(
     'mismatched pubkey and signature',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [wrongPubKey],
       targetContract: aaHash,
@@ -463,7 +328,7 @@ async function main() {
 
   await expectFault(
     'invalid signature length',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex],
       targetContract: aaHash,
@@ -479,7 +344,7 @@ async function main() {
 
   await expectFault(
     'mismatched signer arrays',
-    buildExecuteMetaTxByAddressArgs({
+    buildExecuteMetaTxArgs({ useAddress: true,
       accountAddressHash: accountInfo.addressScriptHash,
       pubKeyHexes: [baseline.pubKeyHex, wrongPubKey],
       targetContract: aaHash,
