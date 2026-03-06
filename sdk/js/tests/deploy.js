@@ -1,6 +1,5 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
-const fs = require('fs');
-const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
+const { readContractArtifacts } = require('../src/contractArtifacts');
 const { buildInvokeScriptQuery } = require('./deployHelpers');
 
 const deployerWif = process.env.ABSTRACT_ACCOUNT_DEPLOYER_WIF
@@ -15,10 +14,7 @@ const account = new wallet.Account(deployerWif);
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 
-const { nefPath, manifestPath } = resolveContractArtifactPaths({ fromDir: __dirname });
-
-const nef = fs.readFileSync(nefPath);
-const manifestStr = fs.readFileSync(manifestPath, 'utf8');
+const { nefBase64, manifestString } = readContractArtifacts({ fromDir: __dirname });
 
 console.log('Account Address:', account.address);
 console.log('Account ScriptHash:', account.scriptHash);
@@ -33,8 +29,8 @@ async function deployContract() {
       scriptHash: contractManagementHash,
       operation: 'deploy',
       args: [
-        sc.ContractParam.byteArray(nef.toString('base64')),
-        sc.ContractParam.string(manifestStr),
+        sc.ContractParam.byteArray(nefBase64),
+        sc.ContractParam.string(manifestString),
         sc.ContractParam.any(null),
       ],
     });

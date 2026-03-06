@@ -31,7 +31,23 @@ function resolveContractArtifactPaths({ fromDir = __dirname } = {}) {
   };
 }
 
+function readContractArtifacts({ fromDir = __dirname } = {}) {
+  const { repoRoot, nefPath, manifestPath } = resolveContractArtifactPaths({ fromDir });
+  const nefBytes = fs.readFileSync(nefPath);
+  const manifestString = fs.readFileSync(manifestPath, 'utf8');
+
+  return {
+    repoRoot,
+    nefPath,
+    manifestPath,
+    nefBytes,
+    nefBase64: nefBytes.toString('base64'),
+    manifestString,
+  };
+}
+
 module.exports = {
+  readContractArtifacts,
   resolveContractArtifactPaths,
   resolveRepoRoot,
 };

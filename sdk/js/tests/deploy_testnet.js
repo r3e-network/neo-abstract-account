@@ -1,6 +1,5 @@
 const { tx, wallet, rpc, sc, u } = require('@cityofzion/neon-js');
-const fs = require('fs');
-const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
+const { readContractArtifacts } = require('../src/contractArtifacts');
 const { extractDeployedContractHash } = require('../src/deployLog');
 
 const wif = process.env.TEST_WIF;
@@ -14,9 +13,7 @@ async function main() {
   const version = await client.getVersion();
   const magic = version.protocol.network;
 
-  const { nefPath, manifestPath } = resolveContractArtifactPaths({ fromDir: __dirname });
-  const nefBytes = fs.readFileSync(nefPath);
-  const manifestRaw = fs.readFileSync(manifestPath, 'utf8');
+  const { nefBytes, manifestString } = readContractArtifacts({ fromDir: __dirname });
   const nef = sc.NEF.fromBuffer(nefBytes);
 
   const managementContractHash = 'fffdc93764dbaddd97c48f252a53ea4643faa3fd';
@@ -24,7 +21,7 @@ async function main() {
   const sb = new sc.ScriptBuilder();
   sb.emitAppCall(managementContractHash, 'deploy', [
     sc.ContractParam.byteArray(u.HexString.fromHex(nef.serialize(), true)),
-    sc.ContractParam.string(manifestRaw),
+    sc.ContractParam.string(manifestString),
     sc.ContractParam.any(null),
   ]);
   const script = sb.build();
