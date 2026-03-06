@@ -2,10 +2,7 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const fs = require('fs');
 const path = require('path');
 const { resolveContractArtifactPaths } = require('../src/contractArtifacts');
-
-function sanitizeHex(v) {
-  return String(v || '').replace(/^0x/i, '').toLowerCase();
-}
+const { sanitizeHex } = require('../src/metaTx');
 
 function parseEnvFile(filePath) {
   const out = {};

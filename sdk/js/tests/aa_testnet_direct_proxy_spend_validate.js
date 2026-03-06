@@ -2,14 +2,11 @@ const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
-
-function sanitizeHex(value) {
-  return String(value || '').replace(/^0x/i, '').toLowerCase();
-}
 
 function parseEnvFile(filePath) {
   const out = {};

@@ -1,10 +1,6 @@
 const { rpc, sc, u, tx, wallet } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
-const { buildMetaTransactionTypedData } = require('../src/metaTx');
-
-function sanitizeHex(v) {
-  return String(v || '').replace(/^0x/i, '').toLowerCase();
-}
+const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
 
 const aaHash = sanitizeHex(
   process.env.AA_HASH_TESTNET
