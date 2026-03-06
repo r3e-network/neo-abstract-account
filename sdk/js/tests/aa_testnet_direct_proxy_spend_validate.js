@@ -1,26 +1,12 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { parseEnvFile } = require('./env');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
-
-function parseEnvFile(filePath) {
-  const out = {};
-  if (!fs.existsSync(filePath)) return out;
-  const raw = fs.readFileSync(filePath, 'utf8');
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const idx = trimmed.indexOf('=');
-    if (idx <= 0) continue;
-    out[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
-  }
-  return out;
-}
 
 function randomAccountIdHex(bytes = 16) {
   return crypto.randomBytes(bytes).toString('hex');

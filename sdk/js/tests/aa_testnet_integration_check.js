@@ -1,27 +1,11 @@
 const { rpc, tx, wallet, sc, u } = require('@cityofzion/neon-js');
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { parseEnvFile } = require('./env');
 const { sanitizeHex } = require('../src/metaTx');
 
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
-
-function parseEnvFile(filePath) {
-  const out = {};
-  if (!fs.existsSync(filePath)) return out;
-  const raw = fs.readFileSync(filePath, 'utf8');
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const idx = trimmed.indexOf('=');
-    if (idx <= 0) continue;
-    const k = trimmed.slice(0, idx).trim();
-    const v = trimmed.slice(idx + 1).trim();
-    out[k] = v;
-  }
-  return out;
-}
 
 function toHexFromStackByteString(item) {
   if (!item || item.type !== 'ByteString' || !item.value) return '';
