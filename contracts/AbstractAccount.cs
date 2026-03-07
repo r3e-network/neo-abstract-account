@@ -44,6 +44,7 @@ namespace AbstractAccount
         "setDomeOracle",
         "setVerifierContractByAddress",
         "setVerifierContract",
+        "verify",
         "requestDomeActivationByAddress",
         "requestDomeActivation",
         "domeActivationCallback")]

@@ -55,3 +55,90 @@ test('sdk package.json exposes testnet validation runner scripts', () => {
   assert.equal(packageJson.scripts['testnet:validate'], 'bash ./run_testnet_validation_suite.sh');
   assert.equal(packageJson.scripts['testnet:validate:dry-run'], 'bash ./run_testnet_validation_suite.sh --dry-run');
 });
+
+
+test('ContractPermission attribute includes custom verifier verify permission', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.match(contractSource, /\[ContractPermission\([\s\S]*"verify"[\s\S]*\)\]/);
+});
+
+
+test('Oracle.Request uses the compiled dome activation callback name', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.match(contractSource, /Oracle\.Request\([^\n]*"domeActivationCallback"/);
+});
+
+
+test('Oracle.Request uses parsed dome oracle filters', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.match(contractSource, /ExtractDomeOracleFilter/);
+  assert.match(contractSource, /Oracle\.Request\(requestUrl, requestFilter, "domeActivationCallback"/);
+});
+
+
+test('Dome oracle truth parser accepts quoted and single-byte truthy values', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.equal(contractSource.includes("value == 1 || value == (byte)'1'"), true);
+  assert.equal(contractSource.includes(
+    `result[left] == (byte)'"'`
+  ), true);
+  assert.equal(contractSource.includes(
+    `result[right] == (byte)'"'`
+  ), true);
+});
+
+
+test('Dome oracle callback diagnostics are exposed', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.match(contractSource, /GetLastDomeOracleResponseCode/);
+  assert.match(contractSource, /GetLastDomeOracleResponseByAddress/);
+  assert.match(contractSource, /GetLastDomeOracleResponseUrl/);
+});
+
+
+test('Dome oracle truth parser accepts single-element truthy arrays', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.equal(contractSource.includes("result[left] == (byte)'['"), true);
+  assert.equal(contractSource.includes("result[right] == (byte)']'"), true);
+});
+
+
+test('Dome oracle callback branch diagnostics are exposed', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.match(contractSource, /GetLastDomeOracleUrlMatched/);
+  assert.match(contractSource, /GetLastDomeOracleTruthAccepted/);
+  assert.match(contractSource, /GetLastDomeOracleUnlockApplied/);
+});
+
+
+test('Dome oracle callback stores expected and configured URLs', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.match(contractSource, /GetLastDomeOracleExpectedUrl/);
+  assert.match(contractSource, /GetLastDomeOracleConfiguredUrl/);
+});
+
+
+test('Dome oracle callback uses deterministic string comparison', () => {
+  const contractSourcePath = path.resolve(__dirname, '../../../contracts/AbstractAccount.Oracle.cs');
+  const contractSource = fs.readFileSync(contractSourcePath, 'utf8');
+
+  assert.equal(contractSource.includes('StringContentEquals'), true);
+  assert.equal(contractSource.includes('StringContentEquals(configuredUrl, expectedUrl)'), true);
+  assert.equal(contractSource.includes('StringContentEquals(configuredUrl, url)'), true);
+});
