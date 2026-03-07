@@ -29,6 +29,12 @@ cd frontend && npm test
 cd sdk/js && npm test
 ```
 
+To run the full local verification sequence in one command:
+
+```bash
+./scripts/verify_repo.sh
+```
+
 ### Build
 
 ```bash
