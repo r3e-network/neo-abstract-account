@@ -5,10 +5,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefaultItemExcludes>$(DefaultItemExcludes);recovery/**;**/obj/**;**/bin/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="AbstractAccount*.cs" />
+    <Compile Remove="recovery/**/*.cs" />
+    <Compile Remove="**/obj/**/*.cs" />
+    <Compile Remove="**/bin/**/*.cs" />
+    <Compile Include="AbstractAccount.cs" />
+    <Compile Include="AbstractAccount.AccountLifecycle.cs" />
+    <Compile Include="AbstractAccount.Admin.cs" />
+    <Compile Include="AbstractAccount.ExecutionAndPermissions.cs" />
+    <Compile Include="AbstractAccount.MetaTx.cs" />
+    <Compile Include="AbstractAccount.Oracle.cs" />
+    <Compile Include="AbstractAccount.StorageAndContext.cs" />
+    <Compile Include="AbstractAccount.Upgrade.cs" />
     <Compile Include="InternalsVisibleTo.cs" />
     <Compile Include="TestECDSA.cs" />
   </ItemGroup>
