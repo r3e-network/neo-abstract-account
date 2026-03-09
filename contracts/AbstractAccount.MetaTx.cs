@@ -121,6 +121,12 @@ namespace AbstractAccount
             ExecutionEngine.Assert(signerPubKeys.Count == signerSignatures.Count, "Mismatched pubkeys and signatures");
             ExecutionEngine.Assert(signerSignatures.Count > 0, "At least one signature required");
 
+            // Validate uncompressed pubkey length (65 bytes: 0x04 + 32-byte X + 32-byte Y)
+            for (int i = 0; i < signerPubKeys.Count; i++)
+            {
+                ExecutionEngine.Assert(signerPubKeys[i] != null && signerPubKeys[i].Length == 65, "Invalid pubkey length");
+            }
+
             ExecutionEngine.Assert(nonce >= 0, "Invalid nonce");
             BigInteger normalizedDeadline = NormalizeDeadlineToMs(deadline);
             ExecutionEngine.Assert((BigInteger)Runtime.Time <= normalizedDeadline, "Signature expired");

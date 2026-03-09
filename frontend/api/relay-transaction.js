@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { DEFAULT_ABSTRACT_ACCOUNT_HASH, resolveAbstractAccountHash, resolveOptionalBoolean } from '../src/config/runtimeConfig.js';
 import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvocationForRelay } from './relayHelpers.js';
+import { checkRateLimit, sanitizeError } from './rateLimiter.js';
 
 const RAW_TRANSACTION_PATTERN = /^(0x)?[0-9a-fA-F]+$/;
 const MAX_RAW_TRANSACTION_LENGTH = 200000;
@@ -116,6 +117,18 @@ export default async function handler(req, res) {
     return;
   }
 
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const rateLimit = checkRateLimit(clientIp);
+  
+  if (!rateLimit.allowed) {
+    res.setHeader?.('Retry-After', String(rateLimit.retryAfter));
+    res.status(429).json({ 
+      error: 'rate_limit_exceeded', 
+      retryAfter: rateLimit.retryAfter 
+    });
+    return;
+  }
+
   const rpcUrl = process.env.AA_RELAY_RPC_URL || process.env.VITE_AA_RELAY_RPC_URL || process.env.VITE_NEO_RPC_URL || '';
   if (!rpcUrl) {
     res.status(501).json({ error: 'relay_not_configured' });
@@ -190,7 +203,7 @@ export default async function handler(req, res) {
     } catch (error) {
       res.status(502).json({
         error: 'relay_network_error',
-        message: error?.message || String(error),
+        message: sanitizeError(error),
       });
     }
     return;
@@ -236,7 +249,7 @@ export default async function handler(req, res) {
   } catch (error) {
     res.status(502).json({
       error: simulate ? 'relay_simulation_error' : 'relay_meta_invocation_failed',
-      message: error?.message || String(error),
+      message: sanitizeError(error),
     });
   }
 }

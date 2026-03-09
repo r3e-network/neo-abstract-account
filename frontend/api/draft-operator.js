@@ -5,6 +5,7 @@ import {
   importOperatorPublicKey,
   verifyOperatorMutationSignature,
 } from './operatorMutationHelpers.js';
+import { checkRateLimit } from './rateLimiter.js';
 
 const OPERATOR_ACTIVITY_TYPES = new Set([
   'signature_added',
@@ -240,6 +241,18 @@ async function handleMutation({ supabase, shareSlug, accessSlug, mutation, paylo
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' });
+    return;
+  }
+
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const rateLimit = checkRateLimit(clientIp);
+  
+  if (!rateLimit.allowed) {
+    res.setHeader?.('Retry-After', String(rateLimit.retryAfter));
+    res.status(429).json({ 
+      error: 'rate_limit_exceeded', 
+      retryAfter: rateLimit.retryAfter 
+    });
     return;
   }
 
