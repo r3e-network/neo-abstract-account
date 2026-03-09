@@ -153,7 +153,7 @@ export function createVerifyScript(contractHash, accountIdHex) {
   const operationHex = bytesToHex(new TextEncoder().encode('verify'));
 
   return [
-    emitPushData(reverseHex(accountId)),
+    emitPushData(accountId),
     emitSmallInteger(1),
     'c0',
     emitSmallInteger(15),

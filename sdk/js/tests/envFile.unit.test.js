@@ -28,3 +28,14 @@ test('parseEnvFile reads key-value lines and ignores comments or invalid entries
     TEST_WIF: 'super-secret',
   });
 });
+
+
+test('sdk/js ships an env example for live validation', () => {
+  const examplePath = path.resolve(__dirname, '..', '.env.example');
+  assert.equal(fs.existsSync(examplePath), true, 'expected sdk/js/.env.example to exist');
+
+  const values = parseEnvFile(examplePath);
+  assert.equal(values.TEST_WIF, 'replace-with-funded-testnet-wif');
+  assert.equal(values.VITE_AA_HASH_TESTNET, 'replace-with-40-byte-aa-script-hash');
+  assert.equal(values.EXPECT_PROXY_SPEND_BLOCKED, '1');
+});

@@ -102,7 +102,7 @@ async function main() {
       aaHash,
       operation: 'createAccountWithAddress',
       args: [
-        cpByteArray(accountIdHex),
+        cpByteArrayRaw(accountIdHex),
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(owner.scriptHash), cpHash160(evmSigner.address)]),
         sc.ContractParam.integer(1),

@@ -79,3 +79,28 @@ test('AbstractAccountClient.createEIP712Payload computes argsHash through the co
   assert.equal(payload.message.nonce, String(sampleParams.nonce));
   assert.equal(payload.message.deadline, String(sampleParams.deadline));
 });
+
+
+test('AbstractAccountClient.createAccountPayload uses raw accountId bytes and the derived proxy hash', () => {
+  const client = new AbstractAccountClient('https://example.invalid', sampleParams.verifyingContract);
+  const payload = client.createAccountPayload('10203040', ['0x13ef519c362973f9a34648a9eac5b71250b2a80a'], 1, [], 0);
+  const expectedVerifyScript = [
+    '0c04',
+    '10203040',
+    '11c01f0c06766572696679',
+    '0c14',
+    '98a42782c5151648f55591e34286d304ce95c049',
+    '41627d5b52',
+  ].join('');
+  const expectedProxyHash = client.constructor === AbstractAccountClient ? require('@cityofzion/neon-js').u.hash160(expectedVerifyScript) : null;
+
+  assert.equal(payload.operation, 'createAccountWithAddress');
+  assert.deepEqual(payload.args[0].toJson(), {
+    type: 'ByteArray',
+    value: Buffer.from('10203040', 'hex').toString('base64'),
+  });
+  assert.deepEqual(payload.args[1].toJson(), {
+    type: 'Hash160',
+    value: expectedProxyHash,
+  });
+});

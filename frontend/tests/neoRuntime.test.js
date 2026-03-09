@@ -31,7 +31,7 @@ test('createVerifyScript matches the known contract verify script encoding', () 
 
   assert.equal(
     script,
-    '0c100eee97237b049c6901df3b60d0bbe55611c01f0c067665726966790c142364ef1bcdcf9a7cd1e05a050efab7a399181c7141627d5b52'
+    '0c1056e5bbd0603bdf01699c047b2397ee0e11c01f0c067665726966790c142364ef1bcdcf9a7cd1e05a050efab7a399181c7141627d5b52'
   );
 });
 

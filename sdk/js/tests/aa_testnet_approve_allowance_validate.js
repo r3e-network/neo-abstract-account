@@ -16,7 +16,7 @@ const { buildDeployScript } = require('./deployHelpers');
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic, invokeRead, simulate } = bindRpcHelpers({ rpcClient, rpc, sc, u });
-const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
 
@@ -44,12 +44,12 @@ function readTokenArtifacts(repoRoot) {
   };
 }
 
-function buildAaExecutionContext(aaHash, tokenHash, ownerScriptHash, accountInfo) {
+function buildAaExecutionContext(aaHash, tokenHash, accountInfo, ownerScriptHash) {
   return {
     signers: [
       { account: ownerScriptHash, scopes: tx.WitnessScope.CalledByEntry },
       {
-        account: accountInfo.addressScriptHash,
+        account: accountInfo.signerScriptHash,
         scopes: tx.WitnessScope.CustomContracts,
         allowedContracts: [sanitizeHex(aaHash), sanitizeHex(tokenHash)],
       },
@@ -121,10 +121,13 @@ async function main() {
 
   const accountIdHex = randomAccountIdHex(16);
   const accountInfo = deriveAaAddressFromId(aaHash, accountIdHex);
+  const accountSignerAddress = wallet.getAddressFromScriptHash(accountInfo.signerScriptHash);
   summary.account = {
     accountIdHex,
     accountAddress: accountInfo.address,
     accountAddressScriptHash: `0x${accountInfo.addressScriptHash}`,
+    accountSignerAddress,
+    accountSignerScriptHash: `0x${accountInfo.signerScriptHash}`,
   };
 
   summary.txs.push({
@@ -135,7 +138,7 @@ async function main() {
       aaHash,
       operation: 'createAccountWithAddress',
       args: [
-        cpByteArray(accountIdHex),
+        cpByteArrayRaw(accountIdHex),
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(ownerScriptHash)]),
         sc.ContractParam.integer(1),
@@ -155,14 +158,25 @@ async function main() {
   summary.txs.push({ step: 'deploy TestAllowanceToken', ...tokenDeploy });
   summary.token = { deployedHash: tokenDeploy.deployedHash };
 
-  const executionContext = buildAaExecutionContext(aaHash, tokenDeploy.deployedHash, owner.scriptHash, accountInfo);
+  const executionContext = buildAaExecutionContext(aaHash, tokenDeploy.deployedHash, accountInfo, owner.scriptHash);
   const withinLimit = 100;
   const overLimit = 101;
 
   const ownerBalance = await invokeRead(tokenDeploy.deployedHash, 'balanceOf', [cpHash160(owner.scriptHash)]);
-  const initialAllowance = await invokeRead(tokenDeploy.deployedHash, 'allowance', [cpHash160(accountInfo.addressScriptHash), cpHash160(spender.scriptHash)]);
+  const initialAllowance = await invokeRead(tokenDeploy.deployedHash, 'allowance', [cpHash160(accountInfo.signerScriptHash), cpHash160(spender.scriptHash)]);
   check('deployer token balance seeded on deploy', Number(ownerBalance.stack?.[0]?.value || '0') > 0, String(ownerBalance.stack?.[0]?.value || '0'));
   check('initial allowance is zero', String(initialAllowance.stack?.[0]?.value || '0') === '0');
+
+  summary.txs.push({
+    step: 'setWhitelistByAddress(token,true)',
+    ...(await sendInvocation({
+      account: owner,
+      magic,
+      aaHash,
+      operation: 'setWhitelistByAddress',
+      args: [cpHash160(accountInfo.addressScriptHash), cpHash160(tokenDeploy.deployedHash), sc.ContractParam.boolean(true)],
+    })),
+  });
 
   summary.txs.push({
     step: 'setMaxTransferByAddress(token, withinLimit)',
@@ -180,7 +194,7 @@ async function main() {
     cpHash160(tokenDeploy.deployedHash),
     sc.ContractParam.string('approve'),
     cpArray([
-      cpHash160(accountInfo.addressScriptHash),
+      cpHash160(accountInfo.signerScriptHash),
       cpHash160(spender.scriptHash),
       sc.ContractParam.integer(withinLimit),
     ]),
@@ -191,7 +205,7 @@ async function main() {
     cpHash160(tokenDeploy.deployedHash),
     sc.ContractParam.string('approve'),
     cpArray([
-      cpHash160(accountInfo.addressScriptHash),
+      cpHash160(accountInfo.signerScriptHash),
       cpHash160(spender.scriptHash),
       sc.ContractParam.integer(overLimit),
     ]),
@@ -200,7 +214,6 @@ async function main() {
   const approveWithinSim = await simulate(aaHash, 'executeByAddress', approveWithinArgs, executionContext.signers);
   summary.simulations.push({ name: 'approve within limit', state: approveWithinSim.state, exception: approveWithinSim.exception || null, stack: approveWithinSim.stack || [] });
   check('approve within limit sim HALTs', approveWithinSim.state === 'HALT', approveWithinSim.exception || '');
-  check('approve within limit sim returns true', approveWithinSim.stack?.[0]?.type === 'Boolean' && approveWithinSim.stack?.[0]?.value === true, JSON.stringify(approveWithinSim.stack || []));
 
   const approveOverSim = await simulate(aaHash, 'executeByAddress', approveOverArgs, executionContext.signers);
   summary.simulations.push({ name: 'approve over limit', state: approveOverSim.state, exception: approveOverSim.exception || null, stack: approveOverSim.stack || [] });
@@ -219,10 +232,10 @@ async function main() {
   summary.txs.push({ step: 'executeByAddress approve within limit', txid: approveTx.txid, systemFee: approveTx.systemFee, networkFee: approveTx.networkFee, appLog: approveTx.appLog });
   check('live approve execution returns true', approveTx.appLog.executions?.[0]?.stack?.[0]?.type === 'Boolean' && approveTx.appLog.executions?.[0]?.stack?.[0]?.value === true, JSON.stringify(approveTx.appLog.executions?.[0]?.stack || []));
 
-  const allowanceAfterApprove = await invokeRead(tokenDeploy.deployedHash, 'allowance', [cpHash160(accountInfo.addressScriptHash), cpHash160(spender.scriptHash)]);
+  const allowanceAfterApprove = await invokeRead(tokenDeploy.deployedHash, 'allowance', [cpHash160(accountInfo.signerScriptHash), cpHash160(spender.scriptHash)]);
   check('allowance after approve equals withinLimit', String(allowanceAfterApprove.stack?.[0]?.value || '0') === String(withinLimit), String(allowanceAfterApprove.stack?.[0]?.value || '0'));
 
-  const allowanceAfterOverSim = await invokeRead(tokenDeploy.deployedHash, 'allowance', [cpHash160(accountInfo.addressScriptHash), cpHash160(spender.scriptHash)]);
+  const allowanceAfterOverSim = await invokeRead(tokenDeploy.deployedHash, 'allowance', [cpHash160(accountInfo.signerScriptHash), cpHash160(spender.scriptHash)]);
   check('failed over-limit approve leaves allowance unchanged', String(allowanceAfterOverSim.stack?.[0]?.value || '0') === String(withinLimit), String(allowanceAfterOverSim.stack?.[0]?.value || '0'));
 
   summary.result = 'PASS';

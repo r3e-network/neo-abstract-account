@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { connectedAccount, setConnectedAccount } from '@/utils/wallet';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 
@@ -104,6 +105,57 @@ class WalletService {
 
     this.setConnected(address);
     return { provider: provider.name, address };
+  }
+
+
+  getEvmProvider() {
+    return window.ethereum || null;
+  }
+
+  getAvailableWalletModes() {
+    return {
+      neo: Boolean(this.getConnectProvider()),
+      evm: Boolean(this.getEvmProvider()),
+    };
+  }
+
+  async connectEvm() {
+    const provider = this.getEvmProvider();
+    if (!provider) {
+      throw new Error('No EVM wallet provider detected in browser.');
+    }
+
+    const browserProvider = new ethers.BrowserProvider(provider);
+    await browserProvider.send('eth_requestAccounts', []);
+    const signer = await browserProvider.getSigner();
+    const address = await signer.getAddress();
+    return { provider: 'ethereum', address };
+  }
+
+  async signTypedDataWithEvm({ domain, types, message }) {
+    const provider = this.getEvmProvider();
+    if (!provider) {
+      throw new Error('No EVM wallet provider detected in browser.');
+    }
+
+    const browserProvider = new ethers.BrowserProvider(provider);
+    await browserProvider.send('eth_requestAccounts', []);
+    const signer = await browserProvider.getSigner();
+    return signer.signTypedData(domain, types, message);
+  }
+
+  async relayTransaction(request = {}) {
+    const { relayEndpoint, ...requestBody } = request || {};
+    const response = await fetch(relayEndpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+    const responsePayload = await response.json();
+    if (!response.ok || responsePayload?.error) {
+      throw new Error(responsePayload?.message || responsePayload?.error || 'Relay submission failed.');
+    }
+    return responsePayload;
   }
 
   async invoke(params) {

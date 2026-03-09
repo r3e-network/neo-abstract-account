@@ -12,7 +12,7 @@ const { sanitizeHex } = require('../src/metaTx');
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic } = bindRpcHelpers({ rpcClient, rpc, sc, u });
-const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, waitForConfirmation: true });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
@@ -44,7 +44,7 @@ async function main() {
     scriptHash: aaHash,
     operation: 'createAccountWithAddress',
     args: [
-      cpByteArray(accountIdHex),
+      cpByteArrayRaw(accountIdHex),
       cpHash160(accountInfo.addressScriptHash),
       cpArray([cpHash160(owner.scriptHash)]),
       sc.ContractParam.integer(1),
@@ -60,7 +60,7 @@ async function main() {
     operation: 'transfer',
     args: [
       cpHash160(owner.scriptHash),
-      cpHash160(accountInfo.addressScriptHash),
+      cpHash160(accountInfo.signerScriptHash),
       sc.ContractParam.integer(fundingAmount),
       sc.ContractParam.any(null),
     ],
@@ -70,7 +70,7 @@ async function main() {
     scriptHash: GAS_TOKEN_HASH,
     operation: 'transfer',
     args: [
-      cpHash160(accountInfo.addressScriptHash),
+      cpHash160(accountInfo.signerScriptHash),
       cpHash160(recipient.scriptHash),
       sc.ContractParam.integer(spendAmount),
       sc.ContractParam.any(null),
@@ -79,7 +79,7 @@ async function main() {
 
   const signers = [
     { account: owner.scriptHash, scopes: tx.WitnessScope.CalledByEntry },
-    { account: accountInfo.addressScriptHash, scopes: tx.WitnessScope.CustomContracts, allowedContracts: [GAS_TOKEN_HASH] },
+    { account: accountInfo.signerScriptHash, scopes: tx.WitnessScope.CustomContracts, allowedContracts: [GAS_TOKEN_HASH] },
   ];
   const witnesses = [{ invocationScript: '', verificationScript: accountInfo.verificationScript }];
 

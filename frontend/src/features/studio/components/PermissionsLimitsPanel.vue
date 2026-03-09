@@ -1,6 +1,6 @@
 <template>
   <section class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
-    <h2 class="text-xl font-bold text-slate-900 mb-2">Permissions & Limits</h2>
+    <h2 class="text-xl font-bold text-slate-900 mb-2">{{ t('studioPanels.permissionsTitle', 'Permissions & Limits') }}</h2>
     <p class="text-sm text-slate-500 mb-8">Manage whitelists, blacklists, execution limits, and custom contract verifiers.</p>
 
     <div class="space-y-8">
@@ -109,6 +109,7 @@
 
 <script setup>
 import { inject } from 'vue';
+import { useI18n } from '@/i18n';
 
 const studio = inject('studio');
 const {

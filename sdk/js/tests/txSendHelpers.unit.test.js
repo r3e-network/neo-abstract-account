@@ -82,3 +82,100 @@ test('sendTransaction omits empty witnesses from the transaction payload', async
   assert.equal('witnesses' in constructed[0].payload, false);
   assert.equal('witnesses' in constructed[1].payload, false);
 });
+
+
+test('sendTransaction preserves signer-aligned witness ordering when extra witnesses are supplied', async () => {
+  const constructed = [];
+  class FakeTransaction {
+    constructor(payload) {
+      this.payload = payload;
+      this.witnesses = Array.isArray(payload.witnesses) ? [...payload.witnesses] : [];
+      constructed.push(this);
+    }
+    sign() {
+      this.witnesses.push({ invocationScript: 'owner-invoke', verificationScript: 'owner-verify' });
+    }
+  }
+
+  const rpcClient = {
+    async calculateNetworkFee(transaction) {
+      assert.deepEqual(transaction.witnesses, [
+        { invocationScript: 'owner-invoke', verificationScript: 'owner-verify' },
+        { invocationScript: '', verificationScript: 'proxy-verify' },
+      ]);
+      return 7;
+    },
+    async sendRawTransaction(transaction) {
+      assert.deepEqual(transaction.witnesses, [
+        { invocationScript: 'owner-invoke', verificationScript: 'owner-verify' },
+        { invocationScript: '', verificationScript: 'proxy-verify' },
+      ]);
+      return '0xdef';
+    },
+  };
+
+  await sendTransaction({
+    rpcClient,
+    txModule: { Transaction: FakeTransaction },
+    account: {},
+    magic: 1,
+    signers: [{ account: '0x01', scopes: 1 }, { account: '0x02', scopes: 16 }],
+    validUntilBlock: 10,
+    script: 'bead',
+    systemFee: '1',
+    witnesses: [{ invocationScript: '', verificationScript: 'proxy-verify' }],
+  });
+
+  assert.equal(constructed.length, 2);
+});
+
+
+test('sendTransaction retries transient network errors during fee calculation and broadcast', async () => {
+  const constructed = [];
+  class FakeTransaction {
+    constructor(payload) {
+      this.payload = payload;
+      constructed.push(this);
+    }
+    sign() {}
+  }
+
+  let feeAttempts = 0;
+  let sendAttempts = 0;
+  const rpcClient = {
+    async calculateNetworkFee() {
+      feeAttempts += 1;
+      if (feeAttempts < 3) {
+        const error = new Error('tls reset');
+        error.code = 'ECONNRESET';
+        throw error;
+      }
+      return 9;
+    },
+    async sendRawTransaction() {
+      sendAttempts += 1;
+      if (sendAttempts < 2) {
+        const error = new Error('socket hang up');
+        error.code = 'ECONNRESET';
+        throw error;
+      }
+      return '0xretry';
+    },
+  };
+
+  const result = await sendTransaction({
+    rpcClient,
+    txModule: { Transaction: FakeTransaction },
+    account: {},
+    magic: 1,
+    signers: [{ account: '0x01', scopes: 1 }],
+    validUntilBlock: 10,
+    script: 'bead',
+    systemFee: '1',
+    witnesses: [],
+  });
+
+  assert.equal(result.txid, '0xretry');
+  assert.equal(feeAttempts, 3);
+  assert.equal(sendAttempts, 2);
+});

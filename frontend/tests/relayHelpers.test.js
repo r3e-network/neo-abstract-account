@@ -1,0 +1,139 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  ALLOWED_RELAY_META_OPERATIONS,
+  convertContractParamFromJson,
+  normalizeRelayPayload,
+  sanitizeMetaInvocationForRelay,
+} from '../api/relayHelpers.js';
+
+test('normalizeRelayPayload prefers raw transactions when provided', () => {
+  assert.deepEqual(
+    normalizeRelayPayload({ rawTransaction: '0xdeadbeef' }),
+    { mode: 'raw', rawTransaction: 'deadbeef' }
+  );
+});
+
+
+test('sanitizeMetaInvocationForRelay only accepts configured AA wrapper invocations and strips caller signers', () => {
+  const metaInvocation = {
+    scriptHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    operation: 'executeMetaTxByAddress',
+    args: [{ type: 'String', value: 'ok' }],
+    signers: [{ account: '0xattacker', scopes: 255 }],
+  };
+
+  assert.deepEqual(ALLOWED_RELAY_META_OPERATIONS, ['executeMetaTx', 'executeMetaTxByAddress']);
+  assert.deepEqual(
+    sanitizeMetaInvocationForRelay(metaInvocation, {
+      aaContractHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    }),
+    {
+      scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+      operation: 'executeMetaTxByAddress',
+      args: [{ type: 'String', value: 'ok' }],
+    },
+  );
+});
+
+test('sanitizeMetaInvocationForRelay rejects wrong contract hashes and unsupported operations', () => {
+  assert.equal(
+    sanitizeMetaInvocationForRelay({
+      scriptHash: '0x1111111111111111111111111111111111111111',
+      operation: 'executeMetaTxByAddress',
+      args: [],
+    }, {
+      aaContractHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    }),
+    null,
+  );
+
+  assert.equal(
+    sanitizeMetaInvocationForRelay({
+      scriptHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+      operation: 'transfer',
+      args: [],
+    }, {
+      aaContractHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    }),
+    null,
+  );
+});
+
+test('normalizeRelayPayload accepts meta invocation payloads', () => {
+  const metaInvocation = {
+    scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    operation: 'executeMetaTxByAddress',
+    args: [{ type: 'String', value: 'ok' }],
+  };
+
+  assert.deepEqual(
+    normalizeRelayPayload({ metaInvocation }),
+    { mode: 'meta', metaInvocation }
+  );
+  assert.deepEqual(
+    normalizeRelayPayload({ meta_invocation: metaInvocation }),
+    { mode: 'meta', metaInvocation }
+  );
+});
+
+test('convertContractParamFromJson handles nested arrays and primitive contract params', () => {
+  const calls = [];
+  const sc = {
+    ContractParam: {
+      hash160(value) {
+        calls.push(['hash160', value]);
+        return { kind: 'hash160', value };
+      },
+      string(value) {
+        calls.push(['string', value]);
+        return { kind: 'string', value };
+      },
+      integer(value) {
+        calls.push(['integer', value]);
+        return { kind: 'integer', value };
+      },
+      byteArray(value) {
+        calls.push(['byteArray', value]);
+        return { kind: 'byteArray', value };
+      },
+      array(...items) {
+        calls.push(['array', items]);
+        return { kind: 'array', items };
+      },
+      any(value) {
+        calls.push(['any', value]);
+        return { kind: 'any', value };
+      },
+    },
+  };
+  const u = {
+    HexString: {
+      fromHex(value, reverse = false) {
+        calls.push(['fromHex', value, reverse]);
+        return `hex:${value}:${reverse}`;
+      },
+    },
+  };
+
+  const result = convertContractParamFromJson({
+    type: 'Array',
+    value: [
+      { type: 'Hash160', value: '0x13ef519c362973f9a34648a9eac5b71250b2a80a' },
+      { type: 'String', value: 'transfer' },
+      { type: 'Integer', value: '12' },
+      { type: 'ByteArray', value: '0x1234' },
+      { type: 'Any', value: null },
+    ],
+  }, { sc, u });
+
+  assert.equal(result.kind, 'array');
+  assert.equal(result.items.length, 5);
+  assert.deepEqual(calls[0], ['hash160', '13ef519c362973f9a34648a9eac5b71250b2a80a']);
+  assert.deepEqual(calls[1], ['string', 'transfer']);
+  assert.deepEqual(calls[2], ['integer', '12']);
+  assert.deepEqual(calls[3], ['fromHex', '1234', true]);
+  assert.deepEqual(calls[4], ['byteArray', 'hex:1234:true']);
+  assert.deepEqual(calls[5], ['any', null]);
+});

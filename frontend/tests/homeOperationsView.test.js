@@ -1,0 +1,165 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const homePath = path.resolve('src/views/HomeView.vue');
+const workspacePath = path.resolve('src/features/operations/components/HomeOperationsWorkspace.vue');
+const loadPanelPath = path.resolve('src/features/operations/components/LoadAccountPanel.vue');
+const composerPath = path.resolve('src/features/operations/components/OperationComposerPanel.vue');
+const signaturePath = path.resolve('src/features/operations/components/SignatureWorkflowPanel.vue');
+const broadcastPath = path.resolve('src/features/operations/components/BroadcastOptionsPanel.vue');
+const sidebarPath = path.resolve('src/features/operations/components/ActivitySidebar.vue');
+const preflightPanelPath = path.resolve('src/features/operations/components/RelayPreflightPanel.vue');
+const summaryStripPath = path.resolve('src/features/operations/components/DraftSummaryStrip.vue');
+const statusBannerPath = path.resolve('src/features/operations/components/DraftStatusBanner.vue');
+const timelinePath = path.resolve('src/features/operations/components/ActivityTimeline.vue');
+const activityTimelinePath = path.resolve('src/features/operations/activityTimeline.js');
+const preferencesPath = path.resolve('src/features/operations/preferences.js');
+const presetsPath = path.resolve('src/features/operations/presets.js');
+
+test('home view renders the operations workspace above explanatory content', () => {
+  const homeSource = fs.readFileSync(homePath, 'utf8');
+  assert.match(homeSource, /HomeOperationsWorkspace/);
+  assert.ok(homeSource.indexOf('HomeOperationsWorkspace') < homeSource.indexOf('ArchitectureDiagram'));
+});
+
+test('operations workspace exposes load, compose, signature, and broadcast sections', () => {
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Abstract Account Workspace/);
+  assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load Abstract Account/);
+  assert.match(fs.readFileSync(composerPath, 'utf8'), /Compose Operation/);
+  assert.match(fs.readFileSync(presetsPath, 'utf8'), /Generic Invoke/);
+  assert.match(fs.readFileSync(presetsPath, 'utf8'), /NEP-17 Transfer/);
+  assert.match(fs.readFileSync(presetsPath, 'utf8'), /Multisig Draft/);
+  assert.match(fs.readFileSync(signaturePath, 'utf8'), /Signature Workflow/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Broadcast Options/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Best Available/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Signed Raw Tx/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Meta Invocation/);
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Check Relay/);
+  assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Relay Readiness/);
+  assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Recent Activity/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /All Events/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Signatures/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Workflow/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Relay/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Broadcast/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /buildActivityPresentation/);
+  assert.match(fs.readFileSync(timelinePath, 'utf8'), /filterCounts/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /buildActivityActions/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /buildActivityEmptyState/);
+  assert.match(fs.readFileSync(preferencesPath, 'utf8'), /relayPayloadMode/);
+  assert.match(fs.readFileSync(preferencesPath, 'utf8'), /activityFilter/);
+  assert.match(fs.readFileSync(timelinePath, 'utf8'), /preferenceKey/);
+  assert.match(fs.readFileSync(timelinePath, 'utf8'), /buildActivityPresentation\(item\)\.icon/);
+  assert.match(fs.readFileSync(timelinePath, 'utf8'), /Copied!/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Copy Share Link/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Jump to Relay/);
+  assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /Copy TxID/);
+  assert.match(fs.readFileSync(summaryStripPath, 'utf8'), /Draft Overview/);
+  assert.match(fs.readFileSync(summaryStripPath, 'utf8'), /buildDraftSummaryItems/);
+  assert.match(fs.readFileSync(statusBannerPath, 'utf8'), /Latest Draft State/);
+  assert.match(fs.readFileSync(statusBannerPath, 'utf8'), /buildDraftStatusBanner/);
+  assert.match(fs.readFileSync(summaryStripPath, 'utf8'), /buildDraftSummaryActions/);
+  assert.match(fs.readFileSync(summaryStripPath, 'utf8'), /Copied!/);
+  assert.match(fs.readFileSync(path.resolve('src/features/operations/draftSummary.js'), 'utf8'), /Copy Account/);
+  assert.match(fs.readFileSync(path.resolve('src/features/operations/draftSummary.js'), 'utf8'), /Copy Share URL/);
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Copy Operator Link/);
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Rotate Collaborator Link/);
+  assert.match(fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8'), /Copy Operator Link/);
+  assert.match(fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8'), /Rotate Collaborator Link/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Relay Preflight/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /VM State/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Gas Consumed/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Stack Preview/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /View Stack/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Decoded Value/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Copy Payload/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Copy Stack/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Export JSON/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /Copied!/);
+  assert.match(fs.readFileSync(preflightPanelPath, 'utf8'), /copyActionKey/);
+});
+
+test('relay preflight state is persisted through draft metadata hooks', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+
+  assert.match(workspaceSource, /setRelayPreflight/);
+  assert.match(workspaceSource, /relayPreflight/);
+  assert.match(txViewSource, /metadata?.relayPreflight|metadata.relayPreflight/);
+});
+
+test('home workspace appends activity events for signatures relay checks and broadcasts', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+
+  assert.match(workspaceSource, /appendActivity/);
+  assert.match(txViewSource, /metadata?.activity|metadata.activity/);
+});
+
+test('timeline actions are wired to parent handlers in workspace and shared draft views', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+
+  assert.match(workspaceSource, /handleActivityAction/);
+  assert.match(txViewSource, /handleActivityAction/);
+  assert.match(workspaceSource, /activity-action/);
+  assert.match(txViewSource, /activity-action/);
+});
+
+test('workspace and shared draft views persist relay payload and timeline preferences', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+
+  assert.match(workspaceSource, /createOperationsPreferences/);
+  assert.match(workspaceSource, /setRelayPayloadMode/);
+  assert.match(txViewSource, /createOperationsPreferences/);
+  assert.match(txViewSource, /setRelayPayloadMode/);
+});
+
+test('home workspace uses the reusable draft summary strip when a draft exists', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+
+  assert.match(workspaceSource, /DraftSummaryStrip/);
+  assert.match(txViewSource, /DraftSummaryStrip/);
+});
+
+test('summary strip actions are wired in home and shared draft views', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+
+  assert.match(workspaceSource, /handleSummaryAction/);
+  assert.match(txViewSource, /handleSummaryAction/);
+  assert.match(workspaceSource, /summary-action/);
+  assert.match(txViewSource, /summary-action/);
+});
+
+test('home workspace uses the latest draft state banner', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+
+  assert.match(workspaceSource, /DraftStatusBanner/);
+});
+
+test('home workspace surfaces wallet connect, export, broadcast actions, and submission feedback', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+
+  assert.match(workspaceSource, /Connect Neo Wallet/);
+  assert.match(workspaceSource, /Connect EVM Wallet/);
+  assert.match(workspaceSource, /Export Draft JSON/);
+  assert.match(workspaceSource, /Copy Share Link/);
+  assert.match(workspaceSource, /Broadcast with Neo Wallet/);
+  assert.match(workspaceSource, /Submit via Relay/);
+  assert.match(workspaceSource, /Checking Relay…/);
+  assert.match(workspaceSource, /Broadcasting…/);
+  assert.match(workspaceSource, /Submitting…/);
+  assert.match(workspaceSource, /Submission Receipt/);
+  assert.match(workspaceSource, /Receipt History/);
+});
+
+
+test('receipt history uses formatted labels instead of raw createdAt fields', () => {
+  const source = fs.readFileSync(path.resolve('src/features/operations/components/HomeOperationsWorkspace.vue'), 'utf8');
+  assert.match(source, /createdLabel/);
+});

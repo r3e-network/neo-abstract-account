@@ -13,7 +13,7 @@ const { bindInvocationHelpers } = require('./invoke');
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic, invokeRead, simulate } = bindRpcHelpers({ rpcClient, rpc, sc, u });
-const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { decodeInteger } = bindStackHelpers({ sanitizeHex, u });
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
@@ -112,7 +112,7 @@ async function main() {
       aaHash,
       operation: 'createAccountWithAddress',
       args: [
-        cpByteArray(accountIdHex),
+        cpByteArrayRaw(accountIdHex),
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(ownerScriptHash)]),
         sc.ContractParam.integer(1),
@@ -162,7 +162,7 @@ async function main() {
 
   const domeThreshold = await invokeRead(aaHash, 'getDomeThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
   const domeTimeout = await invokeRead(aaHash, 'getDomeTimeoutByAddress', [cpHash160(accountInfo.addressScriptHash)]);
-  const oracleUnlockedInitial = await invokeRead(aaHash, 'isDomeOracleUnlocked', [cpByteArray(accountIdHex)]);
+  const oracleUnlockedInitial = await invokeRead(aaHash, 'isDomeOracleUnlocked', [cpByteArrayRaw(accountIdHex)]);
   check('dome threshold by address == 1', String(domeThreshold.stack?.[0]?.value || '') === '1');
   check('dome timeout by address matches requested value', decodeInteger(domeTimeout.stack?.[0]) === domeTimeoutMs, String(domeTimeout.stack?.[0]?.value || '0'));
   check('oracle is initially locked', oracleUnlockedInitial.stack?.[0]?.type === 'Boolean' && oracleUnlockedInitial.stack?.[0]?.value === false, JSON.stringify(oracleUnlockedInitial.stack || []));
@@ -215,7 +215,7 @@ async function main() {
     timeoutMs: waitTimeoutMs,
     pollIntervalMs,
     probe: async () => {
-      const unlocked = await invokeRead(aaHash, 'isDomeOracleUnlocked', [cpByteArray(accountIdHex)]);
+      const unlocked = await invokeRead(aaHash, 'isDomeOracleUnlocked', [cpByteArrayRaw(accountIdHex)]);
       const isUnlocked = unlocked.stack?.[0]?.type === 'Boolean' && unlocked.stack?.[0]?.value === true;
       return {
         done: isUnlocked,

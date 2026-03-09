@@ -8,6 +8,47 @@ This project contains the comprehensive standard, smart contract implementation,
 - **Cross-Chain EVM Compatibility**: Secp256k1 and Keccak256 native validation. Users can interact via MetaMask / EVM wallets using EIP-712 Meta-Transactions.
 - **Multi-Signature Access Control**: Isolated thresholds for Admins and Managers for modular security.
 
+## Home Workspace Deployment
+
+The frontend home page now exposes an app-first operations workspace for loading an Abstract Account, building an invocation, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, and choosing either client-side or relay broadcast in v1.
+
+For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, and `VITE_AA_RELAY_RPC_URL`, then apply the Supabase draft migrations in order. Start with `supabase/migrations/20260308_home_operations_workspace.sql`, then apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql`, `supabase/migrations/20260309_submission_receipts.sql`, `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql`, `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql`, `supabase/migrations/20260312_scoped_draft_access.sql`, `supabase/migrations/20260313_activity_scope_guards.sql`, and `supabase/migrations/20260314_signed_operator_mutations.sql`. That full chain keeps the public share link read-only, narrows collaborator links to signature-safe writes, and moves operator-only status/relay mutations behind the signed operator mutation server route in `frontend/api/draft-operator.js`.
+
+If you deploy the bundled server routes, keep `SUPABASE_SERVICE_ROLE_KEY` and `AA_RELAY_WIF` on the server, prefer `AA_RELAY_RPC_URL` for the relay backend, pin `AA_RELAY_ALLOWED_HASH` to the intended AA contract, and leave `AA_RELAY_ALLOW_RAW_FORWARD=0` unless you explicitly want raw passthrough in `frontend/api/relay-transaction.js`.
+For local setup, start from `frontend/.env.example` and copy the values you need into `frontend/.env.local` or your hosting provider's environment-variable dashboard.
+
+Shared draft metadata is intentionally bounded: the frontend keeps the latest 100 activity entries and the latest 12 submission receipts per draft so long-lived collaboration records do not grow without limit.
+
+### Deployment Checklist
+
+- Apply `supabase/migrations/20260308_home_operations_workspace.sql` before enabling anonymous shared drafts.
+- Apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql` so public share links are read-only and collaborator links carry the write capability.
+- Apply `supabase/migrations/20260309_submission_receipts.sql` so append-only submission receipts are persisted for shared drafts.
+- Apply `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql` so fresh installs drop the legacy anonymous write RPC signatures recreated by the receipt migration.
+- Apply `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql` so leaked collaborator links can be rotated in place.
+- Apply `supabase/migrations/20260312_scoped_draft_access.sql` so collaborator links become signature-only while operator links retain relay/broadcast authority.
+- Apply `supabase/migrations/20260313_activity_scope_guards.sql` so collaborator links cannot forge operator-class relay or broadcast activity entries.
+- Apply `supabase/migrations/20260314_signed_operator_mutations.sql` so operator-only writes move behind the signed operator mutation flow and direct anon operator RPCs are revoked.
+- Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for browser-side anonymous draft persistence.
+- Share the normal draft URL for read-only review, the collaborator link for signature collection, and the operator link for relay checks, broadcast, and other operator-only actions. Signer links cannot append operator-class relay or broadcast activity entries.
+- Use the Rotate Collaborator Link action when a signer link leaks, and rotate the operator link if an operator-only URL should be invalidated without rebuilding the draft.
+- Set `VITE_AA_RELAY_URL`, `VITE_AA_RELAY_RPC_URL`, and server-side `AA_RELAY_WIF` before enabling relay submission flows.
+- Set server-only `SUPABASE_SERVICE_ROLE_KEY` so `frontend/api/draft-operator.js` can accept signed operator mutation requests for status changes, relay-preflight persistence, submission receipts, and link rotation.
+- Prefer server-side `AA_RELAY_RPC_URL`, pin `AA_RELAY_ALLOWED_HASH` to the intended AA contract, and keep `AA_RELAY_ALLOW_RAW_FORWARD` disabled unless you intentionally want the relay route to forward already-signed raw transactions.
+- Set `VITE_AA_EXPLORER_BASE_URL` if you want tx receipts and timeline actions to open your preferred explorer.
+- Expect shared draft metadata to retain only the latest 100 activity entries and the latest 12 submission receipts.
+
+### Documentation Map
+
+If you want the clearest end-to-end explanation, read these docs in order:
+
+- **How It Works & Usage Guide** — the full mental model, user roles, and practical usage path
+- **Core Architecture** — deterministic verify addresses, the master contract, and execution pipelines
+- **Workflow Lifecycle** — how a transaction moves from compose to sign to submit
+- **Data Flow & Storage** — what lives in the browser, Supabase, relay, and on-chain boundaries
+- **SDK Integration** — runtime variables, relay behavior, and deployment setup
+- **Mixed Multi-Sig (N3 + EVM)** — how combined native + EVM signing works in practice
+
 ## Quickstart
 
 ### Prerequisites
@@ -35,6 +76,18 @@ To run the full local verification sequence in one command:
 ./scripts/verify_repo.sh
 ```
 
+### Live Testnet Validation
+
+```bash
+cd sdk/js
+cp .env.example .env
+# fill in TEST_WIF and VITE_AA_HASH_TESTNET (or export AA_HASH_TESTNET)
+npm run testnet:validate:dry-run
+npm run testnet:validate
+```
+
+The runner executes the recommended safety order for the documented testnet validators, including the threshold-2, custom-verifier, dome-oracle, concurrency, approve/allowance, and full integration flows.
+
 ### Build
 
 ```bash
@@ -53,7 +106,9 @@ Verified on **Neo N3 testnet** on **March 6, 2026** against hardened contract **
 
 Additional live authorization simulation confirmed `update` still HALTs for the deployer and FAULTs with `Not Deployer` for a non-deployer signer on the hardened deployment.
 
-Re-validated on **March 7, 2026** against the same hardened deployment with a fresh funded signer. The full six-script SDK testnet validation suite completed successfully, including `aa_testnet_full_validate.js`, after tightening the validator's whitelist-mode scenario to assert canonical postconditions.
+Re-validated on **March 7, 2026** against the same hardened deployment with a fresh funded signer. The expanded SDK testnet validation suite completed successfully, covering the core integration flow plus threshold-2 multisig, custom verifier, dome/oracle, concurrency, max-transfer, direct-proxy-spend, and approve/allowance validators after tightening the whitelist-mode postconditions.
+
+On **March 8, 2026**, a fresh validation deployment **`0x2dd3b3776ddccdd56c4969342a3f9b0c5516933c`** (deployment tx **`0xe6b65fb40f5f291ba8cb383428b2dd0bcde3ff0c1a0a62de3216fd748a88f364`**) was used to finish validating the remaining wrapper and asset/token paths under the current branch semantics. That diagnostic instance passed live runs of `aa_testnet_integration_check.js`, `aa_testnet_negative_meta_validate.js`, `aa_testnet_threshold2_validate.js`, `aa_testnet_dome_oracle_validate.js`, `aa_testnet_custom_verifier_validate.js`, `aa_testnet_max_transfer_validate.js`, `aa_testnet_approve_allowance_validate.js`, `aa_testnet_full_validate.js`, and `aa_testnet_concurrency_validate.js`. The direct proxy-signed external spend path remained blocked, which is the expected hardened negative path.
 
 ### Security Checklist
 - [x] Unauthorized bootstrap account creation is rejected.
@@ -96,7 +151,7 @@ Re-validated on **March 7, 2026** against the same hardened deployment with a fr
 - [x] Prove live max-transfer enforcement on an actual GAS token transfer through `executeByAddress`.
 - [x] Prove live `approve` / allowance enforcement on a token supporting approvals.
 
-Verification note: live max-transfer enforcement was confirmed with `sdk/js/tests/aa_testnet_max_transfer_validate.js` using the owner as the transaction sender plus the deterministic AA proxy as an additional signer with `CustomContracts` scope limited to the AA contract and GAS, and the AA witness bound to `verify(accountId)`.
+Verification note: live max-transfer enforcement was confirmed with `sdk/js/tests/aa_testnet_max_transfer_validate.js` using the owner as the transaction sender plus the deterministic AA proxy as an additional signer with `CustomContracts` scope limited to the AA contract and GAS, the AA witness bound to `verify(accountId)`, and an explicit `setWhitelistByAddress(..., GAS, true)` step before the external GAS `transfer` path.
 
 Threshold note: on **March 7, 2026**, `sdk/js/tests/aa_testnet_threshold2_validate.js` confirmed a live threshold-2 mixed-signature path against hardened testnet deployment `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423`. The validator raises the account admin threshold from `1` to `2`, proves owner-only `executeByAddress` on `getNonce` FAULTs with `Unauthorized`, then proves `executeMetaTxByAddress` on `getNonce` HALTs with one native Neo witness plus one EIP-712 EVM signer and increments the meta-tx nonce.
 
@@ -106,7 +161,7 @@ Dome/oracle note: on **March 7, 2026**, the live hardened deployment at `0x711c1
 
 Concurrency note: on **March 7, 2026**, `sdk/js/tests/aa_testnet_concurrency_validate.js` completed a bounded live load pass against hardened testnet deployment `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423` using **12 parallel simulations** plus **2 serialized live meta-transactions**. The harness proved all pre-write and post-write `executeByAddress(..., getNonce, ...)` simulations HALT consistently, all parallel nonce reads agree before and after writes, and the EVM signer nonce advances deterministically from `0` to `1` to `2` across live meta-tx submissions without inconsistent policy or nonce results.
 
-Approve/allowance note: on **March 7, 2026**, `sdk/js/tests/aa_testnet_approve_allowance_validate.js` deployed a disposable approval-capable token at `0x698ad0fb426dfe64ed8c100c75e5f6da4cb9c535`, set an AA max-transfer limit of `100` for that token, proved a Neo-style `approve(owner, spender, amount)` within limit HALTs and returns `true`, proved an over-limit approve FAULTs with `Amount exceeds max limit`, and confirmed `allowance(owner, spender)` stays at `100` after the rejected over-limit path.
+Approve/allowance note: on **March 7, 2026**, `sdk/js/tests/aa_testnet_approve_allowance_validate.js` deployed a disposable approval-capable token at `0x698ad0fb426dfe64ed8c100c75e5f6da4cb9c535`, explicitly whitelisted that token for the AA account, set an AA max-transfer limit of `100` for that token, proved a Neo-style `approve(owner, spender, amount)` within limit HALTs and returns `true`, proved an over-limit approve FAULTs with `Amount exceeds max limit`, and confirmed `allowance(owner, spender)` stays at `100` after the rejected over-limit path.
 
 ### Fresh Deploy + Real Update Verification
 

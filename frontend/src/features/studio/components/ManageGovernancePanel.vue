@@ -1,6 +1,6 @@
 <template>
   <section class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
-    <h2 class="text-xl font-bold text-slate-900 mb-2">Manage Governance</h2>
+    <h2 class="text-xl font-bold text-slate-900 mb-2">{{ t('studioPanels.manageTitle', 'Manage Governance') }}</h2>
     <p class="text-sm text-slate-500 mb-8">Operate policy and recovery controls for an existing abstract account.</p>
 
     <div class="space-y-8">
@@ -146,6 +146,7 @@
 
 <script setup>
 import { inject } from 'vue';
+import { useI18n } from '@/i18n';
 
 const studio = inject('studio');
 const {

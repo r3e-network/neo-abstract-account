@@ -1,4 +1,5 @@
 export const STUDIO_TABS = [
+  { key: 'operations', label: 'Operations Workspace' },
   { key: 'create', label: 'Create Account' },
   { key: 'manage', label: 'Manage Governance' },
   { key: 'permissions', label: 'Permissions & Limits' },

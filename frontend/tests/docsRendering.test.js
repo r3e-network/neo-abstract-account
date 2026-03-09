@@ -54,6 +54,13 @@ test('repo docs describe a hardened policy-gated execution surface', () => {
   assert.doesNotMatch(architectureDoc, /fully programmable logic gates/i);
 });
 
+test('repo README keeps a single quickstart heading', () => {
+  const readme = readRepo('README.md');
+  const matches = readme.match(/^## Quickstart$/gm) || [];
+
+  assert.equal(matches.length, 1);
+});
+
 test('repo README includes a quickstart covering install build and test workflows', () => {
   const readme = readRepo('README.md');
 
@@ -68,6 +75,125 @@ test('custom verifier docs explain verifier approval does not bypass runtime res
 
   assert.match(verifierDoc, /does not bypass/i);
   assert.match(verifierDoc, /whitelist|blacklist|max-transfer|method policy/i);
+});
+
+test('core explainer docs provide onboarding architecture workflow and boundary guidance', () => {
+  const guideDoc = read('src/assets/docs/guide.md');
+  const architectureDoc = read('src/assets/docs/architecture.md');
+  const workflowDoc = read('src/assets/docs/workflow.md');
+  const dataFlowDoc = read('src/assets/docs/data-flow.md');
+  const readme = readRepo('README.md');
+
+  assert.match(guideDoc, /Who This Is For/i);
+  assert.match(guideDoc, /Choose the Right Path/i);
+  assert.match(guideDoc, /What Happens During One Transaction\?/i);
+  assert.match(guideDoc, /Glossary/i);
+
+  assert.match(architectureDoc, /Component Map/i);
+  assert.match(architectureDoc, /Verification Pipeline/i);
+  assert.match(architectureDoc, /Application Execution Pipeline/i);
+  assert.match(architectureDoc, /Contract File Map/i);
+
+  assert.match(workflowDoc, /First Transaction Walkthrough/i);
+  assert.match(workflowDoc, /Choose the Submission Path/i);
+  assert.match(workflowDoc, /Before You Broadcast/i);
+
+  assert.match(dataFlowDoc, /System Boundaries/i);
+  assert.match(dataFlowDoc, /Data Ownership Matrix/i);
+  assert.match(dataFlowDoc, /Mutation Authority by Boundary/i);
+
+  assert.match(readme, /Documentation Map/i);
+});
+
+test('operations docs cover the home workspace, anonymous drafts, both broadcast modes, and bounded draft retention', () => {
+  const workflowDoc = read('src/assets/docs/workflow.md');
+  const mixedMultisigDoc = read('src/assets/docs/mixed-multisig.md');
+  const sdkDoc = read('src/assets/docs/sdk-usage.md');
+  const readme = readRepo('README.md');
+
+  assert.match(workflowDoc, /home operations workspace/i);
+  assert.match(workflowDoc, /client-side broadcast/i);
+  assert.match(workflowDoc, /relay broadcast/i);
+  assert.match(workflowDoc, /localStorage|local-only fallback/i);
+  assert.match(workflowDoc, /NEP-17 transfer|Multisig Draft|Generic Invoke/i);
+  assert.match(workflowDoc, /100 activity entries/i);
+  assert.match(workflowDoc, /12 submission receipts/i);
+  assert.match(readme, /100 activity entries/i);
+  assert.match(readme, /12 submission receipts/i);
+  assert.match(readme, /Deployment Checklist/i);
+  assert.match(readme, /supabase\/migrations\/20260308_home_operations_workspace\.sql/i);
+  assert.match(readme, /20260309_shared_draft_collaboration_capability\.sql/i);
+  assert.match(readme, /20260310_shared_draft_collaboration_cleanup\.sql/i);
+  assert.match(readme, /20260311_rotate_draft_collaboration_slug\.sql/i);
+  assert.match(readme, /20260312_scoped_draft_access\.sql/i);
+  assert.match(readme, /20260313_activity_scope_guards\.sql/i);
+  assert.match(readme, /20260314_signed_operator_mutations\.sql/i);
+  assert.match(readme, /collaborator link/i);
+  assert.match(readme, /operator link/i);
+  assert.match(readme, /rotate collaborator link/i);
+  assert.match(readme, /read-only/i);
+  assert.match(readme, /AA_RELAY_WIF/i);
+  assert.match(readme, /frontend\/\.env\.example/i);
+  assert.match(readme, /SUPABASE_SERVICE_ROLE_KEY/i);
+  assert.match(readme, /signed operator mutation/i);
+  assert.match(readme, /draft-operator/i);
+  assert.match(readme, /VITE_AA_EXPLORER_BASE_URL/i);
+  assert.match(mixedMultisigDoc, /anonymous share/i);
+  assert.match(mixedMultisigDoc, /collaborator link/i);
+  assert.match(mixedMultisigDoc, /operator link/i);
+  assert.match(mixedMultisigDoc, /rotate collaborator link/i);
+  assert.match(mixedMultisigDoc, /read-only/i);
+  assert.match(mixedMultisigDoc, /supabase/i);
+  assert.match(mixedMultisigDoc, /100 activity entries/i);
+  assert.match(mixedMultisigDoc, /12 submission receipts/i);
+  assert.match(sdkDoc, /VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY|relay/i);
+  assert.match(sdkDoc, /Runtime Reference/i);
+  assert.match(sdkDoc, /Relay Behavior Matrix/i);
+  assert.match(sdkDoc, /preflight only/i);
+  assert.match(sdkDoc, /signed raw relay/i);
+  assert.match(sdkDoc, /meta relay submission/i);
+  assert.match(sdkDoc, /Safe Defaults/i);
+  assert.match(sdkDoc, /client-side broadcast is the default safe path/i);
+  assert.match(sdkDoc, /optional knobs/i);
+  assert.match(sdkDoc, /Security Posture/i);
+  assert.match(sdkDoc, /safe to expose client-side/i);
+  assert.match(sdkDoc, /server-only/i);
+  assert.match(sdkDoc, /SUPABASE_SERVICE_ROLE_KEY/i);
+  assert.match(sdkDoc, /AA_RELAY_ALLOWED_HASH/i);
+  assert.match(sdkDoc, /AA_RELAY_ALLOW_RAW_FORWARD/i);
+  assert.match(sdkDoc, /frontend\/\.env\.example/i);
+  assert.match(sdkDoc, /draft-operator/i);
+  assert.match(sdkDoc, /signed operator mutation/i);
+  assert.match(sdkDoc, /Recommended Deployment Profiles/i);
+  assert.match(sdkDoc, /local-only/i);
+  assert.match(sdkDoc, /collaborative/i);
+  assert.match(sdkDoc, /read-only share link/i);
+  assert.match(sdkDoc, /collaborator link/i);
+  assert.match(sdkDoc, /operator link/i);
+  assert.match(sdkDoc, /rotate collaborator link/i);
+  assert.match(sdkDoc, /full relay-enabled/i);
+  assert.match(sdkDoc, /\.env\.local Examples/i);
+  assert.match(sdkDoc, /local-only profile/i);
+  assert.match(sdkDoc, /collaborative profile/i);
+  assert.match(sdkDoc, /full relay-enabled profile/i);
+  assert.match(sdkDoc, /Testnet vs Production Checklist/i);
+  assert.match(sdkDoc, /testnet/i);
+  assert.match(sdkDoc, /production/i);
+  assert.match(sdkDoc, /AA_RELAY_WIF/i);
+  assert.match(sdkDoc, /VITE_AA_EXPLORER_BASE_URL/i);
+  assert.match(sdkDoc, /relay meta mode/i);
+  assert.match(sdkDoc, /Minimum Capability Matrix/i);
+  assert.match(sdkDoc, /without Supabase/i);
+  assert.match(sdkDoc, /without relay/i);
+  assert.match(sdkDoc, /without explorer/i);
+  assert.match(sdkDoc, /Troubleshooting/i);
+  assert.match(sdkDoc, /missing Supabase env/i);
+  assert.match(sdkDoc, /AA_RELAY_WIF/i);
+  assert.match(sdkDoc, /relay meta mode/i);
+  assert.match(sdkDoc, /explorer base url/i);
+  assert.match(sdkDoc, /VITE_AA_EXPLORER_BASE_URL/i);
+  assert.match(sdkDoc, /100 activity entries/i);
+  assert.match(sdkDoc, /12 submission receipts/i);
 });
 
 test('DocsView lazy-loads heavy markdown and diagram dependencies', () => {

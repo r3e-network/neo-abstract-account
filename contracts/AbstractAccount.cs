@@ -48,11 +48,23 @@ namespace AbstractAccount
         "requestDomeActivationByAddress",
         "requestDomeActivation",
         "domeActivationCallback")]
+    /// <summary>
+    /// Global abstract-account gateway for Neo N3.
+    /// </summary>
+    /// <remarks>
+    /// This contract stores per-account roles and policies under a logical <c>accountId</c>, optionally binds that
+    /// account to a deterministic verify-proxy address, and routes every outbound call through one of two guarded
+    /// execution paths: native Neo witnesses or EIP-712 meta-transactions. The implementation is split across partial
+    /// files so each concern can be read independently: lifecycle, storage/context, execution, meta-tx, admin, oracle,
+    /// and upgrade.
+    /// </remarks>
     public partial class UnifiedSmartWallet : SmartContract
     {
         private static readonly byte[] DeployerKey = new byte[] { 0x00 };
 
-        // Maps Prefixes
+        // Each prefix isolates one slice of per-account state. Prefixes are always combined with the canonical
+        // storage key produced by GetStorageKey(accountId), which lets new deployments use stable key formats while
+        // still resolving legacy accounts created before the canonical-key migration.
         private static readonly byte[] AdminsPrefix = new byte[] { 0x01 };
         private static readonly byte[] AdminThresholdPrefix = new byte[] { 0x02 };
         private static readonly byte[] ManagersPrefix = new byte[] { 0x03 };
@@ -72,6 +84,7 @@ namespace AbstractAccount
         private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
         private static readonly byte[] VerifierContractPrefix = new byte[] { 0x12 };
         private static readonly byte[] ContractHashKey = new byte[] { 0x13 };
+        private static readonly byte[] GlobalExecutionLockKey = new byte[] { 0x14 };
         private static readonly byte[] MetaTxContextPrefix = new byte[] { 0xFF };
 
         // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
@@ -126,6 +139,10 @@ namespace AbstractAccount
         [DisplayName("PolicyUpdated")]
         public static event OnPolicyUpdatedEvent OnPolicyUpdated = default!;
 
+        /// <summary>
+        /// Stores the executing contract hash for deterministic proxy-script generation and records the original
+        /// deployer on first deployment so upgrades can later be restricted to that address.
+        /// </summary>
         public static void _deploy(object data, bool update)
         {
             Storage.Put(Storage.CurrentContext, ContractHashKey, Runtime.ExecutingScriptHash);
@@ -134,11 +151,19 @@ namespace AbstractAccount
             Storage.Put(Storage.CurrentContext, DeployerKey, tx.Sender);
         }
 
+        /// <summary>
+        /// Rejects direct token pushes. Assets should move only through explicit AA-controlled execution paths so
+        /// policy checks and accounting remain visible.
+        /// </summary>
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
             ExecutionEngine.Abort();
         }
 
+        /// <summary>
+        /// Rejects direct NFT pushes for the same reason as NEP-17 payments: the account should only mutate through
+        /// guarded entrypoints such as Execute, ExecuteByAddress, ExecuteMetaTx, or ExecuteMetaTxByAddress.
+        /// </summary>
         public static void OnNEP11Payment(UInt160 from, BigInteger amount, ByteString tokenId, object data)
         {
             ExecutionEngine.Abort();

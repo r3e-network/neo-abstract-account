@@ -98,9 +98,9 @@ test('buildSetWhitelistModeByAddressAlternativeBuilders preserves existing varia
   assert.deepEqual(builders[5](), [{ array: ['hash:acct', 'bool:true'] }]);
 });
 
-test('buildSetWhitelistModeByAccountIdArgs uses byteArray plus boolean by default', () => {
+test('buildSetWhitelistModeByAccountIdArgs uses raw byteArray plus boolean by default', () => {
   const { helpers } = createHelpers();
-  assert.deepEqual(helpers.buildSetWhitelistModeByAccountIdArgs('acct-id', true), ['bytes:acct-id', 'bool:true']);
+  assert.deepEqual(helpers.buildSetWhitelistModeByAccountIdArgs('acct-id', true), ['raw:acct-id', 'bool:true']);
 });
 
 test('buildSetWhitelistModeByAccountIdAlternativeBuilders preserves raw and wrapped variants', () => {
@@ -109,7 +109,7 @@ test('buildSetWhitelistModeByAccountIdAlternativeBuilders preserves raw and wrap
   assert.equal(builders.length, 4);
 
   assert.deepEqual(builders[0](), ['raw:acct-id', 'bool:false']);
-  assert.deepEqual(builders[1](), ['bytes:acct-id', 'int:0']);
-  assert.deepEqual(builders[2](), [{ array: ['bytes:acct-id', 'bool:false'] }]);
+  assert.deepEqual(builders[1](), ['raw:acct-id', 'int:0']);
+  assert.deepEqual(builders[2](), [{ array: ['raw:acct-id', 'bool:false'] }]);
   assert.deepEqual(builders[3](), [{ array: ['raw:acct-id', 'bool:false'] }]);
 });

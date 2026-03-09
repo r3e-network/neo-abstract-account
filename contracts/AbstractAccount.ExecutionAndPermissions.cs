@@ -6,13 +6,24 @@ using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
 {
+    // Execution helpers are the contract's main runtime gate. They authenticate the caller, enforce policy
+    // restrictions, open a tightly scoped verification window for the downstream contract, and finally dispatch the
+    // call with read-only or mutating flags based on the method being invoked.
     public partial class UnifiedSmartWallet
     {
-        private static readonly CallFlags ExecutionCallFlags = CallFlags.All;
+        // Calls that only inspect state are dispatched with ReadOnly flags; state-changing calls keep full flags.
+        private static readonly CallFlags MutatingExecutionCallFlags = CallFlags.All;
+        private static readonly CallFlags ReadOnlyExecutionCallFlags = CallFlags.ReadOnly;
 
+        /// <summary>
+        /// Native Neo execution path. This is the core AA wrapper used by wallets once they have assembled a standard
+        /// transaction with the deterministic proxy witness.
+        /// </summary>
         public static object Execute(ByteString accountId, UInt160 targetContract, string method, object[] args)
         {
+            // 1. Authenticate signer(s) and enforce whitelist / blacklist / transfer policies.
             CheckPermissionsAndExecuteNative(accountId, targetContract, method, args);
+            // 2. Lock execution and expose a verify context so only this target contract can consume CheckWitness(proxy).
             EnterExecution(accountId);
             SetVerifyContext(accountId, targetContract);
             try
@@ -27,6 +38,10 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Address-based convenience wrapper for Execute. Frontends usually prefer this form once the logical account has
+        /// been bound to its deterministic verify-proxy address.
+        /// </summary>
         public static object ExecuteByAddress(UInt160 accountAddress, UInt160 targetContract, string method, object[] args)
         {
             ByteString accountId = ResolveAccountIdByAddress(accountAddress);
@@ -37,6 +52,8 @@ namespace AbstractAccount
         {
             AssertAccountExists(accountId);
 
+            // Authorization order is: custom verifier (if configured), then native admin/manager quorum, then dome
+            // signers subject to timeout + oracle unlock. Only after authorization do we evaluate target restrictions.
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
             {
@@ -105,6 +122,8 @@ namespace AbstractAccount
             EnforceRestrictions(accountId, targetContract, method, args);
         }
 
+        // Policy enforcement is intentionally centralized so every execution path—native and meta-tx—runs through the
+        // same whitelist, blacklist, method-allowlist, and max-transfer rules.
         private static void EnforceRestrictions(ByteString accountId, UInt160 targetContract, string method, object[] args)
         {
             AssertMethodAllowedByPolicy(targetContract, method);
@@ -113,17 +132,23 @@ namespace AbstractAccount
             ByteString? isBlacklisted = blacklistMap.Get(targetContract);
             ExecutionEngine.Assert(isBlacklisted == null || isBlacklisted != (ByteString)new byte[] { 1 }, "Target is blacklisted");
 
+            StorageMap whitelistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(WhitelistPrefix, GetStorageKey(accountId)));
             StorageMap whitelistEnabledMap = new StorageMap(Storage.CurrentContext, WhitelistEnabledPrefix);
             ByteString? whitelistOnly = whitelistEnabledMap.Get(GetStorageKey(accountId));
             if (whitelistOnly != null && whitelistOnly == (ByteString)new byte[] { 1 })
             {
-                StorageMap whitelistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(WhitelistPrefix, GetStorageKey(accountId)));
                 ByteString? isWhitelisted = whitelistMap.Get(targetContract);
                 ExecutionEngine.Assert(isWhitelisted != null && isWhitelisted == (ByteString)new byte[] { 1 }, "Target is not in whitelist");
             }
 
             if (method == "transfer" || method == "approve")
             {
+                if (targetContract != Runtime.ExecutingScriptHash)
+                {
+                    ByteString? isWhitelisted = whitelistMap.Get(targetContract);
+                    ExecutionEngine.Assert(isWhitelisted != null && isWhitelisted == (ByteString)new byte[] { 1 }, "Asset-moving target is not in whitelist");
+                }
+
                 StorageMap maxMap = new StorageMap(Storage.CurrentContext, Helper.Concat(MaxTransferPrefix, GetStorageKey(accountId)));
                 ByteString? maxValBytes = maxMap.Get(targetContract);
                 if (maxValBytes != null)
@@ -135,9 +160,26 @@ namespace AbstractAccount
             }
         }
 
+        private static bool IsReadOnlyMethod(string method)
+        {
+            return method == "balanceOf"
+                || method == "symbol"
+                || method == "decimals"
+                || method == "totalSupply"
+                || method == "allowance"
+                || method == "getNonce"
+                || method == "getNonceForAccount"
+                || method == "getNonceForAddress";
+        }
+
+        private static CallFlags ResolveCallFlags(string method)
+        {
+            return IsReadOnlyMethod(method) ? ReadOnlyExecutionCallFlags : MutatingExecutionCallFlags;
+        }
+
         private static object DispatchContractCall(UInt160 targetContract, string method, object[] args)
         {
-            return Contract.Call(targetContract, method, ExecutionCallFlags, args);
+            return Contract.Call(targetContract, method, ResolveCallFlags(method), args);
         }
 
         private static BigInteger GetRestrictedAmount(string method, object[] args)

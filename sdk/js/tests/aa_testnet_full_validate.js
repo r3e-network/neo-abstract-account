@@ -23,7 +23,7 @@ const { decodeByteStringToHex, decodeInteger, normalizeReadByteString } = bindSt
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
 const { computeArgsHash, buildTypedData, buildArgsHashCandidates, buildPubKeyCandidates, buildExecuteMetaTxArgs, signTypedDataNoRecovery } = bindMetaTxHelpers({ buildMetaTransactionTypedData, invokeRead, cpArray, cpHash160, cpByteArray, cpByteArrayRaw, decodeByteStringToHex, sanitizeHex, reverseHex: u.reverseHex, sc });
 const { buildSetWhitelistByAddressArgs, buildSetWhitelistModeByAddressArgs, buildSetWhitelistModeByAccountIdArgs } = bindWhitelistArgBuilders({ cpHash160, cpByteArray, cpByteArrayRaw, cpArray, sc });
-const { buildMetaExecutionVariants } = bindMetaSearchHelpers({ invokeRead, cpHash160, cpByteArray, sanitizeHex, decodeInteger, decodeByteStringToHex, buildPubKeyCandidates, buildArgsHashCandidates, buildTypedData, computeArgsHash, signTypedDataNoRecovery, buildExecuteMetaTxArgs });
+const { buildMetaExecutionVariants } = bindMetaSearchHelpers({ invokeRead, cpHash160, cpByteArray, cpByteArrayRaw, sanitizeHex, decodeInteger, decodeByteStringToHex, buildPubKeyCandidates, buildArgsHashCandidates, buildTypedData, computeArgsHash, signTypedDataNoRecovery, buildExecuteMetaTxArgs });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
 
 async function executeMetaTx({
@@ -122,6 +122,7 @@ async function main() {
     }
   };
 
+
   const ownerSigner = [{ account: ownerScriptHash, scopes: tx.WitnessScope.CalledByEntry }];
 
   // Account A: native admin+manager path
@@ -137,7 +138,7 @@ async function main() {
       aaHash,
       operation: 'createAccountWithAddress',
       args: [
-        cpByteArray(accountIdA),
+        cpByteArrayRaw(accountIdA),
         cpHash160(accountA.addressScriptHash),
         cpArray([cpHash160(ownerScriptHash)]),
         sc.ContractParam.integer(1),
@@ -147,16 +148,16 @@ async function main() {
     })),
   });
 
-  const adminsAById = await invokeRead(aaHash, 'getAdmins', [cpByteArray(accountIdA)]);
+  const adminsAById = await invokeRead(aaHash, 'getAdmins', [cpByteArrayRaw(accountIdA)]);
   const adminsAByAddr = await invokeRead(aaHash, 'getAdminsByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const adminThresholdAById = await invokeRead(aaHash, 'getAdminThreshold', [cpByteArray(accountIdA)]);
+  const adminThresholdAById = await invokeRead(aaHash, 'getAdminThreshold', [cpByteArrayRaw(accountIdA)]);
   const adminThresholdAByAddr = await invokeRead(aaHash, 'getAdminThresholdByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const managersAById = await invokeRead(aaHash, 'getManagers', [cpByteArray(accountIdA)]);
+  const managersAById = await invokeRead(aaHash, 'getManagers', [cpByteArrayRaw(accountIdA)]);
   const managersAByAddr = await invokeRead(aaHash, 'getManagersByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const managerThresholdAById = await invokeRead(aaHash, 'getManagerThreshold', [cpByteArray(accountIdA)]);
+  const managerThresholdAById = await invokeRead(aaHash, 'getManagerThreshold', [cpByteArrayRaw(accountIdA)]);
   const managerThresholdAByAddr = await invokeRead(aaHash, 'getManagerThresholdByAddress', [cpHash160(accountA.addressScriptHash)]);
   const idByAddressA = await invokeRead(aaHash, 'getAccountIdByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const addressByIdA = await invokeRead(aaHash, 'getAccountAddress', [cpByteArray(accountIdA)]);
+  const addressByIdA = await invokeRead(aaHash, 'getAccountAddress', [cpByteArrayRaw(accountIdA)]);
 
   check('A admins by id count == 1', (adminsAById.stack?.[0]?.value || []).length === 1);
   check('A admins by address count == 1', (adminsAByAddr.stack?.[0]?.value || []).length === 1);
@@ -168,7 +169,7 @@ async function main() {
   check('A manager threshold by address == 1', String(managerThresholdAByAddr.stack?.[0]?.value) === '1');
 
   const idAReadRaw = decodeByteStringToHex(idByAddressA.stack?.[0]);
-  const idAReadNormalized = normalizeReadByteString(idAReadRaw);
+  const idAReadNormalized = sanitizeHex(idAReadRaw);
   const addressAReadRaw = decodeByteStringToHex(addressByIdA.stack?.[0]);
   const addressAReadNormalized = normalizeReadByteString(addressAReadRaw);
 
@@ -176,7 +177,7 @@ async function main() {
   check('A getAccountAddress matches address hash', addressAReadNormalized === accountA.addressScriptHash, `raw=${addressAReadRaw}`);
 
   const nonceOwnerGlobal = await invokeRead(aaHash, 'getNonce', [cpHash160(ownerScriptHash)]);
-  const nonceAByAccount = await invokeRead(aaHash, 'getNonceForAccount', [cpByteArray(accountIdA), cpHash160(ownerScriptHash)]);
+  const nonceAByAccount = await invokeRead(aaHash, 'getNonceForAccount', [cpByteArrayRaw(accountIdA), cpHash160(ownerScriptHash)]);
   const nonceAByAddress = await invokeRead(aaHash, 'getNonceForAddress', [cpHash160(accountA.addressScriptHash), cpHash160(ownerScriptHash)]);
   check('A nonce for account initially zero', decodeInteger(nonceAByAccount.stack?.[0]) === 0);
   check('A nonce for address initially zero', decodeInteger(nonceAByAddress.stack?.[0]) === 0);
@@ -198,7 +199,7 @@ async function main() {
     magic,
     aaHash,
     operation: 'setManagers',
-    args: [cpByteArray(accountIdA), cpArray([cpHash160(ownerScriptHash)]), sc.ContractParam.integer(1)],
+    args: [cpByteArrayRaw(accountIdA), cpArray([cpHash160(ownerScriptHash)]), sc.ContractParam.integer(1)],
   }))});
 
   summary.txs.push({ step: 'setManagersByAddress(A)', ...(await sendInvocation({
@@ -222,10 +223,10 @@ async function main() {
     magic,
     aaHash,
     operation: 'setWhitelist',
-    args: [cpByteArray(accountIdA), cpHash160(aaHash), sc.ContractParam.boolean(true)],
+    args: [cpByteArrayRaw(accountIdA), cpHash160(aaHash), sc.ContractParam.boolean(true)],
   }))});
 
-  const simExecuteA = await simulate(aaHash, 'execute', [cpByteArray(accountIdA), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);
+  const simExecuteA = await simulate(aaHash, 'execute', [cpByteArrayRaw(accountIdA), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);
   const simExecuteByAddressA = await simulate(aaHash, 'executeByAddress', [cpHash160(accountA.addressScriptHash), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);
   check('execute(accountId) HALT for A', simExecuteA.state === 'HALT', simExecuteA.exception || '');
   check('executeByAddress HALT for A', simExecuteByAddressA.state === 'HALT', simExecuteByAddressA.exception || '');
@@ -246,7 +247,7 @@ async function main() {
     magic,
     aaHash,
     operation: 'setBlacklist',
-    args: [cpByteArray(accountIdA), cpHash160(aaHash), sc.ContractParam.boolean(false)],
+    args: [cpByteArrayRaw(accountIdA), cpHash160(aaHash), sc.ContractParam.boolean(false)],
   }))});
 
   const simUnblockedA = await simulate(aaHash, 'executeByAddress', [cpHash160(accountA.addressScriptHash), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);
@@ -275,7 +276,7 @@ async function main() {
 
   const rogueAdminHash = randomAccountIdHex(20);
   const simUnauthorizedCreateB = await simulate(aaHash, 'createAccount', [
-    cpByteArray(accountIdB),
+    cpByteArrayRaw(accountIdB),
     cpArray([cpHash160(rogueAdminHash)]),
     sc.ContractParam.integer(1),
     cpArray(),
@@ -293,7 +294,7 @@ async function main() {
     aaHash,
     operation: 'createAccount',
     args: [
-      cpByteArray(accountIdB),
+      cpByteArrayRaw(accountIdB),
       cpArray([cpHash160(ownerScriptHash)]),
       sc.ContractParam.integer(1),
       cpArray(),
@@ -310,12 +311,12 @@ async function main() {
     magic,
     aaHash,
     operation: 'bindAccountAddress',
-    args: [cpByteArray(accountIdB), cpHash160(accountB.addressScriptHash)],
+    args: [cpByteArrayRaw(accountIdB), cpHash160(accountB.addressScriptHash)],
   }))});
 
   const idAfterBindB = await invokeRead(aaHash, 'getAccountIdByAddress', [cpHash160(accountB.addressScriptHash)]);
-  const addrAfterBindB = await invokeRead(aaHash, 'getAccountAddress', [cpByteArray(accountIdB)]);
-  check('B getAccountIdByAddress matches', normalizeReadByteString(decodeByteStringToHex(idAfterBindB.stack?.[0])) === accountIdB);
+  const addrAfterBindB = await invokeRead(aaHash, 'getAccountAddress', [cpByteArrayRaw(accountIdB)]);
+  check('B getAccountIdByAddress matches', sanitizeHex(decodeByteStringToHex(idAfterBindB.stack?.[0])) === accountIdB);
   check('B getAccountAddress matches', normalizeReadByteString(decodeByteStringToHex(addrAfterBindB.stack?.[0])) === accountB.addressScriptHash);
 
   // Account C: meta-tx validations (address and accountId paths)
@@ -336,7 +337,7 @@ async function main() {
     aaHash,
     operation: 'createAccountWithAddress',
     args: [
-      cpByteArray(accountIdC),
+      cpByteArrayRaw(accountIdC),
       cpHash160(accountC.addressScriptHash),
       cpArray([cpHash160(ownerScriptHash), cpHash160(ethSignerHex)]),
       sc.ContractParam.integer(1),
@@ -429,7 +430,7 @@ async function main() {
   });
   summary.txs.push({ step: 'metaTx(accountId) setWhitelistMode(C,false)', ...meta3 });
 
-  const nonceAfterMeta3ByAccount = await invokeRead(aaHash, 'getNonceForAccount', [cpByteArray(accountIdC), cpHash160(ethSignerHex)]);
+  const nonceAfterMeta3ByAccount = await invokeRead(aaHash, 'getNonceForAccount', [cpByteArrayRaw(accountIdC), cpHash160(ethSignerHex)]);
   check('C nonce after meta3 (accountId path) == 3', decodeInteger(nonceAfterMeta3ByAccount.stack?.[0]) === 3);
 
   const simExecCAfterModeOff = await simulate(aaHash, 'executeByAddress', [cpHash160(accountC.addressScriptHash), cpHash160(aaHash), sc.ContractParam.string('getNonce'), cpArray([cpHash160(ownerScriptHash)])], ownerSigner);

@@ -86,7 +86,7 @@ function bindWhitelistArgBuilders({ cpHash160, cpByteArray, cpByteArrayRaw, cpAr
 
   function buildSetWhitelistModeByAccountIdArgs(accountIdHex, enabled, options = {}) {
     const {
-      accountEncoding = 'byteArray',
+      accountEncoding = 'byteArrayRaw',
       flagEncoding = 'boolean',
       wrapInArray = false,
     } = options;

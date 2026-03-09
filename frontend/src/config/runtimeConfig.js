@@ -4,6 +4,8 @@ export { sanitizeHex };
 
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423';
 export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
+export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
+export const DEFAULT_EXPLORER_BASE_URL = 'https://testnet.ndoras.com/transaction';
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -16,6 +18,24 @@ export function resolveRpcUrl(value, fallback = DEFAULT_RPC_URL) {
   return normalized || fallback;
 }
 
+export function resolveOptionalUrl(value, fallback = '') {
+  const normalized = String(value || '').trim();
+  return normalized || fallback;
+}
+
+export function resolveOptionalToken(value, fallback = '') {
+  const normalized = String(value || '').trim();
+  return normalized || fallback;
+}
+
+export function resolveOptionalBoolean(value, fallback = false) {
+  if (value == null || value === '') return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off', 'disabled'].includes(normalized)) return false;
+  return fallback;
+}
+
 export function getRuntimeConfig(env = import.meta.env ?? {}) {
   return {
     abstractAccountHash: resolveAbstractAccountHash(
@@ -25,7 +45,33 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     rpcUrl: resolveRpcUrl(
       env.VITE_AA_RPC_URL || env.VITE_NEO_RPC_URL,
       DEFAULT_RPC_URL
-    )
+    ),
+    supabaseUrl: resolveOptionalUrl(
+      env.VITE_SUPABASE_URL || env.VITE_SUPABASE_PROJECT_URL
+    ),
+    supabaseAnonKey: resolveOptionalToken(
+      env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY
+    ),
+    relayEndpoint: resolveOptionalUrl(
+      env.VITE_AA_RELAY_URL || env.VITE_RELAY_ENDPOINT,
+      DEFAULT_RELAY_ENDPOINT
+    ),
+    relayRpcUrl: resolveOptionalUrl(
+      env.VITE_AA_RELAY_RPC_URL || env.VITE_NEO_RPC_URL || env.VITE_AA_RPC_URL,
+      DEFAULT_RPC_URL
+    ),
+    relayMetaEnabled: resolveOptionalBoolean(
+      env.VITE_AA_RELAY_META_ENABLED || env.VITE_RELAY_META_ENABLED,
+      false
+    ),
+    relayRawEnabled: resolveOptionalBoolean(
+      env.VITE_AA_RELAY_RAW_ENABLED || env.VITE_RELAY_RAW_ENABLED,
+      false
+    ),
+    explorerBaseUrl: resolveOptionalUrl(
+      env.VITE_AA_EXPLORER_BASE_URL || env.VITE_EXPLORER_BASE_URL,
+      DEFAULT_EXPLORER_BASE_URL
+    ),
   };
 }
 

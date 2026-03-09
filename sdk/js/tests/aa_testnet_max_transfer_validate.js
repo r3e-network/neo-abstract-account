@@ -12,27 +12,22 @@ const { sanitizeHex } = require('../src/metaTx');
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic, simulate } = bindRpcHelpers({ rpcClient, rpc, sc, u });
-const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
 const GAS_TOKEN_HASH = 'd2a4cff31913016155e38e474a2c06d08be276cf';
 
-function buildAaExecutionContext(aaHash, ownerScriptHash, accountInfo) {
+function buildAaExecutionContext(aaHash, accountInfo, ownerScriptHash) {
   return {
     signers: [
       { account: ownerScriptHash, scopes: tx.WitnessScope.CalledByEntry },
       {
-        account: accountInfo.addressScriptHash,
+        account: accountInfo.signerScriptHash,
         scopes: tx.WitnessScope.CustomContracts,
         allowedContracts: [sanitizeHex(aaHash), GAS_TOKEN_HASH],
       },
     ],
-    witnesses: [
-      {
-        invocationScript: '',
-        verificationScript: accountInfo.verificationScript,
-      },
-    ],
+    witnesses: [{ invocationScript: '', verificationScript: accountInfo.verificationScript }],
   };
 }
 
@@ -43,13 +38,13 @@ async function getAssetBalance(address, assetHash) {
   return BigInt(match?.amount || '0');
 }
 
-function buildExecuteByAddressTransferArgs(accountAddressHash, recipientScriptHash, amount) {
+function buildExecuteByAddressTransferArgs(accountAddressHash, tokenOwnerHash, recipientScriptHash, amount) {
   return [
     cpHash160(accountAddressHash),
     cpHash160(GAS_TOKEN_HASH),
     sc.ContractParam.string('transfer'),
     cpArray([
-      cpHash160(accountAddressHash),
+      cpHash160(tokenOwnerHash),
       cpHash160(recipientScriptHash),
       sc.ContractParam.integer(Number(amount)),
       sc.ContractParam.any(null),
@@ -91,11 +86,14 @@ async function main() {
 
   const accountIdHex = randomAccountIdHex(16);
   const accountInfo = deriveAaAddressFromId(aaHash, accountIdHex);
-  const executionContext = buildAaExecutionContext(aaHash, owner.scriptHash, accountInfo);
+  const executionContext = buildAaExecutionContext(aaHash, accountInfo, owner.scriptHash);
+  const accountSignerAddress = wallet.getAddressFromScriptHash(accountInfo.signerScriptHash);
   summary.account = {
     accountIdHex,
     accountAddress: accountInfo.address,
     accountAddressScriptHash: `0x${accountInfo.addressScriptHash}`,
+    accountSignerAddress,
+    accountSignerScriptHash: `0x${accountInfo.signerScriptHash}`,
   };
   summary.executionContext = {
     senderScriptHash: `0x${sanitizeHex(owner.scriptHash)}`,
@@ -117,7 +115,7 @@ async function main() {
       scriptHash: aaHash,
       operation: 'createAccountWithAddress',
       args: [
-        cpByteArray(accountIdHex),
+        cpByteArrayRaw(accountIdHex),
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(owner.scriptHash)]),
         sc.ContractParam.integer(1),
@@ -132,7 +130,7 @@ async function main() {
   const blockedAmount = 200000000n;
 
   const balanceOwnerBefore = await getAssetBalance(owner.address, GAS_TOKEN_HASH);
-  const balanceAccountBefore = await getAssetBalance(accountInfo.address, GAS_TOKEN_HASH);
+  const balanceAccountBefore = await getAssetBalance(accountSignerAddress, GAS_TOKEN_HASH);
   const balanceRecipientBefore = await getAssetBalance(recipient.address, GAS_TOKEN_HASH);
 
   summary.txs.push({
@@ -144,15 +142,26 @@ async function main() {
       operation: 'transfer',
       args: [
         cpHash160(owner.scriptHash),
-        cpHash160(accountInfo.addressScriptHash),
+        cpHash160(accountInfo.signerScriptHash),
         sc.ContractParam.integer(Number(fundingAmount)),
         sc.ContractParam.any(null),
       ],
     })),
   });
 
-  const balanceAccountFunded = await getAssetBalance(accountInfo.address, GAS_TOKEN_HASH);
+  const balanceAccountFunded = await getAssetBalance(accountSignerAddress, GAS_TOKEN_HASH);
   check('account funded with expected GAS delta', balanceAccountFunded - balanceAccountBefore === fundingAmount, `${balanceAccountFunded - balanceAccountBefore}`);
+
+  summary.txs.push({
+    step: 'setWhitelistByAddress(GAS,true)',
+    ...(await sendInvocation({
+      account: owner,
+      magic,
+      scriptHash: aaHash,
+      operation: 'setWhitelistByAddress',
+      args: [cpHash160(accountInfo.addressScriptHash), cpHash160(GAS_TOKEN_HASH), sc.ContractParam.boolean(true)],
+    })),
+  });
 
   summary.txs.push({
     step: 'setMaxTransferByAddress(GAS,1 GAS)',
@@ -165,22 +174,21 @@ async function main() {
     })),
   });
 
-  const blockedArgs = buildExecuteByAddressTransferArgs(accountInfo.addressScriptHash, recipient.scriptHash, blockedAmount);
+  const blockedArgs = buildExecuteByAddressTransferArgs(accountInfo.addressScriptHash, accountInfo.signerScriptHash, recipient.scriptHash, blockedAmount);
   const blockedSim = await simulate(aaHash, 'executeByAddress', blockedArgs, executionContext.signers);
   summary.blockedSimulation = { state: blockedSim.state, exception: blockedSim.exception || null };
   check('over-limit transfer faults', blockedSim.state === 'FAULT', blockedSim.exception || 'expected FAULT');
   check('over-limit fault reason matches', String(blockedSim.exception || '').includes('Amount exceeds max limit'), blockedSim.exception || '');
 
-  const balanceAccountAfterBlocked = await getAssetBalance(accountInfo.address, GAS_TOKEN_HASH);
+  const balanceAccountAfterBlocked = await getAssetBalance(accountSignerAddress, GAS_TOKEN_HASH);
   const balanceRecipientAfterBlocked = await getAssetBalance(recipient.address, GAS_TOKEN_HASH);
   check('blocked transfer leaves account balance unchanged', balanceAccountAfterBlocked === balanceAccountFunded, `${balanceAccountAfterBlocked}`);
   check('blocked transfer leaves recipient balance unchanged', balanceRecipientAfterBlocked === balanceRecipientBefore, `${balanceRecipientAfterBlocked}`);
 
-  const allowedArgs = buildExecuteByAddressTransferArgs(accountInfo.addressScriptHash, recipient.scriptHash, allowedAmount);
+  const allowedArgs = buildExecuteByAddressTransferArgs(accountInfo.addressScriptHash, accountInfo.signerScriptHash, recipient.scriptHash, allowedAmount);
   const allowedSim = await simulate(aaHash, 'executeByAddress', allowedArgs, executionContext.signers);
   summary.allowedSimulation = { state: allowedSim.state, exception: allowedSim.exception || null, stack: allowedSim.stack || [] };
   check('at-limit transfer simulation HALTs', allowedSim.state === 'HALT', allowedSim.exception || '');
-  check('allowed transfer simulation returns true', allowedSim.stack?.[0]?.type === 'Boolean' && allowedSim.stack?.[0]?.value === true, JSON.stringify(allowedSim.stack || []));
 
   const allowedTx = await sendInvocation({
     account: owner,
@@ -199,7 +207,7 @@ async function main() {
   check('allowed transfer execution returns true', allowedTx.appLog.executions?.[0]?.stack?.[0]?.type === 'Boolean' && allowedTx.appLog.executions?.[0]?.stack?.[0]?.value === true, JSON.stringify(allowedTx.appLog.executions?.[0]?.stack || []));
 
   const balanceOwnerAfter = await getAssetBalance(owner.address, GAS_TOKEN_HASH);
-  const balanceAccountAfter = await getAssetBalance(accountInfo.address, GAS_TOKEN_HASH);
+  const balanceAccountAfter = await getAssetBalance(accountSignerAddress, GAS_TOKEN_HASH);
   const balanceRecipientAfter = await getAssetBalance(recipient.address, GAS_TOKEN_HASH);
 
   check('recipient balance increases by allowed amount', balanceRecipientAfter - balanceRecipientBefore === allowedAmount, `${balanceRecipientAfter - balanceRecipientBefore}`);

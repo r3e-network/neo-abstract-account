@@ -38,7 +38,7 @@ export function useStudioController() {
   const toast = useToast();
 
   const tabs = STUDIO_TABS;
-  const activePanel = ref('create');
+  const activePanel = ref('operations');
 
   const isCreating = ref(false);
   const copied = ref(false);

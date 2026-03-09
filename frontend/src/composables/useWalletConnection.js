@@ -13,6 +13,8 @@ export function useWalletConnection() {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   });
 
+  const availableWalletModes = computed(() => walletService.getAvailableWalletModes());
+
   async function connect() {
     try {
       const { address } = await walletService.connect();
@@ -28,10 +30,24 @@ export function useWalletConnection() {
     toast.info('Wallet disconnected.');
   }
 
+  async function connectEvm() {
+    try {
+      const { address } = await walletService.connectEvm();
+      toast.success(`EVM wallet connected: ${address}`);
+      return { address };
+    } catch (err) {
+      console.error(err);
+      toast.error(`EVM connect failed: ${err?.message || err}`);
+      throw err;
+    }
+  }
+
   return {
     isConnected,
     truncatedAddress,
+    availableWalletModes,
     connect,
+    connectEvm,
     disconnect
   };
 }

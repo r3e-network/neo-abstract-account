@@ -1,11 +1,9 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up">
     <div class="flex flex-col md:flex-row gap-8">
-      
-      <!-- Side Navigation -->
       <aside class="md:w-64 flex-shrink-0">
         <div class="sticky top-24 bg-white p-5 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60">
-          <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 px-2">Documentation</h3>
+          <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 px-2">{{ t('docs.heading', 'Documentation') }}</h3>
           <nav class="space-y-1">
             <button
               v-for="(doc, key) in docs"
@@ -24,26 +22,25 @@
         </div>
       </aside>
 
-      <!-- Main Content Area -->
       <main class="flex-1 min-w-0">
         <div class="prose prose-slate prose-neo max-w-none bg-white p-8 sm:p-12 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60 min-h-[600px]">
           <transition name="fade" mode="out-in" @after-enter="renderMermaidDiagrams">
-            <div :key="activeDoc">
+            <div :key="`${activeDoc}:${locale.value}`">
               <div ref="contentRoot" v-html="compiledMarkdown" class="markdown-body custom-scrollbar"></div>
             </div>
           </transition>
         </div>
       </main>
-
     </div>
   </div>
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import 'highlight.js/styles/github-dark.css';
-import { DOCS, DEFAULT_DOC_KEY } from '@/features/docs/registry';
+import { DEFAULT_DOC_KEY, getDocsForLocale } from '@/features/docs/registry';
 import { sanitizeRenderedHtml } from '@/features/docs/rendering';
+import { useI18n } from '@/i18n';
 
 let docsRuntimePromise;
 
@@ -111,8 +108,8 @@ async function getDocsRuntime() {
   return docsRuntimePromise;
 }
 
-const docs = DOCS;
-
+const { locale, t } = useI18n();
+const docs = computed(() => getDocsForLocale(locale.value));
 const activeDoc = ref(DEFAULT_DOC_KEY);
 const compiledMarkdown = ref('');
 const contentRoot = ref(null);
@@ -137,7 +134,7 @@ async function renderMermaidDiagrams() {
 const renderMarkdown = async (key) => {
   try {
     const { marked } = await getDocsRuntime();
-    const rawContent = docs[key]?.content || '# 404 Not Found';
+    const rawContent = docs.value[key]?.content || '# 404 Not Found';
     const rendered = await marked.parse(rawContent);
     compiledMarkdown.value = sanitizeRenderedHtml(rendered);
     await nextTick();
@@ -145,14 +142,13 @@ const renderMarkdown = async (key) => {
       hasInitialMermaidRender.value = true;
       await renderMermaidDiagrams();
     }
-
   } catch (err) {
     console.error('Failed to load markdown', err);
     compiledMarkdown.value = '<p class="text-red-500">Documentation failed to load.</p>';
   }
 };
 
-watch(activeDoc, (newKey) => {
+watch(() => [activeDoc.value, locale.value], ([newKey]) => {
   void renderMarkdown(newKey);
 }, { immediate: true });
 </script>
@@ -209,8 +205,6 @@ watch(activeDoc, (newKey) => {
 .markdown-body strong {
   color: #1e293b;
 }
-
-/* Custom fade transition for doc switching */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;

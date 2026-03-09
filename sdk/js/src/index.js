@@ -14,6 +14,24 @@ class AbstractAccountClient {
     this.masterContractHash = sanitizeHex(masterContractHash);
   }
 
+  buildVerifyScript(accountIdHex) {
+    const normalizedAccountId = sanitizeHex(accountIdHex);
+    const byteLength = normalizedAccountId.length / 2;
+    if (!Number.isInteger(byteLength) || byteLength < 0 || byteLength > 255) {
+      throw new Error(`Invalid accountId hex length: ${normalizedAccountId.length}`);
+    }
+
+    return [
+      '0c',
+      byteLength.toString(16).padStart(2, '0'),
+      normalizedAccountId,
+      '11c01f0c06766572696679',
+      '0c14',
+      sanitizeHex(u.reverseHex(this.masterContractHash)),
+      '41627d5b52',
+    ].join('');
+  }
+
   /**
    * Derive an Abstract Account Neo address from an EVM public key.
    */
@@ -21,12 +39,8 @@ class AbstractAccountClient {
     let pubKeyHex = uncompressedPubKey;
     if (pubKeyHex.startsWith('0x')) pubKeyHex = pubKeyHex.slice(2);
 
-    const verifyScript = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'verify',
-      args: [sc.ContractParam.byteArray(u.HexString.fromHex(pubKeyHex, false))],
-    });
-    const scriptHash = u.reverseHex(u.hash160(verifyScript));
+    const verifyScript = this.buildVerifyScript(pubKeyHex);
+    const scriptHash = sanitizeHex(u.hash160(verifyScript));
     return wallet.getAddressFromScriptHash(scriptHash);
   }
 
@@ -45,18 +59,14 @@ class AbstractAccountClient {
     const adminsParam = admins.map((addr) => ({ type: 'Hash160', value: normalizeAddress(addr) }));
     const managersParam = managers.map((addr) => ({ type: 'Hash160', value: normalizeAddress(addr) }));
 
-    const verifyScript = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'verify',
-      args: [sc.ContractParam.byteArray(u.HexString.fromHex(accountIdHex, false))],
-    });
-    const computedAddressScriptHash = u.reverseHex(u.hash160(verifyScript));
+    const verifyScript = this.buildVerifyScript(accountIdHex);
+    const computedAddressScriptHash = sanitizeHex(u.hash160(verifyScript));
 
     return {
       scriptHash: this.masterContractHash,
       operation: 'createAccountWithAddress',
       args: [
-        sc.ContractParam.byteArray(accountIdHex),
+        sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(accountIdHex), true)),
         sc.ContractParam.hash160(computedAddressScriptHash),
         sc.ContractParam.array(...adminsParam.map((p) => sc.ContractParam.hash160(p.value))),
         sc.ContractParam.integer(adminThreshold),

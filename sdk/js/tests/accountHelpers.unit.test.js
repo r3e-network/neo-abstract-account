@@ -24,102 +24,29 @@ test('randomAccountIdHex uses crypto.randomBytes and hex encoding', () => {
         return Buffer.from('00112233445566778899aabbccddeeff', 'hex');
       },
     },
-    sc: {},
     u: {},
     wallet: {},
     sanitizeHex: (value) => value,
-    cpByteArray: (value) => value,
   });
 
   assert.equal(randomAccountIdHex(16), '00112233445566778899aabbccddeeff');
   assert.deepEqual(calls, [16]);
 });
 
-test('deriveAaAddressFromId builds the verify script and derived address', () => {
+test('deriveAaAddressFromId builds the raw-byte verify script and derived address', () => {
   const calls = [];
   const { bindAccountHelpers } = loadAccountModule();
   const { deriveAaAddressFromId } = bindAccountHelpers({
     crypto: { randomBytes() { throw new Error('not used'); } },
-    sc: {
-      createScript(input) {
-        calls.push(['createScript', input]);
-        return 'verify-script';
-      },
-    },
     u: {
-      hash160(script) {
-        calls.push(['hash160', script]);
-        return '0123456789abcdef';
-      },
       reverseHex(value) {
         calls.push(['reverseHex', value]);
-        return 'fedcba9876543210';
-      },
-    },
-    wallet: {
-      getAddressFromScriptHash(value) {
-        calls.push(['getAddressFromScriptHash', value]);
-        return `neo:${value}`;
-      },
-    },
-    sanitizeHex(value) {
-      calls.push(['sanitizeHex', value]);
-      return `clean:${value}`;
-    },
-    cpByteArray(value) {
-      calls.push(['cpByteArray', value]);
-      return `bytes:${value}`;
-    },
-  });
-
-  const result = deriveAaAddressFromId('aa-hash', 'beef');
-  assert.deepEqual(result, {
-    verificationScript: 'verify-script',
-    addressScriptHash: 'clean:fedcba9876543210',
-    address: 'neo:clean:fedcba9876543210',
-  });
-  assert.deepEqual(calls, [
-    ['cpByteArray', 'beef'],
-    ['createScript', { scriptHash: 'aa-hash', operation: 'verify', args: ['bytes:beef'] }],
-    ['hash160', 'verify-script'],
-    ['reverseHex', '0123456789abcdef'],
-    ['sanitizeHex', 'fedcba9876543210'],
-    ['getAddressFromScriptHash', 'clean:fedcba9876543210'],
-  ]);
-});
-
-test('deriveAaAddressFromId falls back to a default byte-array builder when cpByteArray is omitted', () => {
-  const calls = [];
-  const { bindAccountHelpers } = loadAccountModule();
-  const { deriveAaAddressFromId } = bindAccountHelpers({
-    crypto: { randomBytes() { throw new Error('not used'); } },
-    sc: {
-      ContractParam: {
-        byteArray(value) {
-          calls.push(['byteArray', value]);
-          return `param:${value}`;
-        },
-      },
-      createScript(input) {
-        calls.push(['createScript', input]);
-        return 'verify-script';
-      },
-    },
-    u: {
-      HexString: {
-        fromHex(value, littleEndian) {
-          calls.push(['fromHex', value, littleEndian]);
-          return `hex:${value}:${littleEndian}`;
-        },
+        return '44332211';
       },
       hash160(script) {
         calls.push(['hash160', script]);
         return '0011223344556677';
       },
-      reverseHex(value) {
-        calls.push(['reverseHex', value]);
-        return '7766554433221100';
-      },
     },
     wallet: {
       getAddressFromScriptHash(value) {
@@ -129,24 +56,53 @@ test('deriveAaAddressFromId falls back to a default byte-array builder when cpBy
     },
     sanitizeHex(value) {
       calls.push(['sanitizeHex', value]);
-      return value.replace(/^0x/i, '').toLowerCase();
+      return String(value).replace(/^0x/i, '').toLowerCase();
     },
   });
 
-  const result = deriveAaAddressFromId('aa-hash', '0xBEEF');
+  const result = deriveAaAddressFromId('0x11223344', '0xBEEF');
   assert.deepEqual(result, {
-    verificationScript: 'verify-script',
-    addressScriptHash: '7766554433221100',
-    address: 'neo:7766554433221100',
+    verificationScript: '0c02beef11c01f0c067665726966790c144433221141627d5b52',
+    addressScriptHash: '0011223344556677',
+    signerScriptHash: '44332211',
+    address: 'neo:0011223344556677',
   });
   assert.deepEqual(calls, [
+    ['sanitizeHex', '0x11223344'],
     ['sanitizeHex', '0xBEEF'],
-    ['fromHex', 'beef', false],
-    ['byteArray', 'hex:beef:false'],
-    ['createScript', { scriptHash: 'aa-hash', operation: 'verify', args: ['param:hex:beef:false'] }],
-    ['hash160', 'verify-script'],
+    ['reverseHex', '11223344'],
+    ['sanitizeHex', '44332211'],
+    ['hash160', '0c02beef11c01f0c067665726966790c144433221141627d5b52'],
+    ['sanitizeHex', '0011223344556677'],
     ['reverseHex', '0011223344556677'],
-    ['sanitizeHex', '7766554433221100'],
-    ['getAddressFromScriptHash', '7766554433221100'],
+    ['sanitizeHex', '44332211'],
+    ['getAddressFromScriptHash', '0011223344556677'],
   ]);
+});
+
+test('deriveAaAddressFromId preserves raw accountId byte order in the verify script', () => {
+  const { bindAccountHelpers } = loadAccountModule();
+  const { deriveAaAddressFromId } = bindAccountHelpers({
+    crypto: { randomBytes() { throw new Error('not used'); } },
+    u: {
+      reverseHex(value) {
+        return value;
+      },
+      hash160(script) {
+        return script;
+      },
+    },
+    wallet: {
+      getAddressFromScriptHash(value) {
+        return value;
+      },
+    },
+    sanitizeHex(value) {
+      return String(value).replace(/^0x/i, '').toLowerCase();
+    },
+  });
+
+  const result = deriveAaAddressFromId('aa55', '10203040');
+  assert.match(result.verificationScript, /^0c0410203040/);
+  assert.doesNotMatch(result.verificationScript, /^0c0440302010/);
 });

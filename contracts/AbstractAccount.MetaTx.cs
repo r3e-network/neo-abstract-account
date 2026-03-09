@@ -8,6 +8,9 @@ using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
 {
+    // Meta-transaction helpers bridge Ethereum-style EIP-712 signatures into the same AA permission engine used by
+    // native Neo witnesses. The recovered addresses are treated as signer identities, then checked against the stored
+    // admin / manager / dome quorums before the downstream contract call is dispatched.
     public partial class UnifiedSmartWallet
     {
         private static byte[] GetNonceKey(ByteString accountId)
@@ -15,12 +18,20 @@ namespace AbstractAccount
             return Helper.Concat(NoncePrefix, GetStorageKey(accountId));
         }
 
+        /// <summary>
+        /// Returns the current account-scoped meta-transaction nonce for the provided signer-style identifier. In this
+        /// contract the nonce is intentionally stored per account, not per recovered signer, to block signer-set replay.
+        /// </summary>
         [Safe]
         public static BigInteger GetNonce(UInt160 signer)
         {
             return GetNonceForAccount((ByteString)signer, signer);
         }
 
+        /// <summary>
+        /// Returns the current meta-transaction nonce for a logical account. The <paramref name="signer"/> parameter is
+        /// kept for API compatibility, but the stored nonce is account-scoped.
+        /// </summary>
         [Safe]
         public static BigInteger GetNonceForAccount(ByteString accountId, UInt160 signer)
         {
@@ -43,6 +54,10 @@ namespace AbstractAccount
             Storage.Put(Storage.CurrentContext, key, current + 1);
         }
 
+        /// <summary>
+        /// Serializes the contract-call arguments exactly the way the contract expects and returns their Keccak-256 hash.
+        /// Frontends and relayers should use this helper so their typed-data payload matches on-chain verification.
+        /// </summary>
         [Safe]
         public static ByteString ComputeArgsHash(object[] args)
         {
@@ -50,6 +65,10 @@ namespace AbstractAccount
             return CryptoLib.Keccak256((ByteString)argsSerialized);
         }
 
+        /// <summary>
+        /// EIP-712 execution path addressed by logical account id. The recovered Ethereum addresses are converted into a
+        /// temporary signer set, then authorized against the same stored roles and policies as native execution.
+        /// </summary>
         public static object ExecuteMetaTx(
             ByteString accountId,
             Neo.SmartContract.Framework.List<ByteString> uncompressedPubKeys,
@@ -64,6 +83,10 @@ namespace AbstractAccount
             return ExecuteMetaTxInternal(accountId, uncompressedPubKeys, targetContract, method, args, argsHash, nonce, deadline, signatures);
         }
 
+        /// <summary>
+        /// Address-based convenience wrapper for ExecuteMetaTx. This is the common route used by the relay/front-end once
+        /// the account has been bound to its deterministic proxy address.
+        /// </summary>
         public static object ExecuteMetaTxByAddress(
             UInt160 accountAddress,
             Neo.SmartContract.Framework.List<ByteString> uncompressedPubKeys,
@@ -91,6 +114,7 @@ namespace AbstractAccount
             Neo.SmartContract.Framework.List<ByteString> signatures)
         {
             AssertAccountExists(accountId);
+            // Validate the raw signer material before any expensive signature checks.
             ExecutionEngine.Assert(uncompressedPubKeys != null && signatures != null, "Missing signers");
             Neo.SmartContract.Framework.List<ByteString> signerPubKeys = uncompressedPubKeys!;
             Neo.SmartContract.Framework.List<ByteString> signerSignatures = signatures!;
@@ -101,7 +125,8 @@ namespace AbstractAccount
             BigInteger normalizedDeadline = NormalizeDeadlineToMs(deadline);
             ExecutionEngine.Assert((BigInteger)Runtime.Time <= normalizedDeadline, "Signature expired");
 
-            // Replay protection is account-scoped to prevent signer-order/signer-selection replays.
+            // Replay protection is account-scoped to prevent signer-order/signer-selection replays. A previously used
+            // nonce cannot be replayed by swapping one valid signer for another inside the same quorum.
             BigInteger currentNonce = GetNonceForAccount(accountId, UInt160.Zero);
             ExecutionEngine.Assert(nonce == currentNonce, "Invalid Nonce");
 
@@ -109,6 +134,7 @@ namespace AbstractAccount
             byte[] expectedArgsHash = (byte[])ComputeArgsHash(args);
             ExecutionEngine.Assert(ByteArrayEquals(providedArgsHash, expectedArgsHash), "Args hash mismatch");
 
+            // Rebuild the exact EIP-712 digest that the frontend/relayer signed: domain separator + struct hash.
             byte[] domainSeparator = BuildDomainSeparator(Runtime.GetNetwork(), Runtime.ExecutingScriptHash);
             byte[] structHash = BuildMetaTxStructHash(accountId, targetContract, method, expectedArgsHash, nonce, deadline);
             byte[] typedDataPayload = ConcatBytes(new byte[] { 0x19, 0x01 }, domainSeparator, structHash);
@@ -130,10 +156,12 @@ namespace AbstractAccount
                 recoveredSigners[i] = DeriveEthAddress(signerPubKeys[i]);
             }
 
+            // Consume the nonce before dispatch so a nested or replayed execution cannot reuse the same signed payload.
             IncrementNonce(accountId);
             CheckPermissionsAndExecute(accountId, recoveredSigners, targetContract, method, args);
 
-            // Scope authenticated signer by account for this execution path.
+            // Scope the recovered signer set and verify target to this single execution path only. Admin/oracle helpers
+            // can consult that context during internal self-calls, but it is cleared immediately afterward.
             EnterExecution(accountId);
             SetMetaTxContext(accountId, recoveredSigners);
             SetVerifyContext(accountId, targetContract);

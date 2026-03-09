@@ -59,7 +59,7 @@ async function main() {
     aaHash,
     operation: 'createAccountWithAddress',
     args: [
-      sc.ContractParam.byteArray(u.HexString.fromHex(accountId, false)),
+      sc.ContractParam.byteArray(u.HexString.fromHex(accountId, true)),
       sc.ContractParam.hash160(accountInfo.addressScriptHash),
       sc.ContractParam.array(sc.ContractParam.hash160(sanitizeHex(account.scriptHash))),
       sc.ContractParam.integer(1),
@@ -88,10 +88,10 @@ async function main() {
   const getAddrRes = await invokeRead(
     aaHash,
     'getAccountAddress',
-    [sc.ContractParam.byteArray(u.HexString.fromHex(accountId, false))]
+    [sc.ContractParam.byteArray(u.HexString.fromHex(accountId, true))]
   );
   const resolvedAccountAddressHash = decodeByteStringToHex(getAddrRes.stack[0]);
-  const normalizedResolvedAccountId = normalizeReadByteString(resolvedAccountId);
+  const normalizedResolvedAccountId = sanitizeHex(resolvedAccountId);
   const normalizedResolvedAccountAddressHash = normalizeReadByteString(resolvedAccountAddressHash);
 
   const adminsAfterRes = await invokeRead(

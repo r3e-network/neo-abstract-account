@@ -39,6 +39,7 @@ test('custom verifier validator exists and uses deploy plus invocation helpers',
   assert.match(source, /normalizeReadByteString/);
   assert.match(source, /setWhitelistModeByAddress/);
   assert.match(source, /executeByAddress/);
+  assert.match(source, /executeByAddress self getNonce via custom verifier/);
 });
 
 test('custom verifier validator is exposed via sdk package scripts', () => {

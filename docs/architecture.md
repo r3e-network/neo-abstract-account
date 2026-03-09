@@ -1,125 +1,124 @@
 # Neo N3 Abstract Account Architecture
 
-## 1. Description & Overview
+The Neo N3 Abstract Account system is a **policy-gated** smart contract wallet architecture. It decouples a user's logical account identity from any single signing key while still preserving a deterministic Neo address and a strict execution boundary.
 
-The Neo N3 Abstract Account protocol is a robust, enterprise-grade smart contract wallet standard designed to decouple account identities from their underlying cryptographic key pairs. Conceptually similar to Ethereum's ERC-4337, this architecture transforms standard accounts into policy-gated programmable wallets.
+## 1. Component Map
 
-By transitioning from standard ECDSA signatures to deterministic proxy contracts, developers and users can implement advanced multi-signature structures, EVM cross-chain execution capabilities, social recovery mechanisms, and fine-grained operational limits without sacrificing user experience.
+The system has one shared execution engine and several supporting boundaries around it.
 
----
+```mermaid
+flowchart LR
+  User[User / Signer / Operator]
+  Browser[Frontend Workspace]
+  Wallet[Neo Wallet or EVM Wallet]
+  Drafts[Local Store / Supabase Draft Store]
+  Relay[Optional Relay + Signed Operator APIs]
+  Master[UnifiedSmartWallet Master Contract]
+  Target[Target Contract]
+  Oracle[Optional Dome Oracle]
 
-## 2. Core Architecture & How It Works
-
-The architecture relies on a singular **Master Entry Contract** that acts as an immutable factory and gateway proxy for all user accounts.
-
-When a user "creates" an abstract account, no new smart contract is deployed on-chain. Instead, a lightweight **Deterministic Proxy Address** is derived mathematically using the Master Entry Contract hash and a unique, user-provided `Account ID` (which can be a UUID, an EVM public key, or any arbitrary byte array). 
-
-This proxy address acts as the public face of the wallet. When the Neo N3 Virtual Machine triggers the `Verify` step for a transaction originating from this proxy address, the network intercepts the call and forwards the verification context to the Master Entry Contract. The Master Contract then queries its internal storage for the specific `Account ID`'s predefined ruleset (Admins, Managers, Custom Verifiers) to determine if the transaction signature is valid.
-
-As of the March 6, 2026 proxy-hardening update, proxy witness verification is additionally restricted to transaction scripts whose top-level payload is a single self-call back into the Master Entry Contract. This means raw external token transfers signed only by the deterministic proxy are rejected, and external interactions must flow through `execute`, `executeByAddress`, `executeMetaTx`, or related AA entrypoints where whitelist, blacklist, and max-transfer checks are enforced.
-
-This hardening path was verified twice on Neo N3 testnet on March 6, 2026: first on the hardened deployment `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423`, and again on a freshly deployed and then really updated instance `0x171359751dee7f56ea633586bd070a51c8d60e9c` (deploy tx `0x6ed39853b92ace9bf1a87e0b295aeb8455dd987c391a62c6ec28ef25ed9a9c54`, update tx `0x3390f58a10e2aed726d6b414c57eaf59f92216eed44b825f230cd48f57d77b9e`). In both cases, the full live validator suite passed and direct proxy-signed external spends were rejected while wrapper execution through AA entrypoints remained functional.
-
-This yields two massive benefits:
-1. **Zero Deployment Cost:** Users do not pay GAS to instantiate new smart contract logic.
-2. **Upgradability & Universality:** All accounts share the same highly audited logic, but isolate their distinct permissions and storage state securely.
-
----
-
-## 3. Account Configuration & Capabilities
-
-The protocol supports extensive configurations to meet the security needs of individuals, DAOs, and exchanges.
-
-### Role-Based Access Control (RBAC)
-The core system implements an Admin and Manager paradigm:
-- **Admins:** High-privilege actors capable of updating governance thresholds, modifying whitelists/blacklists, and altering structural configurations. 
-- **Managers:** Operational actors capable of performing day-to-day contract interactions and token transfers within the hardened method-policy surface. They cannot alter the structural configuration.
-- **Thresholds:** Both roles have distinct, customizable multisig thresholds requiring an `M-of-N` signature consensus to execute actions.
-
-### Granular Execution Limits
-To mitigate attack vectors on compromised Manager keys, Admins can enforce strict operational boundaries:
-- **Global Whitelists:** The account can be locked down so it can only interact with explicitly approved smart contract hashes.
-- **Global Blacklists:** Specific malicious or deprecate contracts can be blocked universally.
-- **Token Transfer Limits:** Administrators can enforce a hard maximum on the amount of a specific token (e.g., NEO, GAS) that can be moved in a single transaction.
-
-### EIP-712 Meta-Transactions
-The protocol natively understands EVM-standard cryptography (Secp256k1 + Keccak256). The Master gateway can deserialize standard EIP-712 `MetaTransaction` payloads. This allows dApp developers to onboard users strictly via MetaMask or WalletConnect—completely removing the friction of requiring a native Neo N3 wallet extension.
-
----
-
-## 4. Dome Social Recovery Network
-
-The "Dome" is a built-in social recovery network designed to restore access if primary Admin keys are lost or compromised. 
-
-Instead of relying on a centralized custodian, users define a list of trusted **Dome Accounts** (friends, secondary hardware wallets, legal entities). To prevent these actors from arbitrarily assuming control, the protocol enforces strict temporal constraints.
-
-1. **Inactivity Timeout:** Admins configure a `Timeout` value in seconds. The Dome network is completely locked out of the contract while the account is active.
-2. **Time Decay:** Every time an Admin or Manager executes a valid transaction, the inactivity timer resets.
-3. **Activation:** If the timeout period elapses with zero activity, the Dome threshold criteria becomes valid, allowing the trusted actors to issue an emergency operation to reset the Admin keys.
-4. **Oracle Integration (Optional):** Admins can specify a web endpoint (`DomeOracleUrl`). Upon timeout, the Dome network must also receive a cryptographic signature from this external Oracle confirming that external real-world conditions (e.g., KYC verifications or legal proceedings) have been met before unlocking the proxy.
-
----
-
-## 5. Custom Verifiers (Pluggable Authorization)
-
-While the default Role and Dome structures cover 95% of use cases, the Neo Abstract Account protocol is designed to be infinitely extensible. 
-
-Users can bypass the standard `M-of-N` signature logic by assigning a **Custom Verifier Contract**. When assigned, the Master Entry Contract defers authorization checks to this custom logic before continuing through the same policy-gated execution pipeline. Custom verifiers do **not** bypass method policy, whitelist / blacklist checks, or max-transfer enforcement.
-
-### How to Build a Custom Verifier
-
-To create a custom verifier, developers must write and deploy a standard Neo smart contract. The contract must expose the following exact interface signature:
-
-```csharp
-using Neo;
-using Neo.SmartContract.Framework;
-
-namespace MyCustomVerifier 
-{
-    public class CustomVerifierContract : SmartContract
-    {
-        // The method MUST be named "verify" and accept a single ByteString argument
-        public static bool verify(ByteString accountId)
-        {
-            // Extract the transaction and signers
-            var tx = (Transaction)Runtime.Transaction;
-            
-            // ... implement custom authorization logic ...
-            // Examples:
-            // 1. Check if the current time is between 9 AM and 5 PM
-            // 2. Validate a ZK-SNARK proof passed via transaction attributes
-            // 3. Inspect Runtime.Transaction and related state before approving
-            
-            // Return true if authorized, false to reject
-            return true; 
-        }
-    }
-}
+  User --> Browser
+  Browser --> Wallet
+  Browser --> Drafts
+  Browser --> Relay
+  Browser --> Master
+  Relay --> Master
+  Master --> Target
+  Oracle --> Master
 ```
 
-### How to Bind a Custom Verifier
+### Why this shape exists
 
-Once your custom verifier contract is deployed to the Neo N3 network, you must bind it to your Abstract Account. This can only be done by an existing `Admin` of the account.
+- **No per-user contract deployment:** users do not pay to deploy unique wallet logic
+- **Deterministic addressing:** each logical account still has a stable verify address
+- **Centralized enforcement:** every supported path runs through the same permission engine
+- **Optional off-chain helpers:** draft sharing and relay APIs improve UX without redefining on-chain authority
 
-Using the Frontend Studio:
-1. Navigate to the **Permissions & Limits** tab.
-2. Locate the **Custom Verifier Contract** panel.
-3. Input the Script Hash (e.g., `0xabc123...`) of your deployed verifier contract.
-4. Click **Set Custom Verifier** and approve the transaction.
+## 2. Deterministic Addressing
 
-Using the SDK:
-```javascript
-const payload = {
-  scriptHash: masterContractHash,
-  operation: 'setVerifierContractByAddress',
-  args: [
-    sc.ContractParam.hash160(myAbstractAccountAddress),
-    sc.ContractParam.hash160(myCustomVerifierScriptHash)
-  ]
-};
+When a user creates an account, no new contract is deployed. Instead, the system derives a deterministic verify script from the master contract hash plus `accountId`, and the resulting script hash becomes the public Neo address for that account.
 
-// Sign and invoke using the Admin's wallet
-await walletService.invoke(payload);
+That address is the user's stable entry point, but verification always routes back into the master contract.
+
+## 3. Verification Pipeline
+
+The verification phase decides whether the transaction is allowed to act as the abstract account.
+
+```mermaid
+flowchart TD
+  Start[Tx hits Neo node] --> Verify[Node triggers verify(accountId)]
+  Verify --> Context[Master contract rebuilds account context]
+  Context --> SelfCall{Top-level script is an AA self-call?}
+  SelfCall -- No --> Reject1[Reject hardened proxy misuse]
+  SelfCall -- Yes --> Auth{Auth path passes?}
+  Auth -- No --> Reject2[Reject unauthorized signer / verifier result]
+  Auth -- Yes --> Pass[Verification succeeds]
 ```
 
-To remove a custom verifier and fallback to the native role-based logic, simply update the verifier configuration with an empty hash (`0x0000000000000000000000000000000000000000`).
+The hardened rule is important: direct proxy-signed external token transfers are rejected. Supported entrypoints are the AA wrapper methods such as `execute`, `executeByAddress`, `executeMetaTx`, and `executeMetaTxByAddress`.
+
+## 4. Application Execution Pipeline
+
+After verification succeeds, the AA contract still has to enforce the execution policy before calling any external target.
+
+```mermaid
+flowchart TD
+  Entry[AA wrapper entrypoint] --> Load[Load account roles and policy state]
+  Load --> RoleCheck{Threshold / verifier satisfied?}
+  RoleCheck -- No --> RejectA[Abort unauthorized call]
+  RoleCheck -- Yes --> DomeCheck{Dome / oracle constraints satisfied?}
+  DomeCheck -- No --> RejectB[Abort recovery constraint failure]
+  DomeCheck -- Yes --> PolicyCheck{Whitelist / blacklist / method policy OK?}
+  PolicyCheck -- No --> RejectC[Abort policy violation]
+  PolicyCheck -- Yes --> LimitCheck{Transfer limit OK?}
+  LimitCheck -- No --> RejectD[Abort amount violation]
+  LimitCheck -- Yes --> CallTarget[Contract.Call target]
+  CallTarget --> Return[Return result to caller]
+```
+
+This is why the design is safer than a raw proxy witness alone: the application phase is where the contract can enforce policy-gated execution.
+
+## 5. Contract File Map
+
+The implementation is split into focused contract files:
+
+| File | Responsibility |
+| --- | --- |
+| `contracts/AbstractAccount.cs` | Top-level entrypoints, shared types, and integration glue |
+| `contracts/AbstractAccount.AccountLifecycle.cs` | Account creation, address binding, and lifecycle state |
+| `contracts/AbstractAccount.StorageAndContext.cs` | Storage-key normalization, execution lock handling, and transient call context |
+| `contracts/AbstractAccount.ExecutionAndPermissions.cs` | Core execution path plus whitelist / blacklist / transfer-limit checks |
+| `contracts/AbstractAccount.MetaTx.cs` | EIP-712 meta-transaction verification and signer recovery |
+| `contracts/AbstractAccount.Admin.cs` | Admin / manager role mutation, thresholds, and governance operations |
+| `contracts/AbstractAccount.Oracle.cs` | Dome oracle request, callback, and unlock logic |
+| `contracts/AbstractAccount.Upgrade.cs` | Deployer-only update path |
+
+## 6. Authorization Modes
+
+The contract supports several ways to authorize an action, but they all converge into the same protected execution path:
+
+- **Native Neo signers** using admin / manager threshold logic
+- **Custom verifier contracts** for pluggable authorization logic
+- **EVM EIP-712 signatures** for `executeMetaTx` and `executeMetaTxByAddress`
+- **Dome recovery actors** once inactivity and optional oracle conditions are satisfied
+
+Custom verifiers extend authorization, but they do **not** bypass whitelist, blacklist, method policy, or max-transfer enforcement.
+
+## 7. Recovery and Extensibility
+
+The architecture also includes optional recovery and extension surfaces:
+
+- **Dome recovery** for inactivity-based social recovery
+- **Oracle gating** for extra real-world unlock conditions
+- **Custom verifiers** for bespoke authorization logic
+- **Relay-ready meta flows** for EVM-first user experiences
+
+## 8. Security Invariants
+
+The most important invariants to remember are:
+
+1. The deterministic proxy does not replace the master contract; it routes into it.
+2. The verification phase and the application phase are separate, and both matter.
+3. Direct proxy-signed external spends are intentionally blocked.
+4. Shared drafts are collaboration tools, not permission bypasses.
+5. Every production path remains bound to the same on-chain policy engine.

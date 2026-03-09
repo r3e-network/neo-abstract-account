@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@highlightjs/vue-plugin": "^2.1.0",
+    "@supabase/supabase-js": "^2.98.0",
     "ethers": "^6.11.1",
     "highlight.js": "^11.11.1",
     "marked": "^17.0.4",

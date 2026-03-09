@@ -104,3 +104,43 @@ test('getNetworkMagic falls back to getversion query and uses the provided error
   );
   assert.deepEqual(calls, [{ method: 'getversion' }]);
 });
+
+
+test('invokeRead retries transient network errors before succeeding', async () => {
+  let attempts = 0;
+  const rpcClient = {
+    async invokeScript() {
+      attempts += 1;
+      if (attempts < 3) {
+        const error = new Error('socket disconnected');
+        error.code = 'ECONNRESET';
+        throw error;
+      }
+      return { state: 'HALT', stack: [{ type: 'Integer', value: '1' }] };
+    },
+  };
+  const sc = { createScript: () => 'bead' };
+  const u = { HexString: { fromHex: (value) => value } };
+
+  const result = await invokeRead({ rpcClient, sc, u, scriptHash: 'aa', operation: 'retryOp' });
+  assert.equal(result.state, 'HALT');
+  assert.equal(attempts, 3);
+});
+
+test('getNetworkMagic retries transient getVersion failures', async () => {
+  let attempts = 0;
+  const rpcClient = {
+    async getVersion() {
+      attempts += 1;
+      if (attempts < 3) {
+        const error = new Error('tls reset');
+        error.code = 'ECONNRESET';
+        throw error;
+      }
+      return { protocol: { network: 894710606 } };
+    },
+  };
+
+  assert.equal(await getNetworkMagic({ rpcClient }), 894710606);
+  assert.equal(attempts, 3);
+});

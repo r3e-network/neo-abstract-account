@@ -1,23 +1,73 @@
 # Core Architecture
 
-The Neo N3 Abstract Account protocol heavily leverages the native capabilities of the Neo Virtual Machine, particularly its concept of dynamic **Verification Scripts**. 
+This page mirrors the repository architecture explainer so the frontend docs bundle has a clear component-level view of the system.
 
-The architecture relies on a singular **Master Entry Contract** that acts as an immutable factory and gateway proxy for all user accounts.
+## 1. Component Map
 
-When a user "creates" an abstract account, no new smart contract is deployed on-chain. Instead, a lightweight **Deterministic Proxy Address** is derived mathematically using the Master Entry Contract hash and a unique, user-provided `Account ID` (which can be a UUID, an EVM public key, or any arbitrary byte array). 
+```mermaid
+flowchart LR
+  User[User / Signer / Operator]
+  Browser[Frontend Workspace]
+  Wallet[Neo Wallet or EVM Wallet]
+  Drafts[Local Store / Supabase Draft Store]
+  Relay[Optional Relay + Signed Operator APIs]
+  Master[UnifiedSmartWallet Master Contract]
+  Target[Target Contract]
+  Oracle[Optional Dome Oracle]
 
-> **Important Highlight: How the Verification Script Works**  
-> On Neo N3, every account address is a base58 encoded hash of a compiled bytecode script. The Abstract Account generates this bytecode by constructing a script that simply invokes the `verify` operation on the Master Entry Contract, passing in the user's `accountId` as the only argument.
-> 
-> Because this small bytecode snippet is deterministic, the resulting hash (the Neo Address) is permanently linked to the Master Contract and the user's ID.
+  User --> Browser
+  Browser --> Wallet
+  Browser --> Drafts
+  Browser --> Relay
+  Browser --> Master
+  Relay --> Master
+  Master --> Target
+  Oracle --> Master
+```
 
-This proxy address acts as the public face of the wallet. When the Neo N3 Virtual Machine triggers the `Verify` step for a transaction originating from this proxy address, the network intercepts the call and forwards the verification context to the Master Entry Contract. 
+The Neo N3 Abstract Account system is a **policy-gated** smart contract wallet design with one shared execution engine and deterministic per-account verify addresses.
 
-The Master Contract then queries its internal storage for the specific `Account ID`'s predefined ruleset (Admins, Managers, Custom Verifiers) to determine if the transaction signature is valid.
+## 2. Verification Pipeline
 
-## Technical Benefits
-1. **Zero Deployment Cost:** Users do not pay GAS to instantiate new smart contract logic. Their configuration is merely stored within the Master's state.
-2. **Upgradability & Universality:** All accounts share the same highly audited logic but isolate their distinct permissions securely.
+```mermaid
+flowchart TD
+  Start[Tx hits Neo node] --> Verify[Node triggers verify(accountId)]
+  Verify --> Context[Master contract rebuilds account context]
+  Context --> SelfCall{Top-level script is an AA self-call?}
+  SelfCall -- No --> Reject1[Reject hardened proxy misuse]
+  SelfCall -- Yes --> Auth{Auth path passes?}
+  Auth -- No --> Reject2[Reject unauthorized signer / verifier result]
+  Auth -- Yes --> Pass[Verification succeeds]
+```
 
-## EIP-712 Meta-Transactions
-The protocol natively understands EVM-standard cryptography (Secp256k1 + Keccak256). The Master gateway can deserialize standard EIP-712 `MetaTransaction` payloads. This allows dApp developers to onboard users strictly via MetaMask or WalletConnect—completely removing the friction of requiring a native Neo N3 wallet extension.
+The hardened rule blocks direct proxy-signed external token transfers. Supported entrypoints include `executeByAddress`, `executeMetaTx`, and `executeMetaTxByAddress`.
+
+## 3. Application Execution Pipeline
+
+```mermaid
+flowchart TD
+  Entry[AA wrapper entrypoint] --> Load[Load account roles and policy state]
+  Load --> RoleCheck{Threshold / verifier satisfied?}
+  RoleCheck -- No --> RejectA[Abort unauthorized call]
+  RoleCheck -- Yes --> DomeCheck{Dome / oracle constraints satisfied?}
+  DomeCheck -- No --> RejectB[Abort recovery constraint failure]
+  DomeCheck -- Yes --> PolicyCheck{Whitelist / blacklist / method policy OK?}
+  PolicyCheck -- No --> RejectC[Abort policy violation]
+  PolicyCheck -- Yes --> LimitCheck{Transfer limit OK?}
+  LimitCheck -- No --> RejectD[Abort amount violation]
+  LimitCheck -- Yes --> CallTarget[Contract.Call target]
+  CallTarget --> Return[Return result to caller]
+```
+
+## 4. Contract File Map
+
+| File | Responsibility |
+| --- | --- |
+| `contracts/AbstractAccount.cs` | Top-level entrypoints and shared glue |
+| `contracts/AbstractAccount.AccountLifecycle.cs` | Account creation and address binding |
+| `contracts/AbstractAccount.StorageAndContext.cs` | Storage normalization and execution locks |
+| `contracts/AbstractAccount.ExecutionAndPermissions.cs` | Policy checks and target execution |
+| `contracts/AbstractAccount.MetaTx.cs` | EIP-712 verification and signer recovery |
+| `contracts/AbstractAccount.Admin.cs` | Role and threshold governance |
+| `contracts/AbstractAccount.Oracle.cs` | Dome oracle flow |
+| `contracts/AbstractAccount.Upgrade.cs` | Deployer-only update path |

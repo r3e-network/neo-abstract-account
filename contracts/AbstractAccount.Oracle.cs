@@ -7,8 +7,13 @@ using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
 {
+    // Dome/oracle helpers implement the inactivity-recovery flow. Dome signers cannot act immediately; they first wait
+    // for the configured timeout, then request an oracle callback, and only after a truthy oracle response does the
+    // dome signer path unlock for admin/execution actions.
     public partial class UnifiedSmartWallet
     {
+        // These prefixes store oracle configuration plus the last request/response diagnostics so operators can inspect
+        // why a dome activation succeeded or failed without replaying the request off-chain.
         private static readonly byte[] DomeOracleUrlPrefix = new byte[] { 0x20 };
         private static readonly byte[] DomeOracleUnlockPrefix = new byte[] { 0x21 };
         private static readonly byte[] DomeOracleRequestCounterPrefix = new byte[] { 0x22 };
@@ -93,6 +98,10 @@ namespace AbstractAccount
             return configuredValue.Substring(separatorIndex + 1);
         }
 
+        /// <summary>
+        /// Configures the oracle endpoint used to unlock dome signers after inactivity. The expected format is either a
+        /// raw URL or <c>url|filter</c> where the filter is passed through to Neo Oracle.
+        /// </summary>
         public static void SetDomeOracle(ByteString accountId, string url)
         {
             AssertIsAdmin(accountId);
@@ -115,9 +124,14 @@ namespace AbstractAccount
             SetDomeOracle(accountId, url);
         }
 
+        /// <summary>
+        /// Starts the dome unlock request after the inactivity timeout has elapsed. The oracle request is tracked on-
+        /// chain so the callback can verify request identity, URL match, and response truthiness.
+        /// </summary>
         public static void RequestDomeActivation(ByteString accountId)
         {
             AssertAccountExists(accountId);
+            AssertNoExternalMutationDuringExecution(accountId);
             AssertCanRequestDomeActivation(accountId);
 
             BigInteger timeout = GetDomeTimeout(accountId);
@@ -228,6 +242,10 @@ namespace AbstractAccount
             return true;
         }
 
+        /// <summary>
+        /// Oracle callback that records response diagnostics and unlocks the dome path only when the response came from
+        /// the expected URL and the returned payload is interpreted as a strict boolean true.
+        /// </summary>
         public static void DomeActivationCallback(string? url, object? userData, int responseCode, byte[]? result)
         {
             ExecutionEngine.Assert(Runtime.CallingScriptHash == Oracle.Hash, "Unauthorized");
@@ -289,6 +307,9 @@ namespace AbstractAccount
             pendingMap.Delete(key);
         }
 
+        /// <summary>
+        /// Returns the most recent oracle HTTP/status code recorded for this account's dome activation attempt.
+        /// </summary>
         [Safe]
         public static int GetLastDomeOracleResponseCode(ByteString accountId)
         {

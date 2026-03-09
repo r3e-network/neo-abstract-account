@@ -7,8 +7,13 @@ using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
 {
+    // Admin helpers mutate the durable account configuration: signer sets, thresholds, target policies, verifier
+    // hooks, and deterministic address binding. All of these methods eventually funnel through AssertIsAdmin so the
+    // same authorization rules apply to native, dome, and meta-transaction initiated configuration changes.
     public partial class UnifiedSmartWallet
     {
+        // An "admin-capable" caller can be: (1) a native admin quorum, (2) a dome signer after timeout + oracle
+        // unlock, or (3) a recovered meta-tx signer set carried through the temporary execution context.
         private static void AssertIsAdmin(ByteString accountId)
         {
             AssertAccountExists(accountId);
@@ -67,6 +72,10 @@ namespace AbstractAccount
             ExecutionEngine.Assert(false, "Unauthorized admin");
         }
 
+        /// <summary>
+        /// Replaces the admin signer set and threshold for the account. Admins are the highest-privilege group and can
+        /// reconfigure every other policy surface on the wallet.
+        /// </summary>
         public static void SetAdmins(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> admins, int threshold)
         {
             AssertIsAdmin(accountId);
@@ -92,6 +101,9 @@ namespace AbstractAccount
             OnRoleUpdated(accountId, "Admins", validatedAdmins, threshold);
         }
 
+        /// <summary>
+        /// Returns the current admin signer set for the account.
+        /// </summary>
         [Safe]
         public static Neo.SmartContract.Framework.List<UInt160> GetAdmins(ByteString accountId)
         {
@@ -124,6 +136,10 @@ namespace AbstractAccount
             return GetAdminThreshold(accountId);
         }
 
+        /// <summary>
+        /// Replaces the manager signer set and threshold. Managers can authorize execution but are still distinct from
+        /// the admin configuration surface.
+        /// </summary>
         public static void SetManagers(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> managers, int threshold)
         {
             AssertIsAdmin(accountId);
@@ -190,6 +206,10 @@ namespace AbstractAccount
             return GetManagerThreshold(accountId);
         }
 
+        /// <summary>
+        /// Configures the optional dome signer set used for inactivity recovery. Dome signers only become valid after the
+        /// configured timeout has elapsed and the oracle path has explicitly unlocked the account.
+        /// </summary>
         public static void SetDomeAccounts(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
         {
             AssertIsAdmin(accountId);
@@ -279,6 +299,10 @@ namespace AbstractAccount
             return GetDomeTimeout(accountId);
         }
 
+        /// <summary>
+        /// Blocks or unblocks a target contract completely for this account. Blacklist checks run before any downstream
+        /// dispatch regardless of whether the call comes from native or meta-transaction execution.
+        /// </summary>
         public static void SetBlacklist(ByteString accountId, UInt160 target, bool isBlacklisted)
         {
             AssertIsAdmin(accountId);
@@ -294,6 +318,10 @@ namespace AbstractAccount
             SetBlacklist(accountId, target, isBlacklisted);
         }
 
+        /// <summary>
+        /// Enables or disables whitelist-only mode. When enabled, targets must be explicitly whitelisted before they can
+        /// be called through the wallet.
+        /// </summary>
         public static void SetWhitelistMode(ByteString accountId, bool enabled)
         {
             AssertIsAdmin(accountId);
@@ -309,6 +337,10 @@ namespace AbstractAccount
             SetWhitelistMode(accountId, enabled);
         }
 
+        /// <summary>
+        /// Adds or removes a target from the account's allowlist. Asset-moving calls also require the target to be
+        /// whitelisted even when whitelist-only mode is disabled.
+        /// </summary>
         public static void SetWhitelist(ByteString accountId, UInt160 target, bool isWhitelisted)
         {
             AssertIsAdmin(accountId);
@@ -324,6 +356,10 @@ namespace AbstractAccount
             SetWhitelist(accountId, target, isWhitelisted);
         }
 
+        /// <summary>
+        /// Caps the amount that can move through token <c>transfer</c> or <c>approve</c> calls for this account. A non-
+        /// positive limit means no cap is enforced for that token.
+        /// </summary>
         public static void SetMaxTransfer(ByteString accountId, UInt160 token, BigInteger maxAmount)
         {
             AssertIsAdmin(accountId);
@@ -339,12 +375,20 @@ namespace AbstractAccount
             SetMaxTransfer(accountId, token, maxAmount);
         }
 
+        /// <summary>
+        /// Binds the logical account to its deterministic proxy address so address-based entrypoints and witness checks
+        /// resolve to the same stored account state.
+        /// </summary>
         public static void BindAccountAddress(ByteString accountId, UInt160 accountAddress)
         {
             AssertIsAdmin(accountId);
             BindAccountAddressInternal(accountId, accountAddress);
         }
 
+        /// <summary>
+        /// Installs or clears a custom verifier contract. When set, authorization delegates to that verifier instead of
+        /// directly checking native role signatures.
+        /// </summary>
         public static void SetVerifierContract(ByteString accountId, UInt160 verifierContract)
         {
             AssertIsAdmin(accountId);
@@ -357,6 +401,9 @@ namespace AbstractAccount
             SetVerifierContract(accountId, verifierContract);
         }
 
+        /// <summary>
+        /// Resolves the logical account id currently bound to a deterministic proxy address.
+        /// </summary>
         [Safe]
         public static ByteString GetAccountIdByAddress(UInt160 accountAddress)
         {
@@ -365,6 +412,9 @@ namespace AbstractAccount
             return map.Get(accountAddress)!;
         }
 
+        /// <summary>
+        /// Returns the bound deterministic proxy address for a logical account id.
+        /// </summary>
         [Safe]
         public static UInt160 GetAccountAddress(ByteString accountId)
         {

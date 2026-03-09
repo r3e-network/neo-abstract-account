@@ -7,8 +7,13 @@ using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
 {
+    // Storage and execution-context helpers are the plumbing layer of the contract. They normalize account keys,
+    // build deterministic proxy scripts, remember temporary verification/meta-tx context, and enforce the global
+    // execution lock that prevents unsafe re-entrant external mutations.
     public partial class UnifiedSmartWallet
     {
+        // Canonical account keys distinguish short ids from long ids. Long ids are hashed before storage so unbounded
+        // user-controlled ids cannot blow up key size, while short ids keep their raw bytes for readability.
         private static readonly byte[] CanonicalShortAccountIdKeyPrefix = new byte[] { 0x00 };
         private static readonly byte[] CanonicalLongAccountIdKeyPrefix = new byte[] { 0x01 };
 
@@ -17,6 +22,9 @@ namespace AbstractAccount
             ExecutionEngine.Assert(accountId != null && accountId.Length > 0 && accountId.Length <= 128, "Invalid accountId");
         }
 
+        // Resolves the canonical storage key for an account while remaining backward-compatible with legacy layouts.
+        // If the canonical key already exists we use it; otherwise we transparently fall back to the legacy key if an
+        // older account record is still stored there.
         private static ByteString GetStorageKey(ByteString accountId)
         {
             byte[] accountIdBytes = (byte[])accountId;
@@ -52,6 +60,7 @@ namespace AbstractAccount
             StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
             return adminsMap.Get(storageKey) != null;
         }
+
 
         private static void AssertValidAccountAddress(UInt160 accountAddress)
         {
@@ -97,10 +106,13 @@ namespace AbstractAccount
             OnAccountCreated(accountId, tx.Sender);
         }
 
+        // Binds a logical account id to the deterministic proxy address that the Verify method expects. Once bound,
+        // both accountId-based and address-based entrypoints refer to the same underlying role/policy state.
         private static void BindAccountAddressInternal(ByteString accountId, UInt160 accountAddress)
         {
             AssertAccountExists(accountId);
             AssertValidAccountAddress(accountAddress);
+            AssertDeterministicAccountAddress(accountId, accountAddress);
 
             StorageMap addrToIdMap = new StorageMap(Storage.CurrentContext, AccountAddressToIdPrefix);
             ByteString? existingId = addrToIdMap.Get(accountAddress);
@@ -120,6 +132,47 @@ namespace AbstractAccount
             idToAddrMap.Put(GetStorageKey(accountId), accountAddress);
         }
 
+        private static void AssertDeterministicAccountAddress(ByteString accountId, UInt160 accountAddress)
+        {
+            UInt160 expectedAddress = GetDeterministicAccountAddress(accountId);
+            ExecutionEngine.Assert(ByteArrayEquals((byte[])accountAddress, (byte[])expectedAddress), "Account address must match deterministic verify proxy");
+        }
+
+        private static UInt160 GetDeterministicAccountAddress(ByteString accountId)
+        {
+            byte[] verifyScript = BuildVerifyProxyScript(accountId);
+            byte[] scriptHash = (byte[])CryptoLib.Ripemd160(CryptoLib.Sha256((ByteString)verifyScript));
+            return (UInt160)ReverseBytes(scriptHash);
+        }
+
+
+        // Builds the exact verification proxy script whose script hash becomes the externally visible AA address. The
+        // proxy does one thing: push accountId and call this contract's Verify method.
+        private static byte[] BuildVerifyProxyScript(ByteString accountId)
+        {
+            byte[] accountIdBytes = (byte[])accountId;
+            ExecutionEngine.Assert(accountIdBytes.Length <= 255, "Invalid accountId");
+            return ConcatBytes(
+                new byte[] { (byte)OpCode.PUSHDATA1, (byte)accountIdBytes.Length },
+                accountIdBytes,
+                new byte[] { 0x11, 0xC0, 0x1F, (byte)OpCode.PUSHDATA1, 0x06 },
+                new byte[] { (byte)'v', (byte)'e', (byte)'r', (byte)'i', (byte)'f', (byte)'y' },
+                new byte[] { (byte)OpCode.PUSHDATA1, 0x14 },
+                (byte[])GetWalletContractHash(),
+                ContractCallSyscall
+            );
+        }
+
+        private static byte[] ReverseBytes(byte[] source)
+        {
+            byte[] reversed = new byte[source.Length];
+            for (int i = 0; i < source.Length; i++)
+            {
+                reversed[i] = source[source.Length - 1 - i];
+            }
+            return reversed;
+        }
+
         private static void AssertBootstrapAuthorization(
             Neo.SmartContract.Framework.List<UInt160> admins,
             int adminThreshold,
@@ -128,8 +181,16 @@ namespace AbstractAccount
         {
             bool adminAuthorized = CheckNativeSignatures(admins, adminThreshold);
             ExecutionEngine.Assert(adminAuthorized, "Unauthorized account initialization");
+
+            if (managers != null && managers.Count > 0)
+            {
+                bool managerAuthorized = CheckNativeSignatures(managers, managerThreshold);
+                ExecutionEngine.Assert(managerAuthorized, "Unauthorized manager initialization");
+            }
         }
 
+        // Records which downstream target is currently allowed to satisfy CheckWitness(proxyAddress) during an active
+        // Execute / ExecuteMetaTx flow. This prevents the proxy witness from being reused by arbitrary external calls.
         private static void SetVerifyContext(ByteString accountId, UInt160 targetContract)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, VerifyContextPrefix);
@@ -249,6 +310,8 @@ namespace AbstractAccount
             map.Delete(GetStorageKey(accountId));
         }
 
+        // Persists the recovered EVM signer set just for the duration of the current meta-tx execution so admin/oracle
+        // helpers can evaluate mixed-signature quorums without trusting caller-supplied runtime arguments.
         private static void SetMetaTxContext(ByteString accountId, UInt160[] signerHashes)
         {
             ExecutionEngine.Assert(signerHashes != null && signerHashes.Length > 0, "Missing meta-tx signers");
@@ -305,25 +368,35 @@ namespace AbstractAccount
             return signerHashes;
         }
 
+        // Acquires both an account-scoped and global execution lock. The account lock prevents double-entry on the same
+        // account, while the global lock blocks unsafe external policy mutation during any active AA execution.
         private static void EnterExecution(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, ExecutionLockPrefix);
             ByteString key = GetStorageKey(accountId);
             ByteString? active = map.Get(key);
             ExecutionEngine.Assert(active == null, "Execution in progress");
+            ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, GlobalExecutionLockKey) == null, "Execution in progress");
             map.Put(key, (ByteString)new byte[] { 1 });
+            Storage.Put(Storage.CurrentContext, GlobalExecutionLockKey, (ByteString)new byte[] { 1 });
         }
 
         private static void ExitExecution(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, ExecutionLockPrefix);
             map.Delete(GetStorageKey(accountId));
+            Storage.Delete(Storage.CurrentContext, GlobalExecutionLockKey);
         }
 
         private static bool IsExecutionActive(ByteString accountId)
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, ExecutionLockPrefix);
             return map.Get(GetStorageKey(accountId)) != null;
+        }
+
+        private static bool IsAnyExecutionActive()
+        {
+            return Storage.Get(Storage.CurrentContext, GlobalExecutionLockKey) != null;
         }
 
         private static void UpdateLastActiveTimestamp(ByteString accountId)
@@ -346,6 +419,10 @@ namespace AbstractAccount
             return now;
         }
 
+        /// <summary>
+        /// Returns the last time the account satisfied an authorization path successfully. Dome inactivity windows are
+        /// measured from this timestamp.
+        /// </summary>
         [Safe]
         public static BigInteger GetLastActiveTimestamp(ByteString accountId)
         {
@@ -362,9 +439,17 @@ namespace AbstractAccount
             return GetLastActiveTimestamp(accountId);
         }
 
+        // Disallows external admin/policy changes while an execution is in progress. Only internal self-calls that are
+        // part of the already-authorized AA flow may mutate protected state at that point.
         private static void AssertNoExternalMutationDuringExecution(ByteString accountId)
         {
-            if (!IsExecutionActive(accountId)) return;
+            if (!IsExecutionActive(accountId) && !IsAnyExecutionActive()) return;
+            ExecutionEngine.Assert(Runtime.CallingScriptHash == Runtime.ExecutingScriptHash, "External mutation blocked during execute");
+        }
+
+        private static void AssertNoExternalMutationDuringAnyExecution()
+        {
+            if (!IsAnyExecutionActive()) return;
             ExecutionEngine.Assert(Runtime.CallingScriptHash == Runtime.ExecutingScriptHash, "External mutation blocked during execute");
         }
 
@@ -383,6 +468,10 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Returns the optional custom verifier contract configured for the account. When present, native role checks are
+        /// bypassed in favor of the verifier's own <c>verify(accountId)</c> decision.
+        /// </summary>
         [Safe]
         public static UInt160 GetVerifierContract(ByteString accountId)
         {

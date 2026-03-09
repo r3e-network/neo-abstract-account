@@ -10,7 +10,12 @@ readonly SCRIPTS=(
   "tests/aa_testnet_integration_check.js"
   "tests/aa_testnet_negative_meta_validate.js"
   "tests/aa_testnet_max_transfer_validate.js"
+  "tests/aa_testnet_approve_allowance_validate.js"
   "tests/aa_testnet_direct_proxy_spend_validate.js"
+  "tests/aa_testnet_threshold2_validate.js"
+  "tests/aa_testnet_custom_verifier_validate.js"
+  "tests/aa_testnet_dome_oracle_validate.js"
+  "tests/aa_testnet_concurrency_validate.js"
   "tests/aa_testnet_full_validate.js"
 )
 

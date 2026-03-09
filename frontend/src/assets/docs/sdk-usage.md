@@ -74,6 +74,142 @@ const signature = await signer.signTypedData(
 );
 ```
 
-## 5. Execution Model Reminder
+## 5. Home Workspace Runtime Setup
+
+The app-first home workspace accepts both direct browser-wallet broadcast and optional relay broadcast. For a Vercel deployment, wire these environment variables into the frontend:
+Start from `frontend/.env.example` when creating a local `frontend/.env.local` file or mirroring the same keys into your deployment provider.
+
+```bash
+VITE_AA_RPC_URL=https://testnet1.neo.coz.io:443
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_AA_RELAY_URL=/api/relay-transaction
+VITE_AA_RELAY_RPC_URL=https://testnet1.neo.coz.io:443
+VITE_AA_RELAY_META_ENABLED=1
+```
+
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` enable anonymous draft persistence.
+- `VITE_AA_RELAY_URL` points the UI at the relay submission endpoint.
+- `VITE_AA_RELAY_META_ENABLED` tells the frontend that the backend relay is configured to submit stored `executeMetaTxByAddress` invocations.
+- `AA_RELAY_WIF` on the server enables relay submission of stored `executeMetaTxByAddress` invocations built from collected EVM signatures.
+- shared draft metadata is intentionally bounded: the frontend retains the latest 100 activity entries and the latest 12 submission receipts per draft in both local and Supabase-backed storage.
+- client-side broadcast remains the default safe path, while relay mode is reserved for already-signed raw transactions.
+- the home workspace presets now stage concrete AA wrapper payloads, so a browser-wallet submission targets `executeByAddress` on the AA contract rather than the downstream contract directly.
+
+### Server Runtime Add-Ons
+
+If you deploy the bundled Vercel-style API routes, keep the relay signer and operator persistence settings on the server:
+
+```bash
+AA_RELAY_RPC_URL=https://testnet1.neo.coz.io:443
+AA_RELAY_WIF=your-relay-wif
+AA_RELAY_ALLOWED_HASH=0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423
+AA_RELAY_ALLOW_RAW_FORWARD=0
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+- `frontend/api/relay-transaction.js` uses `AA_RELAY_RPC_URL`, `AA_RELAY_WIF`, `AA_RELAY_ALLOWED_HASH`, and `AA_RELAY_ALLOW_RAW_FORWARD` to constrain relay behavior. Keep raw forwarding off unless you intentionally want the relay to pass through pre-signed raw Neo transactions.
+- `frontend/api/draft-operator.js` is the signed operator mutation endpoint. It uses `SUPABASE_SERVICE_ROLE_KEY` to persist operator-only status updates, relay-preflight snapshots, submission receipts, and collaborator/operator link rotation after the browser proves operator intent with a signature.
+- the browser-safe `VITE_*` values tell the UI what features to surface, while the server-only values above decide what the relay and signed operator mutation routes are actually allowed to do.
+
+## Runtime Reference
+
+| Setting | Scope | Purpose |
+| --- | --- | --- |
+| `VITE_AA_RPC_URL` | Frontend | Neo RPC used for home workspace reads and staging. |
+| `VITE_SUPABASE_URL` | Frontend | Enables anonymous shared-draft persistence when paired with the anon key. |
+| `VITE_SUPABASE_ANON_KEY` | Frontend | Public browser key for anonymous shared-draft persistence. |
+| `VITE_AA_RELAY_URL` | Frontend | Relay endpoint used for preflight checks and relay submission. |
+| `VITE_AA_RELAY_RPC_URL` | Frontend | RPC used by relay-aware runtime helpers. |
+| `VITE_AA_RELAY_META_ENABLED` | Frontend | Tells the UI that relay-ready meta invocations can be submitted directly. |
+| `VITE_AA_EXPLORER_BASE_URL` | Frontend | Optional transaction explorer base for tx links and receipts. |
+| `AA_RELAY_RPC_URL` | Server | Preferred RPC for `frontend/api/relay-transaction.js` when you do not want the server to inherit the browser-facing RPC setting. |
+| `AA_RELAY_WIF` | Server | Enables server-side submission of stored `executeMetaTxByAddress` invocations. |
+| `AA_RELAY_ALLOWED_HASH` | Server | Pins relayable meta invocations to the expected Abstract Account contract hash. |
+| `AA_RELAY_ALLOW_RAW_FORWARD` | Server | Explicit opt-in for relaying already-signed raw transactions; keep disabled by default. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server | Required by the `draft-operator` signed operator mutation route for operator-only draft persistence. |
+| Draft metadata retention | Frontend + Supabase | Keeps only the latest 100 activity entries and latest 12 submission receipts per draft. |
+
+## Security Posture
+
+- **Safe to expose client-side:** `VITE_AA_RPC_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, `VITE_AA_RELAY_RPC_URL`, `VITE_AA_RELAY_META_ENABLED`, and `VITE_AA_EXPLORER_BASE_URL` are runtime hints the frontend needs in the browser.
+- **Server-only:** `AA_RELAY_WIF` and `SUPABASE_SERVICE_ROLE_KEY` are secrets and must stay on the server. `AA_RELAY_ALLOWED_HASH` and `AA_RELAY_ALLOW_RAW_FORWARD` are not secret material, but they are still server-only hardening knobs because they define what the relay and signed operator mutation routes are willing to accept.
+
+## Relay Behavior Matrix
+
+| `VITE_AA_RELAY_URL` | `VITE_AA_RELAY_META_ENABLED` | `AA_RELAY_WIF` | Effective behavior |
+| --- | --- | --- | --- |
+| missing | any | any | No relay path; the UI stays on client-side broadcast only. |
+| set | off | missing or set | Preflight only for relay-ready payload inspection, plus signed raw relay when a raw transaction already exists. |
+| set | on | missing | Signed raw relay works, and meta payloads can be prepared, but meta relay submission is blocked server-side without the relay signer. |
+| set | on | set | Full relay path: preflight only when simulating, signed raw relay, and meta relay submission for stored `executeMetaTxByAddress` invocations. |
+
+## Safe Defaults
+
+- **Client-side broadcast is the default safe path** and works without relay configuration.
+- **Optional knobs** such as `VITE_AA_RELAY_META_ENABLED`, `AA_RELAY_WIF`, and `VITE_AA_EXPLORER_BASE_URL` only expand relay and explorer behavior; they are not required for basic local wallet usage.
+- **Supabase settings are optional** unless you want anonymous cross-device draft sharing instead of the local-only browser fallback.
+
+## Minimum Capability Matrix
+
+| Missing optional piece | What still works |
+| --- | --- |
+| without Supabase | Local-only drafts, browser-wallet signing, relay checks, and client-side broadcast still work in the current browser. |
+| without relay | Abstract Account loading, draft persistence, local/manual signature collection, and client-side broadcast still work. |
+| without explorer | Draft sharing, relay checks, and broadcast still work; only external tx links and explorer shortcuts are reduced. |
+
+## Recommended Deployment Profiles
+
+- **local-only** — use browser wallets with no Supabase and no relay when you only need one-device compose, sign, and client-side broadcast.
+- **collaborative** — add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` when you want anonymous shared drafts and mixed approval collection, even if final submission still happens client-side. The default read-only share link is safe for review, the collaborator link is for signature collection, and the operator link is for relay checks, broadcasts, and link rotation. Collaborator links also cannot append operator-class relay/broadcast timeline events. Operators can use the Rotate Collaborator Link or Rotate Operator Link actions to invalidate older write-capable URLs in-place.
+- **full relay-enabled** — add Supabase, `VITE_AA_RELAY_URL`, `VITE_AA_RELAY_META_ENABLED`, `VITE_AA_EXPLORER_BASE_URL`, and server-side `AA_RELAY_WIF` when you want shared drafts, relay preflight, signed raw relay, and meta relay submission together.
+- **operator-hardened** — add `SUPABASE_SERVICE_ROLE_KEY`, keep `AA_RELAY_ALLOWED_HASH` pinned to the deployed AA contract, and leave `AA_RELAY_ALLOW_RAW_FORWARD=0` unless your operators explicitly need raw-transaction passthrough. This profile keeps `draft-operator` signed operator mutation writes available without widening relay scope.
+
+## .env.local Examples
+
+**local-only profile**
+
+```bash
+VITE_AA_RPC_URL=https://testnet1.neo.coz.io:443
+```
+
+**collaborative profile**
+
+Use the normal draft URL for read-only review, the collaborator link for signatures, and the operator link for relay/broadcast actions.
+
+```bash
+VITE_AA_RPC_URL=https://testnet1.neo.coz.io:443
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+```
+
+**full relay-enabled profile**
+
+```bash
+VITE_AA_RPC_URL=https://testnet1.neo.coz.io:443
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_AA_RELAY_URL=/api/relay-transaction
+VITE_AA_RELAY_RPC_URL=https://testnet1.neo.coz.io:443
+VITE_AA_RELAY_META_ENABLED=1
+VITE_AA_EXPLORER_BASE_URL=https://testnet.ndoras.com/transaction
+```
+
+## Testnet vs Production Checklist
+
+- **testnet** — keep `VITE_AA_RPC_URL` and `VITE_AA_EXPLORER_BASE_URL` pointed at testnet services, and fund a dedicated testnet relay signer before using `AA_RELAY_WIF` for relay validation.
+- **production** — switch RPC and explorer endpoints together, keep `AA_RELAY_WIF` only on the server, and treat relay signer funding/monitoring as an operational requirement.
+- **relay meta mode** — on production, leave relay meta mode disabled until the backend relay signer and monitoring path are ready for direct meta relay submission.
+
+## Troubleshooting
+
+- **Missing Supabase envs:** if `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` is absent, draft sharing falls back to local-only browser storage and anonymous cross-device sharing is unavailable.
+- **Missing `AA_RELAY_WIF`:** relay submission can be configured in the UI, but the backend cannot actually sign and send relay-ready meta invocations.
+- **Missing `SUPABASE_SERVICE_ROLE_KEY`:** `frontend/api/draft-operator.js` returns `operator_mutation_not_configured`, so signed operator mutation requests cannot persist operator-only status, receipt, or link-rotation changes.
+- **Relay meta mode disabled:** if `VITE_AA_RELAY_META_ENABLED` is unset, collected meta invocations stay stored on the draft but the UI treats them as not directly relayable.
+- **Relay hash/raw settings feel inconsistent:** confirm `AA_RELAY_ALLOWED_HASH` matches the deployed AA hash and remember that `AA_RELAY_ALLOW_RAW_FORWARD` is off by default, so raw passthrough only works after an explicit server opt-in.
+- **Missing explorer base url:** if `VITE_AA_EXPLORER_BASE_URL` is absent, explorer links fall back to the default base URL or may not match your preferred explorer.
+
+## 6. Execution Model Reminder
 
 The typed-data signature authorizes an Abstract Account wrapper call. On hardened deployments, external interactions must flow through AA entrypoints such as `execute`, `executeByAddress`, `executeMetaTx`, or `executeMetaTxByAddress`; raw direct proxy-signed external spends are intentionally rejected.

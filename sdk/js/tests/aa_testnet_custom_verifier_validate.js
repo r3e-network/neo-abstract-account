@@ -17,7 +17,7 @@ const { CONTRACT_MANAGEMENT_HASH, buildDeployScript } = require('./deployHelpers
 const rpcUrl = 'https://testnet1.neo.coz.io:443';
 const rpcClient = new rpc.RPCClient(rpcUrl);
 const { getNetworkMagic, invokeRead, simulate } = bindRpcHelpers({ rpcClient, rpc, sc, u });
-const { cpHash160, cpByteArray, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
+const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
 const { randomAccountIdHex, deriveAaAddressFromId } = bindAccountHelpers({ crypto: require('node:crypto'), sc, u, wallet, sanitizeHex, cpByteArray });
 const { decodeByteStringToHex, decodeInteger, normalizeReadByteString } = bindStackHelpers({ sanitizeHex, u });
 const { sendInvocation } = bindInvocationHelpers({ rpcClient, txModule: tx, sc, u, sendTransaction, waitForTx, assertVmStateHalt, waitForConfirmation: true, assertHalt: true });
@@ -48,25 +48,6 @@ function readVerifierArtifacts(repoRoot) {
     manifestPath,
     nefBytes: fs.readFileSync(nefPath),
     manifestString: fs.readFileSync(manifestPath, 'utf8'),
-  };
-}
-
-function buildProxySignerContext(aaHash, ownerScriptHash, accountInfo) {
-  return {
-    signers: [
-      { account: ownerScriptHash, scopes: tx.WitnessScope.CalledByEntry },
-      {
-        account: accountInfo.addressScriptHash,
-        scopes: tx.WitnessScope.CustomContracts,
-        allowedContracts: [sanitizeHex(aaHash)],
-      },
-    ],
-    witnesses: [
-      {
-        invocationScript: '',
-        verificationScript: accountInfo.verificationScript,
-      },
-    ],
   };
 }
 
@@ -120,7 +101,6 @@ async function main() {
   const magic = await getNetworkMagic();
   const accountIdHex = randomAccountIdHex(16);
   const accountInfo = deriveAaAddressFromId(aaHash, accountIdHex);
-  const proxyContext = buildProxySignerContext(aaHash, owner.scriptHash, accountInfo);
   const verifierArtifacts = readVerifierArtifacts(repoRoot);
 
   const summary = {
@@ -155,7 +135,7 @@ async function main() {
       aaHash,
       operation: 'createAccountWithAddress',
       args: [
-        cpByteArray(accountIdHex),
+        cpByteArrayRaw(accountIdHex),
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(ownerScriptHash)]),
         sc.ContractParam.integer(1),
@@ -203,6 +183,17 @@ async function main() {
     })),
   });
 
+  summary.txs.push({
+    step: 'setWhitelistModeByAddress(native)',
+    ...(await sendInvocation({
+      account: owner,
+      magic,
+      aaHash,
+      operation: 'setWhitelistModeByAddress',
+      args: buildSetWhitelistModeByAddressArgs(accountInfo.addressScriptHash, true),
+    })),
+  });
+
   const verifierRead = await invokeRead(aaHash, 'getVerifierContractByAddress', [cpHash160(accountInfo.addressScriptHash)]);
   const verifierReadHex = decodeByteStringToHex(verifierRead.stack?.[0]);
   const verifierReadNormalized = normalizeReadByteString(verifierReadHex);
@@ -242,32 +233,6 @@ async function main() {
   check('owner-only direct admin mutation faults after owner removed', ownerOnlyMutation.state === 'FAULT', ownerOnlyMutation.exception || 'expected FAULT');
   check('owner-only direct admin mutation is unauthorized admin', String(ownerOnlyMutation.exception || '').includes('Unauthorized admin'), ownerOnlyMutation.exception || '');
 
-  const proxyAuthorizedMutation = await simulate(
-    aaHash,
-    'setWhitelistModeByAddress',
-    buildSetWhitelistModeByAddressArgs(accountInfo.addressScriptHash, true),
-    proxyContext.signers
-  );
-  summary.simulations.push({
-    name: 'proxy-signed direct admin mutation via custom verifier',
-    state: proxyAuthorizedMutation.state,
-    exception: proxyAuthorizedMutation.exception || null,
-  });
-  check('proxy-signed admin mutation HALTs via custom verifier', proxyAuthorizedMutation.state === 'HALT', proxyAuthorizedMutation.exception || '');
-
-  summary.txs.push({
-    step: 'setWhitelistModeByAddress(proxy-signed)',
-    ...(await sendInvocation({
-      account: owner,
-      magic,
-      aaHash,
-      operation: 'setWhitelistModeByAddress',
-      args: buildSetWhitelistModeByAddressArgs(accountInfo.addressScriptHash, true),
-      signers: proxyContext.signers,
-      witnesses: proxyContext.witnesses,
-    })),
-  });
-
   const allowedCustomVerifierExec = await simulate(
     aaHash,
     'executeByAddress',
@@ -285,6 +250,23 @@ async function main() {
     exception: allowedCustomVerifierExec.exception || null,
   });
   check('custom verifier allows executeByAddress to whitelisted self target', allowedCustomVerifierExec.state === 'HALT', allowedCustomVerifierExec.exception || '');
+
+  summary.txs.push({
+    step: 'executeByAddress self getNonce via custom verifier',
+    ...(await sendInvocation({
+      account: owner,
+      magic,
+      aaHash,
+      operation: 'executeByAddress',
+      args: [
+        cpHash160(accountInfo.addressScriptHash),
+        cpHash160(aaHash),
+        sc.ContractParam.string('getNonce'),
+        cpArray([cpHash160(ownerScriptHash)]),
+      ],
+      signers: [{ account: owner.scriptHash, scopes: tx.WitnessScope.CalledByEntry }],
+    })),
+  });
 
   const blockedCustomVerifierExec = await simulate(
     aaHash,

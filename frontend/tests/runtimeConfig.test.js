@@ -1,8 +1,11 @@
 import test from 'node:test';
+import fs from 'node:fs';
+import path from 'node:path';
 import assert from 'node:assert/strict';
 
 import {
   DEFAULT_ABSTRACT_ACCOUNT_HASH,
+  DEFAULT_EXPLORER_BASE_URL,
   DEFAULT_RPC_URL,
   getRuntimeConfig,
   resolveAbstractAccountHash,
@@ -35,6 +38,24 @@ test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
   assert.equal(resolveRpcUrl(''), DEFAULT_RPC_URL);
 });
 
+test('frontend ships a runtime env example for browser and server routes', () => {
+  const examplePath = path.resolve(import.meta.dirname, '..', '.env.example');
+  assert.equal(fs.existsSync(examplePath), true, 'expected frontend/.env.example to exist');
+
+  const example = fs.readFileSync(examplePath, 'utf8');
+  assert.match(example, /VITE_AA_RPC_URL=/);
+  assert.match(example, /VITE_SUPABASE_URL=/);
+  assert.match(example, /VITE_SUPABASE_ANON_KEY=/);
+  assert.match(example, /VITE_AA_RELAY_URL=/);
+  assert.match(example, /VITE_AA_RELAY_META_ENABLED=/);
+  assert.match(example, /AA_RELAY_RPC_URL=/);
+  assert.match(example, /AA_RELAY_WIF=/);
+  assert.match(example, /AA_RELAY_ALLOWED_HASH=/);
+  assert.match(example, /AA_RELAY_ALLOW_RAW_FORWARD=/);
+  assert.match(example, /SUPABASE_SERVICE_ROLE_KEY=/);
+  assert.match(example, /server-only/i);
+});
+
 test('getRuntimeConfig prefers Vite overrides', () => {
   const config = getRuntimeConfig({
     VITE_AA_HASH: '0x1111111111111111111111111111111111111111',
@@ -43,6 +64,13 @@ test('getRuntimeConfig prefers Vite overrides', () => {
 
   assert.deepEqual(config, {
     abstractAccountHash: '1111111111111111111111111111111111111111',
-    rpcUrl: 'https://rpc.example.org'
+    rpcUrl: 'https://rpc.example.org',
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+    relayEndpoint: '/api/relay-transaction',
+    relayRpcUrl: 'https://rpc.example.org',
+    relayMetaEnabled: false,
+    relayRawEnabled: false,
+    explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
   });
 });

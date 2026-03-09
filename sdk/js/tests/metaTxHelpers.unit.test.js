@@ -246,7 +246,7 @@ test('buildExecuteMetaTxArgs assembles account-path meta transaction arguments',
     signatureHexes: ['sig1'],
   });
 
-  assert.deepEqual(args[0], 'bytes:id1');
+  assert.deepEqual(args[0], 'raw:id1');
 });
 
 test('signTypedDataNoRecovery strips the recovery byte from the sanitized signature', async () => {

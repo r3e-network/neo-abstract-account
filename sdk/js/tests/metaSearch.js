@@ -2,6 +2,7 @@ function bindMetaSearchHelpers({
   invokeRead,
   cpHash160,
   cpByteArray,
+  cpByteArrayRaw,
   sanitizeHex,
   decodeInteger,
   decodeByteStringToHex,
@@ -38,7 +39,7 @@ function bindMetaSearchHelpers({
       useAddress ? 'getNonceForAddress' : 'getNonceForAccount',
       useAddress
         ? [cpHash160(accountAddressHash), cpHash160(signerAddressHex)]
-        : [cpByteArray(accountIdHex), cpHash160(signerAddressHex)]
+        : [cpByteArrayRaw(accountIdHex), cpHash160(signerAddressHex)]
     );
     const nonce = decodeInteger(nonceRes.stack?.[0]);
 

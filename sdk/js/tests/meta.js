@@ -59,7 +59,7 @@ function bindMetaTxHelpers({
     signatureHexes,
   }) {
     return [
-      accountParam || (useAddress ? cpHash160(accountAddressHash) : cpByteArray(accountIdHex)),
+      accountParam || (useAddress ? cpHash160(accountAddressHash) : cpByteArrayRaw(accountIdHex)),
       cpArray(pubKeyHexes.map((hex) => cpByteArrayRaw(hex))),
       cpHash160(targetContract),
       sc.ContractParam.string(method),

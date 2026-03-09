@@ -1,7 +1,7 @@
 <template>
   <section class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
-    <h2 class="text-xl font-bold text-slate-900 mb-2">Create Abstract Account</h2>
-    <p class="text-sm text-slate-500 mb-8">Configure identity and signer roles, then register with a single transaction.</p>
+    <h2 class="text-xl font-bold text-slate-900 mb-2">{{ t('studioPanels.createTitle', 'Create Abstract Account') }}</h2>
+    <p class="text-sm text-slate-500 mb-8">{{ t('studioPanels.createSubtitle', 'Configure identity and signer roles, then register with a single transaction.') }}</p>
 
     <div class="space-y-8">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -106,6 +106,7 @@
 
 <script setup>
 import { inject } from 'vue';
+import { useI18n } from '@/i18n';
 
 const studio = inject('studio');
 const {
