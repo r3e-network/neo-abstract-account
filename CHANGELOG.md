@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [Unreleased] - 2026-03-09
+
+### Added
+- Added the home operations workspace for account loading, draft persistence, scoped collaboration links, relay preflight, submission receipts, and mixed Neo + EVM approval flows.
+- Added comprehensive explainer docs covering how the abstract account works, architecture, workflow lifecycle, data flow, a root documentation index, and supplemental English/Chinese reference docs.
+- Added validated recovery verifier support for Argent, Safe, and Loopring flows, including reproducible build scripts, deployment checklists, official SDK validators, and recorded testnet deployment results.
+- Added relay/operator API hardening with in-memory rate limiting, `Retry-After` responses, and a dedicated frontend API security test.
+- Added a root-contract compilation helper to isolate `nccs` from recovery build intermediates during repo verification.
+
+### Changed
+- Updated the root verification flow to compile the main contract through an isolated helper before running the full repo validation sequence.
+- Tightened EVM meta-transaction validation to reject malformed uncompressed public keys before signature verification.
+- Updated recovery deployment docs to remove plaintext secrets, reflect real deployed hashes, and point at the validated package-script flows.
+- Refined the repo and docs test suites so preserved docs, recovery validator wiring, API rate-limit behavior, and verification-script expectations stay covered.
+
+### Security
+- Deployed and validated the recovery verifier contracts on Neo N3 testnet:
+  - Argent `0x260b204b109506140f6e20ef99d02c142d070f72`
+  - Safe `0x06a7c50c2dd81f988e2e31b7fd721501008fbfa8`
+  - Loopring `0x3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7`
+- Preserved browser hardening headers in `frontend/vercel.json` and sanitized relay error responses to avoid exposing raw internal failures.
+- Added Supabase performance indexes for common draft lookup paths.
+
 ## [1.0.0] - 2026-03-07
 
 ### Added
