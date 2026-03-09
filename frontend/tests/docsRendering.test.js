@@ -28,6 +28,28 @@ test('shouldStripAttribute removes inline handlers and javascript urls', () => {
   assert.equal(shouldStripAttribute('class', 'safe-class'), false);
 });
 
+test('supplemental root docs are preserved and indexable', () => {
+  const docsIndex = readRepo('docs/INDEX.md');
+  const howItWorks = readRepo('docs/HOW_IT_WORKS.md');
+  const userGuide = readRepo('docs/USER_GUIDE.md');
+  const workflows = readRepo('docs/WORKFLOWS.md');
+  const dataFlow = readRepo('docs/DATA_FLOW.md');
+  const quickReference = readRepo('docs/QUICK_REFERENCE.md');
+  const readmeZh = readRepo('README.zh-CN.md');
+
+  assert.match(docsIndex, /HOW_IT_WORKS\.md/);
+  assert.match(docsIndex, /USER_GUIDE\.md/);
+  assert.match(docsIndex, /WORKFLOWS\.md/);
+  assert.match(docsIndex, /DATA_FLOW\.md/);
+  assert.match(docsIndex, /QUICK_REFERENCE\.md/);
+  assert.match(howItWorks, /How It Works|Usage Guide/i);
+  assert.match(userGuide, /User Guide/i);
+  assert.match(workflows, /Workflow|Lifecycle/i);
+  assert.match(dataFlow, /Data Flow|Storage/i);
+  assert.match(quickReference, /Quick Reference/i);
+  assert.match(readmeZh, /README\.md/);
+});
+
 test('docs registry uses the repo README as the overview source of truth', () => {
   const registrySource = read('src/features/docs/registry.js');
   assert.match(registrySource, /@repo\/README\.md\?raw/);
