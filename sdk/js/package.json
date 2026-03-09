@@ -24,7 +24,12 @@
     "testnet:validate:custom-verifier": "node tests/aa_testnet_custom_verifier_validate.js",
     "testnet:validate:dome-oracle": "node tests/aa_testnet_dome_oracle_validate.js",
     "testnet:validate:concurrency": "node tests/aa_testnet_concurrency_validate.js",
-    "testnet:validate:approve-allowance": "node tests/aa_testnet_approve_allowance_validate.js"
+    "testnet:validate:approve-allowance": "node tests/aa_testnet_approve_allowance_validate.js",
+    "testnet:validate:recovery": "node tests/recovery_testnet_validate.js",
+    "test:recovery:logic": "node tests/recovery_verifier_logic_test.js",
+    "testnet:validate:recovery:safe": "node tests/recovery_testnet_validate_safe.js",
+    "testnet:validate:recovery:loopring": "node tests/recovery_testnet_validate_loopring.js",
+    "testnet:validate:recovery:all": "npm run testnet:validate:recovery && npm run testnet:validate:recovery:safe && npm run testnet:validate:recovery:loopring"
   },
   "dependencies": {
     "@cityofzion/neon-js": "^5.4.0",

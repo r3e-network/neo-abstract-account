@@ -1,0 +1,1747 @@
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.Version()
+# Code ArgentRecoveryVerifier.cs line 48: ""1.1.0""
+0000 PUSHDATA1 31-2E-31-2E-30 # as text: "1.1.0"
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.Version()
+0007 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger)
+0008 INITSLOT 04-04 # 4 local variables, 4 arguments
+# Code ArgentRecoveryVerifier.cs line 53: ""accountId""
+0011 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code ArgentRecoveryVerifier.cs line 53: "accountId"
+0022 LDARG0
+# Code ArgentRecoveryVerifier.cs line 53: "ValidateAddress(accountId, "accountId")"
+0023 CALL_L 11-02-00-00 # pos: 552 (offset: 529)
+# Code ArgentRecoveryVerifier.cs line 54: ""owner""
+0028 PUSHDATA1 6F-77-6E-65-72 # as text: "owner"
+# Code ArgentRecoveryVerifier.cs line 54: "owner"
+0035 LDARG1
+# Code ArgentRecoveryVerifier.cs line 54: "ValidateAddress(owner, "owner")"
+0036 CALL_L 04-02-00-00 # pos: 552 (offset: 516)
+# Code ArgentRecoveryVerifier.cs line 55: ""Too few guardians""
+0041 PUSHDATA1 54-6F-6F-20-66-65-77-20-67-75-61-72-64-69-61-6E-73 # as text: "Too few guardians"
+# Code ArgentRecoveryVerifier.cs line 55: "guardians"
+0060 LDARG2
+# Code ArgentRecoveryVerifier.cs line 55: "guardians.Length"
+0061 SIZE
+# Code ArgentRecoveryVerifier.cs line 55: "MIN_GUARDIANS"
+0062 PUSH3
+# Code ArgentRecoveryVerifier.cs line 55: "guardians.Length >= MIN_GUARDIANS"
+0063 GE
+# Code ArgentRecoveryVerifier.cs line 55: "Assert(guardians.Length >= MIN_GUARDIANS, "Too few guardians")"
+0064 CALL_L 13-02-00-00 # pos: 595 (offset: 531)
+# Code ArgentRecoveryVerifier.cs line 56: ""Too many guardians""
+0069 PUSHDATA1 54-6F-6F-20-6D-61-6E-79-20-67-75-61-72-64-69-61-6E-73 # as text: "Too many guardians"
+# Code ArgentRecoveryVerifier.cs line 56: "guardians"
+0089 LDARG2
+# Code ArgentRecoveryVerifier.cs line 56: "guardians.Length"
+0090 SIZE
+# Code ArgentRecoveryVerifier.cs line 56: "MAX_GUARDIANS"
+0091 PUSH10
+# Code ArgentRecoveryVerifier.cs line 56: "guardians.Length <= MAX_GUARDIANS"
+0092 LE
+# Code ArgentRecoveryVerifier.cs line 56: "Assert(guardians.Length <= MAX_GUARDIANS, "Too many guardians")"
+0093 CALL_L F6-01-00-00 # pos: 595 (offset: 502)
+# Code ArgentRecoveryVerifier.cs line 57: ""Threshold too low""
+0098 PUSHDATA1 54-68-72-65-73-68-6F-6C-64-20-74-6F-6F-20-6C-6F-77 # as text: "Threshold too low"
+# Code ArgentRecoveryVerifier.cs line 57: "threshold"
+0117 LDARG3
+# Code ArgentRecoveryVerifier.cs line 57: "MIN_THRESHOLD"
+0118 PUSH2
+# Code ArgentRecoveryVerifier.cs line 57: "threshold >= MIN_THRESHOLD"
+0119 GE
+# Code ArgentRecoveryVerifier.cs line 57: "Assert(threshold >= MIN_THRESHOLD, "Threshold too low")"
+0120 CALL_L DB-01-00-00 # pos: 595 (offset: 475)
+# Code ArgentRecoveryVerifier.cs line 58: ""Invalid threshold""
+0125 PUSHDATA1 49-6E-76-61-6C-69-64-20-74-68-72-65-73-68-6F-6C-64 # as text: "Invalid threshold"
+# Code ArgentRecoveryVerifier.cs line 58: "guardians"
+0144 LDARG2
+# Code ArgentRecoveryVerifier.cs line 58: "guardians.Length"
+0145 SIZE
+# Code ArgentRecoveryVerifier.cs line 58: "threshold"
+0146 LDARG3
+# Code ArgentRecoveryVerifier.cs line 58: "guardians.Length >= threshold"
+0147 GE
+# Code ArgentRecoveryVerifier.cs line 58: "Assert(guardians.Length >= threshold, "Invalid threshold")"
+0148 CALL_L BF-01-00-00 # pos: 595 (offset: 447)
+# Code ArgentRecoveryVerifier.cs line 61: "0"
+0153 PUSH0
+# Code ArgentRecoveryVerifier.cs line 61: "i = 0"
+0154 STLOC0
+0155 JMP_L E2-00-00-00 # pos: 381 (offset: 226)
+# Code ArgentRecoveryVerifier.cs line 63: ""Guardian is null""
+0160 PUSHDATA1 47-75-61-72-64-69-61-6E-20-69-73-20-6E-75-6C-6C # as text: "Guardian is null"
+# Code ArgentRecoveryVerifier.cs line 63: "guardians"
+0178 LDARG2
+# Code ArgentRecoveryVerifier.cs line 63: "i"
+0179 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 63: "guardians[i]"
+0180 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 63: "null"
+0181 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 63: "guardians[i] != null"
+0182 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 63: "Assert(guardians[i] != null, "Guardian is null")"
+0183 CALL_L 9C-01-00-00 # pos: 595 (offset: 412)
+# Code ArgentRecoveryVerifier.cs line 64: "i"
+0188 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 64: "1"
+0189 PUSH1
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0190 ADD
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0191 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0192 PUSHINT32 00-00-00-80 # -2147483648
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0197 JMPGE 04 # pos: 201 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0199 JMP 0A # pos: 209 (offset: 10)
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0201 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0202 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0207 JMPLE 1E # pos: 237 (offset: 30)
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0209 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0218 AND
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0219 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0220 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0225 JMPLE 0C # pos: 237 (offset: 12)
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0227 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code ArgentRecoveryVerifier.cs line 64: "i + 1"
+0236 SUB
+# Code ArgentRecoveryVerifier.cs line 64: "j = i + 1"
+0237 STLOC1
+0238 JMP 56 # pos: 324 (offset: 86)
+# Code ArgentRecoveryVerifier.cs line 66: ""Duplicate guardian""
+0240 PUSHDATA1 44-75-70-6C-69-63-61-74-65-20-67-75-61-72-64-69-61-6E # as text: "Duplicate guardian"
+# Code ArgentRecoveryVerifier.cs line 66: "guardians"
+0260 LDARG2
+# Code ArgentRecoveryVerifier.cs line 66: "i"
+0261 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 66: "guardians[i]"
+0262 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 66: "guardians"
+0263 LDARG2
+# Code ArgentRecoveryVerifier.cs line 66: "j"
+0264 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 66: "guardians[j]"
+0265 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 66: "guardians[i].Equals(guardians[j])"
+0266 EQUAL
+# Code ArgentRecoveryVerifier.cs line 66: "!guardians[i].Equals(guardians[j])"
+0267 NOT
+# Code ArgentRecoveryVerifier.cs line 66: "Assert(!guardians[i].Equals(guardians[j]), "Duplicate guardian")"
+0268 CALL_L 47-01-00-00 # pos: 595 (offset: 327)
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0273 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0274 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0275 INC
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0276 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0277 PUSHINT32 00-00-00-80 # -2147483648
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0282 JMPGE 04 # pos: 286 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0284 JMP 0A # pos: 294 (offset: 10)
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0286 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0287 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0292 JMPLE 1E # pos: 322 (offset: 30)
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0294 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0303 AND
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0304 DUP
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0305 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0310 JMPLE 0C # pos: 322 (offset: 12)
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0312 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0321 SUB
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0322 STLOC1
+# Code ArgentRecoveryVerifier.cs line 64: "j++"
+0323 DROP
+# Code ArgentRecoveryVerifier.cs line 64: "j"
+0324 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 64: "guardians"
+0325 LDARG2
+# Code ArgentRecoveryVerifier.cs line 64: "guardians.Length"
+0326 SIZE
+# Code ArgentRecoveryVerifier.cs line 64: "j < guardians.Length"
+0327 LT
+0328 JMPIF A8 # pos: 240 (offset: -88)
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0330 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0331 DUP
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0332 INC
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0333 DUP
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0334 PUSHINT32 00-00-00-80 # -2147483648
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0339 JMPGE 04 # pos: 343 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0341 JMP 0A # pos: 351 (offset: 10)
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0343 DUP
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0344 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0349 JMPLE 1E # pos: 379 (offset: 30)
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0351 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0360 AND
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0361 DUP
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0362 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0367 JMPLE 0C # pos: 379 (offset: 12)
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0369 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0378 SUB
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0379 STLOC0
+# Code ArgentRecoveryVerifier.cs line 61: "i++"
+0380 DROP
+# Code ArgentRecoveryVerifier.cs line 61: "i"
+0381 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 61: "guardians"
+0382 LDARG2
+# Code ArgentRecoveryVerifier.cs line 61: "guardians.Length"
+0383 SIZE
+# Code ArgentRecoveryVerifier.cs line 61: "i < guardians.Length"
+0384 LT
+0385 JMPIF_L 1F-FF-FF-FF # pos: 160 (offset: -225)
+# Code ArgentRecoveryVerifier.cs line 70: "owner"
+0390 LDARG1
+# Code ArgentRecoveryVerifier.cs line 70: "accountId"
+0391 LDARG0
+# Code ArgentRecoveryVerifier.cs line 70: "PREFIX_OWNER"
+0392 PUSH4
+# Code ArgentRecoveryVerifier.cs line 70: "Key(PREFIX_OWNER, accountId)"
+0393 CALL_L DD-00-00-00 # pos: 614 (offset: 221)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0398 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+0403 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 71: "threshold"
+0408 LDARG3
+# Code ArgentRecoveryVerifier.cs line 71: "accountId"
+0409 LDARG0
+# Code ArgentRecoveryVerifier.cs line 71: "PREFIX_THRESHOLD"
+0410 PUSH2
+# Code ArgentRecoveryVerifier.cs line 71: "Key(PREFIX_THRESHOLD, accountId)"
+0411 CALL_L CB-00-00-00 # pos: 614 (offset: 203)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0416 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0421 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 72: "DEFAULT_TIMELOCK"
+0426 PUSHINT32 00-B8-4C-0A # 172800000
+# Code ArgentRecoveryVerifier.cs line 72: "accountId"
+0431 LDARG0
+# Code ArgentRecoveryVerifier.cs line 72: "PREFIX_TIMELOCK"
+0432 PUSH6
+# Code ArgentRecoveryVerifier.cs line 72: "Key(PREFIX_TIMELOCK, accountId)"
+0433 CALL_L B5-00-00-00 # pos: 614 (offset: 181)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0438 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0443 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 73: "0"
+0448 PUSH0
+# Code ArgentRecoveryVerifier.cs line 73: "accountId"
+0449 LDARG0
+# Code ArgentRecoveryVerifier.cs line 73: "PREFIX_NONCE"
+0450 PUSH5
+# Code ArgentRecoveryVerifier.cs line 73: "Key(PREFIX_NONCE, accountId)"
+0451 CALL_L A3-00-00-00 # pos: 614 (offset: 163)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0456 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0461 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 74: "guardians"
+0466 LDARG2
+# Code ArgentRecoveryVerifier.cs line 74: "guardians.Length"
+0467 SIZE
+# Code ArgentRecoveryVerifier.cs line 74: "accountId"
+0468 LDARG0
+# Code ArgentRecoveryVerifier.cs line 74: "PREFIX_GUARDIAN_COUNT"
+0469 PUSH8
+# Code ArgentRecoveryVerifier.cs line 74: "Key(PREFIX_GUARDIAN_COUNT, accountId)"
+0470 CALL_L 90-00-00-00 # pos: 614 (offset: 144)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0475 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0480 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0485 LDARG2
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0486 DUP
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0487 STLOC0
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0488 SIZE
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0489 STLOC1
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0490 PUSH0
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0491 STLOC2
+# Code ArgentRecoveryVerifier.cs line 76: "foreach"
+0492 JMP 1C # pos: 520 (offset: 28)
+# Code ArgentRecoveryVerifier.cs line 76: "guardian"
+0494 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 76: "guardian"
+0495 LDLOC2
+# Code ArgentRecoveryVerifier.cs line 76: "guardian"
+0496 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 76: "guardian"
+0497 STLOC3
+# Code ArgentRecoveryVerifier.cs line 78: "1"
+0498 PUSH1
+# Code ArgentRecoveryVerifier.cs line 78: "guardian"
+0499 LDLOC3
+# Code ArgentRecoveryVerifier.cs line 78: "accountId"
+0500 LDARG0
+# Code ArgentRecoveryVerifier.cs line 78: "PREFIX_GUARDIAN"
+0501 PUSH1
+# Code ArgentRecoveryVerifier.cs line 78: "KeyECPoint(PREFIX_GUARDIAN, accountId, guardian)"
+0502 CALL_L 8A-00-00-00 # pos: 640 (offset: 138)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0507 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0512 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0517 LDLOC2
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0518 INC
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0519 STLOC2
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0520 LDLOC2
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0521 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 76: "guardians"
+0522 JMPLT E4 # pos: 494 (offset: -28)
+# Code ArgentRecoveryVerifier.cs line 81: "threshold"
+0524 LDARG3
+# Code ArgentRecoveryVerifier.cs line 81: "guardians"
+0525 LDARG2
+# Code ArgentRecoveryVerifier.cs line 81: "guardians.Length"
+0526 SIZE
+# Code ArgentRecoveryVerifier.cs line 81: "owner"
+0527 LDARG1
+# Code ArgentRecoveryVerifier.cs line 81: "accountId"
+0528 LDARG0
+# Code ArgentRecoveryVerifier.cs line 81: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0529 PUSH4
+# Code ArgentRecoveryVerifier.cs line 81: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0530 PACK
+# Code ArgentRecoveryVerifier.cs line 81: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0531 PUSHDATA1 52-65-63-6F-76-65-72-79-53-65-74-75-70 # as text: "RecoverySetup"
+# Code ArgentRecoveryVerifier.cs line 81: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0546 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger)
+# Code ArgentRecoveryVerifier.cs line 82: "}"
+0551 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
+0552 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code ArgentRecoveryVerifier.cs line 291: "name"
+0555 LDARG1
+# Code ArgentRecoveryVerifier.cs line 291: "" is null""
+0556 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
+# Code ArgentRecoveryVerifier.cs line 291: "name + " is null""
+0566 CAT
+# Code ArgentRecoveryVerifier.cs line 291: "name + " is null""
+0567 CONVERT 28 # ByteString type
+# Code ArgentRecoveryVerifier.cs line 291: "address"
+0569 LDARG0
+# Code ArgentRecoveryVerifier.cs line 291: "null"
+0570 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 291: "address != null"
+0571 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 291: "Assert(address != null, name + " is null")"
+0572 CALL 17 # pos: 595 (offset: 23)
+# Code ArgentRecoveryVerifier.cs line 292: "name"
+0574 LDARG1
+# Code ArgentRecoveryVerifier.cs line 292: "" is zero""
+0575 PUSHDATA1 20-69-73-20-7A-65-72-6F # as text: " is zero"
+# Code ArgentRecoveryVerifier.cs line 292: "name + " is zero""
+0585 CAT
+# Code ArgentRecoveryVerifier.cs line 292: "name + " is zero""
+0586 CONVERT 28 # ByteString type
+# Code ArgentRecoveryVerifier.cs line 292: "address"
+0588 LDARG0
+# Code UInt160.cs line 28: "OpCode(OpCode.PUSH0)"
+0589 PUSH0
+# Code UInt160.cs line 29: "OpCode(OpCode.NUMEQUAL)"
+0590 NUMEQUAL
+# Code ArgentRecoveryVerifier.cs line 292: "!address.IsZero"
+0591 NOT
+# Code ArgentRecoveryVerifier.cs line 292: "Assert(!address.IsZero, name + " is zero")"
+0592 CALL 03 # pos: 595 (offset: 3)
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
+# Code ArgentRecoveryVerifier.cs line 293: "}"
+0594 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.Assert(bool, string)
+0595 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code ArgentRecoveryVerifier.cs line 309: "condition"
+0598 LDARG0
+# Code ArgentRecoveryVerifier.cs line 309: "!condition"
+0599 NOT
+# Code ArgentRecoveryVerifier.cs line 309: "if (!condition) throw new Exception(message);"
+0600 JMPIFNOT 04 # pos: 604 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 309: "message"
+0602 LDARG1
+# Code ArgentRecoveryVerifier.cs line 309: "throw new Exception(message);"
+0603 THROW
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.Assert(bool, string)
+# Code ArgentRecoveryVerifier.cs line 310: "}"
+0604 RET
+0605 PUSH0
+0606 NUMEQUAL
+0607 RET
+0608 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+0613 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160)
+0614 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code ArgentRecoveryVerifier.cs line 281: "new byte[] { prefix }"
+0617 PUSH1
+# Code ArgentRecoveryVerifier.cs line 281: "new byte[] { prefix }"
+0618 NEWBUFFER
+# Code ArgentRecoveryVerifier.cs line 281: "new byte[] { prefix }"
+0619 DUP
+# Code ArgentRecoveryVerifier.cs line 281: "new byte[] { prefix }"
+0620 PUSH0
+# Code ArgentRecoveryVerifier.cs line 281: "prefix"
+0621 LDARG0
+# Code ArgentRecoveryVerifier.cs line 281: "new byte[] { prefix }"
+0622 SETITEM
+# Code ArgentRecoveryVerifier.cs line 281: "accountId"
+0623 LDARG1
+# Code Helper.cs line 200: "OpCode(OpCode.CAT)"
+0624 CAT
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160)
+0625 RET
+0626 CAT
+0627 RET
+0628 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+0633 RET
+0634 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+0639 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.KeyECPoint(byte, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint)
+0640 INITSLOT 00-03 # 0 local variables, 3 arguments
+# Code ArgentRecoveryVerifier.cs line 287: "new byte[] { prefix }"
+0643 PUSH1
+# Code ArgentRecoveryVerifier.cs line 287: "new byte[] { prefix }"
+0644 NEWBUFFER
+# Code ArgentRecoveryVerifier.cs line 287: "new byte[] { prefix }"
+0645 DUP
+# Code ArgentRecoveryVerifier.cs line 287: "new byte[] { prefix }"
+0646 PUSH0
+# Code ArgentRecoveryVerifier.cs line 287: "prefix"
+0647 LDARG0
+# Code ArgentRecoveryVerifier.cs line 287: "new byte[] { prefix }"
+0648 SETITEM
+# Code ArgentRecoveryVerifier.cs line 287: "accountId"
+0649 LDARG1
+# Code Helper.cs line 200: "OpCode(OpCode.CAT)"
+0650 CAT
+# Code ArgentRecoveryVerifier.cs line 287: "pubkey"
+0651 LDARG2
+# Code Helper.cs line 200: "OpCode(OpCode.CAT)"
+0652 CAT
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.KeyECPoint(byte, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint)
+0653 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.SetTimelock(Neo.SmartContract.Framework.UInt160, ulong)
+0654 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code ArgentRecoveryVerifier.cs line 87: "accountId"
+0657 LDARG0
+# Code ArgentRecoveryVerifier.cs line 87: "RequireOwner(accountId)"
+0658 CALL 4F # pos: 737 (offset: 79)
+# Code ArgentRecoveryVerifier.cs line 88: "accountId"
+0660 LDARG0
+# Code ArgentRecoveryVerifier.cs line 88: "RequireNotFrozen(accountId)"
+0661 CALL_L 8C-00-00-00 # pos: 801 (offset: 140)
+# Code ArgentRecoveryVerifier.cs line 89: ""Timelock too short""
+0666 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-74-6F-6F-20-73-68-6F-72-74 # as text: "Timelock too short"
+# Code ArgentRecoveryVerifier.cs line 89: "timelockDuration"
+0686 LDARG1
+# Code ArgentRecoveryVerifier.cs line 89: "MIN_TIMELOCK"
+0687 PUSHINT32 00-5C-26-05 # 86400000
+# Code ArgentRecoveryVerifier.cs line 89: "timelockDuration >= MIN_TIMELOCK"
+0692 GE
+# Code ArgentRecoveryVerifier.cs line 89: "Assert(timelockDuration >= MIN_TIMELOCK, "Timelock too short")"
+0693 CALL 9E # pos: 595 (offset: -98)
+# Code ArgentRecoveryVerifier.cs line 91: "timelockDuration"
+0695 LDARG1
+# Code ArgentRecoveryVerifier.cs line 91: "accountId"
+0696 LDARG0
+# Code ArgentRecoveryVerifier.cs line 91: "PREFIX_TIMELOCK"
+0697 PUSH6
+# Code ArgentRecoveryVerifier.cs line 91: "Key(PREFIX_TIMELOCK, accountId)"
+0698 CALL AC # pos: 614 (offset: -84)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0700 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0705 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 92: "timelockDuration"
+0710 LDARG1
+# Code ArgentRecoveryVerifier.cs line 92: "accountId"
+0711 LDARG0
+# Code ArgentRecoveryVerifier.cs line 92: "OnTimelockUpdated(accountId, timelockDuration)"
+0712 PUSH2
+# Code ArgentRecoveryVerifier.cs line 92: "OnTimelockUpdated(accountId, timelockDuration)"
+0713 PACK
+# Code ArgentRecoveryVerifier.cs line 92: "OnTimelockUpdated(accountId, timelockDuration)"
+0714 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-55-70-64-61-74-65-64 # as text: "TimelockUpdated"
+# Code ArgentRecoveryVerifier.cs line 92: "OnTimelockUpdated(accountId, timelockDuration)"
+0731 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.SetTimelock(Neo.SmartContract.Framework.UInt160, ulong)
+# Code ArgentRecoveryVerifier.cs line 93: "}"
+0736 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.UInt160)
+0737 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 297: "accountId"
+0740 LDARG0
+# Code ArgentRecoveryVerifier.cs line 297: "PREFIX_OWNER"
+0741 PUSH4
+# Code ArgentRecoveryVerifier.cs line 297: "Key(PREFIX_OWNER, accountId)"
+0742 CALL 80 # pos: 614 (offset: -128)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0744 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0749 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0754 DUP
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0755 ISNULL
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0756 JMPIF 09 # pos: 765 (offset: 9)
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0758 DUP
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0759 SIZE
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0760 PUSHINT8 14 # 20
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0762 JMPEQ 03 # pos: 765 (offset: 3)
+# Code ArgentRecoveryVerifier.cs line 297: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0764 THROW
+# Code ArgentRecoveryVerifier.cs line 297: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0765 STLOC0
+# Code ArgentRecoveryVerifier.cs line 298: ""Not owner""
+0766 PUSHDATA1 4E-6F-74-20-6F-77-6E-65-72 # as text: "Not owner"
+# Code ArgentRecoveryVerifier.cs line 298: "owner"
+0777 LDLOC0
+# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
+0778 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code ArgentRecoveryVerifier.cs line 298: "Assert(Runtime.CheckWitness(owner), "Not owner")"
+0783 CALL_L 44-FF-FF-FF # pos: 595 (offset: -188)
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 299: "}"
+0788 RET
+0789 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+0794 RET
+0795 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+0800 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.UInt160)
+0801 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 303: "accountId"
+0804 LDARG0
+# Code ArgentRecoveryVerifier.cs line 303: "PREFIX_FROZEN"
+0805 PUSH7
+# Code ArgentRecoveryVerifier.cs line 303: "Key(PREFIX_FROZEN, accountId)"
+0806 CALL_L 40-FF-FF-FF # pos: 614 (offset: -192)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0811 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0816 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 303: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+0821 STLOC0
+# Code ArgentRecoveryVerifier.cs line 304: ""Account frozen""
+0822 PUSHDATA1 41-63-63-6F-75-6E-74-20-66-72-6F-7A-65-6E # as text: "Account frozen"
+# Code ArgentRecoveryVerifier.cs line 304: "frozen"
+0838 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 304: "null"
+0839 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 304: "frozen == null"
+0840 EQUAL
+# Code ArgentRecoveryVerifier.cs line 304: "Assert(frozen == null, "Account frozen")"
+0841 CALL_L 0A-FF-FF-FF # pos: 595 (offset: -246)
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 305: "}"
+0846 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.UInt160)
+0847 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 98: "accountId"
+0850 LDARG0
+# Code ArgentRecoveryVerifier.cs line 98: "RequireOwner(accountId)"
+0851 CALL 8E # pos: 737 (offset: -114)
+# Code ArgentRecoveryVerifier.cs line 99: "1"
+0853 PUSH1
+# Code ArgentRecoveryVerifier.cs line 99: "accountId"
+0854 LDARG0
+# Code ArgentRecoveryVerifier.cs line 99: "PREFIX_FROZEN"
+0855 PUSH7
+# Code ArgentRecoveryVerifier.cs line 99: "Key(PREFIX_FROZEN, accountId)"
+0856 CALL_L 0E-FF-FF-FF # pos: 614 (offset: -242)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0861 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0866 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 102: "accountId"
+0871 LDARG0
+# Code ArgentRecoveryVerifier.cs line 102: "PREFIX_RECOVERY"
+0872 PUSH3
+# Code ArgentRecoveryVerifier.cs line 102: "Key(PREFIX_RECOVERY, accountId)"
+0873 CALL_L FD-FE-FF-FF # pos: 614 (offset: -259)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0878 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+0883 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code ArgentRecoveryVerifier.cs line 104: "accountId"
+0888 LDARG0
+# Code ArgentRecoveryVerifier.cs line 104: "OnEmergencyFreeze(accountId)"
+0889 PUSH1
+# Code ArgentRecoveryVerifier.cs line 104: "OnEmergencyFreeze(accountId)"
+0890 PACK
+# Code ArgentRecoveryVerifier.cs line 104: "OnEmergencyFreeze(accountId)"
+0891 PUSHDATA1 45-6D-65-72-67-65-6E-63-79-46-72-65-65-7A-65 # as text: "EmergencyFreeze"
+# Code ArgentRecoveryVerifier.cs line 104: "OnEmergencyFreeze(accountId)"
+0908 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 105: "}"
+0913 RET
+0914 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+0919 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.UInt160)
+0920 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 110: "accountId"
+0923 LDARG0
+# Code ArgentRecoveryVerifier.cs line 110: "RequireOwner(accountId)"
+0924 CALL_L 45-FF-FF-FF # pos: 737 (offset: -187)
+# Code ArgentRecoveryVerifier.cs line 111: "accountId"
+0929 LDARG0
+# Code ArgentRecoveryVerifier.cs line 111: "PREFIX_FROZEN"
+0930 PUSH7
+# Code ArgentRecoveryVerifier.cs line 111: "Key(PREFIX_FROZEN, accountId)"
+0931 CALL_L C3-FE-FF-FF # pos: 614 (offset: -317)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0936 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+0941 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code ArgentRecoveryVerifier.cs line 112: "accountId"
+0946 LDARG0
+# Code ArgentRecoveryVerifier.cs line 112: "OnUnfreeze(accountId)"
+0947 PUSH1
+# Code ArgentRecoveryVerifier.cs line 112: "OnUnfreeze(accountId)"
+0948 PACK
+# Code ArgentRecoveryVerifier.cs line 112: "OnUnfreeze(accountId)"
+0949 PUSHDATA1 55-6E-66-72-65-65-7A-65 # as text: "Unfreeze"
+# Code ArgentRecoveryVerifier.cs line 112: "OnUnfreeze(accountId)"
+0959 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 113: "}"
+0964 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.InitiateRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], byte[][], System.Numerics.BigInteger)
+0965 INITSLOT 08-05 # 8 local variables, 5 arguments
+# Code ArgentRecoveryVerifier.cs line 123: ""accountId""
+0968 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code ArgentRecoveryVerifier.cs line 123: "accountId"
+0979 LDARG0
+# Code ArgentRecoveryVerifier.cs line 123: "ValidateAddress(accountId, "accountId")"
+0980 CALL_L 54-FE-FF-FF # pos: 552 (offset: -428)
+# Code ArgentRecoveryVerifier.cs line 124: ""newOwner""
+0985 PUSHDATA1 6E-65-77-4F-77-6E-65-72 # as text: "newOwner"
+# Code ArgentRecoveryVerifier.cs line 124: "newOwner"
+0995 LDARG1
+# Code ArgentRecoveryVerifier.cs line 124: "ValidateAddress(newOwner, "newOwner")"
+0996 CALL_L 44-FE-FF-FF # pos: 552 (offset: -444)
+# Code ArgentRecoveryVerifier.cs line 125: "accountId"
+1001 LDARG0
+# Code ArgentRecoveryVerifier.cs line 125: "RequireNotFrozen(accountId)"
+1002 CALL_L 37-FF-FF-FF # pos: 801 (offset: -201)
+# Code ArgentRecoveryVerifier.cs line 128: "accountId"
+1007 LDARG0
+# Code ArgentRecoveryVerifier.cs line 128: "PREFIX_NONCE"
+1008 PUSH5
+# Code ArgentRecoveryVerifier.cs line 128: "Key(PREFIX_NONCE, accountId)"
+1009 CALL_L 75-FE-FF-FF # pos: 614 (offset: -395)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1014 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1019 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+1024 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+1025 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+1026 JMPIFNOT 06 # pos: 1032 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+1028 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+1029 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+1030 JMP 04 # pos: 1034 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+1032 CONVERT 21 # Integer type
+# Code ArgentRecoveryVerifier.cs line 128: "currentNonce = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_NONCE, accountId))"
+1034 STLOC0
+# Code ArgentRecoveryVerifier.cs line 129: ""Invalid nonce""
+1035 PUSHDATA1 49-6E-76-61-6C-69-64-20-6E-6F-6E-63-65 # as text: "Invalid nonce"
+# Code ArgentRecoveryVerifier.cs line 129: "nonce"
+1050 LDARG4
+# Code ArgentRecoveryVerifier.cs line 129: "currentNonce"
+1051 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 129: "nonce == currentNonce"
+1052 EQUAL
+# Code ArgentRecoveryVerifier.cs line 129: "Assert(nonce == currentNonce, "Invalid nonce")"
+1053 CALL_L 36-FE-FF-FF # pos: 595 (offset: -458)
+# Code ArgentRecoveryVerifier.cs line 131: "accountId"
+1058 LDARG0
+# Code ArgentRecoveryVerifier.cs line 131: "PREFIX_THRESHOLD"
+1059 PUSH2
+# Code ArgentRecoveryVerifier.cs line 131: "Key(PREFIX_THRESHOLD, accountId)"
+1060 CALL_L 42-FE-FF-FF # pos: 614 (offset: -446)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1065 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1070 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+1075 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+1076 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+1077 JMPIFNOT 06 # pos: 1083 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+1079 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+1080 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+1081 JMP 04 # pos: 1085 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+1083 CONVERT 21 # Integer type
+# Code ArgentRecoveryVerifier.cs line 131: "threshold = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_THRESHOLD, accountId))"
+1085 STLOC1
+# Code ArgentRecoveryVerifier.cs line 132: ""Not enough guardians""
+1086 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-67-75-61-72-64-69-61-6E-73 # as script hash: 0x736e61696472617567206867756f6e6520746f4e, as text: "Not enough guardians"
+# Code ArgentRecoveryVerifier.cs line 132: "guardians"
+1108 LDARG2
+# Code ArgentRecoveryVerifier.cs line 132: "guardians.Length"
+1109 SIZE
+# Code ArgentRecoveryVerifier.cs line 132: "threshold"
+1110 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 132: "guardians.Length >= threshold"
+1111 GE
+# Code ArgentRecoveryVerifier.cs line 132: "Assert(guardians.Length >= threshold, "Not enough guardians")"
+1112 CALL_L FB-FD-FF-FF # pos: 595 (offset: -517)
+# Code ArgentRecoveryVerifier.cs line 133: ""Mismatched arrays""
+1117 PUSHDATA1 4D-69-73-6D-61-74-63-68-65-64-20-61-72-72-61-79-73 # as text: "Mismatched arrays"
+# Code ArgentRecoveryVerifier.cs line 133: "guardians"
+1136 LDARG2
+# Code ArgentRecoveryVerifier.cs line 133: "guardians.Length"
+1137 SIZE
+# Code ArgentRecoveryVerifier.cs line 133: "signatures"
+1138 LDARG3
+# Code ArgentRecoveryVerifier.cs line 133: "signatures.Length"
+1139 SIZE
+# Code ArgentRecoveryVerifier.cs line 133: "guardians.Length == signatures.Length"
+1140 EQUAL
+# Code ArgentRecoveryVerifier.cs line 133: "Assert(guardians.Length == signatures.Length, "Mismatched arrays")"
+1141 CALL_L DE-FD-FF-FF # pos: 595 (offset: -546)
+# Code ArgentRecoveryVerifier.cs line 136: "accountId"
+1146 LDARG0
+# Code ArgentRecoveryVerifier.cs line 136: "newOwner"
+1147 LDARG1
+# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
+1148 CAT
+# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1149 CONVERT 28 # ByteString type
+# Code ArgentRecoveryVerifier.cs line 136: "nonce"
+1151 LDARG4
+# Code ArgentRecoveryVerifier.cs line 136: "((BigInteger)nonce).ToByteArray()"
+1152 CONVERT 30 # Buffer type
+# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1154 CONVERT 28 # ByteString type
+# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
+1156 CAT
+# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1157 CONVERT 28 # ByteString type
+# Code ArgentRecoveryVerifier.cs line 136: "message = Helper.Concat(Helper.Concat(accountId, newOwner), (ByteString)((BigInteger)nonce).ToByteArray())"
+1159 STLOC2
+# Code ArgentRecoveryVerifier.cs line 137: "message"
+1160 LDLOC2
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+1161 CALLT 00-00 # CryptoLib.sha256 token call
+# Code ArgentRecoveryVerifier.cs line 137: "messageHash = CryptoLib.Sha256(message)"
+1164 STLOC3
+# Code ArgentRecoveryVerifier.cs line 140: "0"
+1165 PUSH0
+# Code ArgentRecoveryVerifier.cs line 140: "validSigs = 0"
+1166 STLOC4
+# Code ArgentRecoveryVerifier.cs line 141: "0"
+1167 PUSH0
+# Code ArgentRecoveryVerifier.cs line 141: "i = 0"
+1168 STLOC5
+1169 JMP_L 80-00-00-00 # pos: 1297 (offset: 128)
+# Code ArgentRecoveryVerifier.cs line 144: "guardians"
+1174 LDARG2
+# Code ArgentRecoveryVerifier.cs line 144: "i"
+1175 LDLOC5
+# Code ArgentRecoveryVerifier.cs line 144: "guardians[i]"
+1176 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 144: "accountId"
+1177 LDARG0
+# Code ArgentRecoveryVerifier.cs line 144: "PREFIX_GUARDIAN"
+1178 PUSH1
+# Code ArgentRecoveryVerifier.cs line 144: "KeyECPoint(PREFIX_GUARDIAN, accountId, guardians[i])"
+1179 CALL_L E5-FD-FF-FF # pos: 640 (offset: -539)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1184 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1189 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 144: "isGuardian = Storage.Get(Storage.CurrentContext, KeyECPoint(PREFIX_GUARDIAN, accountId, guardians[i]))"
+1194 STLOC6
+# Code ArgentRecoveryVerifier.cs line 145: ""Invalid guardian""
+1195 PUSHDATA1 49-6E-76-61-6C-69-64-20-67-75-61-72-64-69-61-6E # as text: "Invalid guardian"
+# Code ArgentRecoveryVerifier.cs line 145: "isGuardian"
+1213 LDLOC6
+# Code ArgentRecoveryVerifier.cs line 145: "null"
+1214 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 145: "isGuardian != null"
+1215 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 145: "Assert(isGuardian != null, "Invalid guardian")"
+1216 CALL_L 93-FD-FF-FF # pos: 595 (offset: -621)
+# Code ArgentRecoveryVerifier.cs line 152: "NamedCurveHash.secp256r1SHA256"
+1221 PUSHINT8 17 # 23
+# Code ArgentRecoveryVerifier.cs line 151: "signatures"
+1223 LDARG3
+# Code ArgentRecoveryVerifier.cs line 151: "i"
+1224 LDLOC5
+# Code ArgentRecoveryVerifier.cs line 151: "signatures[i]"
+1225 PICKITEM
+# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1226 CONVERT 28 # ByteString type
+# Code ArgentRecoveryVerifier.cs line 150: "guardians"
+1228 LDARG2
+# Code ArgentRecoveryVerifier.cs line 150: "i"
+1229 LDLOC5
+# Code ArgentRecoveryVerifier.cs line 150: "guardians[i]"
+1230 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 149: "messageHash"
+1231 LDLOC3
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+1232 CALLT 01-00 # CryptoLib.verifyWithECDsa token call
+# Code ArgentRecoveryVerifier.cs line 148: "valid = CryptoLib.VerifyWithECDsa("
+# Code ArgentRecoveryVerifier.cs line 148: "messageHash,"
+# Code ArgentRecoveryVerifier.cs line 148: "guardians[i],"
+# Code ArgentRecoveryVerifier.cs line 148: "(ByteString)signatures[i],"
+# Code ArgentRecoveryVerifier.cs line 148: "NamedCurveHash.secp256r1SHA256"
+# Code ArgentRecoveryVerifier.cs line 148: ")"
+1235 STLOC 07 # Slot index 7
+# Code ArgentRecoveryVerifier.cs line 155: "valid"
+1237 LDLOC 07 # Slot index 7
+# Code ArgentRecoveryVerifier.cs line 155: "if (valid) validSigs++;"
+1239 JMPIFNOT 07 # pos: 1246 (offset: 7)
+# Code ArgentRecoveryVerifier.cs line 155: "validSigs++"
+1241 LDLOC4
+# Code ArgentRecoveryVerifier.cs line 155: "validSigs++"
+1242 DUP
+# Code ArgentRecoveryVerifier.cs line 155: "validSigs++"
+1243 INC
+# Code ArgentRecoveryVerifier.cs line 155: "validSigs++"
+1244 STLOC4
+# Code ArgentRecoveryVerifier.cs line 155: "validSigs++"
+1245 DROP
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1246 LDLOC5
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1247 DUP
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1248 INC
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1249 DUP
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1250 PUSHINT32 00-00-00-80 # -2147483648
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1255 JMPGE 04 # pos: 1259 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1257 JMP 0A # pos: 1267 (offset: 10)
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1259 DUP
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1260 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1265 JMPLE 1E # pos: 1295 (offset: 30)
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1267 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1276 AND
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1277 DUP
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1278 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1283 JMPLE 0C # pos: 1295 (offset: 12)
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1285 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1294 SUB
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1295 STLOC5
+# Code ArgentRecoveryVerifier.cs line 141: "i++"
+1296 DROP
+# Code ArgentRecoveryVerifier.cs line 141: "i"
+1297 LDLOC5
+# Code ArgentRecoveryVerifier.cs line 141: "guardians"
+1298 LDARG2
+# Code ArgentRecoveryVerifier.cs line 141: "guardians.Length"
+1299 SIZE
+# Code ArgentRecoveryVerifier.cs line 141: "i < guardians.Length"
+1300 LT
+1301 JMPIF 81 # pos: 1174 (offset: -127)
+# Code ArgentRecoveryVerifier.cs line 158: ""Not enough valid signatures""
+1303 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-76-61-6C-69-64-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Not enough valid signatures"
+# Code ArgentRecoveryVerifier.cs line 158: "validSigs"
+1332 LDLOC4
+# Code ArgentRecoveryVerifier.cs line 158: "threshold"
+1333 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 158: "validSigs >= threshold"
+1334 GE
+# Code ArgentRecoveryVerifier.cs line 158: "Assert(validSigs >= threshold, "Not enough valid signatures")"
+1335 CALL_L 1C-FD-FF-FF # pos: 595 (offset: -740)
+# Code ArgentRecoveryVerifier.cs line 161: "accountId"
+1340 LDARG0
+# Code ArgentRecoveryVerifier.cs line 161: "PREFIX_TIMELOCK"
+1341 PUSH6
+# Code ArgentRecoveryVerifier.cs line 161: "Key(PREFIX_TIMELOCK, accountId)"
+1342 CALL_L 28-FD-FF-FF # pos: 614 (offset: -728)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1347 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1352 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+1357 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+1358 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+1359 JMPIFNOT 06 # pos: 1365 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+1361 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+1362 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+1363 JMP 04 # pos: 1367 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+1365 CONVERT 21 # Integer type
+# Code ArgentRecoveryVerifier.cs line 161: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1367 DUP
+# Code ArgentRecoveryVerifier.cs line 161: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1368 PUSH0
+# Code ArgentRecoveryVerifier.cs line 161: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1369 PUSHINT128 00-00-00-00-00-00-00-00-01-00-00-00-00-00-00-00 # 18446744073709551616
+# Code ArgentRecoveryVerifier.cs line 161: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1386 WITHIN
+# Code ArgentRecoveryVerifier.cs line 161: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1387 JMPIF 03 # pos: 1390 (offset: 3)
+# Code ArgentRecoveryVerifier.cs line 161: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1389 THROW
+# Code ArgentRecoveryVerifier.cs line 161: "timelock = (ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK, accountId))"
+1390 STLOC5
+# Code ArgentRecoveryVerifier.cs line 170: "nonce"
+1391 LDARG4
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1392 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code ArgentRecoveryVerifier.cs line 169: "timelock"
+1397 LDLOC5
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1398 ADD
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1399 DUP
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1400 PUSH0
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1401 JMPGE 04 # pos: 1405 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1403 JMP 16 # pos: 1425 (offset: 22)
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1405 DUP
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1406 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1423 JMPLE 14 # pos: 1443 (offset: 20)
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1425 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code ArgentRecoveryVerifier.cs line 169: "Runtime.Time + timelock"
+1442 AND
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1443 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code ArgentRecoveryVerifier.cs line 167: "guardians"
+1448 LDARG2
+# Code ArgentRecoveryVerifier.cs line 166: "newOwner"
+1449 LDARG1
+# Code ArgentRecoveryVerifier.cs line 164: "new RecoveryRequest"
+# Code ArgentRecoveryVerifier.cs line 164: "{"
+# Code ArgentRecoveryVerifier.cs line 164: "NewOwner = newOwner,"
+# Code ArgentRecoveryVerifier.cs line 164: "Guardians = guardians,"
+# Code ArgentRecoveryVerifier.cs line 164: "InitiatedAt = Runtime.Time,"
+# Code ArgentRecoveryVerifier.cs line 164: "ExecutableAt = Runtime.Time + timelock,"
+# Code ArgentRecoveryVerifier.cs line 164: "Nonce = nonce"
+# Code ArgentRecoveryVerifier.cs line 164: "}"
+1450 PUSH5
+# Code ArgentRecoveryVerifier.cs line 164: "new RecoveryRequest"
+# Code ArgentRecoveryVerifier.cs line 164: "{"
+# Code ArgentRecoveryVerifier.cs line 164: "NewOwner = newOwner,"
+# Code ArgentRecoveryVerifier.cs line 164: "Guardians = guardians,"
+# Code ArgentRecoveryVerifier.cs line 164: "InitiatedAt = Runtime.Time,"
+# Code ArgentRecoveryVerifier.cs line 164: "ExecutableAt = Runtime.Time + timelock,"
+# Code ArgentRecoveryVerifier.cs line 164: "Nonce = nonce"
+# Code ArgentRecoveryVerifier.cs line 164: "}"
+1451 PACK
+# Code ArgentRecoveryVerifier.cs line 164: "request = new RecoveryRequest"
+# Code ArgentRecoveryVerifier.cs line 164: "{"
+# Code ArgentRecoveryVerifier.cs line 164: "NewOwner = newOwner,"
+# Code ArgentRecoveryVerifier.cs line 164: "Guardians = guardians,"
+# Code ArgentRecoveryVerifier.cs line 164: "InitiatedAt = Runtime.Time,"
+# Code ArgentRecoveryVerifier.cs line 164: "ExecutableAt = Runtime.Time + timelock,"
+# Code ArgentRecoveryVerifier.cs line 164: "Nonce = nonce"
+# Code ArgentRecoveryVerifier.cs line 164: "}"
+1452 STLOC6
+# Code ArgentRecoveryVerifier.cs line 174: "request"
+1453 LDLOC6
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1454 CALLT 02-00 # StdLib.serialize token call
+# Code ArgentRecoveryVerifier.cs line 174: "accountId"
+1457 LDARG0
+# Code ArgentRecoveryVerifier.cs line 174: "PREFIX_RECOVERY"
+1458 PUSH3
+# Code ArgentRecoveryVerifier.cs line 174: "Key(PREFIX_RECOVERY, accountId)"
+1459 CALL_L B3-FC-FF-FF # pos: 614 (offset: -845)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1464 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1469 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 175: "currentNonce"
+1474 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 175: "1"
+1475 PUSH1
+# Code ArgentRecoveryVerifier.cs line 175: "currentNonce + 1"
+1476 ADD
+# Code ArgentRecoveryVerifier.cs line 175: "accountId"
+1477 LDARG0
+# Code ArgentRecoveryVerifier.cs line 175: "PREFIX_NONCE"
+1478 PUSH5
+# Code ArgentRecoveryVerifier.cs line 175: "Key(PREFIX_NONCE, accountId)"
+1479 CALL_L 9F-FC-FF-FF # pos: 614 (offset: -865)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1484 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+1489 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 177: "request"
+1494 LDLOC6
+# Code ArgentRecoveryVerifier.cs line 177: "request.ExecutableAt"
+1495 PUSH3
+# Code ArgentRecoveryVerifier.cs line 177: "request.ExecutableAt"
+1496 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 177: "validSigs"
+1497 LDLOC4
+# Code ArgentRecoveryVerifier.cs line 177: "guardians"
+1498 LDARG2
+# Code ArgentRecoveryVerifier.cs line 177: "newOwner"
+1499 LDARG1
+# Code ArgentRecoveryVerifier.cs line 177: "accountId"
+1500 LDARG0
+# Code ArgentRecoveryVerifier.cs line 177: "OnRecoveryInitiated(accountId, newOwner, guardians, validSigs, request.ExecutableAt)"
+1501 PUSH5
+# Code ArgentRecoveryVerifier.cs line 177: "OnRecoveryInitiated(accountId, newOwner, guardians, validSigs, request.ExecutableAt)"
+1502 PACK
+# Code ArgentRecoveryVerifier.cs line 177: "OnRecoveryInitiated(accountId, newOwner, guardians, validSigs, request.ExecutableAt)"
+1503 PUSHDATA1 52-65-63-6F-76-65-72-79-49-6E-69-74-69-61-74-65-64 # as text: "RecoveryInitiated"
+# Code ArgentRecoveryVerifier.cs line 177: "OnRecoveryInitiated(accountId, newOwner, guardians, validSigs, request.ExecutableAt)"
+1522 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.InitiateRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], byte[][], System.Numerics.BigInteger)
+# Code ArgentRecoveryVerifier.cs line 178: "}"
+1527 RET
+1528 DUP
+1529 ISNULL
+1530 JMPIFNOT 06 # pos: 1536 (offset: 6)
+1532 DROP
+1533 PUSH0
+1534 JMP 04 # pos: 1538 (offset: 4)
+1536 CONVERT 21 # Integer type
+1538 RET
+1539 CAT
+1540 CONVERT 28 # ByteString type
+1542 RET
+1543 CONVERT 28 # ByteString type
+1545 RET
+1546 CALLT 00-00 # CryptoLib.sha256 token call
+1549 RET
+1550 CALLT 01-00 # CryptoLib.verifyWithECDsa token call
+1553 RET
+1554 RET
+1555 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+1560 RET
+1561 CALLT 02-00 # StdLib.serialize token call
+1564 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.UInt160)
+1565 INITSLOT 02-01 # 2 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 183: ""accountId""
+1568 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code ArgentRecoveryVerifier.cs line 183: "accountId"
+1579 LDARG0
+# Code ArgentRecoveryVerifier.cs line 183: "ValidateAddress(accountId, "accountId")"
+1580 CALL_L FC-FB-FF-FF # pos: 552 (offset: -1028)
+# Code ArgentRecoveryVerifier.cs line 184: "accountId"
+1585 LDARG0
+# Code ArgentRecoveryVerifier.cs line 184: "RequireNotFrozen(accountId)"
+1586 CALL_L EF-FC-FF-FF # pos: 801 (offset: -785)
+# Code ArgentRecoveryVerifier.cs line 187: "accountId"
+1591 LDARG0
+# Code ArgentRecoveryVerifier.cs line 187: "PREFIX_RECOVERY"
+1592 PUSH3
+# Code ArgentRecoveryVerifier.cs line 187: "Key(PREFIX_RECOVERY, accountId)"
+1593 CALL_L 2D-FC-FF-FF # pos: 614 (offset: -979)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1598 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1603 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 187: "data = Storage.Get(Storage.CurrentContext, Key(PREFIX_RECOVERY, accountId))"
+1608 STLOC0
+# Code ArgentRecoveryVerifier.cs line 188: ""No recovery request""
+1609 PUSHDATA1 4E-6F-20-72-65-63-6F-76-65-72-79-20-72-65-71-75-65-73-74 # as text: "No recovery request"
+# Code ArgentRecoveryVerifier.cs line 188: "data"
+1630 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 188: "null"
+1631 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 188: "data != null"
+1632 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 188: "Assert(data != null, "No recovery request")"
+1633 CALL_L F2-FB-FF-FF # pos: 595 (offset: -1038)
+# Code ArgentRecoveryVerifier.cs line 190: "data"
+1638 LDLOC0
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1639 CALLT 03-00 # StdLib.deserialize token call
+# Code ArgentRecoveryVerifier.cs line 190: "request = (RecoveryRequest)StdLib.Deserialize(data)"
+1642 STLOC1
+# Code ArgentRecoveryVerifier.cs line 191: ""Timelock not expired""
+1643 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-6E-6F-74-20-65-78-70-69-72-65-64 # as script hash: 0x6465726970786520746f6e206b636f6c656d6954, as text: "Timelock not expired"
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1665 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code ArgentRecoveryVerifier.cs line 191: "request"
+1670 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 191: "request.ExecutableAt"
+1671 PUSH3
+# Code ArgentRecoveryVerifier.cs line 191: "request.ExecutableAt"
+1672 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 191: "Runtime.Time >= request.ExecutableAt"
+1673 GE
+# Code ArgentRecoveryVerifier.cs line 191: "Assert(Runtime.Time >= request.ExecutableAt, "Timelock not expired")"
+1674 CALL_L C9-FB-FF-FF # pos: 595 (offset: -1079)
+# Code ArgentRecoveryVerifier.cs line 192: ""Request expired""
+1679 PUSHDATA1 52-65-71-75-65-73-74-20-65-78-70-69-72-65-64 # as text: "Request expired"
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1696 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code ArgentRecoveryVerifier.cs line 192: "request"
+1701 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt"
+1702 PUSH3
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt"
+1703 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 192: "RECOVERY_EXPIRY"
+1704 PUSHINT32 00-84-0C-24 # 604800000
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1709 ADD
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1710 DUP
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1711 PUSH0
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1712 JMPGE 04 # pos: 1716 (offset: 4)
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1714 JMP 16 # pos: 1736 (offset: 22)
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1716 DUP
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1717 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1734 JMPLE 14 # pos: 1754 (offset: 20)
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1736 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code ArgentRecoveryVerifier.cs line 192: "request.ExecutableAt + RECOVERY_EXPIRY"
+1753 AND
+# Code ArgentRecoveryVerifier.cs line 192: "Runtime.Time <= request.ExecutableAt + RECOVERY_EXPIRY"
+1754 LE
+# Code ArgentRecoveryVerifier.cs line 192: "Assert(Runtime.Time <= request.ExecutableAt + RECOVERY_EXPIRY, "Request expired")"
+1755 CALL_L 78-FB-FF-FF # pos: 595 (offset: -1160)
+# Code ArgentRecoveryVerifier.cs line 195: "accountId"
+1760 LDARG0
+# Code ArgentRecoveryVerifier.cs line 195: "PREFIX_RECOVERY"
+1761 PUSH3
+# Code ArgentRecoveryVerifier.cs line 195: "Key(PREFIX_RECOVERY, accountId)"
+1762 CALL_L 84-FB-FF-FF # pos: 614 (offset: -1148)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1767 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+1772 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code ArgentRecoveryVerifier.cs line 198: "request"
+1777 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 198: "request.NewOwner"
+1778 PUSH0
+# Code ArgentRecoveryVerifier.cs line 198: "request.NewOwner"
+1779 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 198: "accountId"
+1780 LDARG0
+# Code ArgentRecoveryVerifier.cs line 198: "PREFIX_OWNER"
+1781 PUSH4
+# Code ArgentRecoveryVerifier.cs line 198: "Key(PREFIX_OWNER, accountId)"
+1782 CALL_L 70-FB-FF-FF # pos: 614 (offset: -1168)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1787 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1792 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 200: "request"
+1797 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 200: "request.NewOwner"
+1798 PUSH0
+# Code ArgentRecoveryVerifier.cs line 200: "request.NewOwner"
+1799 PICKITEM
+# Code ArgentRecoveryVerifier.cs line 200: "accountId"
+1800 LDARG0
+# Code ArgentRecoveryVerifier.cs line 200: "OnRecoveryExecuted(accountId, request.NewOwner)"
+1801 PUSH2
+# Code ArgentRecoveryVerifier.cs line 200: "OnRecoveryExecuted(accountId, request.NewOwner)"
+1802 PACK
+# Code ArgentRecoveryVerifier.cs line 200: "OnRecoveryExecuted(accountId, request.NewOwner)"
+1803 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
+# Code ArgentRecoveryVerifier.cs line 200: "OnRecoveryExecuted(accountId, request.NewOwner)"
+1821 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 201: "}"
+1826 RET
+1827 CALLT 03-00 # StdLib.deserialize token call
+1830 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.UInt160)
+1831 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 206: ""accountId""
+1834 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code ArgentRecoveryVerifier.cs line 206: "accountId"
+1845 LDARG0
+# Code ArgentRecoveryVerifier.cs line 206: "ValidateAddress(accountId, "accountId")"
+1846 CALL_L F2-FA-FF-FF # pos: 552 (offset: -1294)
+# Code ArgentRecoveryVerifier.cs line 207: "accountId"
+1851 LDARG0
+# Code ArgentRecoveryVerifier.cs line 207: "RequireOwner(accountId)"
+1852 CALL_L A5-FB-FF-FF # pos: 737 (offset: -1115)
+# Code ArgentRecoveryVerifier.cs line 209: "accountId"
+1857 LDARG0
+# Code ArgentRecoveryVerifier.cs line 209: "PREFIX_RECOVERY"
+1858 PUSH3
+# Code ArgentRecoveryVerifier.cs line 209: "Key(PREFIX_RECOVERY, accountId)"
+1859 CALL_L 23-FB-FF-FF # pos: 614 (offset: -1245)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1864 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1869 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 209: "data = Storage.Get(Storage.CurrentContext, Key(PREFIX_RECOVERY, accountId))"
+1874 STLOC0
+# Code ArgentRecoveryVerifier.cs line 210: ""No recovery request""
+1875 PUSHDATA1 4E-6F-20-72-65-63-6F-76-65-72-79-20-72-65-71-75-65-73-74 # as text: "No recovery request"
+# Code ArgentRecoveryVerifier.cs line 210: "data"
+1896 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 210: "null"
+1897 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 210: "data != null"
+1898 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 210: "Assert(data != null, "No recovery request")"
+1899 CALL_L E8-FA-FF-FF # pos: 595 (offset: -1304)
+# Code ArgentRecoveryVerifier.cs line 212: "accountId"
+1904 LDARG0
+# Code ArgentRecoveryVerifier.cs line 212: "PREFIX_RECOVERY"
+1905 PUSH3
+# Code ArgentRecoveryVerifier.cs line 212: "Key(PREFIX_RECOVERY, accountId)"
+1906 CALL_L F4-FA-FF-FF # pos: 614 (offset: -1292)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1911 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+1916 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code ArgentRecoveryVerifier.cs line 213: "accountId"
+1921 LDARG0
+# Code ArgentRecoveryVerifier.cs line 213: "OnRecoveryCancelled(accountId)"
+1922 PUSH1
+# Code ArgentRecoveryVerifier.cs line 213: "OnRecoveryCancelled(accountId)"
+1923 PACK
+# Code ArgentRecoveryVerifier.cs line 213: "OnRecoveryCancelled(accountId)"
+1924 PUSHDATA1 52-65-63-6F-76-65-72-79-43-61-6E-63-65-6C-6C-65-64 # as text: "RecoveryCancelled"
+# Code ArgentRecoveryVerifier.cs line 213: "OnRecoveryCancelled(accountId)"
+1943 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 214: "}"
+1948 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.AddGuardian(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint)
+1949 INITSLOT 02-02 # 2 local variables, 2 arguments
+# Code ArgentRecoveryVerifier.cs line 219: ""accountId""
+1952 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code ArgentRecoveryVerifier.cs line 219: "accountId"
+1963 LDARG0
+# Code ArgentRecoveryVerifier.cs line 219: "ValidateAddress(accountId, "accountId")"
+1964 CALL_L 7C-FA-FF-FF # pos: 552 (offset: -1412)
+# Code ArgentRecoveryVerifier.cs line 220: ""Guardian is null""
+1969 PUSHDATA1 47-75-61-72-64-69-61-6E-20-69-73-20-6E-75-6C-6C # as text: "Guardian is null"
+# Code ArgentRecoveryVerifier.cs line 220: "guardian"
+1987 LDARG1
+# Code ArgentRecoveryVerifier.cs line 220: "null"
+1988 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 220: "guardian != null"
+1989 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 220: "Assert(guardian != null, "Guardian is null")"
+1990 CALL_L 8D-FA-FF-FF # pos: 595 (offset: -1395)
+# Code ArgentRecoveryVerifier.cs line 221: "accountId"
+1995 LDARG0
+# Code ArgentRecoveryVerifier.cs line 221: "RequireOwner(accountId)"
+1996 CALL_L 15-FB-FF-FF # pos: 737 (offset: -1259)
+# Code ArgentRecoveryVerifier.cs line 222: "accountId"
+2001 LDARG0
+# Code ArgentRecoveryVerifier.cs line 222: "RequireNotFrozen(accountId)"
+2002 CALL_L 4F-FB-FF-FF # pos: 801 (offset: -1201)
+# Code ArgentRecoveryVerifier.cs line 224: "accountId"
+2007 LDARG0
+# Code ArgentRecoveryVerifier.cs line 224: "PREFIX_GUARDIAN_COUNT"
+2008 PUSH8
+# Code ArgentRecoveryVerifier.cs line 224: "Key(PREFIX_GUARDIAN_COUNT, accountId)"
+2009 CALL_L 8D-FA-FF-FF # pos: 614 (offset: -1395)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2014 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2019 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+2024 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+2025 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+2026 JMPIFNOT 06 # pos: 2032 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+2028 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+2029 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+2030 JMP 04 # pos: 2034 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+2032 CONVERT 21 # Integer type
+# Code ArgentRecoveryVerifier.cs line 224: "count = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_GUARDIAN_COUNT, accountId))"
+2034 STLOC0
+# Code ArgentRecoveryVerifier.cs line 225: ""Max guardians reached""
+2035 PUSHDATA1 4D-61-78-20-67-75-61-72-64-69-61-6E-73-20-72-65-61-63-68-65-64 # as text: "Max guardians reached"
+# Code ArgentRecoveryVerifier.cs line 225: "count"
+2058 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 225: "MAX_GUARDIANS"
+2059 PUSH10
+# Code ArgentRecoveryVerifier.cs line 225: "count < MAX_GUARDIANS"
+2060 LT
+# Code ArgentRecoveryVerifier.cs line 225: "Assert(count < MAX_GUARDIANS, "Max guardians reached")"
+2061 CALL_L 46-FA-FF-FF # pos: 595 (offset: -1466)
+# Code ArgentRecoveryVerifier.cs line 227: "guardian"
+2066 LDARG1
+# Code ArgentRecoveryVerifier.cs line 227: "accountId"
+2067 LDARG0
+# Code ArgentRecoveryVerifier.cs line 227: "PREFIX_GUARDIAN"
+2068 PUSH1
+# Code ArgentRecoveryVerifier.cs line 227: "KeyECPoint(PREFIX_GUARDIAN, accountId, guardian)"
+2069 CALL_L 6B-FA-FF-FF # pos: 640 (offset: -1429)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2074 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2079 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 227: "exists = Storage.Get(Storage.CurrentContext, KeyECPoint(PREFIX_GUARDIAN, accountId, guardian))"
+2084 STLOC1
+# Code ArgentRecoveryVerifier.cs line 228: ""Guardian already exists""
+2085 PUSHDATA1 47-75-61-72-64-69-61-6E-20-61-6C-72-65-61-64-79-20-65-78-69-73-74-73 # as text: "Guardian already exists"
+# Code ArgentRecoveryVerifier.cs line 228: "exists"
+2110 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 228: "null"
+2111 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 228: "exists == null"
+2112 EQUAL
+# Code ArgentRecoveryVerifier.cs line 228: "Assert(exists == null, "Guardian already exists")"
+2113 CALL_L 12-FA-FF-FF # pos: 595 (offset: -1518)
+# Code ArgentRecoveryVerifier.cs line 230: "1"
+2118 PUSH1
+# Code ArgentRecoveryVerifier.cs line 230: "guardian"
+2119 LDARG1
+# Code ArgentRecoveryVerifier.cs line 230: "accountId"
+2120 LDARG0
+# Code ArgentRecoveryVerifier.cs line 230: "PREFIX_GUARDIAN"
+2121 PUSH1
+# Code ArgentRecoveryVerifier.cs line 230: "KeyECPoint(PREFIX_GUARDIAN, accountId, guardian)"
+2122 CALL_L 36-FA-FF-FF # pos: 640 (offset: -1482)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2127 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+2132 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 231: "count"
+2137 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 231: "1"
+2138 PUSH1
+# Code ArgentRecoveryVerifier.cs line 231: "count + 1"
+2139 ADD
+# Code ArgentRecoveryVerifier.cs line 231: "accountId"
+2140 LDARG0
+# Code ArgentRecoveryVerifier.cs line 231: "PREFIX_GUARDIAN_COUNT"
+2141 PUSH8
+# Code ArgentRecoveryVerifier.cs line 231: "Key(PREFIX_GUARDIAN_COUNT, accountId)"
+2142 CALL_L 08-FA-FF-FF # pos: 614 (offset: -1528)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2147 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+2152 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 233: "guardian"
+2157 LDARG1
+# Code ArgentRecoveryVerifier.cs line 233: "accountId"
+2158 LDARG0
+# Code ArgentRecoveryVerifier.cs line 233: "OnGuardianAdded(accountId, guardian)"
+2159 PUSH2
+# Code ArgentRecoveryVerifier.cs line 233: "OnGuardianAdded(accountId, guardian)"
+2160 PACK
+# Code ArgentRecoveryVerifier.cs line 233: "OnGuardianAdded(accountId, guardian)"
+2161 PUSHDATA1 47-75-61-72-64-69-61-6E-41-64-64-65-64 # as text: "GuardianAdded"
+# Code ArgentRecoveryVerifier.cs line 233: "OnGuardianAdded(accountId, guardian)"
+2176 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.AddGuardian(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint)
+# Code ArgentRecoveryVerifier.cs line 234: "}"
+2181 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.RemoveGuardian(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint)
+2182 INITSLOT 02-02 # 2 local variables, 2 arguments
+# Code ArgentRecoveryVerifier.cs line 239: ""accountId""
+2185 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code ArgentRecoveryVerifier.cs line 239: "accountId"
+2196 LDARG0
+# Code ArgentRecoveryVerifier.cs line 239: "ValidateAddress(accountId, "accountId")"
+2197 CALL_L 93-F9-FF-FF # pos: 552 (offset: -1645)
+# Code ArgentRecoveryVerifier.cs line 240: ""Guardian is null""
+2202 PUSHDATA1 47-75-61-72-64-69-61-6E-20-69-73-20-6E-75-6C-6C # as text: "Guardian is null"
+# Code ArgentRecoveryVerifier.cs line 240: "guardian"
+2220 LDARG1
+# Code ArgentRecoveryVerifier.cs line 240: "null"
+2221 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 240: "guardian != null"
+2222 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 240: "Assert(guardian != null, "Guardian is null")"
+2223 CALL_L A4-F9-FF-FF # pos: 595 (offset: -1628)
+# Code ArgentRecoveryVerifier.cs line 241: "accountId"
+2228 LDARG0
+# Code ArgentRecoveryVerifier.cs line 241: "RequireOwner(accountId)"
+2229 CALL_L 2C-FA-FF-FF # pos: 737 (offset: -1492)
+# Code ArgentRecoveryVerifier.cs line 242: "accountId"
+2234 LDARG0
+# Code ArgentRecoveryVerifier.cs line 242: "RequireNotFrozen(accountId)"
+2235 CALL_L 66-FA-FF-FF # pos: 801 (offset: -1434)
+# Code ArgentRecoveryVerifier.cs line 244: "accountId"
+2240 LDARG0
+# Code ArgentRecoveryVerifier.cs line 244: "PREFIX_GUARDIAN_COUNT"
+2241 PUSH8
+# Code ArgentRecoveryVerifier.cs line 244: "Key(PREFIX_GUARDIAN_COUNT, accountId)"
+2242 CALL_L A4-F9-FF-FF # pos: 614 (offset: -1628)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2247 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2252 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+2257 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+2258 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+2259 JMPIFNOT 06 # pos: 2265 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+2261 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+2262 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+2263 JMP 04 # pos: 2267 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+2265 CONVERT 21 # Integer type
+# Code ArgentRecoveryVerifier.cs line 244: "count = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_GUARDIAN_COUNT, accountId))"
+2267 STLOC0
+# Code ArgentRecoveryVerifier.cs line 245: "accountId"
+2268 LDARG0
+# Code ArgentRecoveryVerifier.cs line 245: "PREFIX_THRESHOLD"
+2269 PUSH2
+# Code ArgentRecoveryVerifier.cs line 245: "Key(PREFIX_THRESHOLD, accountId)"
+2270 CALL_L 88-F9-FF-FF # pos: 614 (offset: -1656)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2275 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2280 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+2285 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+2286 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+2287 JMPIFNOT 06 # pos: 2293 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+2289 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+2290 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+2291 JMP 04 # pos: 2295 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+2293 CONVERT 21 # Integer type
+# Code ArgentRecoveryVerifier.cs line 245: "threshold = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_THRESHOLD, accountId))"
+2295 STLOC1
+# Code ArgentRecoveryVerifier.cs line 247: ""Would break threshold""
+2296 PUSHDATA1 57-6F-75-6C-64-20-62-72-65-61-6B-20-74-68-72-65-73-68-6F-6C-64 # as text: "Would break threshold"
+# Code ArgentRecoveryVerifier.cs line 247: "count"
+2319 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 247: "1"
+2320 PUSH1
+# Code ArgentRecoveryVerifier.cs line 247: "count - 1"
+2321 SUB
+# Code ArgentRecoveryVerifier.cs line 247: "threshold"
+2322 LDLOC1
+# Code ArgentRecoveryVerifier.cs line 247: "count - 1 >= threshold"
+2323 GE
+# Code ArgentRecoveryVerifier.cs line 247: "Assert(count - 1 >= threshold, "Would break threshold")"
+2324 CALL_L 3F-F9-FF-FF # pos: 595 (offset: -1729)
+# Code ArgentRecoveryVerifier.cs line 248: ""Too few guardians""
+2329 PUSHDATA1 54-6F-6F-20-66-65-77-20-67-75-61-72-64-69-61-6E-73 # as text: "Too few guardians"
+# Code ArgentRecoveryVerifier.cs line 248: "count"
+2348 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 248: "1"
+2349 PUSH1
+# Code ArgentRecoveryVerifier.cs line 248: "count - 1"
+2350 SUB
+# Code ArgentRecoveryVerifier.cs line 248: "MIN_GUARDIANS"
+2351 PUSH3
+# Code ArgentRecoveryVerifier.cs line 248: "count - 1 >= MIN_GUARDIANS"
+2352 GE
+# Code ArgentRecoveryVerifier.cs line 248: "Assert(count - 1 >= MIN_GUARDIANS, "Too few guardians")"
+2353 CALL_L 22-F9-FF-FF # pos: 595 (offset: -1758)
+# Code ArgentRecoveryVerifier.cs line 250: "guardian"
+2358 LDARG1
+# Code ArgentRecoveryVerifier.cs line 250: "accountId"
+2359 LDARG0
+# Code ArgentRecoveryVerifier.cs line 250: "PREFIX_GUARDIAN"
+2360 PUSH1
+# Code ArgentRecoveryVerifier.cs line 250: "KeyECPoint(PREFIX_GUARDIAN, accountId, guardian)"
+2361 CALL_L 47-F9-FF-FF # pos: 640 (offset: -1721)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2366 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+2371 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code ArgentRecoveryVerifier.cs line 251: "count"
+2376 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 251: "1"
+2377 PUSH1
+# Code ArgentRecoveryVerifier.cs line 251: "count - 1"
+2378 SUB
+# Code ArgentRecoveryVerifier.cs line 251: "accountId"
+2379 LDARG0
+# Code ArgentRecoveryVerifier.cs line 251: "PREFIX_GUARDIAN_COUNT"
+2380 PUSH8
+# Code ArgentRecoveryVerifier.cs line 251: "Key(PREFIX_GUARDIAN_COUNT, accountId)"
+2381 CALL_L 19-F9-FF-FF # pos: 614 (offset: -1767)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2386 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+2391 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code ArgentRecoveryVerifier.cs line 253: "guardian"
+2396 LDARG1
+# Code ArgentRecoveryVerifier.cs line 253: "accountId"
+2397 LDARG0
+# Code ArgentRecoveryVerifier.cs line 253: "OnGuardianRemoved(accountId, guardian)"
+2398 PUSH2
+# Code ArgentRecoveryVerifier.cs line 253: "OnGuardianRemoved(accountId, guardian)"
+2399 PACK
+# Code ArgentRecoveryVerifier.cs line 253: "OnGuardianRemoved(accountId, guardian)"
+2400 PUSHDATA1 47-75-61-72-64-69-61-6E-52-65-6D-6F-76-65-64 # as text: "GuardianRemoved"
+# Code ArgentRecoveryVerifier.cs line 253: "OnGuardianRemoved(accountId, guardian)"
+2417 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.RemoveGuardian(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint)
+# Code ArgentRecoveryVerifier.cs line 254: "}"
+2422 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.Verify(Neo.SmartContract.Framework.UInt160)
+2423 INITSLOT 02-01 # 2 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 259: "accountId"
+2426 LDARG0
+# Code ArgentRecoveryVerifier.cs line 259: "PREFIX_FROZEN"
+2427 PUSH7
+# Code ArgentRecoveryVerifier.cs line 259: "Key(PREFIX_FROZEN, accountId)"
+2428 CALL_L EA-F8-FF-FF # pos: 614 (offset: -1814)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2433 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2438 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 259: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+2443 STLOC0
+# Code ArgentRecoveryVerifier.cs line 260: "frozen"
+2444 LDLOC0
+# Code ArgentRecoveryVerifier.cs line 260: "null"
+2445 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 260: "frozen != null"
+2446 NOTEQUAL
+# Code ArgentRecoveryVerifier.cs line 260: "if (frozen != null) return false;"
+2447 JMPIFNOT 05 # pos: 2452 (offset: 5)
+# Code ArgentRecoveryVerifier.cs line 260: "false"
+2449 PUSHF
+# Code ArgentRecoveryVerifier.cs line 260: "return false;"
+2450 JMP 27 # pos: 2489 (offset: 39)
+# Code ArgentRecoveryVerifier.cs line 262: "accountId"
+2452 LDARG0
+# Code ArgentRecoveryVerifier.cs line 262: "PREFIX_OWNER"
+2453 PUSH4
+# Code ArgentRecoveryVerifier.cs line 262: "Key(PREFIX_OWNER, accountId)"
+2454 CALL_L D0-F8-FF-FF # pos: 614 (offset: -1840)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2459 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2464 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2469 DUP
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2470 ISNULL
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2471 JMPIF 09 # pos: 2480 (offset: 9)
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2473 DUP
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2474 SIZE
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2475 PUSHINT8 14 # 20
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2477 JMPEQ 03 # pos: 2480 (offset: 3)
+# Code ArgentRecoveryVerifier.cs line 262: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2479 THROW
+# Code ArgentRecoveryVerifier.cs line 262: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2480 STLOC1
+# Code ArgentRecoveryVerifier.cs line 263: "owner"
+2481 LDLOC1
+# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
+2482 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code ArgentRecoveryVerifier.cs line 263: "return Runtime.CheckWitness(owner);"
+2487 JMP 02 # pos: 2489 (offset: 2)
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.Verify(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 264: "}"
+2489 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.UInt160)
+2490 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 269: "accountId"
+2493 LDARG0
+# Code ArgentRecoveryVerifier.cs line 269: "PREFIX_OWNER"
+2494 PUSH4
+# Code ArgentRecoveryVerifier.cs line 269: "Key(PREFIX_OWNER, accountId)"
+2495 CALL_L A7-F8-FF-FF # pos: 614 (offset: -1881)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2500 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2505 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2510 DUP
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2511 ISNULL
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2512 JMPIF 09 # pos: 2521 (offset: 9)
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2514 DUP
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2515 SIZE
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2516 PUSHINT8 14 # 20
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2518 JMPEQ 03 # pos: 2521 (offset: 3)
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2520 THROW
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.UInt160)
+# Code ArgentRecoveryVerifier.cs line 269: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2521 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.UInt160)
+2522 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 273: "accountId"
+2525 LDARG0
+# Code ArgentRecoveryVerifier.cs line 273: "PREFIX_NONCE"
+2526 PUSH5
+# Code ArgentRecoveryVerifier.cs line 273: "Key(PREFIX_NONCE, accountId)"
+2527 CALL_L 87-F8-FF-FF # pos: 614 (offset: -1913)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2532 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2537 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+2542 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+2543 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+2544 JMPIFNOT 06 # pos: 2550 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+2546 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+2547 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+2548 JMP 04 # pos: 2552 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+2550 CONVERT 21 # Integer type
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.UInt160)
+2552 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.IsFrozen(Neo.SmartContract.Framework.UInt160)
+2553 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code ArgentRecoveryVerifier.cs line 277: "accountId"
+2556 LDARG0
+# Code ArgentRecoveryVerifier.cs line 277: "PREFIX_FROZEN"
+2557 PUSH7
+# Code ArgentRecoveryVerifier.cs line 277: "Key(PREFIX_FROZEN, accountId)"
+2558 CALL_L 68-F8-FF-FF # pos: 614 (offset: -1944)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2563 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2568 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ArgentRecoveryVerifier.cs line 277: "null"
+2573 PUSHNULL
+# Code ArgentRecoveryVerifier.cs line 277: "Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId)) != null"
+2574 NOTEQUAL
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.IsFrozen(Neo.SmartContract.Framework.UInt160)
+2575 RET
+# Method Start Neo.SmartContract.Examples.ArgentRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160)
+2576 INITSLOT 00-03 # 0 local variables, 3 arguments
+# Code ArgentRecoveryVerifier.cs line 284: "new byte[] { prefix }"
+2579 PUSH1
+# Code ArgentRecoveryVerifier.cs line 284: "new byte[] { prefix }"
+2580 NEWBUFFER
+# Code ArgentRecoveryVerifier.cs line 284: "new byte[] { prefix }"
+2581 DUP
+# Code ArgentRecoveryVerifier.cs line 284: "new byte[] { prefix }"
+2582 PUSH0
+# Code ArgentRecoveryVerifier.cs line 284: "prefix"
+2583 LDARG0
+# Code ArgentRecoveryVerifier.cs line 284: "new byte[] { prefix }"
+2584 SETITEM
+# Code ArgentRecoveryVerifier.cs line 284: "accountId"
+2585 LDARG1
+# Code Helper.cs line 200: "OpCode(OpCode.CAT)"
+2586 CAT
+# Code ArgentRecoveryVerifier.cs line 284: "address"
+2587 LDARG2
+# Code Helper.cs line 200: "OpCode(OpCode.CAT)"
+2588 CAT
+# Method End Neo.SmartContract.Examples.ArgentRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160)
+2589 RET

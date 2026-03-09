@@ -1,0 +1,1264 @@
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.Version()
+# Code LoopringRecoveryVerifier.cs line 40: ""1.1.0""
+0000 PUSHDATA1 31-2E-31-2E-30 # as text: "1.1.0"
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.Version()
+0007 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ByteString, System.Numerics.BigInteger, bool)
+0008 INITSLOT 00-05 # 0 local variables, 5 arguments
+# Code LoopringRecoveryVerifier.cs line 49: ""accountId""
+0011 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code LoopringRecoveryVerifier.cs line 49: "accountId"
+0022 LDARG0
+# Code LoopringRecoveryVerifier.cs line 49: "ValidateAddress(accountId, "accountId")"
+0023 CALL_L D4-00-00-00 # pos: 235 (offset: 212)
+# Code LoopringRecoveryVerifier.cs line 50: ""owner""
+0028 PUSHDATA1 6F-77-6E-65-72 # as text: "owner"
+# Code LoopringRecoveryVerifier.cs line 50: "owner"
+0035 LDARG1
+# Code LoopringRecoveryVerifier.cs line 50: "ValidateAddress(owner, "owner")"
+0036 CALL_L C7-00-00-00 # pos: 235 (offset: 199)
+# Code LoopringRecoveryVerifier.cs line 51: ""Invalid hash length""
+0041 PUSHDATA1 49-6E-76-61-6C-69-64-20-68-61-73-68-20-6C-65-6E-67-74-68 # as text: "Invalid hash length"
+# Code LoopringRecoveryVerifier.cs line 51: "guardiansHash"
+0062 LDARG2
+# Code ByteString.cs line 32: "OpCode(OpCode.SIZE)"
+0063 SIZE
+# Code LoopringRecoveryVerifier.cs line 51: "32"
+0064 PUSHINT8 20 # 32
+# Code LoopringRecoveryVerifier.cs line 51: "guardiansHash.Length == 32"
+0066 EQUAL
+# Code LoopringRecoveryVerifier.cs line 51: "Assert(guardiansHash.Length == 32, "Invalid hash length")"
+0067 CALL_L D3-00-00-00 # pos: 278 (offset: 211)
+# Code LoopringRecoveryVerifier.cs line 52: ""Threshold too low""
+0072 PUSHDATA1 54-68-72-65-73-68-6F-6C-64-20-74-6F-6F-20-6C-6F-77 # as text: "Threshold too low"
+# Code LoopringRecoveryVerifier.cs line 52: "threshold"
+0091 LDARG3
+# Code LoopringRecoveryVerifier.cs line 52: "2"
+0092 PUSH2
+# Code LoopringRecoveryVerifier.cs line 52: "threshold >= 2"
+0093 GE
+# Code LoopringRecoveryVerifier.cs line 52: "Assert(threshold >= 2, "Threshold too low")"
+0094 CALL_L B8-00-00-00 # pos: 278 (offset: 184)
+# Code LoopringRecoveryVerifier.cs line 54: "owner"
+0099 LDARG1
+# Code LoopringRecoveryVerifier.cs line 54: "accountId"
+0100 LDARG0
+# Code LoopringRecoveryVerifier.cs line 54: "PREFIX_OWNER"
+0101 PUSH1
+# Code LoopringRecoveryVerifier.cs line 54: "Key(PREFIX_OWNER, accountId)"
+0102 CALL_L C5-00-00-00 # pos: 299 (offset: 197)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0107 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+0112 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 55: "guardiansHash"
+0117 LDARG2
+# Code LoopringRecoveryVerifier.cs line 55: "accountId"
+0118 LDARG0
+# Code LoopringRecoveryVerifier.cs line 55: "PREFIX_GUARDIAN_HASH"
+0119 PUSH2
+# Code LoopringRecoveryVerifier.cs line 55: "Key(PREFIX_GUARDIAN_HASH, accountId)"
+0120 CALL_L B3-00-00-00 # pos: 299 (offset: 179)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0125 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+0130 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 56: "threshold"
+0135 LDARG3
+# Code LoopringRecoveryVerifier.cs line 56: "accountId"
+0136 LDARG0
+# Code LoopringRecoveryVerifier.cs line 56: "PREFIX_THRESHOLD"
+0137 PUSH3
+# Code LoopringRecoveryVerifier.cs line 56: "Key(PREFIX_THRESHOLD, accountId)"
+0138 CALL_L A1-00-00-00 # pos: 299 (offset: 161)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0143 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0148 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 57: "0"
+0153 PUSH0
+# Code LoopringRecoveryVerifier.cs line 57: "accountId"
+0154 LDARG0
+# Code LoopringRecoveryVerifier.cs line 57: "PREFIX_NONCE"
+0155 PUSH4
+# Code LoopringRecoveryVerifier.cs line 57: "Key(PREFIX_NONCE, accountId)"
+0156 CALL_L 8F-00-00-00 # pos: 299 (offset: 143)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0161 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0166 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 59: "enableTimelock"
+0171 LDARG4
+# Code LoopringRecoveryVerifier.cs line 59: "if (enableTimelock)"
+# Code LoopringRecoveryVerifier.cs line 59: "{"
+# Code LoopringRecoveryVerifier.cs line 59: "Storage.Put(Storage.CurrentContext, Key(PREFIX_TIMELOCK_ENABLED, accountId), 1);"
+# Code LoopringRecoveryVerifier.cs line 59: "Storage.Put(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId), DEFAULT_TIMELOCK);"
+# Code LoopringRecoveryVerifier.cs line 59: "}"
+0172 JMPIFNOT 24 # pos: 208 (offset: 36)
+# Code LoopringRecoveryVerifier.cs line 61: "1"
+0174 PUSH1
+# Code LoopringRecoveryVerifier.cs line 61: "accountId"
+0175 LDARG0
+# Code LoopringRecoveryVerifier.cs line 61: "PREFIX_TIMELOCK_ENABLED"
+0176 PUSH5
+# Code LoopringRecoveryVerifier.cs line 61: "Key(PREFIX_TIMELOCK_ENABLED, accountId)"
+0177 CALL 7A # pos: 299 (offset: 122)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0179 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0184 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 62: "DEFAULT_TIMELOCK"
+0189 PUSHINT32 00-5C-26-05 # 86400000
+# Code LoopringRecoveryVerifier.cs line 62: "accountId"
+0194 LDARG0
+# Code LoopringRecoveryVerifier.cs line 62: "PREFIX_TIMELOCK_DURATION"
+0195 PUSH6
+# Code LoopringRecoveryVerifier.cs line 62: "Key(PREFIX_TIMELOCK_DURATION, accountId)"
+0196 CALL 67 # pos: 299 (offset: 103)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0198 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0203 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 65: "enableTimelock"
+0208 LDARG4
+# Code LoopringRecoveryVerifier.cs line 65: "threshold"
+0209 LDARG3
+# Code LoopringRecoveryVerifier.cs line 65: "owner"
+0210 LDARG1
+# Code LoopringRecoveryVerifier.cs line 65: "accountId"
+0211 LDARG0
+# Code LoopringRecoveryVerifier.cs line 65: "OnRecoverySetup(accountId, owner, threshold, enableTimelock)"
+0212 PUSH4
+# Code LoopringRecoveryVerifier.cs line 65: "OnRecoverySetup(accountId, owner, threshold, enableTimelock)"
+0213 PACK
+# Code LoopringRecoveryVerifier.cs line 65: "OnRecoverySetup(accountId, owner, threshold, enableTimelock)"
+0214 PUSHDATA1 52-65-63-6F-76-65-72-79-53-65-74-75-70 # as text: "RecoverySetup"
+# Code LoopringRecoveryVerifier.cs line 65: "OnRecoverySetup(accountId, owner, threshold, enableTimelock)"
+0229 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ByteString, System.Numerics.BigInteger, bool)
+# Code LoopringRecoveryVerifier.cs line 66: "}"
+0234 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
+0235 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code LoopringRecoveryVerifier.cs line 219: "name"
+0238 LDARG1
+# Code LoopringRecoveryVerifier.cs line 219: "" is null""
+0239 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
+# Code LoopringRecoveryVerifier.cs line 219: "name + " is null""
+0249 CAT
+# Code LoopringRecoveryVerifier.cs line 219: "name + " is null""
+0250 CONVERT 28 # ByteString type
+# Code LoopringRecoveryVerifier.cs line 219: "address"
+0252 LDARG0
+# Code LoopringRecoveryVerifier.cs line 219: "null"
+0253 PUSHNULL
+# Code LoopringRecoveryVerifier.cs line 219: "address != null"
+0254 NOTEQUAL
+# Code LoopringRecoveryVerifier.cs line 219: "Assert(address != null, name + " is null")"
+0255 CALL 17 # pos: 278 (offset: 23)
+# Code LoopringRecoveryVerifier.cs line 220: "name"
+0257 LDARG1
+# Code LoopringRecoveryVerifier.cs line 220: "" is zero""
+0258 PUSHDATA1 20-69-73-20-7A-65-72-6F # as text: " is zero"
+# Code LoopringRecoveryVerifier.cs line 220: "name + " is zero""
+0268 CAT
+# Code LoopringRecoveryVerifier.cs line 220: "name + " is zero""
+0269 CONVERT 28 # ByteString type
+# Code LoopringRecoveryVerifier.cs line 220: "address"
+0271 LDARG0
+# Code UInt160.cs line 28: "OpCode(OpCode.PUSH0)"
+0272 PUSH0
+# Code UInt160.cs line 29: "OpCode(OpCode.NUMEQUAL)"
+0273 NUMEQUAL
+# Code LoopringRecoveryVerifier.cs line 220: "!address.IsZero"
+0274 NOT
+# Code LoopringRecoveryVerifier.cs line 220: "Assert(!address.IsZero, name + " is zero")"
+0275 CALL 03 # pos: 278 (offset: 3)
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
+# Code LoopringRecoveryVerifier.cs line 221: "}"
+0277 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.Assert(bool, string)
+0278 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code LoopringRecoveryVerifier.cs line 237: "condition"
+0281 LDARG0
+# Code LoopringRecoveryVerifier.cs line 237: "!condition"
+0282 NOT
+# Code LoopringRecoveryVerifier.cs line 237: "if (!condition) throw new Exception(message);"
+0283 JMPIFNOT 04 # pos: 287 (offset: 4)
+# Code LoopringRecoveryVerifier.cs line 237: "message"
+0285 LDARG1
+# Code LoopringRecoveryVerifier.cs line 237: "throw new Exception(message);"
+0286 THROW
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.Assert(bool, string)
+# Code LoopringRecoveryVerifier.cs line 238: "}"
+0287 RET
+0288 PUSH0
+0289 NUMEQUAL
+0290 RET
+0291 SIZE
+0292 RET
+0293 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+0298 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160)
+0299 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code LoopringRecoveryVerifier.cs line 215: "new byte[] { prefix }"
+0302 PUSH1
+# Code LoopringRecoveryVerifier.cs line 215: "new byte[] { prefix }"
+0303 NEWBUFFER
+# Code LoopringRecoveryVerifier.cs line 215: "new byte[] { prefix }"
+0304 DUP
+# Code LoopringRecoveryVerifier.cs line 215: "new byte[] { prefix }"
+0305 PUSH0
+# Code LoopringRecoveryVerifier.cs line 215: "prefix"
+0306 LDARG0
+# Code LoopringRecoveryVerifier.cs line 215: "new byte[] { prefix }"
+0307 SETITEM
+# Code LoopringRecoveryVerifier.cs line 215: "accountId"
+0308 LDARG1
+# Code Helper.cs line 200: "OpCode(OpCode.CAT)"
+0309 CAT
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160)
+0310 RET
+0311 CAT
+0312 RET
+0313 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+0318 RET
+0319 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+0324 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.SetTimelock(Neo.SmartContract.Framework.UInt160, ulong)
+0325 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code LoopringRecoveryVerifier.cs line 70: "accountId"
+0328 LDARG0
+# Code LoopringRecoveryVerifier.cs line 70: "RequireOwner(accountId)"
+0329 CALL 58 # pos: 417 (offset: 88)
+# Code LoopringRecoveryVerifier.cs line 71: ""Timelock too short""
+0331 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-74-6F-6F-20-73-68-6F-72-74 # as text: "Timelock too short"
+# Code LoopringRecoveryVerifier.cs line 71: "duration"
+0351 LDARG1
+# Code LoopringRecoveryVerifier.cs line 71: "86400000"
+0352 PUSHINT32 00-5C-26-05 # 86400000
+# Code LoopringRecoveryVerifier.cs line 71: "duration >= 86400000"
+0357 GE
+# Code LoopringRecoveryVerifier.cs line 71: "Assert(duration >= 86400000, "Timelock too short")"
+0358 CALL B0 # pos: 278 (offset: -80)
+# Code LoopringRecoveryVerifier.cs line 73: "1"
+0360 PUSH1
+# Code LoopringRecoveryVerifier.cs line 73: "accountId"
+0361 LDARG0
+# Code LoopringRecoveryVerifier.cs line 73: "PREFIX_TIMELOCK_ENABLED"
+0362 PUSH5
+# Code LoopringRecoveryVerifier.cs line 73: "Key(PREFIX_TIMELOCK_ENABLED, accountId)"
+0363 CALL C0 # pos: 299 (offset: -64)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0365 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0370 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 74: "duration"
+0375 LDARG1
+# Code LoopringRecoveryVerifier.cs line 74: "accountId"
+0376 LDARG0
+# Code LoopringRecoveryVerifier.cs line 74: "PREFIX_TIMELOCK_DURATION"
+0377 PUSH6
+# Code LoopringRecoveryVerifier.cs line 74: "Key(PREFIX_TIMELOCK_DURATION, accountId)"
+0378 CALL B1 # pos: 299 (offset: -79)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0380 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0385 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 75: "duration"
+0390 LDARG1
+# Code LoopringRecoveryVerifier.cs line 75: "accountId"
+0391 LDARG0
+# Code LoopringRecoveryVerifier.cs line 75: "OnTimelockUpdated(accountId, duration)"
+0392 PUSH2
+# Code LoopringRecoveryVerifier.cs line 75: "OnTimelockUpdated(accountId, duration)"
+0393 PACK
+# Code LoopringRecoveryVerifier.cs line 75: "OnTimelockUpdated(accountId, duration)"
+0394 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-55-70-64-61-74-65-64 # as text: "TimelockUpdated"
+# Code LoopringRecoveryVerifier.cs line 75: "OnTimelockUpdated(accountId, duration)"
+0411 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.SetTimelock(Neo.SmartContract.Framework.UInt160, ulong)
+# Code LoopringRecoveryVerifier.cs line 76: "}"
+0416 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.UInt160)
+0417 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 225: "accountId"
+0420 LDARG0
+# Code LoopringRecoveryVerifier.cs line 225: "PREFIX_OWNER"
+0421 PUSH1
+# Code LoopringRecoveryVerifier.cs line 225: "Key(PREFIX_OWNER, accountId)"
+0422 CALL 85 # pos: 299 (offset: -123)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0424 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0429 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0434 DUP
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0435 ISNULL
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0436 JMPIF 09 # pos: 445 (offset: 9)
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0438 DUP
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0439 SIZE
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0440 PUSHINT8 14 # 20
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0442 JMPEQ 03 # pos: 445 (offset: 3)
+# Code LoopringRecoveryVerifier.cs line 225: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0444 THROW
+# Code LoopringRecoveryVerifier.cs line 225: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+0445 STLOC0
+# Code LoopringRecoveryVerifier.cs line 226: ""Not owner""
+0446 PUSHDATA1 4E-6F-74-20-6F-77-6E-65-72 # as text: "Not owner"
+# Code LoopringRecoveryVerifier.cs line 226: "owner"
+0457 LDLOC0
+# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
+0458 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code LoopringRecoveryVerifier.cs line 226: "Assert(Runtime.CheckWitness(owner), "Not owner")"
+0463 CALL_L 47-FF-FF-FF # pos: 278 (offset: -185)
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 227: "}"
+0468 RET
+0469 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+0474 RET
+0475 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+0480 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], byte[][], System.Numerics.BigInteger)
+0481 INITSLOT 0A-05 # 10 local variables, 5 arguments
+# Code LoopringRecoveryVerifier.cs line 86: ""accountId""
+0484 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code LoopringRecoveryVerifier.cs line 86: "accountId"
+0495 LDARG0
+# Code LoopringRecoveryVerifier.cs line 86: "ValidateAddress(accountId, "accountId")"
+0496 CALL_L FB-FE-FF-FF # pos: 235 (offset: -261)
+# Code LoopringRecoveryVerifier.cs line 87: ""newOwner""
+0501 PUSHDATA1 6E-65-77-4F-77-6E-65-72 # as text: "newOwner"
+# Code LoopringRecoveryVerifier.cs line 87: "newOwner"
+0511 LDARG1
+# Code LoopringRecoveryVerifier.cs line 87: "ValidateAddress(newOwner, "newOwner")"
+0512 CALL_L EB-FE-FF-FF # pos: 235 (offset: -277)
+# Code LoopringRecoveryVerifier.cs line 88: "accountId"
+0517 LDARG0
+# Code LoopringRecoveryVerifier.cs line 88: "RequireNotFrozen(accountId)"
+0518 CALL_L A6-02-00-00 # pos: 1196 (offset: 678)
+# Code LoopringRecoveryVerifier.cs line 91: "accountId"
+0523 LDARG0
+# Code LoopringRecoveryVerifier.cs line 91: "PREFIX_NONCE"
+0524 PUSH4
+# Code LoopringRecoveryVerifier.cs line 91: "Key(PREFIX_NONCE, accountId)"
+0525 CALL_L 1E-FF-FF-FF # pos: 299 (offset: -226)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0530 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0535 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+0540 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+0541 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+0542 JMPIFNOT 06 # pos: 548 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+0544 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+0545 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+0546 JMP 04 # pos: 550 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+0548 CONVERT 21 # Integer type
+# Code LoopringRecoveryVerifier.cs line 91: "currentNonce = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_NONCE, accountId))"
+0550 STLOC0
+# Code LoopringRecoveryVerifier.cs line 92: ""Invalid nonce""
+0551 PUSHDATA1 49-6E-76-61-6C-69-64-20-6E-6F-6E-63-65 # as text: "Invalid nonce"
+# Code LoopringRecoveryVerifier.cs line 92: "nonce"
+0566 LDARG4
+# Code LoopringRecoveryVerifier.cs line 92: "currentNonce"
+0567 LDLOC0
+# Code LoopringRecoveryVerifier.cs line 92: "nonce == currentNonce"
+0568 EQUAL
+# Code LoopringRecoveryVerifier.cs line 92: "Assert(nonce == currentNonce, "Invalid nonce")"
+0569 CALL_L DD-FE-FF-FF # pos: 278 (offset: -291)
+# Code LoopringRecoveryVerifier.cs line 95: ""Invalid guardian count""
+0574 PUSHDATA1 49-6E-76-61-6C-69-64-20-67-75-61-72-64-69-61-6E-20-63-6F-75-6E-74 # as text: "Invalid guardian count"
+# Code LoopringRecoveryVerifier.cs line 95: "guardians"
+0598 LDARG2
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length"
+0599 SIZE
+# Code LoopringRecoveryVerifier.cs line 95: "MIN_GUARDIANS"
+0600 PUSH3
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length >= MIN_GUARDIANS"
+0601 GE
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
+0602 JMPIF 05 # pos: 607 (offset: 5)
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
+0604 PUSHF
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
+0605 JMP 06 # pos: 611 (offset: 6)
+# Code LoopringRecoveryVerifier.cs line 95: "guardians"
+0607 LDARG2
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length"
+0608 SIZE
+# Code LoopringRecoveryVerifier.cs line 95: "MAX_GUARDIANS"
+0609 PUSH10
+# Code LoopringRecoveryVerifier.cs line 95: "guardians.Length <= MAX_GUARDIANS"
+0610 LE
+# Code LoopringRecoveryVerifier.cs line 95: "Assert(guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS, "Invalid guardian count")"
+0611 CALL_L B3-FE-FF-FF # pos: 278 (offset: -333)
+# Code LoopringRecoveryVerifier.cs line 98: "accountId"
+0616 LDARG0
+# Code LoopringRecoveryVerifier.cs line 98: "PREFIX_GUARDIAN_HASH"
+0617 PUSH2
+# Code LoopringRecoveryVerifier.cs line 98: "Key(PREFIX_GUARDIAN_HASH, accountId)"
+0618 CALL_L C1-FE-FF-FF # pos: 299 (offset: -319)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0623 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0628 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 98: "storedHash = Storage.Get(Storage.CurrentContext, Key(PREFIX_GUARDIAN_HASH, accountId))"
+0633 STLOC1
+# Code LoopringRecoveryVerifier.cs line 99: "guardians"
+0634 LDARG2
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+0635 CALLT 01-00 # StdLib.serialize token call
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+0638 CALLT 00-00 # CryptoLib.sha256 token call
+# Code LoopringRecoveryVerifier.cs line 99: "computedHash = CryptoLib.Sha256(StdLib.Serialize(guardians))"
+0641 STLOC2
+# Code LoopringRecoveryVerifier.cs line 100: ""Invalid guardians""
+0642 PUSHDATA1 49-6E-76-61-6C-69-64-20-67-75-61-72-64-69-61-6E-73 # as text: "Invalid guardians"
+# Code LoopringRecoveryVerifier.cs line 100: "storedHash"
+0661 LDLOC1
+# Code LoopringRecoveryVerifier.cs line 100: "computedHash"
+0662 LDLOC2
+# Code LoopringRecoveryVerifier.cs line 100: "storedHash.Equals(computedHash)"
+0663 EQUAL
+# Code LoopringRecoveryVerifier.cs line 100: "Assert(storedHash.Equals(computedHash), "Invalid guardians")"
+0664 CALL_L 7E-FE-FF-FF # pos: 278 (offset: -386)
+# Code LoopringRecoveryVerifier.cs line 103: "accountId"
+0669 LDARG0
+# Code LoopringRecoveryVerifier.cs line 103: "PREFIX_THRESHOLD"
+0670 PUSH3
+# Code LoopringRecoveryVerifier.cs line 103: "Key(PREFIX_THRESHOLD, accountId)"
+0671 CALL_L 8C-FE-FF-FF # pos: 299 (offset: -372)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0676 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0681 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+0686 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+0687 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+0688 JMPIFNOT 06 # pos: 694 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+0690 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+0691 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+0692 JMP 04 # pos: 696 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+0694 CONVERT 21 # Integer type
+# Code LoopringRecoveryVerifier.cs line 103: "threshold = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_THRESHOLD, accountId))"
+0696 STLOC3
+# Code LoopringRecoveryVerifier.cs line 104: ""Not enough signatures""
+0697 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Not enough signatures"
+# Code LoopringRecoveryVerifier.cs line 104: "signatures"
+0720 LDARG3
+# Code LoopringRecoveryVerifier.cs line 104: "signatures.Length"
+0721 SIZE
+# Code LoopringRecoveryVerifier.cs line 104: "threshold"
+0722 LDLOC3
+# Code LoopringRecoveryVerifier.cs line 104: "signatures.Length >= threshold"
+0723 GE
+# Code LoopringRecoveryVerifier.cs line 104: "Assert(signatures.Length >= threshold, "Not enough signatures")"
+0724 CALL_L 42-FE-FF-FF # pos: 278 (offset: -446)
+# Code LoopringRecoveryVerifier.cs line 105: ""Mismatched arrays""
+0729 PUSHDATA1 4D-69-73-6D-61-74-63-68-65-64-20-61-72-72-61-79-73 # as text: "Mismatched arrays"
+# Code LoopringRecoveryVerifier.cs line 105: "signatures"
+0748 LDARG3
+# Code LoopringRecoveryVerifier.cs line 105: "signatures.Length"
+0749 SIZE
+# Code LoopringRecoveryVerifier.cs line 105: "guardians"
+0750 LDARG2
+# Code LoopringRecoveryVerifier.cs line 105: "guardians.Length"
+0751 SIZE
+# Code LoopringRecoveryVerifier.cs line 105: "signatures.Length == guardians.Length"
+0752 EQUAL
+# Code LoopringRecoveryVerifier.cs line 105: "Assert(signatures.Length == guardians.Length, "Mismatched arrays")"
+0753 CALL_L 25-FE-FF-FF # pos: 278 (offset: -475)
+# Code LoopringRecoveryVerifier.cs line 108: "accountId"
+0758 LDARG0
+# Code LoopringRecoveryVerifier.cs line 108: "newOwner"
+0759 LDARG1
+# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
+0760 CAT
+# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+0761 CONVERT 28 # ByteString type
+# Code LoopringRecoveryVerifier.cs line 108: "nonce"
+0763 LDARG4
+# Code LoopringRecoveryVerifier.cs line 108: "((BigInteger)nonce).ToByteArray()"
+0764 CONVERT 30 # Buffer type
+# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+0766 CONVERT 28 # ByteString type
+# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
+0768 CAT
+# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+0769 CONVERT 28 # ByteString type
+# Code LoopringRecoveryVerifier.cs line 108: "message = Helper.Concat(Helper.Concat(accountId, newOwner), (ByteString)((BigInteger)nonce).ToByteArray())"
+0771 STLOC4
+# Code LoopringRecoveryVerifier.cs line 109: "message"
+0772 LDLOC4
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+0773 CALLT 00-00 # CryptoLib.sha256 token call
+# Code LoopringRecoveryVerifier.cs line 109: "messageHash = CryptoLib.Sha256(message)"
+0776 STLOC5
+# Code LoopringRecoveryVerifier.cs line 111: "0"
+0777 PUSH0
+# Code LoopringRecoveryVerifier.cs line 111: "validSigs = 0"
+0778 STLOC6
+# Code LoopringRecoveryVerifier.cs line 112: "0"
+0779 PUSH0
+# Code LoopringRecoveryVerifier.cs line 112: "i = 0"
+0780 STLOC 07 # Slot index 7
+0782 JMP 55 # pos: 867 (offset: 85)
+# Code LoopringRecoveryVerifier.cs line 114: "NamedCurveHash.secp256r1SHA256"
+0784 PUSHINT8 17 # 23
+# Code LoopringRecoveryVerifier.cs line 114: "signatures"
+0786 LDARG3
+# Code LoopringRecoveryVerifier.cs line 114: "i"
+0787 LDLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 114: "signatures[i]"
+0789 PICKITEM
+# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+0790 CONVERT 28 # ByteString type
+# Code LoopringRecoveryVerifier.cs line 114: "guardians"
+0792 LDARG2
+# Code LoopringRecoveryVerifier.cs line 114: "i"
+0793 LDLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 114: "guardians[i]"
+0795 PICKITEM
+# Code LoopringRecoveryVerifier.cs line 114: "messageHash"
+0796 LDLOC5
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+0797 CALLT 02-00 # CryptoLib.verifyWithECDsa token call
+# Code LoopringRecoveryVerifier.cs line 114: "if (CryptoLib.VerifyWithECDsa(messageHash, guardians[i], (ByteString)signatures[i], NamedCurveHash.secp256r1SHA256))"
+# Code LoopringRecoveryVerifier.cs line 114: "{"
+# Code LoopringRecoveryVerifier.cs line 114: "validSigs++;"
+# Code LoopringRecoveryVerifier.cs line 114: "if (validSigs >= threshold) break; // Early exit optimization"
+# Code LoopringRecoveryVerifier.cs line 114: "}"
+0800 JMPIFNOT 0E # pos: 814 (offset: 14)
+# Code LoopringRecoveryVerifier.cs line 116: "validSigs++"
+0802 LDLOC6
+# Code LoopringRecoveryVerifier.cs line 116: "validSigs++"
+0803 DUP
+# Code LoopringRecoveryVerifier.cs line 116: "validSigs++"
+0804 INC
+# Code LoopringRecoveryVerifier.cs line 116: "validSigs++"
+0805 STLOC6
+# Code LoopringRecoveryVerifier.cs line 116: "validSigs++"
+0806 DROP
+# Code LoopringRecoveryVerifier.cs line 117: "validSigs"
+0807 LDLOC6
+# Code LoopringRecoveryVerifier.cs line 117: "threshold"
+0808 LDLOC3
+# Code LoopringRecoveryVerifier.cs line 117: "validSigs >= threshold"
+0809 GE
+# Code LoopringRecoveryVerifier.cs line 117: "if (validSigs >= threshold) break;"
+0810 JMPIFNOT 04 # pos: 814 (offset: 4)
+# Code LoopringRecoveryVerifier.cs line 117: "break;"
+0812 JMP 46 # pos: 882 (offset: 70)
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0814 LDLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0816 DUP
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0817 INC
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0818 DUP
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0819 PUSHINT32 00-00-00-80 # -2147483648
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0824 JMPGE 04 # pos: 828 (offset: 4)
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0826 JMP 0A # pos: 836 (offset: 10)
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0828 DUP
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0829 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0834 JMPLE 1E # pos: 864 (offset: 30)
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0836 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0845 AND
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0846 DUP
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0847 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0852 JMPLE 0C # pos: 864 (offset: 12)
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0854 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0863 SUB
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0864 STLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 112: "i++"
+0866 DROP
+# Code LoopringRecoveryVerifier.cs line 112: "i"
+0867 LDLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 112: "signatures"
+0869 LDARG3
+# Code LoopringRecoveryVerifier.cs line 112: "signatures.Length"
+0870 SIZE
+# Code LoopringRecoveryVerifier.cs line 112: "i < signatures.Length"
+0871 LT
+# Code LoopringRecoveryVerifier.cs line 112: "i < signatures.Length && validSigs < threshold"
+0872 JMPIF 05 # pos: 877 (offset: 5)
+# Code LoopringRecoveryVerifier.cs line 112: "i < signatures.Length && validSigs < threshold"
+0874 PUSHF
+# Code LoopringRecoveryVerifier.cs line 112: "i < signatures.Length && validSigs < threshold"
+0875 JMP 05 # pos: 880 (offset: 5)
+# Code LoopringRecoveryVerifier.cs line 112: "validSigs"
+0877 LDLOC6
+# Code LoopringRecoveryVerifier.cs line 112: "threshold"
+0878 LDLOC3
+# Code LoopringRecoveryVerifier.cs line 112: "validSigs < threshold"
+0879 LT
+0880 JMPIF A0 # pos: 784 (offset: -96)
+# Code LoopringRecoveryVerifier.cs line 121: ""Invalid signatures""
+0882 PUSHDATA1 49-6E-76-61-6C-69-64-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Invalid signatures"
+# Code LoopringRecoveryVerifier.cs line 121: "validSigs"
+0902 LDLOC6
+# Code LoopringRecoveryVerifier.cs line 121: "threshold"
+0903 LDLOC3
+# Code LoopringRecoveryVerifier.cs line 121: "validSigs >= threshold"
+0904 GE
+# Code LoopringRecoveryVerifier.cs line 121: "Assert(validSigs >= threshold, "Invalid signatures")"
+0905 CALL_L 8D-FD-FF-FF # pos: 278 (offset: -627)
+# Code LoopringRecoveryVerifier.cs line 124: "accountId"
+0910 LDARG0
+# Code LoopringRecoveryVerifier.cs line 124: "PREFIX_TIMELOCK_ENABLED"
+0911 PUSH5
+# Code LoopringRecoveryVerifier.cs line 124: "Key(PREFIX_TIMELOCK_ENABLED, accountId)"
+0912 CALL_L 9B-FD-FF-FF # pos: 299 (offset: -613)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0917 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0922 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 124: "timelockEnabled = Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_ENABLED, accountId))"
+0927 STLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 126: "timelockEnabled"
+0929 LDLOC 07 # Slot index 7
+# Code LoopringRecoveryVerifier.cs line 126: "null"
+0931 PUSHNULL
+# Code LoopringRecoveryVerifier.cs line 126: "timelockEnabled != null"
+0932 NOTEQUAL
+# Code LoopringRecoveryVerifier.cs line 126: "if (timelockEnabled != null)"
+# Code LoopringRecoveryVerifier.cs line 126: "{"
+# Code LoopringRecoveryVerifier.cs line 126: "ulong duration = (ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId));"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "var pending = new PendingRecovery"
+# Code LoopringRecoveryVerifier.cs line 126: "{"
+# Code LoopringRecoveryVerifier.cs line 126: "NewOwner = newOwner,"
+# Code LoopringRecoveryVerifier.cs line 126: "InitiatedAt = Runtime.Time,"
+# Code LoopringRecoveryVerifier.cs line 126: "ExecutableAt = Runtime.Time + duration"
+# Code LoopringRecoveryVerifier.cs line 126: "};"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId), StdLib.Serialize(pending));"
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "OnRecoveryInitiated(accountId, newOwner, validSigs, pending.ExecutableAt);"
+# Code LoopringRecoveryVerifier.cs line 126: "}"
+# Code LoopringRecoveryVerifier.cs line 126: "else"
+# Code LoopringRecoveryVerifier.cs line 126: "{"
+# Code LoopringRecoveryVerifier.cs line 126: "// No timelock, execute immediately (CEI pattern)"
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_OWNER, accountId), newOwner);"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "OnRecoveryExecuted(accountId, newOwner, validSigs);"
+# Code LoopringRecoveryVerifier.cs line 126: "}"
+0933 JMPIFNOT_L C4-00-00-00 # pos: 1129 (offset: 196)
+# Code LoopringRecoveryVerifier.cs line 128: "accountId"
+0938 LDARG0
+# Code LoopringRecoveryVerifier.cs line 128: "PREFIX_TIMELOCK_DURATION"
+0939 PUSH6
+# Code LoopringRecoveryVerifier.cs line 128: "Key(PREFIX_TIMELOCK_DURATION, accountId)"
+0940 CALL_L 7F-FD-FF-FF # pos: 299 (offset: -641)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0945 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0950 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+0955 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+0956 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+0957 JMPIFNOT 06 # pos: 963 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+0959 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+0960 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+0961 JMP 04 # pos: 965 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+0963 CONVERT 21 # Integer type
+# Code LoopringRecoveryVerifier.cs line 128: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0965 DUP
+# Code LoopringRecoveryVerifier.cs line 128: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0966 PUSH0
+# Code LoopringRecoveryVerifier.cs line 128: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0967 PUSHINT128 00-00-00-00-00-00-00-00-01-00-00-00-00-00-00-00 # 18446744073709551616
+# Code LoopringRecoveryVerifier.cs line 128: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0984 WITHIN
+# Code LoopringRecoveryVerifier.cs line 128: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0985 JMPIF 03 # pos: 988 (offset: 3)
+# Code LoopringRecoveryVerifier.cs line 128: "(ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0987 THROW
+# Code LoopringRecoveryVerifier.cs line 128: "duration = (ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId))"
+0988 STLOC 08 # Slot index 8
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+0990 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code LoopringRecoveryVerifier.cs line 134: "duration"
+0995 LDLOC 08 # Slot index 8
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+0997 ADD
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+0998 DUP
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+0999 PUSH0
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1000 JMPGE 04 # pos: 1004 (offset: 4)
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1002 JMP 16 # pos: 1024 (offset: 22)
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1004 DUP
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1005 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1022 JMPLE 14 # pos: 1042 (offset: 20)
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1024 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code LoopringRecoveryVerifier.cs line 134: "Runtime.Time + duration"
+1041 AND
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1042 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code LoopringRecoveryVerifier.cs line 132: "newOwner"
+1047 LDARG1
+# Code LoopringRecoveryVerifier.cs line 130: "new PendingRecovery"
+# Code LoopringRecoveryVerifier.cs line 130: "{"
+# Code LoopringRecoveryVerifier.cs line 130: "NewOwner = newOwner,"
+# Code LoopringRecoveryVerifier.cs line 130: "InitiatedAt = Runtime.Time,"
+# Code LoopringRecoveryVerifier.cs line 130: "ExecutableAt = Runtime.Time + duration"
+# Code LoopringRecoveryVerifier.cs line 130: "}"
+1048 PUSH3
+# Code LoopringRecoveryVerifier.cs line 130: "new PendingRecovery"
+# Code LoopringRecoveryVerifier.cs line 130: "{"
+# Code LoopringRecoveryVerifier.cs line 130: "NewOwner = newOwner,"
+# Code LoopringRecoveryVerifier.cs line 130: "InitiatedAt = Runtime.Time,"
+# Code LoopringRecoveryVerifier.cs line 130: "ExecutableAt = Runtime.Time + duration"
+# Code LoopringRecoveryVerifier.cs line 130: "}"
+1049 PACK
+# Code LoopringRecoveryVerifier.cs line 130: "pending = new PendingRecovery"
+# Code LoopringRecoveryVerifier.cs line 130: "{"
+# Code LoopringRecoveryVerifier.cs line 130: "NewOwner = newOwner,"
+# Code LoopringRecoveryVerifier.cs line 130: "InitiatedAt = Runtime.Time,"
+# Code LoopringRecoveryVerifier.cs line 130: "ExecutableAt = Runtime.Time + duration"
+# Code LoopringRecoveryVerifier.cs line 130: "}"
+1050 STLOC 09 # Slot index 9
+# Code LoopringRecoveryVerifier.cs line 137: "pending"
+1052 LDLOC 09 # Slot index 9
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1054 CALLT 01-00 # StdLib.serialize token call
+# Code LoopringRecoveryVerifier.cs line 137: "accountId"
+1057 LDARG0
+# Code LoopringRecoveryVerifier.cs line 137: "PREFIX_PENDING_RECOVERY"
+1058 PUSH8
+# Code LoopringRecoveryVerifier.cs line 137: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1059 CALL_L 08-FD-FF-FF # pos: 299 (offset: -760)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1064 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1069 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 138: "currentNonce"
+1074 LDLOC0
+# Code LoopringRecoveryVerifier.cs line 138: "1"
+1075 PUSH1
+# Code LoopringRecoveryVerifier.cs line 138: "currentNonce + 1"
+1076 ADD
+# Code LoopringRecoveryVerifier.cs line 138: "accountId"
+1077 LDARG0
+# Code LoopringRecoveryVerifier.cs line 138: "PREFIX_NONCE"
+1078 PUSH4
+# Code LoopringRecoveryVerifier.cs line 138: "Key(PREFIX_NONCE, accountId)"
+1079 CALL_L F4-FC-FF-FF # pos: 299 (offset: -780)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1084 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+1089 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 140: "pending"
+1094 LDLOC 09 # Slot index 9
+# Code LoopringRecoveryVerifier.cs line 140: "pending.ExecutableAt"
+1096 PUSH2
+# Code LoopringRecoveryVerifier.cs line 140: "pending.ExecutableAt"
+1097 PICKITEM
+# Code LoopringRecoveryVerifier.cs line 140: "validSigs"
+1098 LDLOC6
+# Code LoopringRecoveryVerifier.cs line 140: "newOwner"
+1099 LDARG1
+# Code LoopringRecoveryVerifier.cs line 140: "accountId"
+1100 LDARG0
+# Code LoopringRecoveryVerifier.cs line 140: "OnRecoveryInitiated(accountId, newOwner, validSigs, pending.ExecutableAt)"
+1101 PUSH4
+# Code LoopringRecoveryVerifier.cs line 140: "OnRecoveryInitiated(accountId, newOwner, validSigs, pending.ExecutableAt)"
+1102 PACK
+# Code LoopringRecoveryVerifier.cs line 140: "OnRecoveryInitiated(accountId, newOwner, validSigs, pending.ExecutableAt)"
+1103 PUSHDATA1 52-65-63-6F-76-65-72-79-49-6E-69-74-69-61-74-65-64 # as text: "RecoveryInitiated"
+# Code LoopringRecoveryVerifier.cs line 140: "OnRecoveryInitiated(accountId, newOwner, validSigs, pending.ExecutableAt)"
+1122 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Code LoopringRecoveryVerifier.cs line 126: "if (timelockEnabled != null)"
+# Code LoopringRecoveryVerifier.cs line 126: "{"
+# Code LoopringRecoveryVerifier.cs line 126: "ulong duration = (ulong)(BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_TIMELOCK_DURATION, accountId));"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "var pending = new PendingRecovery"
+# Code LoopringRecoveryVerifier.cs line 126: "{"
+# Code LoopringRecoveryVerifier.cs line 126: "NewOwner = newOwner,"
+# Code LoopringRecoveryVerifier.cs line 126: "InitiatedAt = Runtime.Time,"
+# Code LoopringRecoveryVerifier.cs line 126: "ExecutableAt = Runtime.Time + duration"
+# Code LoopringRecoveryVerifier.cs line 126: "};"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId), StdLib.Serialize(pending));"
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "OnRecoveryInitiated(accountId, newOwner, validSigs, pending.ExecutableAt);"
+# Code LoopringRecoveryVerifier.cs line 126: "}"
+# Code LoopringRecoveryVerifier.cs line 126: "else"
+# Code LoopringRecoveryVerifier.cs line 126: "{"
+# Code LoopringRecoveryVerifier.cs line 126: "// No timelock, execute immediately (CEI pattern)"
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code LoopringRecoveryVerifier.cs line 126: "Storage.Put(Storage.CurrentContext, Key(PREFIX_OWNER, accountId), newOwner);"
+# Code LoopringRecoveryVerifier.cs line 126: ""
+# Code LoopringRecoveryVerifier.cs line 126: "OnRecoveryExecuted(accountId, newOwner, validSigs);"
+# Code LoopringRecoveryVerifier.cs line 126: "}"
+1127 JMP 44 # pos: 1195 (offset: 68)
+# Code LoopringRecoveryVerifier.cs line 145: "currentNonce"
+1129 LDLOC0
+# Code LoopringRecoveryVerifier.cs line 145: "1"
+1130 PUSH1
+# Code LoopringRecoveryVerifier.cs line 145: "currentNonce + 1"
+1131 ADD
+# Code LoopringRecoveryVerifier.cs line 145: "accountId"
+1132 LDARG0
+# Code LoopringRecoveryVerifier.cs line 145: "PREFIX_NONCE"
+1133 PUSH4
+# Code LoopringRecoveryVerifier.cs line 145: "Key(PREFIX_NONCE, accountId)"
+1134 CALL_L BD-FC-FF-FF # pos: 299 (offset: -835)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1139 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+1144 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 146: "newOwner"
+1149 LDARG1
+# Code LoopringRecoveryVerifier.cs line 146: "accountId"
+1150 LDARG0
+# Code LoopringRecoveryVerifier.cs line 146: "PREFIX_OWNER"
+1151 PUSH1
+# Code LoopringRecoveryVerifier.cs line 146: "Key(PREFIX_OWNER, accountId)"
+1152 CALL_L AB-FC-FF-FF # pos: 299 (offset: -853)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1157 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1162 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 148: "validSigs"
+1167 LDLOC6
+# Code LoopringRecoveryVerifier.cs line 148: "newOwner"
+1168 LDARG1
+# Code LoopringRecoveryVerifier.cs line 148: "accountId"
+1169 LDARG0
+# Code LoopringRecoveryVerifier.cs line 148: "OnRecoveryExecuted(accountId, newOwner, validSigs)"
+1170 PUSH3
+# Code LoopringRecoveryVerifier.cs line 148: "OnRecoveryExecuted(accountId, newOwner, validSigs)"
+1171 PACK
+# Code LoopringRecoveryVerifier.cs line 148: "OnRecoveryExecuted(accountId, newOwner, validSigs)"
+1172 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
+# Code LoopringRecoveryVerifier.cs line 148: "OnRecoveryExecuted(accountId, newOwner, validSigs)"
+1190 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], byte[][], System.Numerics.BigInteger)
+# Code LoopringRecoveryVerifier.cs line 150: "}"
+1195 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.UInt160)
+1196 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 231: "accountId"
+1199 LDARG0
+# Code LoopringRecoveryVerifier.cs line 231: "PREFIX_FROZEN"
+1200 PUSH7
+# Code LoopringRecoveryVerifier.cs line 231: "Key(PREFIX_FROZEN, accountId)"
+1201 CALL_L 7A-FC-FF-FF # pos: 299 (offset: -902)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1206 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1211 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 231: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+1216 STLOC0
+# Code LoopringRecoveryVerifier.cs line 232: ""Account frozen""
+1217 PUSHDATA1 41-63-63-6F-75-6E-74-20-66-72-6F-7A-65-6E # as text: "Account frozen"
+# Code LoopringRecoveryVerifier.cs line 232: "frozen"
+1233 LDLOC0
+# Code LoopringRecoveryVerifier.cs line 232: "null"
+1234 PUSHNULL
+# Code LoopringRecoveryVerifier.cs line 232: "frozen == null"
+1235 EQUAL
+# Code LoopringRecoveryVerifier.cs line 232: "Assert(frozen == null, "Account frozen")"
+1236 CALL_L 42-FC-FF-FF # pos: 278 (offset: -958)
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 233: "}"
+1241 RET
+1242 DUP
+1243 ISNULL
+1244 JMPIFNOT 06 # pos: 1250 (offset: 6)
+1246 DROP
+1247 PUSH0
+1248 JMP 04 # pos: 1252 (offset: 4)
+1250 CONVERT 21 # Integer type
+1252 RET
+1253 CALLT 00-00 # CryptoLib.sha256 token call
+1256 RET
+1257 CALLT 01-00 # StdLib.serialize token call
+1260 RET
+1261 CAT
+1262 CONVERT 28 # ByteString type
+1264 RET
+1265 CONVERT 28 # ByteString type
+1267 RET
+1268 CALLT 02-00 # CryptoLib.verifyWithECDsa token call
+1271 RET
+1272 RET
+1273 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+1278 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.FinalizeRecovery(Neo.SmartContract.Framework.UInt160)
+1279 INITSLOT 02-01 # 2 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 155: ""accountId""
+1282 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code LoopringRecoveryVerifier.cs line 155: "accountId"
+1293 LDARG0
+# Code LoopringRecoveryVerifier.cs line 155: "ValidateAddress(accountId, "accountId")"
+1294 CALL_L DD-FB-FF-FF # pos: 235 (offset: -1059)
+# Code LoopringRecoveryVerifier.cs line 156: "accountId"
+1299 LDARG0
+# Code LoopringRecoveryVerifier.cs line 156: "RequireNotFrozen(accountId)"
+1300 CALL 98 # pos: 1196 (offset: -104)
+# Code LoopringRecoveryVerifier.cs line 158: "accountId"
+1302 LDARG0
+# Code LoopringRecoveryVerifier.cs line 158: "PREFIX_PENDING_RECOVERY"
+1303 PUSH8
+# Code LoopringRecoveryVerifier.cs line 158: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1304 CALL_L 13-FC-FF-FF # pos: 299 (offset: -1005)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1309 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1314 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 158: "data = Storage.Get(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId))"
+1319 STLOC0
+# Code LoopringRecoveryVerifier.cs line 159: ""No pending recovery""
+1320 PUSHDATA1 4E-6F-20-70-65-6E-64-69-6E-67-20-72-65-63-6F-76-65-72-79 # as text: "No pending recovery"
+# Code LoopringRecoveryVerifier.cs line 159: "data"
+1341 LDLOC0
+# Code LoopringRecoveryVerifier.cs line 159: "null"
+1342 PUSHNULL
+# Code LoopringRecoveryVerifier.cs line 159: "data != null"
+1343 NOTEQUAL
+# Code LoopringRecoveryVerifier.cs line 159: "Assert(data != null, "No pending recovery")"
+1344 CALL_L D6-FB-FF-FF # pos: 278 (offset: -1066)
+# Code LoopringRecoveryVerifier.cs line 161: "data"
+1349 LDLOC0
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1350 CALLT 03-00 # StdLib.deserialize token call
+# Code LoopringRecoveryVerifier.cs line 161: "pending = (PendingRecovery)StdLib.Deserialize(data)"
+1353 STLOC1
+# Code LoopringRecoveryVerifier.cs line 162: ""Timelock not expired""
+1354 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-6E-6F-74-20-65-78-70-69-72-65-64 # as script hash: 0x6465726970786520746f6e206b636f6c656d6954, as text: "Timelock not expired"
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1376 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code LoopringRecoveryVerifier.cs line 162: "pending"
+1381 LDLOC1
+# Code LoopringRecoveryVerifier.cs line 162: "pending.ExecutableAt"
+1382 PUSH2
+# Code LoopringRecoveryVerifier.cs line 162: "pending.ExecutableAt"
+1383 PICKITEM
+# Code LoopringRecoveryVerifier.cs line 162: "Runtime.Time >= pending.ExecutableAt"
+1384 GE
+# Code LoopringRecoveryVerifier.cs line 162: "Assert(Runtime.Time >= pending.ExecutableAt, "Timelock not expired")"
+1385 CALL_L AD-FB-FF-FF # pos: 278 (offset: -1107)
+# Code LoopringRecoveryVerifier.cs line 165: "accountId"
+1390 LDARG0
+# Code LoopringRecoveryVerifier.cs line 165: "PREFIX_PENDING_RECOVERY"
+1391 PUSH8
+# Code LoopringRecoveryVerifier.cs line 165: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1392 CALL_L BB-FB-FF-FF # pos: 299 (offset: -1093)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1397 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+1402 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code LoopringRecoveryVerifier.cs line 166: "pending"
+1407 LDLOC1
+# Code LoopringRecoveryVerifier.cs line 166: "pending.NewOwner"
+1408 PUSH0
+# Code LoopringRecoveryVerifier.cs line 166: "pending.NewOwner"
+1409 PICKITEM
+# Code LoopringRecoveryVerifier.cs line 166: "accountId"
+1410 LDARG0
+# Code LoopringRecoveryVerifier.cs line 166: "PREFIX_OWNER"
+1411 PUSH1
+# Code LoopringRecoveryVerifier.cs line 166: "Key(PREFIX_OWNER, accountId)"
+1412 CALL_L A7-FB-FF-FF # pos: 299 (offset: -1113)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1417 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1422 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 168: "0"
+1427 PUSH0
+# Code LoopringRecoveryVerifier.cs line 168: "pending"
+1428 LDLOC1
+# Code LoopringRecoveryVerifier.cs line 168: "pending.NewOwner"
+1429 PUSH0
+# Code LoopringRecoveryVerifier.cs line 168: "pending.NewOwner"
+1430 PICKITEM
+# Code LoopringRecoveryVerifier.cs line 168: "accountId"
+1431 LDARG0
+# Code LoopringRecoveryVerifier.cs line 168: "OnRecoveryExecuted(accountId, pending.NewOwner, 0)"
+1432 PUSH3
+# Code LoopringRecoveryVerifier.cs line 168: "OnRecoveryExecuted(accountId, pending.NewOwner, 0)"
+1433 PACK
+# Code LoopringRecoveryVerifier.cs line 168: "OnRecoveryExecuted(accountId, pending.NewOwner, 0)"
+1434 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
+# Code LoopringRecoveryVerifier.cs line 168: "OnRecoveryExecuted(accountId, pending.NewOwner, 0)"
+1452 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.FinalizeRecovery(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 169: "}"
+1457 RET
+1458 CALLT 03-00 # StdLib.deserialize token call
+1461 RET
+1462 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+1467 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.UInt160)
+1468 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 173: "accountId"
+1471 LDARG0
+# Code LoopringRecoveryVerifier.cs line 173: "RequireOwner(accountId)"
+1472 CALL_L E1-FB-FF-FF # pos: 417 (offset: -1055)
+# Code LoopringRecoveryVerifier.cs line 174: "accountId"
+1477 LDARG0
+# Code LoopringRecoveryVerifier.cs line 174: "PREFIX_PENDING_RECOVERY"
+1478 PUSH8
+# Code LoopringRecoveryVerifier.cs line 174: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1479 CALL_L 64-FB-FF-FF # pos: 299 (offset: -1180)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1484 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+1489 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code LoopringRecoveryVerifier.cs line 175: "accountId"
+1494 LDARG0
+# Code LoopringRecoveryVerifier.cs line 175: "OnRecoveryCancelled(accountId)"
+1495 PUSH1
+# Code LoopringRecoveryVerifier.cs line 175: "OnRecoveryCancelled(accountId)"
+1496 PACK
+# Code LoopringRecoveryVerifier.cs line 175: "OnRecoveryCancelled(accountId)"
+1497 PUSHDATA1 52-65-63-6F-76-65-72-79-43-61-6E-63-65-6C-6C-65-64 # as text: "RecoveryCancelled"
+# Code LoopringRecoveryVerifier.cs line 175: "OnRecoveryCancelled(accountId)"
+1516 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 176: "}"
+1521 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.UInt160)
+1522 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 181: "accountId"
+1525 LDARG0
+# Code LoopringRecoveryVerifier.cs line 181: "RequireOwner(accountId)"
+1526 CALL_L AB-FB-FF-FF # pos: 417 (offset: -1109)
+# Code LoopringRecoveryVerifier.cs line 182: "1"
+1531 PUSH1
+# Code LoopringRecoveryVerifier.cs line 182: "accountId"
+1532 LDARG0
+# Code LoopringRecoveryVerifier.cs line 182: "PREFIX_FROZEN"
+1533 PUSH7
+# Code LoopringRecoveryVerifier.cs line 182: "Key(PREFIX_FROZEN, accountId)"
+1534 CALL_L 2D-FB-FF-FF # pos: 299 (offset: -1235)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1539 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+1544 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code LoopringRecoveryVerifier.cs line 183: "accountId"
+1549 LDARG0
+# Code LoopringRecoveryVerifier.cs line 183: "PREFIX_PENDING_RECOVERY"
+1550 PUSH8
+# Code LoopringRecoveryVerifier.cs line 183: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1551 CALL_L 1C-FB-FF-FF # pos: 299 (offset: -1252)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1556 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+1561 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code LoopringRecoveryVerifier.cs line 184: "accountId"
+1566 LDARG0
+# Code LoopringRecoveryVerifier.cs line 184: "OnEmergencyFreeze(accountId)"
+1567 PUSH1
+# Code LoopringRecoveryVerifier.cs line 184: "OnEmergencyFreeze(accountId)"
+1568 PACK
+# Code LoopringRecoveryVerifier.cs line 184: "OnEmergencyFreeze(accountId)"
+1569 PUSHDATA1 45-6D-65-72-67-65-6E-63-79-46-72-65-65-7A-65 # as text: "EmergencyFreeze"
+# Code LoopringRecoveryVerifier.cs line 184: "OnEmergencyFreeze(accountId)"
+1586 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 185: "}"
+1591 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.UInt160)
+1592 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 189: "accountId"
+1595 LDARG0
+# Code LoopringRecoveryVerifier.cs line 189: "RequireOwner(accountId)"
+1596 CALL_L 65-FB-FF-FF # pos: 417 (offset: -1179)
+# Code LoopringRecoveryVerifier.cs line 190: "accountId"
+1601 LDARG0
+# Code LoopringRecoveryVerifier.cs line 190: "PREFIX_FROZEN"
+1602 PUSH7
+# Code LoopringRecoveryVerifier.cs line 190: "Key(PREFIX_FROZEN, accountId)"
+1603 CALL_L E8-FA-FF-FF # pos: 299 (offset: -1304)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1608 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+1613 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code LoopringRecoveryVerifier.cs line 191: "accountId"
+1618 LDARG0
+# Code LoopringRecoveryVerifier.cs line 191: "OnUnfreeze(accountId)"
+1619 PUSH1
+# Code LoopringRecoveryVerifier.cs line 191: "OnUnfreeze(accountId)"
+1620 PACK
+# Code LoopringRecoveryVerifier.cs line 191: "OnUnfreeze(accountId)"
+1621 PUSHDATA1 55-6E-66-72-65-65-7A-65 # as text: "Unfreeze"
+# Code LoopringRecoveryVerifier.cs line 191: "OnUnfreeze(accountId)"
+1631 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 192: "}"
+1636 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.Verify(Neo.SmartContract.Framework.UInt160)
+1637 INITSLOT 02-01 # 2 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 197: "accountId"
+1640 LDARG0
+# Code LoopringRecoveryVerifier.cs line 197: "PREFIX_FROZEN"
+1641 PUSH7
+# Code LoopringRecoveryVerifier.cs line 197: "Key(PREFIX_FROZEN, accountId)"
+1642 CALL_L C1-FA-FF-FF # pos: 299 (offset: -1343)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1647 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1652 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 197: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+1657 STLOC0
+# Code LoopringRecoveryVerifier.cs line 198: "frozen"
+1658 LDLOC0
+# Code LoopringRecoveryVerifier.cs line 198: "null"
+1659 PUSHNULL
+# Code LoopringRecoveryVerifier.cs line 198: "frozen != null"
+1660 NOTEQUAL
+# Code LoopringRecoveryVerifier.cs line 198: "if (frozen != null) return false;"
+1661 JMPIFNOT 05 # pos: 1666 (offset: 5)
+# Code LoopringRecoveryVerifier.cs line 198: "false"
+1663 PUSHF
+# Code LoopringRecoveryVerifier.cs line 198: "return false;"
+1664 JMP 27 # pos: 1703 (offset: 39)
+# Code LoopringRecoveryVerifier.cs line 200: "accountId"
+1666 LDARG0
+# Code LoopringRecoveryVerifier.cs line 200: "PREFIX_OWNER"
+1667 PUSH1
+# Code LoopringRecoveryVerifier.cs line 200: "Key(PREFIX_OWNER, accountId)"
+1668 CALL_L A7-FA-FF-FF # pos: 299 (offset: -1369)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1673 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1678 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1683 DUP
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1684 ISNULL
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1685 JMPIF 09 # pos: 1694 (offset: 9)
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1687 DUP
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1688 SIZE
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1689 PUSHINT8 14 # 20
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1691 JMPEQ 03 # pos: 1694 (offset: 3)
+# Code LoopringRecoveryVerifier.cs line 200: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1693 THROW
+# Code LoopringRecoveryVerifier.cs line 200: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1694 STLOC1
+# Code LoopringRecoveryVerifier.cs line 201: "owner"
+1695 LDLOC1
+# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
+1696 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code LoopringRecoveryVerifier.cs line 201: "return Runtime.CheckWitness(owner);"
+1701 JMP 02 # pos: 1703 (offset: 2)
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.Verify(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 202: "}"
+1703 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.UInt160)
+1704 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 207: "accountId"
+1707 LDARG0
+# Code LoopringRecoveryVerifier.cs line 207: "PREFIX_OWNER"
+1708 PUSH1
+# Code LoopringRecoveryVerifier.cs line 207: "Key(PREFIX_OWNER, accountId)"
+1709 CALL_L 7E-FA-FF-FF # pos: 299 (offset: -1410)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1714 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1719 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1724 DUP
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1725 ISNULL
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1726 JMPIF 09 # pos: 1735 (offset: 9)
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1728 DUP
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1729 SIZE
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1730 PUSHINT8 14 # 20
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1732 JMPEQ 03 # pos: 1735 (offset: 3)
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1734 THROW
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.UInt160)
+# Code LoopringRecoveryVerifier.cs line 207: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1735 RET
+# Method Start Neo.SmartContract.Examples.LoopringRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.UInt160)
+1736 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code LoopringRecoveryVerifier.cs line 211: "accountId"
+1739 LDARG0
+# Code LoopringRecoveryVerifier.cs line 211: "PREFIX_NONCE"
+1740 PUSH4
+# Code LoopringRecoveryVerifier.cs line 211: "Key(PREFIX_NONCE, accountId)"
+1741 CALL_L 5E-FA-FF-FF # pos: 299 (offset: -1442)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1746 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1751 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+1756 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+1757 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+1758 JMPIFNOT 06 # pos: 1764 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+1760 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+1761 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+1762 JMP 04 # pos: 1766 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+1764 CONVERT 21 # Integer type
+# Method End Neo.SmartContract.Examples.LoopringRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.UInt160)
+1766 RET
