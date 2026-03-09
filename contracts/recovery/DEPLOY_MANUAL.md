@@ -30,23 +30,20 @@ neo-go contract deploy \
 
 ### Step 2: Get Contract Hash
 
-After deployment, the transaction output will show the contract hash, or calculate it:
+After deployment, record the contract hash printed by `neo-go contract deploy --await`, or calculate it with `neo-go contract calc-hash`:
 
 ```bash
-cd sdk/js
-node tests/calculate_contract_hash.js ArgentRecoveryVerifier
-```
-
-Expected output:
-```
-Contract Hash: 0x9500397d19c8336ff334120cf25b1d7d17bcf56c
+neo-go contract calc-hash \
+  -i contracts/recovery/compiled/ArgentRecoveryVerifier.nef \
+  -m contracts/recovery/compiled/ArgentRecoveryVerifier.manifest.json \
+  -s NLtL2v28d7TyMEaXcPqtekunkFRksJ7wxu
 ```
 
 ### Step 3: Run Tests
 
 ```bash
 export TEST_WIF="<your-testnet-wif>"
-export RECOVERY_HASH_TESTNET="9500397d19c8336ff334120cf25b1d7d17bcf56c"
+export RECOVERY_HASH_TESTNET="260b204b109506140f6e20ef99d02c142d070f72"
 npm run testnet:validate:recovery
 ```
 
@@ -80,8 +77,8 @@ neo-go contract deploy \
 ## Deployment Account
 
 - Address: `NLtL2v28d7TyMEaXcPqtekunkFRksJ7wxu`
-- WIF: `<your-testnet-wif>`
-- GAS Balance: ~sufficient testnet GAS (sufficient for all deployments)
+- WIF: provided at runtime via `TEST_WIF`
+- GAS Balance: verify live before deployment
 
 ## Estimated Costs
 

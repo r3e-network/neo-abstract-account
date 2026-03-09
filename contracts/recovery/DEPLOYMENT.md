@@ -77,12 +77,7 @@ neo-go contract calc-hash \
   --sender NLtL2v28d7TyMEaXcPqtekunkFRksJ7wxu
 ```
 
-Or use the provided hash calculator:
-
-```bash
-cd sdk/js
-node tests/calculate_contract_hash.js ArgentRecoveryVerifier
-```
+Use the `neo-go` result directly or `neo-go contract calc-hash` from the same sender address.
 
 ## Testing
 
@@ -102,11 +97,9 @@ npm run test:recovery:logic
 
 ## Deployed Contract Hashes
 
-Record deployed contract hashes here:
-
-- **ArgentRecoveryVerifier**: `0x...` (deployed on YYYY-MM-DD, tx: `0x...`)
-- **SafeRecoveryVerifier**: `0x...` (deployed on YYYY-MM-DD, tx: `0x...`)
-- **LoopringRecoveryVerifier**: `0x...` (deployed on YYYY-MM-DD, tx: `0x...`)
+- **ArgentRecoveryVerifier**: `0x260b204b109506140f6e20ef99d02c142d070f72`
+- **SafeRecoveryVerifier**: `0x06a7c50c2dd81f988e2e31b7fd721501008fbfa8`
+- **LoopringRecoveryVerifier**: `0x3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7`
 
 ## Deployment Costs
 

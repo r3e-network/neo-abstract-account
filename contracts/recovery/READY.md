@@ -17,5 +17,10 @@
 bash contracts/recovery/compile_recovery_contracts.sh
 ```
 
+### Runtime secrets
+```bash
+export TEST_WIF="<your-testnet-wif>"
+```
+
 ### Validation results
 See `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md` for deploy txids, validation txids, and notes.
