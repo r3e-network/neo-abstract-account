@@ -20,3 +20,7 @@ Or directly:
 pdflatex -interaction=nonstopmode -output-directory /tmp/neo-aa-spec neo_abstract_account_spec.tex
 pdflatex -interaction=nonstopmode -output-directory /tmp/neo-aa-spec neo_abstract_account_spec.tex
 ```
+
+## Tracked PDF
+
+- `neo_abstract_account_spec.pdf` — compiled reference PDF committed alongside the LaTeX source
