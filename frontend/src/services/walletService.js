@@ -48,63 +48,58 @@ class WalletService {
     this.setConnected('');
   }
 
-  getConnectProvider() {
-    console.log("[WalletService Debug] Checking wallet providers...");
-    console.log("[WalletService Debug] window.neo3Dapi:", window.neo3Dapi);
-    console.log("[WalletService Debug] window.NEOLine:", window.NEOLine);
-    console.log("[WalletService Debug] window.NEOLine keys:", window.NEOLine ? Object.keys(window.NEOLine) : "N/A");
-    console.log("[WalletService Debug] window.NEOLine.default:", window.NEOLine?.default);
-    console.log("[WalletService Debug] window.NEOLineN3:", window.NEOLineN3);
-    console.log("[WalletService Debug] window.NEOLineN3 keys:", window.NEOLineN3 ? Object.keys(window.NEOLineN3) : "N/A");
-    
-    if (window.neo3Dapi?.getAccount) {
-      console.log("[WalletService Debug] Found neo3Dapi");
-      return {
-        name: "neo3Dapi",
-        getAccount: () => window.neo3Dapi.getAccount()
-      };
-    }
-
-    if (window.NEOLine?.default?.getAccount) {
-      console.log("[WalletService Debug] Found NEOLine.default");
-      return {
-        name: "NEOLine",
-        getAccount: () => window.NEOLine.default.getAccount()
-      };
-    }
-
-    if (window.NEOLine?.getAccount) {
-      console.log("[WalletService Debug] Found NEOLine");
-      return {
-        name: "NEOLine",
-        getAccount: () => window.NEOLine.getAccount()
-      };
-    }
-
-    console.log("[WalletService Debug] No wallet provider found");
-    return null;
+  getNeoLineProviderCandidates() {
+    return [
+      { name: 'NEOLineN3', api: window.NEOLineN3?.N3 },
+      { name: 'NEOLineN3', api: window.NEOLineN3?.default?.N3 },
+      { name: 'NEOLine', api: window.NEOLine?.NEO },
+      { name: 'NEOLine', api: window.NEOLine?.default?.NEO },
+      { name: 'NEOLine', api: window.NEOLine },
+      { name: 'NEOLine', api: window.NEOLine?.default },
+    ];
   }
 
+  getConnectProvider() {
+    if (window.neo3Dapi?.getAccount) {
+      return {
+        name: 'neo3Dapi',
+        getAccount: () => window.neo3Dapi.getAccount(),
+      };
+    }
+
+    for (const candidate of this.getNeoLineProviderCandidates()) {
+      if (typeof candidate.api?.getAccount === 'function') {
+        return {
+          name: candidate.name,
+          getAccount: () => candidate.api.getAccount(),
+        };
+      }
+    }
+
+    return null;
+  }
 
   getInvokeProvider() {
     if (window.neo3Dapi?.invoke) {
       return {
         name: 'neo3Dapi',
-        invoke: (params) => window.neo3Dapi.invoke(params)
+        invoke: (params) => window.neo3Dapi.invoke(params),
       };
     }
 
-    if (window.NEOLine?.invoke) {
-      return {
-        name: 'NEOLine',
-        invoke: (params) => window.NEOLine.invoke(params)
-      };
+    for (const candidate of this.getNeoLineProviderCandidates()) {
+      if (typeof candidate.api?.invoke === 'function') {
+        return {
+          name: candidate.name,
+          invoke: (params) => candidate.api.invoke(params),
+        };
+      }
     }
 
     if (window.aaWallet?.invoke) {
       return {
         name: 'aaWallet',
-        invoke: (params) => window.aaWallet.invoke(params)
+        invoke: (params) => window.aaWallet.invoke(params),
       };
     }
 
