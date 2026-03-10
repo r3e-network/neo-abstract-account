@@ -56,7 +56,7 @@ namespace AbstractAccount
         private static bool CallCustomVerifierMetaTx(UInt160 customVerifier, ByteString accountId, UInt160[] verifiedSigners)
         {
             ExecutionEngine.Assert(verifiedSigners != null && verifiedSigners.Length > 0, "Missing verified signers");
-            return (bool)Contract.Call(customVerifier, "verifyMetaTx", CallFlags.ReadOnly, new object[] { accountId, verifiedSigners });
+            return (bool)Contract.Call(customVerifier, "verifyMetaTx", CallFlags.ReadOnly, new object[] { accountId, verifiedSigners! });
         }
 
         private static void CheckPermissionsAndExecuteNative(ByteString accountId, UInt160 targetContract, string method, object[] args)

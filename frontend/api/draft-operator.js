@@ -132,6 +132,12 @@ async function handleClaim({ supabase, shareSlug, accessSlug, publicKeyJwk }) {
   }
 
   if (!currentPublicKey) {
+    if (!publicKeyJwk) {
+      throw new Error('missing_operator_public_key');
+    }
+
+    await importOperatorPublicKey(publicKeyJwk);
+
     const { data, error } = await supabase
       .from('aa_transaction_drafts')
       .update({
@@ -140,9 +146,14 @@ async function handleClaim({ supabase, shareSlug, accessSlug, publicKeyJwk }) {
         operator_counter: Number(draft.operator_counter || 0),
       })
       .eq('draft_id', draft.draft_id)
+      .eq('operator_slug', accessSlug)
+      .is('operator_public_key', null)
       .select('*')
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) {
+      throw new Error('operator_key_claim_failed');
+    }
     return {
       draft: serializeDraft(data, { accessScope: 'operate' }),
       operatorCounter: Number(data.operator_counter || 0),
@@ -227,9 +238,12 @@ async function handleMutation({ supabase, shareSlug, accessSlug, mutation, paylo
     .from('aa_transaction_drafts')
     .update(patch)
     .eq('draft_id', draft.draft_id)
+    .eq('operator_slug', accessSlug)
+    .eq('operator_counter', expectedCounter)
     .select('*')
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error('operator_counter_mismatch');
 
   return {
     draft: serializeDraft(data, { accessScope: 'operate' }),
@@ -305,7 +319,7 @@ export default async function handler(req, res) {
         ? 400
         : /draft_not_found/.test(message)
           ? 404
-          : /draft_operator_access_required|invalid_operator_signature|operator_counter_mismatch|operator_key_already_claimed|operator_key_not_claimed/.test(message)
+          : /draft_operator_access_required|invalid_operator_signature|operator_counter_mismatch|operator_key_already_claimed|operator_key_not_claimed|operator_key_claim_failed/.test(message)
             ? 403
             : 500;
     res.status(status).json({
