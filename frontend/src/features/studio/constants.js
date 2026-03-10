@@ -70,7 +70,6 @@ export function createPermissionsBusyState() {
 export function createManageSnapshotState() {
   return {
     loadedAt: '',
-    accountIdHex: '',
     lastActiveMs: 0,
     domeUnlocked: null
   };

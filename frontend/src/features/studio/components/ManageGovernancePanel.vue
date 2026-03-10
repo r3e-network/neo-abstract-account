@@ -26,7 +26,6 @@
           <h4 class="text-xs font-bold text-neo-800 uppercase tracking-wider mb-4">Current State</h4>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div><span class="block text-slate-500 text-xs mb-1">Loaded At</span> <span class="font-semibold text-slate-900">{{ manageSnapshot.loadedAt }}</span></div>
-            <div v-if="manageSnapshot.accountIdHex"><span class="block text-slate-500 text-xs mb-1">Account ID</span> <span class="font-mono text-xs font-semibold text-slate-900 truncate" :title="manageSnapshot.accountIdHex">{{ manageSnapshot.accountIdHex }}</span></div>
             <div><span class="block text-slate-500 text-xs mb-1">Last Active</span> <span class="font-semibold text-slate-900">{{ manageSnapshot.lastActiveMs }} ms</span></div>
             <div v-if="manageSnapshot.domeUnlocked !== null">
               <span class="block text-slate-500 text-xs mb-1">Dome Status</span>

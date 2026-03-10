@@ -46,7 +46,8 @@ export function decodeIntegerStack(item) {
 export function buildMetaTransactionTypedData({
   chainId,
   verifyingContract,
-  accountIdHex,
+  accountAddressScriptHash,
+  accountAddressHash,
   targetContract,
   method,
   argsHashHex,
@@ -62,7 +63,7 @@ export function buildMetaTransactionTypedData({
     },
     types: {
       MetaTransaction: [
-        { name: 'accountId', type: 'bytes' },
+        { name: 'accountAddress', type: 'address' },
         { name: 'targetContract', type: 'address' },
         { name: 'methodHash', type: 'bytes32' },
         { name: 'argsHash', type: 'bytes32' },
@@ -71,7 +72,7 @@ export function buildMetaTransactionTypedData({
       ],
     },
     message: {
-      accountId: `0x${sanitizeHex(accountIdHex)}`,
+      accountAddress: `0x${sanitizeHex(accountAddressScriptHash || accountAddressHash)}`,
       targetContract: `0x${sanitizeHex(targetContract)}`,
       methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method))),
       argsHash: `0x${sanitizeHex(argsHashHex)}`,
@@ -105,6 +106,7 @@ export async function fetchNonceForAddress({
   rpcUrl,
   aaContractHash,
   accountAddressScriptHash,
+  accountAddressHash,
   evmSignerAddress,
   fetchImpl,
 } = {}) {
@@ -126,32 +128,35 @@ export async function fetchNonceForAddress({
   return decodeIntegerStack(result?.stack?.[0]);
 }
 
-export async function fetchAccountIdForAddress({
+export async function assertAccountAddressBound({
   rpcUrl,
   aaContractHash,
   accountAddressScriptHash,
+  accountAddressHash,
   fetchImpl,
 } = {}) {
+  const normalizedAddress = sanitizeHex(String(accountAddressScriptHash || '').startsWith('N') ? getScriptHashFromAddress(accountAddressScriptHash) : accountAddressScriptHash);
   const result = await invokeRead({
     rpcUrl,
     scriptHash: sanitizeHex(aaContractHash),
-    operation: 'getAccountIdByAddress',
+    operation: 'getAdminThresholdByAddress',
     args: [
-      { type: 'Hash160', value: `0x${sanitizeHex(String(accountAddressScriptHash || '').startsWith('N') ? getScriptHashFromAddress(accountAddressScriptHash) : accountAddressScriptHash)}` }
+      { type: 'Hash160', value: `0x${normalizedAddress}` }
     ],
     fetchImpl,
   });
 
   if (result?.state === 'FAULT') {
-    throw new Error(`getAccountIdByAddress fault: ${result.exception || 'VM fault'}`);
+    throw new Error(`getAdminThresholdByAddress fault: ${result.exception || 'VM fault'}`);
   }
 
-  return decodeByteStringStackHex(result?.stack?.[0]);
+  return normalizedAddress;
 }
 
 export function buildExecuteMetaTxByAddressInvocation({
   aaContractHash,
   accountAddressScriptHash,
+  accountAddressHash,
   evmPublicKeyHex,
   targetContract,
   method,

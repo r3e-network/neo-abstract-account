@@ -7,7 +7,6 @@ test('buildDraftSummaryItems derives account, preset, signer progress, relay mod
   const items = buildDraftSummaryItems({
     draft: {
       account: {
-        accountIdHex: '56e5bbd0603bdf01699c047b2397ee0e',
         accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
       },
       operation_body: {

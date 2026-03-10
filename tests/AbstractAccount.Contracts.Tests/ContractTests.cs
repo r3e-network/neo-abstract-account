@@ -185,6 +185,15 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
     }
 
     [TestMethod]
+    public void MetaTransactionStructHashUsesAccountAddressAsIdentity()
+    {
+        var source = ReadRepoFile("contracts/AbstractAccount.MetaTx.cs");
+
+        StringAssert.Contains(source, "accountAddress");
+        StringAssert.DoesNotMatch(source, new System.Text.RegularExpressions.Regex(@"accountIdHash\s*=\s*\(byte\[\]\)CryptoLib.Keccak256\(accountId\)"));
+    }
+
+    [TestMethod]
     public void SetManagersInternalMaintainsManagerReverseIndexes()
     {
         var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");

@@ -7,7 +7,6 @@ test('workspace holds AA identity, operation body, signers, signatures, and shar
   const workspace = createOperationsWorkspace();
 
   workspace.loadAbstractAccount({
-    accountIdHex: 'aa11',
     accountAddressScriptHash: 'bb22',
   });
   workspace.setOperationBody({ kind: 'invoke', targetContract: 'cc33', method: 'transfer', args: ['x'] });
@@ -27,7 +26,7 @@ test('workspace holds AA identity, operation body, signers, signatures, and shar
     accessScope: 'operate',
   });
 
-  assert.equal(workspace.account.value.accountIdHex, 'aa11');
+  assert.equal('accountIdHex' in workspace.account.value, false);
   assert.equal(workspace.account.value.accountAddressScriptHash, 'bb22');
   assert.equal(workspace.operationBody.value.method, 'transfer');
   assert.equal(workspace.transactionBody.value.txHex, 'deadbeef');
@@ -46,13 +45,11 @@ test('workspace derives signer and bound-address forms from an AA draft', () => 
   const workspace = createOperationsWorkspace();
 
   workspace.loadAbstractAccount({
-    accountIdHex: 'aa11',
     accountAddressScriptHash: '11223344',
   });
   assert.equal(workspace.account.value.accountSignerScriptHash, '44332211');
 
   workspace.loadAbstractAccount({
-    accountIdHex: 'aa11',
     accountSignerScriptHash: 'aabbccdd',
   });
   assert.equal(workspace.account.value.accountAddressScriptHash, 'ddccbbaa');

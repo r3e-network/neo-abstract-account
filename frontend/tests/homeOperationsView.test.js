@@ -35,6 +35,15 @@ test('operation composer supports live contract suggestions, method dropdowns, a
   assert.match(workspaceSource, /resolvedContractHash/);
 });
 
+test('home workspace avoids accountId-first state outside creation flow', () => {
+  const workspaceSource = fs.readFileSync(workspacePath, 'utf8');
+  const loadPanelSource = fs.readFileSync(loadPanelPath, 'utf8');
+
+  assert.doesNotMatch(workspaceSource, /const accountIdHex = ref/);
+  assert.doesNotMatch(loadPanelSource, /update:accountIdHex/);
+  assert.doesNotMatch(loadPanelSource, /accountIdHex:/);
+});
+
 test('operations workspace exposes load, compose, signature, and broadcast sections', () => {
   assert.match(fs.readFileSync(workspacePath, 'utf8'), /Abstract Account Workspace/);
   assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load Abstract Account/);

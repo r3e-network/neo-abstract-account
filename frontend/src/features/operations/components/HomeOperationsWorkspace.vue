@@ -69,7 +69,7 @@
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step1Expanded" class="p-6 md:p-8 animate-fade-in">
-              <LoadAccountPanel class="dark-panel-override" :account-id-hex="accountIdHex" :account-address-script-hash="accountAddressScriptHash" :candidate-addresses="discoveredAccountAddresses" :resolved-owner-address="resolvedMatrixOwnerAddress" @update:account-id-hex="accountIdHex = $event" @update:account-address-script-hash="accountAddressScriptHash = $event" @select-address="selectDiscoveredAccount" @load="loadAccount" />
+              <LoadAccountPanel class="dark-panel-override" :account-address-script-hash="accountAddressScriptHash" :candidate-addresses="discoveredAccountAddresses" :resolved-owner-address="resolvedMatrixOwnerAddress" @update:account-address-script-hash="accountAddressScriptHash = $event" @select-address="selectDiscoveredAccount" @load="loadAccount" />
             </div>
           </div>
 
@@ -179,7 +179,7 @@ import { runRelayPreflight, buildRelayPreflightRequest } from '@/features/operat
 import { createDraftInteractionHandlers } from '@/features/operations/viewActions.js';
 import { summarizeSignerProgress } from '@/features/operations/signatures.js';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from '@/features/operations/shareLinks.js';
-import { buildExecuteMetaTxByAddressInvocation, buildMetaTransactionTypedData, computeArgsHash, fetchNonceForAddress, recoverPublicKeyFromTypedDataSignature, fetchAccountIdForAddress } from '@/features/operations/metaTx.js';
+import { assertAccountAddressBound, buildExecuteMetaTxByAddressInvocation, buildMetaTransactionTypedData, computeArgsHash, fetchNonceForAddress, recoverPublicKeyFromTypedDataSignature } from '@/features/operations/metaTx.js';
 import { createOperationsWorkspace } from '@/features/operations/useOperationsWorkspace.js';
 import { buildSubmissionReceipt, getSubmissionButtonLabel, resolveLatestSubmissionReceipt } from '@/features/operations/submissionFeedback.js';
 import { appendSubmissionReceiptEntries, buildSubmissionReceiptHistoryItems, createSubmissionReceiptEntry } from '@/features/operations/submissionReceipts.js';
@@ -206,7 +206,6 @@ const walletConnection = useWalletConnection();
 const preferences = createOperationsPreferences();
 const presetOptions = OPERATION_PRESETS;
 
-const accountIdHex = ref('');
 const accountAddressScriptHash = ref('');
 const discoveredAccountAddresses = ref([]);
 const resolvedMatrixOwnerAddress = ref('');
@@ -562,27 +561,22 @@ async function loadAccount(overrideAddress = '') {
     ? getScriptHashFromAddress(resolvedAddress)
     : sanitizeHex(resolvedAddress);
 
-  let resolvedId = accountIdHex.value;
   try {
-    resolvedId = await fetchAccountIdForAddress({
+    await assertAccountAddressBound({
       rpcUrl: walletService.rpcUrl,
       aaContractHash: getAbstractAccountHash(),
       accountAddressScriptHash: resolvedAddressScriptHash,
     });
-    accountIdHex.value = resolvedId;
     accountAddressScriptHash.value = resolvedAddressScriptHash;
   } catch (e) {
-    console.warn('Could not auto-resolve Account ID. It might not be deployed or mapped yet.', e);
-  }
-
-  if (!resolvedId) {
+    console.warn('Could not validate bound Abstract Account address.', e);
     statusMessage.value = isMatrixDomain(lookup)
       ? 'The .matrix domain resolved, but no bound Abstract Account was found for that controller address.'
       : 'No bound Abstract Account mapping was found for that address.';
     return;
   }
 
-  workspace.loadAbstractAccount({ accountIdHex: resolvedId, accountAddressScriptHash: resolvedAddressScriptHash });
+  workspace.loadAbstractAccount({ accountAddressScriptHash: resolvedAddressScriptHash });
   syncSignerRequirements();
   signerId.value = walletService.address || workspace.account.value.accountAddressScriptHash;
   appendActivity(createActivityEvent({ type: 'account_loaded', actor: 'workspace', detail: 'Abstract account loaded' }));
@@ -689,7 +683,7 @@ async function signWithEvmWallet() {
     const deadline = Math.floor(Date.now() / 1000) + 3600;
     const argsHashHex = await computeArgsHash({ rpcUrl, aaContractHash, args: workspace.operationBody.value?.args || [] });
     const nonce = await fetchNonceForAddress({ rpcUrl, aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmSignerAddress: evmAddress.value });
-    const typedData = buildMetaTransactionTypedData({ chainId: 894710606, verifyingContract: aaContractHash, accountIdHex: workspace.account.value.accountIdHex, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, argsHashHex, nonce, deadline });
+    const typedData = buildMetaTransactionTypedData({ chainId: 894710606, verifyingContract: aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, argsHashHex, nonce, deadline });
     const signature = await walletService.signTypedDataWithEvm(typedData);
     const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature });
     const metaInvocation = buildExecuteMetaTxByAddressInvocation({ aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmPublicKeyHex: publicKey, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, methodArgs: workspace.operationBody.value?.args || [], argsHashHex, nonce, deadline, signatureHex: signature });

@@ -142,7 +142,8 @@ namespace AbstractAccount
 
             // Rebuild the exact EIP-712 digest that the frontend/relayer signed: domain separator + struct hash.
             byte[] domainSeparator = BuildDomainSeparator(Runtime.GetNetwork(), Runtime.ExecutingScriptHash);
-            byte[] structHash = BuildMetaTxStructHash(accountId, targetContract, method, expectedArgsHash, nonce, deadline);
+            UInt160 accountAddress = ResolveMetaTxIdentityAddress(accountId);
+            byte[] structHash = BuildMetaTxStructHash(accountAddress, targetContract, method, expectedArgsHash, nonce, deadline);
             byte[] typedDataPayload = ConcatBytes(new byte[] { 0x19, 0x01 }, domainSeparator, structHash);
 
             UInt160[] recoveredSigners = new UInt160[signerSignatures.Count];
@@ -205,7 +206,7 @@ namespace AbstractAccount
         }
 
         private static byte[] BuildMetaTxStructHash(
-            ByteString accountId,
+            UInt160 accountAddress,
             UInt160 targetContract,
             string method,
             byte[] argsHash,
@@ -213,10 +214,9 @@ namespace AbstractAccount
             BigInteger deadline)
         {
             byte[] methodHash = (byte[])CryptoLib.Keccak256((ByteString)method);
-            byte[] accountIdHash = (byte[])CryptoLib.Keccak256(accountId);
             byte[] encoded = ConcatBytes(
                 MetaTxTypeHash,
-                accountIdHash,
+                ToAddressWord(accountAddress),
                 ToAddressWord(targetContract),
                 methodHash,
                 argsHash,
@@ -224,6 +224,16 @@ namespace AbstractAccount
                 ToUint256Word(deadline)
             );
             return (byte[])CryptoLib.Keccak256((ByteString)encoded);
+        }
+
+        private static UInt160 ResolveMetaTxIdentityAddress(ByteString accountId)
+        {
+            UInt160 boundAddress = GetAccountAddress(accountId);
+            if (boundAddress != null && boundAddress != UInt160.Zero)
+            {
+                return boundAddress;
+            }
+            return GetDeterministicAccountAddress(accountId);
         }
 
         private static byte[] ToAddressWord(UInt160 value)

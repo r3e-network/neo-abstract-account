@@ -14,7 +14,6 @@ function resolveSharePaths({ shareSlug = '', draftId = '', collaborationSlug = '
 
 export function createOperationsWorkspace() {
   const account = ref({
-    accountIdHex: '',
     accountAddressScriptHash: '',
     accountSignerScriptHash: '',
   });

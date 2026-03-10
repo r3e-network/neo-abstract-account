@@ -106,6 +106,8 @@ class AbstractAccountClient {
 
     const {
       chainId,
+      accountAddressScriptHash,
+      accountAddressHash,
       accountIdHex,
       targetContract,
       method,
@@ -114,11 +116,17 @@ class AbstractAccountClient {
       deadline,
     } = options;
 
+    const resolvedAccountAddressScriptHash = accountAddressScriptHash
+      ? sanitizeHex(accountAddressScriptHash)
+      : accountAddressHash
+        ? sanitizeHex(accountAddressHash)
+        : sanitizeHex(u.hash160(this.buildVerifyScript(accountIdHex)));
+
     const argsHashHex = await this.computeArgsHash(args);
     return buildMetaTransactionTypedData({
       chainId,
       verifyingContract: this.masterContractHash,
-      accountIdHex,
+      accountAddressScriptHash: resolvedAccountAddressScriptHash,
       targetContract,
       method,
       argsHashHex,

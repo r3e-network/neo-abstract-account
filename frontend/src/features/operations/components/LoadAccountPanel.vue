@@ -34,12 +34,11 @@
 import { useI18n } from '@/i18n';
 
 defineProps({
-  accountIdHex: { type: String, default: '' },
   accountAddressScriptHash: { type: String, default: '' },
   candidateAddresses: { type: Array, default: () => [] },
   resolvedOwnerAddress: { type: String, default: '' },
 });
-defineEmits(['load', 'update:accountIdHex', 'update:accountAddressScriptHash', 'select-address']);
+defineEmits(['load', 'update:accountAddressScriptHash', 'select-address']);
 
 const { t } = useI18n();
 </script>

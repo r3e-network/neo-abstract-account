@@ -37,7 +37,7 @@ export function buildDraftSummaryItems({ draft = {} } = {}) {
   return [
     {
       label: 'Account',
-      value: draft?.account?.accountAddressScriptHash || draft?.account?.accountIdHex || 'Not available',
+      value: draft?.account?.accountAddressScriptHash || 'Not available',
     },
     {
       label: 'Operation',
@@ -60,7 +60,7 @@ export function buildDraftSummaryItems({ draft = {} } = {}) {
 
 export function buildDraftSummaryActions({ draft = {}, shareUrl = '', collaboratorUrl = '', operatorUrl = '', explorerBaseUrl = '' } = {}) {
   const actions = {};
-  const accountValue = draft?.account?.accountAddressScriptHash || draft?.account?.accountIdHex || '';
+  const accountValue = draft?.account?.accountAddressScriptHash || '';
   const latestActivity = resolveLatestActivity(draft);
 
   if (looksCopyable(accountValue) && accountValue !== 'Not available') {

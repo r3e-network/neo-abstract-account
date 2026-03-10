@@ -444,5 +444,12 @@ namespace AbstractAccount
             ByteString? unlocked = unlockMap.Get(GetStorageKey(accountId));
             return unlocked != null && unlocked == (ByteString)new byte[] { 1 };
         }
+
+        [Safe]
+        public static bool IsDomeOracleUnlockedByAddress(UInt160 accountAddress)
+        {
+            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
+            return IsDomeOracleUnlocked(accountId);
+        }
     }
 }

@@ -9,6 +9,7 @@ const sampleParams = {
   chainId: 894710606,
   verifyingContract: '49c095ce04d38642e39155f5481615c58227a498',
   accountIdHex: `04${'11'.repeat(64)}`,
+  accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
   targetContract: '49c095ce04d38642e39155f5481615c58227a498',
   method: 'getNonceForAccount',
   argsHashHex: 'ab'.repeat(32),
@@ -28,7 +29,7 @@ test('buildMetaTransactionTypedData matches the contract field layout', () => {
     },
     types: {
       MetaTransaction: [
-        { name: 'accountId', type: 'bytes' },
+        { name: 'accountAddress', type: 'address' },
         { name: 'targetContract', type: 'address' },
         { name: 'methodHash', type: 'bytes32' },
         { name: 'argsHash', type: 'bytes32' },
@@ -37,7 +38,7 @@ test('buildMetaTransactionTypedData matches the contract field layout', () => {
       ],
     },
     message: {
-      accountId: `0x${sampleParams.accountIdHex}`,
+      accountAddress: `0x${sampleParams.accountAddressScriptHash}`,
       targetContract: `0x${sampleParams.targetContract}`,
       methodHash: ethers.keccak256(ethers.toUtf8Bytes(sampleParams.method)),
       argsHash: `0x${sampleParams.argsHashHex}`,
@@ -62,6 +63,7 @@ test('AbstractAccountClient.createEIP712Payload computes argsHash through the co
 
   const payload = await client.createEIP712Payload({
     chainId: sampleParams.chainId,
+    accountAddressScriptHash: sampleParams.accountAddressScriptHash,
     accountIdHex: sampleParams.accountIdHex,
     targetContract: sampleParams.targetContract,
     method: sampleParams.method,
@@ -72,7 +74,7 @@ test('AbstractAccountClient.createEIP712Payload computes argsHash through the co
 
   assert.equal(payload.domain.name, 'Neo N3 Abstract Account');
   assert.equal(payload.domain.verifyingContract, `0x${sampleParams.verifyingContract}`);
-  assert.equal(payload.message.accountId, `0x${sampleParams.accountIdHex}`);
+  assert.equal(payload.message.accountAddress, `0x${sampleParams.accountAddressScriptHash}`);
   assert.equal(payload.message.targetContract, `0x${sampleParams.targetContract}`);
   assert.equal(payload.message.methodHash, ethers.keccak256(ethers.toUtf8Bytes(sampleParams.method)));
   assert.equal(payload.message.argsHash, `0x${sampleParams.argsHashHex}`);

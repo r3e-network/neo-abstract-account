@@ -2,13 +2,11 @@ import { sanitizeHex } from '../../utils/hex.js';
 import { reverseHex } from '../../utils/neo.js';
 
 export function deriveAccountForms(input = {}) {
-  const accountIdHex = sanitizeHex(input.accountIdHex || '');
   const accountAddressScriptHash = sanitizeHex(input.accountAddressScriptHash || '');
   const accountSignerScriptHash = sanitizeHex(input.accountSignerScriptHash || '');
 
   if (accountAddressScriptHash && !accountSignerScriptHash) {
     return {
-      accountIdHex,
       accountAddressScriptHash,
       accountSignerScriptHash: sanitizeHex(reverseHex(accountAddressScriptHash)),
     };
@@ -16,14 +14,12 @@ export function deriveAccountForms(input = {}) {
 
   if (accountSignerScriptHash && !accountAddressScriptHash) {
     return {
-      accountIdHex,
       accountAddressScriptHash: sanitizeHex(reverseHex(accountSignerScriptHash)),
       accountSignerScriptHash,
     };
   }
 
   return {
-    accountIdHex,
     accountAddressScriptHash,
     accountSignerScriptHash,
   };

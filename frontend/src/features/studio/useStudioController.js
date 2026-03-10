@@ -259,7 +259,7 @@ export function useStudioController() {
         domeThresholdRes,
         domeTimeoutRes,
         lastActiveRes,
-        accountIdRes
+        domeUnlockRes
       ] = await Promise.all([
         invokeReadOperation('getAdminsByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getAdminThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
@@ -269,7 +269,7 @@ export function useStudioController() {
         invokeReadOperation('getDomeThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getDomeTimeoutByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getLastActiveTimestampByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getAccountIdByAddress', [{ type: 'Hash160', value: accountHash }])
+        invokeReadOperation('isDomeOracleUnlockedByAddress', [{ type: 'Hash160', value: accountHash }])
       ]);
 
       const admins = decodeStackHashArray(adminsRes?.stack?.[0]);
@@ -281,7 +281,6 @@ export function useStudioController() {
       const domeThreshold = decodeStackInteger(domeThresholdRes?.stack?.[0]);
       const domeTimeoutSeconds = decodeStackInteger(domeTimeoutRes?.stack?.[0]);
       const lastActiveMs = decodeStackInteger(lastActiveRes?.stack?.[0]);
-      const accountIdHex = decodeStackByteStringHex(accountIdRes?.stack?.[0]);
 
       manageForm.value.admins = admins.length > 0 ? admins.map((value) => `0x${value}`) : [''];
       manageForm.value.adminThreshold = normalizeThreshold(adminThreshold, admins.length, 1);
@@ -299,21 +298,10 @@ export function useStudioController() {
         ? Number((domeTimeoutSeconds / 3600).toFixed(2))
         : 0;
 
-      let domeUnlocked = null;
-      if (accountIdHex) {
-        try {
-          const domeUnlockRes = await invokeReadOperation('isDomeOracleUnlocked', [
-            { type: 'ByteArray', value: accountIdHex }
-          ]);
-          domeUnlocked = decodeStackBoolean(domeUnlockRes?.stack?.[0]);
-        } catch (_) {
-          domeUnlocked = null;
-        }
-      }
+      const domeUnlocked = decodeStackBoolean(domeUnlockRes?.stack?.[0]);
 
       manageSnapshot.value = {
         loadedAt: new Date().toLocaleString(),
-        accountIdHex: accountIdHex ? `0x${accountIdHex}` : '',
         lastActiveMs,
         domeUnlocked
       };

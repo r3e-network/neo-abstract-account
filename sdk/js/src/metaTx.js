@@ -12,7 +12,8 @@ function decodeByteStringStackHex(item) {
 function buildMetaTransactionTypedData({
   chainId,
   verifyingContract,
-  accountIdHex,
+  accountAddressScriptHash,
+  accountAddressHash,
   targetContract,
   method,
   argsHashHex,
@@ -28,7 +29,7 @@ function buildMetaTransactionTypedData({
     },
     types: {
       MetaTransaction: [
-        { name: 'accountId', type: 'bytes' },
+        { name: 'accountAddress', type: 'address' },
         { name: 'targetContract', type: 'address' },
         { name: 'methodHash', type: 'bytes32' },
         { name: 'argsHash', type: 'bytes32' },
@@ -37,7 +38,7 @@ function buildMetaTransactionTypedData({
       ],
     },
     message: {
-      accountId: `0x${sanitizeHex(accountIdHex)}`,
+      accountAddress: `0x${sanitizeHex(accountAddressScriptHash || accountAddressHash)}`,
       targetContract: `0x${sanitizeHex(targetContract)}`,
       methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method))),
       argsHash: `0x${sanitizeHex(argsHashHex)}`,

@@ -14,7 +14,7 @@ test('buildMetaTransactionTypedData matches the contract field layout', () => {
   const params = {
     chainId: 894710606,
     verifyingContract: '49c095ce04d38642e39155f5481615c58227a498',
-    accountIdHex: `04${'11'.repeat(64)}`,
+    accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
     targetContract: '49c095ce04d38642e39155f5481615c58227a498',
     method: 'getNonceForAccount',
     argsHashHex: 'ab'.repeat(32),
@@ -33,7 +33,7 @@ test('buildMetaTransactionTypedData matches the contract field layout', () => {
     },
     types: {
       MetaTransaction: [
-        { name: 'accountId', type: 'bytes' },
+        { name: 'accountAddress', type: 'address' },
         { name: 'targetContract', type: 'address' },
         { name: 'methodHash', type: 'bytes32' },
         { name: 'argsHash', type: 'bytes32' },
@@ -42,7 +42,7 @@ test('buildMetaTransactionTypedData matches the contract field layout', () => {
       ],
     },
     message: {
-      accountId: `0x${params.accountIdHex}`,
+      accountAddress: `0x${params.accountAddressScriptHash}`,
       targetContract: `0x${params.targetContract}`,
       methodHash: ethers.keccak256(ethers.toUtf8Bytes(params.method)),
       argsHash: `0x${params.argsHashHex}`,
@@ -145,7 +145,7 @@ test('recoverPublicKeyFromTypedDataSignature returns the uncompressed signer key
   const typedData = buildMetaTransactionTypedData({
     chainId: 894710606,
     verifyingContract: '49c095ce04d38642e39155f5481615c58227a498',
-    accountIdHex: `04${'11'.repeat(64)}`,
+    accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
     targetContract: '49c095ce04d38642e39155f5481615c58227a498',
     method: 'getNonceForAccount',
     argsHashHex: 'ab'.repeat(32),

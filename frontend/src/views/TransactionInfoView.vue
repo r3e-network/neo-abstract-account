@@ -509,7 +509,6 @@ async function signWithEvmWallet() {
     const typedData = buildMetaTransactionTypedData({
       chainId: 894710606,
       verifyingContract,
-      accountIdHex: draft.value.account?.accountIdHex,
       targetContract: draft.value.operation_body?.targetContract,
       method: draft.value.operation_body?.method,
       argsHashHex,

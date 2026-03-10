@@ -123,7 +123,6 @@ export function buildStagedTransactionBody({
   return cloneImmutable({
     version: 1,
     network: 'neo-n3-testnet',
-    accountIdHex: account.accountIdHex || '',
     accountAddressScriptHash: account.accountAddressScriptHash || '',
     kind: operationBody?.kind || 'invoke',
     clientInvocation,
@@ -147,7 +146,7 @@ export function buildDraftApprovalTypedData({ draftRecord, chainId = 894710606 }
       DraftApproval: [
         { name: 'draftId', type: 'string' },
         { name: 'shareSlug', type: 'string' },
-        { name: 'accountIdHex', type: 'string' },
+        { name: 'accountAddress', type: 'string' },
         { name: 'payloadDigest', type: 'bytes32' },
         { name: 'broadcastMode', type: 'string' },
       ],
@@ -155,7 +154,7 @@ export function buildDraftApprovalTypedData({ draftRecord, chainId = 894710606 }
     message: {
       draftId: draftRecord?.draft_id || 'local-draft',
       shareSlug: draftRecord?.share_slug || 'local-share',
-      accountIdHex: draftRecord?.account?.accountIdHex || '',
+      accountAddress: draftRecord?.account?.accountAddressScriptHash || '',
       payloadDigest,
       broadcastMode: draftRecord?.broadcast_mode || 'client',
     },
