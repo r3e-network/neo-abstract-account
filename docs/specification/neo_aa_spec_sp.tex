@@ -301,12 +301,12 @@ The creator is automatically added as an administrator if not explicitly include
 \begin{tikzpicture}[scale=0.8,transform shape,
   node distance=0.8cm and 1.2cm,
   component/.style={draw,rectangle,rounded corners=3pt,minimum width=3cm,minimum height=1cm,font=\small,align=center,line width=0.6pt},
-  contract/.style={component,fill=blue!15,draw=blue!70},
-  account/.style={component,fill=green!15,draw=green!70},
-  role/.style={component,fill=orange!15,draw=orange!70},
-  target/.style={component,fill=purple!15,draw=purple!70},
+  contract/.style={component,fill=sysblue!10,draw=sysblue},
+  account/.style={component,fill=sysgreen!10,draw=sysgreen},
+  role/.style={component,fill=sysorange!10,draw=sysorange},
+  target/.style={component,fill=sysred!10,draw=sysred},
   arr/.style={-{Stealth[length=2mm,width=1.5mm]},line width=0.6pt},
-  label/.style={font=\tiny,text=gray!60}
+  label/.style={font=\footnotesize,text=gray!70}
 ]
 
 % AA Contract (center)
@@ -752,10 +752,10 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 \centering
 \begin{tikzpicture}[
     node distance=0.8cm,
-    start/.style={rectangle, rounded corners, draw, fill=blue!20, text width=3cm, align=center, minimum height=0.8cm},
-    process/.style={rectangle, draw, fill=green!20, text width=3.5cm, align=center, minimum height=0.7cm},
-    decision/.style={diamond, draw, fill=orange!20, text width=2.5cm, align=center, aspect=2},
-    result/.style={rectangle, rounded corners, draw, fill=purple!20, text width=2.5cm, align=center, minimum height=0.7cm},
+    start/.style={rectangle, rounded corners, draw, fill=sysblue!10, text width=3cm, align=center, minimum height=0.8cm},
+    process/.style={rectangle, draw, fill=sysgreen!10, text width=3.5cm, align=center, minimum height=0.7cm},
+    decision/.style={diamond, draw, fill=sysorange!10, text width=2.5cm, align=center, aspect=2},
+    result/.style={rectangle, rounded corners, draw, fill=sysred!10, text width=2.5cm, align=center, minimum height=0.7cm},
     arrow/.style={->, >=stealth, thick}
 ]
 
@@ -1022,9 +1022,9 @@ This per-signer nonce design allows parallel transaction submission from differe
   evm/.style={phase,fill=blue!12,draw=blue!70},
   neo/.style={phase,fill=orange!12,draw=orange!70},
   verify/.style={phase,fill=green!12,draw=green!70},
-  data/.style={draw,rectangle,rounded corners=1pt,minimum width=2.4cm,minimum height=0.5cm,font=\tiny,align=center,line width=0.4pt,fill=gray!8},
+  data/.style={draw,rectangle,rounded corners=1pt,minimum width=2.4cm,minimum height=0.5cm,font=\footnotesize,align=center,line width=0.4pt,fill=gray!8},
   arr/.style={-{Stealth[length=1.8mm,width=1.2mm]},line width=0.5pt,gray!70},
-  label/.style={font=\tiny\bfseries,text=gray!60}
+  label/.style={font=\footnotesize\bfseries,text=gray!60}
 ]
 
 % Phase 1: EVM Signature Generation
@@ -1121,9 +1121,9 @@ $$\text{Runtime.Time} > \text{deadline}$$
 \begin{tikzpicture}[scale=0.7,transform shape,
   node distance=0.5cm and 0.6cm,
   box/.style={draw,rectangle,rounded corners=2pt,minimum width=2.6cm,minimum height=0.6cm,font=\scriptsize,align=center,line width=0.5pt},
-  header/.style={box,fill=blue!15,draw=blue!70,font=\tiny\bfseries},
+  header/.style={box,fill=blue!15,draw=blue!70,font=\footnotesize\bfseries},
   field/.style={box,fill=gray!8,draw=gray!50},
-  nested/.style={draw,rectangle,rounded corners=1pt,minimum width=2.2cm,minimum height=0.5cm,font=\tiny,align=center,line width=0.4pt,fill=yellow!10},
+  nested/.style={draw,rectangle,rounded corners=1pt,minimum width=2.2cm,minimum height=0.5cm,font=\footnotesize,align=center,line width=0.4pt,fill=yellow!10},
   arr/.style={-{Stealth[length=1.5mm]},line width=0.4pt,gray!60}
 ]
 
@@ -1173,14 +1173,14 @@ $$\text{Runtime.Time} > \text{deadline}$$
 \small
 \begin{tikzpicture}[
   node distance=0.5cm and 0.7cm,
-  process/.style={draw,rectangle,rounded corners=2pt,minimum width=2.8cm,minimum height=0.6cm,font=\scriptsize,align=center,line width=0.5pt,fill=blue!10},
-  decision/.style={draw,diamond,aspect=2.5,align=center,font=\tiny,inner sep=1pt,line width=0.5pt,fill=yellow!15},
-  data/.style={draw,rectangle,rounded corners=1pt,minimum width=2.4cm,minimum height=0.5cm,font=\tiny,align=center,line width=0.4pt,fill=gray!8},
+  process/.style={draw,rectangle,rounded corners=2pt,minimum width=2.8cm,minimum height=0.6cm,font=\scriptsize,align=center,line width=0.5pt,fill=sysblue!10},
+  decision/.style={draw,diamond,aspect=2.5,align=center,font=\footnotesize,inner sep=1pt,line width=0.5pt,fill=sysorange!10},
+  data/.style={draw,rectangle,rounded corners=1pt,minimum width=2.4cm,minimum height=0.5cm,font=\footnotesize,align=center,line width=0.4pt,fill=gray!8},
   result/.style={draw,rectangle,rounded corners=2pt,minimum width=2.2cm,minimum height=0.55cm,font=\scriptsize,align=center,line width=0.5pt},
-  accept/.style={result,fill=green!20,draw=green!70},
-  reject/.style={result,fill=red!20,draw=red!70},
+  accept/.style={result,fill=sysgreen!15,draw=sysgreen},
+  reject/.style={result,fill=sysred!15,draw=sysred},
   arr/.style={-{Stealth[length=1.6mm]},line width=0.5pt,gray!70},
-  label/.style={font=\tiny,text=gray!60}
+  label/.style={font=\footnotesize,text=gray!60}
 ]
 
 % Start
