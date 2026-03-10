@@ -125,6 +125,29 @@ export async function fetchNonceForAddress({
   return decodeIntegerStack(result?.stack?.[0]);
 }
 
+export async function fetchAccountIdForAddress({
+  rpcUrl,
+  aaContractHash,
+  accountAddressScriptHash,
+  fetchImpl,
+} = {}) {
+  const result = await invokeRead({
+    rpcUrl,
+    scriptHash: sanitizeHex(aaContractHash),
+    operation: 'getAccountIdByAddress',
+    args: [
+      { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` }
+    ],
+    fetchImpl,
+  });
+
+  if (result?.state === 'FAULT') {
+    throw new Error(`getAccountIdByAddress fault: ${result.exception || 'VM fault'}`);
+  }
+
+  return decodeByteStringStackHex(result?.stack?.[0]);
+}
+
 export function buildExecuteMetaTxByAddressInvocation({
   aaContractHash,
   accountAddressScriptHash,
