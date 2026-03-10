@@ -294,6 +294,54 @@ An abstract account in Neo-AA is a logical identity governed by the shared maste
 
 The creator is automatically added as an administrator if not explicitly included in the admin list, ensuring the account remains accessible.
 
+% Figure 1: System Architecture Overview
+\begin{figure*}[t]
+\centering
+\small
+\begin{tikzpicture}[scale=0.8,transform shape,
+  node distance=0.8cm and 1.2cm,
+  component/.style={draw,rectangle,rounded corners=3pt,minimum width=3cm,minimum height=1cm,font=\small,align=center,line width=0.6pt},
+  contract/.style={component,fill=blue!15,draw=blue!70},
+  account/.style={component,fill=green!15,draw=green!70},
+  role/.style={component,fill=orange!15,draw=orange!70},
+  target/.style={component,fill=purple!15,draw=purple!70},
+  arr/.style={-{Stealth[length=2mm,width=1.5mm]},line width=0.6pt},
+  label/.style={font=\tiny,text=gray!60}
+]
+
+% AA Contract (center)
+\node[contract] (aa) at (0,0) {\textbf{AA Contract}\\(Global Master)};
+
+% Account Addresses (left)
+\node[account,left=3cm of aa] (acc1) {\textbf{Account Address 1}\\accountId: 0xabc...};
+\node[account,below=0.5cm of acc1] (acc2) {\textbf{Account Address 2}\\accountId: 0xdef...};
+\node[account,below=0.5cm of acc2] (acc3) {\textbf{Account Address N}\\accountId: 0x123...};
+
+% Roles (right)
+\node[role,right=3cm of aa] (admin) {\textbf{Admin Role}\\N3 + EVM addresses};
+\node[role,below=0.5cm of admin] (manager) {\textbf{Manager Role}\\N3 + EVM addresses};
+
+% Target Contracts (bottom)
+\node[target,below=2cm of aa] (target) {\textbf{Target Contracts}\\NEP-17, Custom, etc.};
+
+% Arrows
+\draw[arr] (acc1) -- node[above,label] {Verify(accountId)} (aa);
+\draw[arr] (acc2) -- (aa);
+\draw[arr] (acc3) -- (aa);
+
+\draw[arr] (aa) -- node[above,label] {CheckMixedSignatures} (admin);
+\draw[arr] (aa) -- (manager);
+
+\draw[arr] (aa) -- node[right,label] {Contract.Call} (target);
+
+% Legend
+\node[label,below=0.3cm of target] {Each accountId → unique Account Address (deterministic verify script)};
+
+\end{tikzpicture}
+\caption{System Architecture: One global AA Contract manages multiple Account Addresses, each with role-based authorization.}
+\label{fig:architecture}
+\end{figure*}
+
 
 \subsection{Deterministic Address Generation}
 
@@ -375,6 +423,53 @@ This two-phase design (verification + application) ensures that:
 \item All operations go through the master contract's policy enforcement layer
 \item Authorization state remains centralized and auditable
 \end{itemize}
+% Figure: Two-Phase Verification Model
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    phase/.style={rectangle, draw, fill=blue!20, text width=3.5cm, align=center, minimum height=1.2cm, rounded corners},
+    method/.style={rectangle, draw, fill=green!20, text width=3cm, align=center, minimum height=0.8cm},
+    check/.style={rectangle, draw, fill=orange!20, text width=3cm, align=center, minimum height=0.8cm},
+    arrow/.style={->, >=stealth, thick}
+]
+
+% Phase 1: Verification
+\node[phase] (phase1) at (0,0) {\textbf{Phase 1: Verification}\\(Mempool Entry)};
+\node[method, below=0.5cm of phase1] (verify) {\texttt{Verify()}};
+\node[check, below=0.3cm of verify] (checkn3) {CheckNativeSignatures\\(N3 only)};
+\node[text width=3.5cm, align=center, below=0.3cm of checkn3] (purpose1) {\small Economic optimization\\Prevents gas attacks};
+
+% Phase 2: Application
+\node[phase] (phase2) at (7,0) {\textbf{Phase 2: Application}\\(Execution)};
+\node[method, below=0.5cm of phase2] (execute) {\texttt{Execute()}\\or\\executeMetaTxByAddress()};
+\node[check, below=0.3cm of execute] (checkmixed) {CheckMixedSignatures\\(N3 + EVM)};
+\node[text width=3.5cm, align=center, below=0.3cm of checkmixed] (purpose2) {\small Security enforcement\\Unified authorization};
+
+% Timeline arrow
+\draw[arrow, very thick] (phase1.east) -- (phase2.west) node[midway, above] {Transaction Flow};
+
+% Annotations
+\node[text width=3.5cm, align=left, below=1.8cm of purpose1, font=\footnotesize] (note1) {
+\textbf{Pure Neo:}\\
+Both phases check N3\\
+\\
+\textbf{Pure EVM:}\\
+Phase 1: Relayer only\\
+Phase 2: EVM signature
+};
+
+\node[text width=3.5cm, align=left, below=1.8cm of purpose2, font=\footnotesize] (note2) {
+\textbf{Mixed N3+EVM:}\\
+Phase 1: N3 witness\\
+Phase 2: N3 + EVM\\
+Threshold satisfied
+};
+
+\end{tikzpicture}
+\caption{Two-Phase Verification Model: Verification phase (mempool entry) uses CheckNativeSignatures for economic optimization, while Application phase (execution) uses CheckMixedSignatures for security enforcement with unified N3+EVM authorization.}
+\label{fig:two_phase_verification}
+\end{figure}
 
 
 \subsection{Mixed Authorization Transaction Anatomy}
@@ -652,11 +747,136 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 \item \textbf{Threshold Enforcement}: The algorithm returns true if and only if the total count meets or exceeds the configured threshold.
 \item \textbf{Order Independence}: The algorithm iterates through the roles list, not the signature list, ensuring consistent behavior regardless of signature submission order.
 \end{itemize}
+% Figure: CheckMixedSignatures Algorithm
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.8cm,
+    start/.style={rectangle, rounded corners, draw, fill=blue!20, text width=3cm, align=center, minimum height=0.8cm},
+    process/.style={rectangle, draw, fill=green!20, text width=3.5cm, align=center, minimum height=0.7cm},
+    decision/.style={diamond, draw, fill=orange!20, text width=2.5cm, align=center, aspect=2},
+    result/.style={rectangle, rounded corners, draw, fill=purple!20, text width=2.5cm, align=center, minimum height=0.7cm},
+    arrow/.style={->, >=stealth, thick}
+]
+
+% Start
+\node[start] (start) at (0,0) {CheckMixedSignatures(\\roles, threshold, verifiedSigners)};
+
+% Initialize
+\node[process, below=of start] (init) {count = 0\\i = 0};
+
+% Loop condition
+\node[decision, below=of init] (loop) {i < roles.Count?};
+
+% Check EVM signature
+\node[decision, below=1.2cm of loop] (checkevm) {roles[i] in\\verifiedSigners[]?};
+
+% Count EVM
+\node[process, right=2cm of checkevm] (countevm) {count++\\matched = true};
+
+% Check N3 signature
+\node[decision, below=1.2cm of checkevm] (checkn3) {!matched \&\&\\CheckWitness(\\roles[i])?};
+
+% Count N3
+\node[process, right=2cm of checkn3] (countn3) {count++};
+
+% Increment
+\node[process, below=1.2cm of checkn3] (increment) {i++};
+
+% Final check
+\node[decision, right=4cm of loop] (final) {count >=\\threshold?};
+
+% Results
+\node[result, above=0.8cm of final] (true) {return true\\(Authorized)};
+\node[result, right=1.5cm of final] (false) {return false\\(Unauthorized)};
+
+% Arrows
+\draw[arrow] (start) -- (init);
+\draw[arrow] (init) -- (loop);
+\draw[arrow] (loop) -- node[left] {yes} (checkevm);
+\draw[arrow] (loop) -- node[above] {no} (final);
+\draw[arrow] (checkevm) -- node[above] {yes} (countevm);
+\draw[arrow] (checkevm) -- node[left] {no} (checkn3);
+\draw[arrow] (countevm) |- (increment);
+\draw[arrow] (checkn3) -- node[above] {yes} (countn3);
+\draw[arrow] (checkn3) -- node[left] {no} (increment);
+\draw[arrow] (countn3) |- (increment);
+\draw[arrow] (increment) -| (loop);
+\draw[arrow] (final) -- node[left] {yes} (true);
+\draw[arrow] (final) -- node[above] {no} (false);
+
+% Annotations
+\node[text width=3cm, align=left, font=\footnotesize, below=0.3cm of increment] (note) {
+\textbf{Key:}\\
+• EVM: verifiedSigners[]\\
+• N3: CheckWitness()\\
+• Unified counting
+};
+
+\end{tikzpicture}
+\caption{CheckMixedSignatures Unified Threshold Algorithm: Iterates through roles, counting both EVM signatures (from verifiedSigners array) and N3 signatures (via Runtime.CheckWitness), returning true when count reaches threshold.}
+\label{fig:checkmixed_algorithm}
+\end{figure}
 
 
 \subsection{Three Authorization Scenarios}
 
 The mixed authorization protocol supports three distinct operational modes, each demonstrating different aspects of the unified threshold mechanism.
+% Figure: Transaction Type Comparison
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.5cm,
+    header/.style={rectangle, draw, fill=blue!30, text width=3.5cm, align=center, minimum height=0.7cm, font=\small\bfseries},
+    cell/.style={rectangle, draw, text width=3.5cm, align=center, minimum height=1.2cm, font=\footnotesize},
+    label/.style={text width=3cm, align=right, font=\footnotesize\bfseries}
+]
+
+% Headers
+\node[header] (h1) at (0,0) {Pure Neo};
+\node[header] (h2) at (4,0) {Pure EVM};
+\node[header] (h3) at (8,0) {Mixed N3+EVM};
+
+% Row 1: Signers
+\node[label] (l1) at (-3.5,-1) {Signers:};
+\node[cell, fill=green!10] (c11) at (0,-1) {accountAddress\\(pays fees)};
+\node[cell, fill=green!10] (c12) at (4,-1) {relayerAddress\\(pays fees)};
+\node[cell, fill=green!10] (c13) at (8,-1) {relayerAddress\\+ N3 Admin};
+
+% Row 2: Witnesses
+\node[label] (l2) at (-3.5,-2.5) {Witnesses:};
+\node[cell, fill=orange!10] (c21) at (0,-2.5) {N3 signature\\(secp256r1)};
+\node[cell, fill=orange!10] (c22) at (4,-2.5) {Relayer signature\\(secp256r1)};
+\node[cell, fill=orange!10] (c23) at (8,-2.5) {Relayer + N3\\signatures};
+
+% Row 3: Script Params
+\node[label] (l3) at (-3.5,-4) {Script Params:};
+\node[cell, fill=purple!10] (c31) at (0,-4) {Execute(\\accountId, target,\\method, args)};
+\node[cell, fill=purple!10] (c32) at (4,-4) {executeMetaTx(\\accountAddress,\\evmPubKeys[],\\evmSigs[])};
+\node[cell, fill=purple!10] (c33) at (8,-4) {executeMetaTx(\\accountAddress,\\evmPubKeys[],\\evmSigs[])};
+
+% Row 4: Verification Phase
+\node[label] (l4) at (-3.5,-5.5) {Phase 1\\(Mempool):};
+\node[cell, fill=yellow!10] (c41) at (0,-5.5) {Verify()\\CheckNative\\Signatures};
+\node[cell, fill=yellow!10] (c42) at (4,-5.5) {Relayer witness\\only\\(no AA check)};
+\node[cell, fill=yellow!10] (c43) at (8,-5.5) {Relayer + N3\\witnesses\\verified};
+
+% Row 5: Application Phase
+\node[label] (l5) at (-3.5,-7) {Phase 2\\(Execution):};
+\node[cell, fill=cyan!10] (c51) at (0,-7) {Execute()\\CheckNative\\Signatures};
+\node[cell, fill=cyan!10] (c52) at (4,-7) {executeMetaTx()\\CheckMixed\\(EVM only)};
+\node[cell, fill=cyan!10] (c53) at (8,-7) {executeMetaTx()\\CheckMixed\\(N3 + EVM)};
+
+% Row 6: Threshold
+\node[label] (l6) at (-3.5,-8.5) {Threshold:};
+\node[cell, fill=red!10] (c61) at (0,-8.5) {threshold=1\\(N3 admin)};
+\node[cell, fill=red!10] (c62) at (4,-8.5) {threshold=1\\(EVM admin)};
+\node[cell, fill=red!10] (c63) at (8,-8.5) {threshold=2\\(N3 + EVM)};
+
+\end{tikzpicture}
+\caption{Transaction Type Comparison: Pure Neo uses native N3 signatures in both phases; Pure EVM uses relayer witness in Phase 1 and EVM signature verification in Phase 2; Mixed N3+EVM combines both signature types to meet threshold=2 requirement.}
+\label{fig:transaction_comparison}
+\end{figure}
 
 \subsubsection{Scenario 1: Pure Neo Account}
 
