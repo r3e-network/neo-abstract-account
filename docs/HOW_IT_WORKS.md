@@ -40,6 +40,20 @@ The result is:
 - support for both native Neo signatures and EVM EIP-712 signatures
 - one consistent permission surface for native calls, relay-assisted calls, and meta-transactions
 
+### Account Discovery and Batch Operations
+
+The system includes efficient account discovery through reverse indices:
+
+- **Role-based queries:** Find all accounts where an address is admin or manager via `GetAccountsByAdmin` and `GetAccountsByManager`
+- **O(1) lookups:** Reverse indices provide constant-time account discovery without scanning
+- **Batch creation:** Deploy multiple accounts with shared governance in a single transaction via `CreateAccountBatch`
+- **Creator defaults:** Transaction sender automatically becomes default admin when creating accounts
+
+This enables:
+- Portfolio management: users can query all accounts they control
+- Organizational oversight: admins can discover accounts under their authority
+- Efficient onboarding: create multiple accounts for teams or projects in one operation
+
 ## 3. Choose the Right Path
 
 Use the path that matches your role and risk profile:
@@ -190,3 +204,6 @@ If you are learning the system for the first time, read these pages in order:
 - **Operator link** — a scoped link for relay, broadcast, receipts, and link rotation
 - **Relay preflight** — a server-backed simulation of a relay-ready invocation before submission
 - **Meta invocation** — the AA wrapper payload created from EVM typed-data signatures
+- **Account discovery** — querying all accounts where an address holds admin or manager roles via reverse indices
+- **Batch creation** — creating multiple accounts with shared governance configuration in a single transaction
+- **Reverse index** — on-chain storage mapping addresses to their associated account IDs for O(1) role-based queries

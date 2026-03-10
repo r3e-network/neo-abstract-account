@@ -10,6 +10,7 @@ This index keeps the root documentation set visible and easy to browse.
 - `docs/DATA_FLOW.md` — browser / Supabase / relay / chain boundaries
 - `docs/architecture.md` — technical architecture details
 - `docs/QUICK_REFERENCE.md` — commands and quick lookup material
+- `docs/ACCOUNT_DISCOVERY.md` — account discovery and batch creation guide
 
 ## Chinese Counterparts
 
@@ -32,3 +33,8 @@ This index keeps the root documentation set visible and easy to browse.
 - `SECURITY_IMPROVEMENTS.md`
 - `docs/SECURITY_AUDIT.md`
 - `docs/SECURITY_FIX_REPORT.md`
+
+## Formal Specification
+
+- `docs/specification/neo_abstract_account_spec.tex` — formal paper-style LaTeX specification
+- `docs/specification/README.md` — build instructions
