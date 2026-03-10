@@ -52,13 +52,24 @@ class WalletService {
     console.log("[WalletService Debug] Checking wallet providers...");
     console.log("[WalletService Debug] window.neo3Dapi:", window.neo3Dapi);
     console.log("[WalletService Debug] window.NEOLine:", window.NEOLine);
+    console.log("[WalletService Debug] window.NEOLine keys:", window.NEOLine ? Object.keys(window.NEOLine) : "N/A");
+    console.log("[WalletService Debug] window.NEOLine.default:", window.NEOLine?.default);
     console.log("[WalletService Debug] window.NEOLineN3:", window.NEOLineN3);
+    console.log("[WalletService Debug] window.NEOLineN3 keys:", window.NEOLineN3 ? Object.keys(window.NEOLineN3) : "N/A");
     
     if (window.neo3Dapi?.getAccount) {
       console.log("[WalletService Debug] Found neo3Dapi");
       return {
         name: "neo3Dapi",
         getAccount: () => window.neo3Dapi.getAccount()
+      };
+    }
+
+    if (window.NEOLine?.default?.getAccount) {
+      console.log("[WalletService Debug] Found NEOLine.default");
+      return {
+        name: "NEOLine",
+        getAccount: () => window.NEOLine.default.getAccount()
       };
     }
 
