@@ -26,6 +26,9 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     relayRawEnabled: false,
     explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
     matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
+    n3IndexApiBaseUrl: 'https://api.n3index.dev',
+    n3IndexNetwork: 'testnet',
+    neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
   });
 });
 
@@ -39,6 +42,9 @@ test('getOperationsRuntime derives collaboration and relay flags', () => {
     relayRawEnabled: false,
     explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
     matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
+    n3IndexApiBaseUrl: 'https://api.n3index.dev',
+    n3IndexNetwork: 'testnet',
+    neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
   });
 
   assert.deepEqual(runtime, {
@@ -50,6 +56,9 @@ test('getOperationsRuntime derives collaboration and relay flags', () => {
     relayRawEnabled: false,
     explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
     matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
+    n3IndexApiBaseUrl: 'https://api.n3index.dev',
+    n3IndexNetwork: 'testnet',
+    neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
     supabaseUrl: 'https://example.supabase.co',
     supabaseAnonKey: 'anon',
     broadcastModes: ['client', 'relay'],

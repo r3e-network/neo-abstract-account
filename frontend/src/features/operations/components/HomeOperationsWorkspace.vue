@@ -82,7 +82,7 @@
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step2Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step2Expanded" class="p-6 md:p-8 animate-fade-in">
-              <OperationComposerPanel class="dark-panel-override" :preset="preset" :preset-options="presetOptions" :target-contract="targetContract" :method="method" :args-text="argsText" :transfer-token-script-hash="transferTokenScriptHash" :transfer-recipient="transferRecipient" :transfer-amount="transferAmount" :transfer-data="transferData" :multisig-title="multisigTitle" :multisig-description="multisigDescription" :summary-title="composerSummary.title" :summary-detail="composerSummary.detail" :batch-account-ids="batchAccountIds" :batch-admins="batchAdmins" :batch-admin-threshold="batchAdminThreshold" :batch-managers="batchManagers" :batch-manager-threshold="batchManagerThreshold" @update:preset="preset = $event" @update:target-contract="targetContract = $event" @update:method="method = $event" @update:args-text="argsText = $event" @update:transfer-token-script-hash="transferTokenScriptHash = $event" @update:transfer-recipient="transferRecipient = $event" @update:transfer-amount="transferAmount = $event" @update:transfer-data="transferData = $event" @update:multisig-title="multisigTitle = $event" @update:multisig-description="multisigDescription = $event" @update:batch-account-ids="batchAccountIds = $event" @update:batch-admins="batchAdmins = $event" @update:batch-admin-threshold="batchAdminThreshold = $event" @update:batch-managers="batchManagers = $event" @update:batch-manager-threshold="batchManagerThreshold = $event" @stage="stageOperation" />
+              <OperationComposerPanel class="dark-panel-override" :preset="preset" :preset-options="presetOptions" :target-contract="targetContract" :resolved-contract-hash="resolvedContractHash" :resolved-contract-name="resolvedContractName" :contract-suggestions="contractSuggestions" :contract-lookup-status="contractLookupStatus" :method-options="methodOptions" :parameter-fields="parameterFields" :method="method" :args-text="argsText" :transfer-token-script-hash="transferTokenScriptHash" :transfer-recipient="transferRecipient" :transfer-amount="transferAmount" :transfer-data="transferData" :multisig-title="multisigTitle" :multisig-description="multisigDescription" :summary-title="composerSummary.title" :summary-detail="composerSummary.detail" :batch-account-ids="batchAccountIds" :batch-admins="batchAdmins" :batch-admin-threshold="batchAdminThreshold" :batch-managers="batchManagers" :batch-manager-threshold="batchManagerThreshold" @update:preset="preset = $event" @update:target-contract="targetContract = $event" @update:method="method = $event" @select-contract-suggestion="selectContractSuggestion" @update:parameter-value="updateParameterValue" @update:args-text="argsText = $event" @update:transfer-token-script-hash="transferTokenScriptHash = $event" @update:transfer-recipient="transferRecipient = $event" @update:transfer-amount="transferAmount = $event" @update:transfer-data="transferData = $event" @update:multisig-title="multisigTitle = $event" @update:multisig-description="multisigDescription = $event" @update:batch-account-ids="batchAccountIds = $event" @update:batch-admins="batchAdmins = $event" @update:batch-admin-threshold="batchAdminThreshold = $event" @update:batch-managers="batchManagers = $event" @update:batch-manager-threshold="batchManagerThreshold = $event" @stage="stageOperation" />
             </div>
           </div>
 
@@ -165,7 +165,7 @@
   </section>
 </template>
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/i18n';
 import { useWalletConnection } from '@/composables/useWalletConnection.js';
 import { OPERATIONS_RUNTIME } from '@/config/operationsRuntime.js';
@@ -187,6 +187,8 @@ import { getAbstractAccountHash, walletService } from '@/services/walletService.
 import { getScriptHashFromAddress } from '@/utils/neo.js';
 import { sanitizeHex } from '@/utils/hex.js';
 import { discoverAccountsForMatrixDomain, isMatrixDomain } from '@/services/matrixDomainService.js';
+import { isNeoDomain } from '@/services/domainResolverService.js';
+import { buildParameterFields, buildContractParamFromField, loadContractManifest, searchContractsByName } from '@/services/contractLookupService.js';
 import ActivitySidebar from './ActivitySidebar.vue';
 import BroadcastOptionsPanel from './BroadcastOptionsPanel.vue';
 import DraftStatusBanner from './DraftStatusBanner.vue';
@@ -210,6 +212,12 @@ const discoveredAccountAddresses = ref([]);
 const resolvedMatrixOwnerAddress = ref('');
 const preset = ref('invoke');
 const targetContract = ref('');
+const resolvedContractHash = ref('');
+const resolvedContractName = ref('');
+const contractSuggestions = ref([]);
+const contractLookupStatus = ref('');
+const methodOptions = ref([]);
+const parameterFields = ref([]);
 const method = ref('');
 const argsText = ref('[]');
 const transferTokenScriptHash = ref('');
@@ -243,11 +251,27 @@ const step1Expanded = ref(true);
 const step2Expanded = ref(false);
 const step3Expanded = ref(false);
 const step4Expanded = ref(false);
+let contractLookupRequestId = 0;
+let contractSuggestionTimer = null;
+
+const invokeTargetContract = computed(() => {
+  if (resolvedContractHash.value) return resolvedContractHash.value;
+  const raw = String(targetContract.value || '').trim();
+  if (raw.startsWith('N')) {
+    try {
+      return sanitizeHex(getScriptHashFromAddress(raw));
+    } catch (_error) {
+      return '';
+    }
+  }
+  const sanitized = sanitizeHex(raw);
+  return /^[0-9a-f]{40}$/.test(sanitized) ? sanitized : '';
+});
 
 const draftCandidate = computed(() => buildOperationFromPreset({
   preset: preset.value,
   account: workspace.account.value,
-  invoke: { targetContract: targetContract.value, method: method.value, argsText: argsText.value },
+  invoke: { targetContract: invokeTargetContract.value, method: method.value, argsText: argsText.value },
   transfer: { tokenScriptHash: transferTokenScriptHash.value, recipient: transferRecipient.value, amount: transferAmount.value, data: transferData.value },
   multisig: { title: multisigTitle.value, description: multisigDescription.value },
   batch: { accountIds: batchAccountIds.value, admins: batchAdmins.value, adminThreshold: batchAdminThreshold.value, managers: batchManagers.value, managerThreshold: batchManagerThreshold.value },
@@ -293,6 +317,123 @@ const { copyRelayPayload, copyRelayStack, exportRelayPreflight, handleSummaryAct
 });
 
 watch(relayPayloadMode, (value) => { preferences.setRelayPayloadMode('home-workspace', value); });
+
+function syncArgsTextFromParameters() {
+  if (!parameterFields.value.length) return;
+  argsText.value = JSON.stringify(parameterFields.value.map((field) => buildContractParamFromField(field)), null, 2);
+}
+
+function updateParameterValue({ key, value }) {
+  parameterFields.value = parameterFields.value.map((field) => (field.key === key ? { ...field, value } : field));
+  syncArgsTextFromParameters();
+}
+
+function selectContractSuggestion(suggestion) {
+  targetContract.value = suggestion.displayName || `0x${suggestion.contractHash}`;
+  resolvedContractHash.value = sanitizeHex(suggestion.contractHash);
+  resolvedContractName.value = suggestion.displayName || '';
+  contractSuggestions.value = [];
+  void refreshContractMethods(`0x${sanitizeHex(suggestion.contractHash)}`);
+}
+
+async function refreshContractMethods(identifier = targetContract.value) {
+  const requestId = ++contractLookupRequestId;
+  contractLookupStatus.value = 'Loading contract methods…';
+  try {
+    const loaded = await loadContractManifest(identifier, {
+      rpcUrl: walletService.rpcUrl || runtime.relayRpcUrl,
+      matrixContractHash: runtime.matrixContractHash,
+      neoNnsContractHash: runtime.neoNnsContractHash,
+    });
+    if (requestId !== contractLookupRequestId) return;
+
+    resolvedContractHash.value = loaded.resolved?.contractHash || '';
+    resolvedContractName.value = loaded.manifest?.name || loaded.resolved?.displayName || resolvedContractName.value;
+    methodOptions.value = loaded.methods || [];
+    contractSuggestions.value = [];
+
+    if (method.value && !methodOptions.value.some((option) => option.name === method.value)) {
+      method.value = '';
+    }
+    if (!method.value && methodOptions.value.length === 1) {
+      method.value = methodOptions.value[0].name;
+    }
+    if (!method.value) {
+      parameterFields.value = [];
+    }
+
+    contractLookupStatus.value = methodOptions.value.length
+      ? `Loaded ${methodOptions.value.length} methods for ${resolvedContractName.value || `0x${resolvedContractHash.value}`}.`
+      : 'Contract resolved, but no callable ABI methods were returned.';
+  } catch (error) {
+    if (requestId !== contractLookupRequestId) return;
+    resolvedContractHash.value = '';
+    resolvedContractName.value = '';
+    methodOptions.value = [];
+    parameterFields.value = [];
+    contractLookupStatus.value = error?.message || String(error);
+  }
+}
+
+watch(method, (nextMethod) => {
+  const methodDefinition = methodOptions.value.find((option) => option.name === nextMethod) || null;
+  parameterFields.value = buildParameterFields(methodDefinition);
+  if (parameterFields.value.length) {
+    syncArgsTextFromParameters();
+  }
+});
+
+watch(targetContract, (value) => {
+  const lookup = String(value || '').trim();
+  clearTimeout(contractSuggestionTimer);
+  contractSuggestions.value = [];
+
+  if (!lookup) {
+    resolvedContractHash.value = '';
+    resolvedContractName.value = '';
+    methodOptions.value = [];
+    parameterFields.value = [];
+    contractLookupStatus.value = '';
+    return;
+  }
+
+  const directLookup = lookup.startsWith('N') || isMatrixDomain(lookup) || isNeoDomain(lookup) || /^[0-9a-f]{40}$/i.test(sanitizeHex(lookup));
+  if (directLookup) {
+    void refreshContractMethods(lookup);
+    return;
+  }
+
+  contractSuggestionTimer = setTimeout(async () => {
+    const requestId = ++contractLookupRequestId;
+    contractLookupStatus.value = 'Searching contracts via N3Index…';
+    try {
+      const suggestions = await searchContractsByName(lookup, {
+        baseUrl: runtime.n3IndexApiBaseUrl,
+        network: runtime.n3IndexNetwork,
+        rpcUrl: walletService.rpcUrl || runtime.relayRpcUrl,
+      });
+      if (requestId !== contractLookupRequestId) return;
+      contractSuggestions.value = suggestions;
+      resolvedContractHash.value = '';
+      resolvedContractName.value = '';
+      methodOptions.value = [];
+      parameterFields.value = [];
+      contractLookupStatus.value = suggestions.length
+        ? 'Select a contract to load its ABI methods.'
+        : 'No matching contracts found yet.';
+    } catch (error) {
+      if (requestId !== contractLookupRequestId) return;
+      contractSuggestions.value = [];
+      contractLookupStatus.value = error?.message || String(error);
+    }
+  }, 250);
+});
+
+onMounted(() => {
+  if (String(targetContract.value || '').trim()) {
+    void refreshContractMethods(targetContract.value);
+  }
+});
 
 const draftSummaryDraft = computed(() => buildCurrentDraftRecord({ draftId: workspace.share.value.draftId || 'local-draft', shareSlug: workspace.share.value.shareSlug || 'local-share' }));
 const exportPreview = computed(() => JSON.stringify(buildDraftExportBundle({ draftRecord: buildCurrentDraftRecord({ draftId: workspace.share.value.draftId || 'local-draft', shareSlug: workspace.share.value.shareSlug || 'local-share' }), origin: typeof window !== 'undefined' ? window.location.origin : '' }), null, 2));
@@ -451,6 +592,17 @@ async function loadAccount(overrideAddress = '') {
 }
 
 function stageOperation() {
+  if (['invoke', 'multisigDraft'].includes(preset.value)) {
+    if (!invokeTargetContract.value) {
+      statusMessage.value = 'Resolve or select a contract before staging the operation.';
+      return;
+    }
+    if (!String(method.value || '').trim()) {
+      statusMessage.value = 'Pick a contract method before staging the operation.';
+      return;
+    }
+  }
+
   const nextOperationBody = { ...draftCandidate.value, createdAt: new Date().toISOString() };
   workspace.setOperationBody(nextOperationBody);
   workspace.setTransactionBody(buildStagedTransactionBody({

@@ -7,6 +7,7 @@ import {
   DEFAULT_ABSTRACT_ACCOUNT_HASH,
   DEFAULT_EXPLORER_BASE_URL,
   DEFAULT_MATRIX_CONTRACT_HASH,
+  DEFAULT_N3INDEX_API_BASE_URL,
   DEFAULT_RPC_URL,
   getRuntimeConfig,
   resolveAbstractAccountHash,
@@ -75,10 +76,17 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     relayRawEnabled: false,
     explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
     matrixContractHash: DEFAULT_MATRIX_CONTRACT_HASH,
+    n3IndexApiBaseUrl: DEFAULT_N3INDEX_API_BASE_URL,
+    n3IndexNetwork: 'testnet',
+    neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
   });
 });
 
 
 test('default matrix contract hash tracks the validated testnet deployment', () => {
   assert.equal(DEFAULT_MATRIX_CONTRACT_HASH, '89908093c5ccc463e2c5744d6bacb06108b60a75');
+});
+
+test('default n3index api base url tracks the documented public edge', () => {
+  assert.equal(DEFAULT_N3INDEX_API_BASE_URL, 'https://api.n3index.dev');
 });

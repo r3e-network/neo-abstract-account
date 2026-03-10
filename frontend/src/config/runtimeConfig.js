@@ -7,6 +7,9 @@ export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
 export const DEFAULT_EXPLORER_BASE_URL = 'https://testnet.ndoras.com/transaction';
 export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b60a75';
+export const DEFAULT_N3INDEX_API_BASE_URL = 'https://api.n3index.dev';
+export const DEFAULT_N3INDEX_NETWORK = 'testnet';
+export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -27,6 +30,12 @@ export function resolveOptionalUrl(value, fallback = '') {
 export function resolveOptionalToken(value, fallback = '') {
   const normalized = String(value || '').trim();
   return normalized || fallback;
+}
+
+export function resolveOptionalNetwork(value, fallback = DEFAULT_N3INDEX_NETWORK) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'mainnet' || normalized === 'testnet') return normalized;
+  return fallback;
 }
 
 export function resolveOptionalBoolean(value, fallback = false) {
@@ -76,6 +85,18 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     matrixContractHash: resolveAbstractAccountHash(
       env.VITE_AA_MATRIX_CONTRACT_HASH || env.VITE_MATRIX_CONTRACT_HASH || env.VITE_MATRIX_CONTRACT_HASH_TESTNET,
       DEFAULT_MATRIX_CONTRACT_HASH
+    ),
+    n3IndexApiBaseUrl: resolveOptionalUrl(
+      env.VITE_AA_N3INDEX_API_BASE_URL || env.VITE_N3INDEX_API_BASE_URL,
+      DEFAULT_N3INDEX_API_BASE_URL
+    ),
+    n3IndexNetwork: resolveOptionalNetwork(
+      env.VITE_AA_N3INDEX_NETWORK || env.VITE_N3INDEX_NETWORK,
+      DEFAULT_N3INDEX_NETWORK
+    ),
+    neoNnsContractHash: resolveAbstractAccountHash(
+      env.VITE_AA_NEO_NNS_CONTRACT_HASH || env.VITE_NEO_NNS_CONTRACT_HASH,
+      DEFAULT_NEO_NNS_CONTRACT_HASH
     ),
   };
 }

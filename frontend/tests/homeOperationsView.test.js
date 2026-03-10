@@ -24,6 +24,17 @@ test('home view renders the operations workspace above explanatory content', () 
   assert.ok(homeSource.indexOf('HomeOperationsWorkspace') < homeSource.indexOf('ArchitectureDiagram'));
 });
 
+test('operation composer supports live contract suggestions, method dropdowns, and generated parameter fields', () => {
+  const composerSource = fs.readFileSync(path.resolve('src/features/operations/components/OperationComposerPanel.vue'), 'utf8');
+  const workspaceSource = fs.readFileSync(path.resolve('src/features/operations/components/HomeOperationsWorkspace.vue'), 'utf8');
+
+  assert.match(composerSource, /contractSuggestions/);
+  assert.match(composerSource, /methodOptions/);
+  assert.match(composerSource, /parameterFields/);
+  assert.match(workspaceSource, /targetContract/);
+  assert.match(workspaceSource, /resolvedContractHash/);
+});
+
 test('operations workspace exposes load, compose, signature, and broadcast sections', () => {
   assert.match(fs.readFileSync(workspacePath, 'utf8'), /Abstract Account Workspace/);
   assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load Abstract Account/);

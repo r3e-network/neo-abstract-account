@@ -136,14 +136,46 @@
         <span class="font-medium text-slate-700">{{ t('operations.draftDescriptionLabel', 'Draft Description') }}</span>
         <input :value="multisigDescription" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @input="$emit('update:multisigDescription', $event.target.value)" />
       </label>
-      <label class="space-y-1.5 text-sm md:col-span-2">
+      <div class="space-y-2 text-sm md:col-span-2">
         <span class="font-medium text-slate-700">{{ t('operations.targetContractLabel', 'Target Contract') }}</span>
-        <input :value="targetContract" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-xs focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @input="$emit('update:targetContract', $event.target.value)" />
-      </label>
+        <input :value="targetContract" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-xs focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" placeholder="Contract hash, name, N address, alice.matrix, or app.neo" @input="$emit('update:targetContract', $event.target.value)" />
+        <p v-if="contractLookupStatus" class="text-xs text-slate-500">{{ contractLookupStatus }}</p>
+        <div v-if="resolvedContractHash" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <div class="font-semibold text-slate-700">Resolved Contract</div>
+          <div class="font-mono">{{ resolvedContractName || 'Contract' }} · 0x{{ resolvedContractHash }}</div>
+        </div>
+        <div v-if="contractSuggestions.length > 0" class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <button
+            v-for="suggestion in contractSuggestions"
+            :key="`${suggestion.contractHash}-${suggestion.displayName}`"
+            type="button"
+            class="w-full border-b border-slate-100 px-3 py-2 text-left last:border-b-0 hover:bg-slate-50"
+            @click="$emit('select-contract-suggestion', suggestion)"
+          >
+            <div class="text-xs font-semibold text-slate-800">{{ suggestion.displayName }}</div>
+            <div class="font-mono text-[11px] text-slate-500">0x{{ suggestion.contractHash }}</div>
+          </button>
+        </div>
+      </div>
       <label class="space-y-1.5 text-sm md:col-span-1">
         <span class="font-medium text-slate-700">{{ t('operations.methodLabel', 'Method') }}</span>
-        <input :value="method" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @input="$emit('update:method', $event.target.value)" />
+        <select v-if="methodOptions.length" :value="method" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @change="$emit('update:method', $event.target.value)">
+          <option value="">Select method</option>
+          <option v-for="option in methodOptions" :key="option.name" :value="option.name">{{ option.name }}</option>
+        </select>
+        <input v-else :value="method" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @input="$emit('update:method', $event.target.value)" />
       </label>
+      <div v-if="parameterFields.length" class="grid gap-4 md:grid-cols-2 md:col-span-3">
+        <label v-for="field in parameterFields" :key="field.key" class="space-y-1.5 text-sm">
+          <span class="font-medium text-slate-700">{{ field.name }} <span class="text-xs text-slate-400">({{ field.type }})</span></span>
+          <input v-if="!isBooleanField(field.type) && !isComplexField(field.type)" :value="field.value" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-xs focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @input="$emit('update:parameterValue', { key: field.key, value: $event.target.value })" />
+          <select v-else-if="isBooleanField(field.type)" :value="String(field.value)" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all" @change="$emit('update:parameterValue', { key: field.key, value: $event.target.value === 'true' })">
+            <option value="false">false</option>
+            <option value="true">true</option>
+          </select>
+          <textarea v-else :value="field.value" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-xs focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all resize-none" @input="$emit('update:parameterValue', { key: field.key, value: $event.target.value })" />
+        </label>
+      </div>
       <label class="space-y-1.5 text-sm md:col-span-3">
         <span class="font-medium text-slate-700">{{ t('operations.argsJsonLabel', 'Args JSON') }}</span>
         <textarea :value="argsText" rows="4" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-xs focus:border-neo-500 focus:ring-2 focus:ring-neo-200 transition-all resize-none" @input="$emit('update:argsText', $event.target.value)" />
@@ -185,6 +217,12 @@ defineProps({
   batchManagerThreshold: { type: String, default: '0' },
   summaryTitle: { type: String, default: '' },
   summaryDetail: { type: String, default: '' },
+  contractLookupStatus: { type: String, default: '' },
+  resolvedContractHash: { type: String, default: '' },
+  resolvedContractName: { type: String, default: '' },
+  contractSuggestions: { type: Array, default: () => [] },
+  methodOptions: { type: Array, default: () => [] },
+  parameterFields: { type: Array, default: () => [] },
 });
 
 defineEmits([
@@ -204,7 +242,17 @@ defineEmits([
   'update:batchAdminThreshold',
   'update:batchManagers',
   'update:batchManagerThreshold',
+  'select-contract-suggestion',
+  'update:parameterValue',
 ]);
 
 const { t } = useI18n();
+
+function isBooleanField(type = '') {
+  return String(type) === 'Boolean';
+}
+
+function isComplexField(type = '') {
+  return ['Array', 'Map', 'Any'].includes(String(type));
+}
 </script>
