@@ -34,3 +34,18 @@ test('language registry includes operations and studio translation keys', () => 
   assert.match(source, /manageTitle:/);
   assert.match(source, /permissionsTitle:/);
 });
+
+
+test('studio panels that call t() bind it from useI18n', () => {
+  const studioFiles = [
+    'src/features/studio/components/CreateAccountPanel.vue',
+    'src/features/studio/components/ManageGovernancePanel.vue',
+    'src/features/studio/components/PermissionsLimitsPanel.vue',
+    'src/features/studio/components/StudioSidebar.vue',
+  ];
+
+  for (const relativePath of studioFiles) {
+    const source = fs.readFileSync(path.resolve(relativePath), 'utf8');
+    assert.match(source, /const \{ t \} = useI18n\(\);/);
+  }
+});

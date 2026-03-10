@@ -1,5 +1,5 @@
 <template>
-  <section class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
+  <section class="bg-slate-800/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-slate-700/50 p-6 sm:p-8 dark-panel-override">
     <h2 class="text-xl font-bold text-slate-900 mb-2">{{ t('studioPanels.createTitle', 'Create Abstract Account') }}</h2>
     <p class="text-sm text-slate-500 mb-8">{{ t('studioPanels.createSubtitle', 'Configure identity and signer roles, then register with a single transaction.') }}</p>
 
@@ -38,14 +38,14 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Admins -->
-        <div class="bg-gradient-to-br from-slate-50 to-white p-5 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden group hover:border-neo-200 transition-colors duration-300">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-neo-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-neo-500/10 transition-colors"></div>
+        <div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-5 rounded-xl border border-slate-700/50 shadow-sm relative overflow-hidden group hover:border-neo-500/50 transition-colors duration-300">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-neo-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-neo-500/20 transition-colors"></div>
           <div class="flex justify-between items-center mb-4 relative z-10">
-            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
               <svg class="w-4 h-4 text-neo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               Admins
             </h3>
-            <button type="button" class="text-xs text-neo-600 hover:text-neo-800 font-bold bg-neo-50 px-2 py-1 rounded-md transition-colors" @click="addRow(createForm.admins)">+ Add</button>
+            <button type="button" class="text-xs text-neo-400 hover:text-white font-bold bg-neo-500/20 px-2 py-1 rounded-md transition-colors" @click="addRow(createForm.admins)">+ Add</button>
           </div>
           <div class="space-y-3 mb-5 relative z-10">
             <div v-for="(admin, index) in createForm.admins" :key="`create-admin-${index}`" class="flex gap-2 group/input">
@@ -62,14 +62,14 @@
         </div>
 
         <!-- Managers -->
-        <div class="bg-gradient-to-br from-slate-50 to-white p-5 rounded-xl border border-slate-200/60 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors duration-300">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-blue-500/10 transition-colors"></div>
+        <div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-5 rounded-xl border border-slate-700/50 shadow-sm relative overflow-hidden group hover:border-blue-500/50 transition-colors duration-300">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-blue-500/20 transition-colors"></div>
           <div class="flex justify-between items-center mb-4 relative z-10">
-            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
               <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
               Managers
             </h3>
-            <button type="button" class="text-xs text-blue-600 hover:text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded-md transition-colors" @click="addRow(createForm.managers)">+ Add</button>
+            <button type="button" class="text-xs text-blue-400 hover:text-white font-bold bg-blue-500/20 px-2 py-1 rounded-md transition-colors" @click="addRow(createForm.managers)">+ Add</button>
           </div>
           <div class="space-y-3 mb-5 relative z-10">
             <div v-for="(manager, index) in createForm.managers" :key="`create-manager-${index}`" class="flex gap-2 group/input">
@@ -107,6 +107,8 @@
 <script setup>
 import { inject } from 'vue';
 import { useI18n } from '@/i18n';
+
+const { t } = useI18n();
 
 const studio = inject('studio');
 const {

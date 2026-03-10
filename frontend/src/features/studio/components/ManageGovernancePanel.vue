@@ -1,5 +1,5 @@
 <template>
-  <section class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
+  <section class="bg-slate-800/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-slate-700/50 p-6 sm:p-8 dark-panel-override">
     <h2 class="text-xl font-bold text-slate-900 mb-2">{{ t('studioPanels.manageTitle', 'Manage Governance') }}</h2>
     <p class="text-sm text-slate-500 mb-8">Operate policy and recovery controls for an existing abstract account.</p>
 
@@ -21,7 +21,7 @@
       </div>
 
       <transition name="fade">
-        <div v-if="manageSnapshot.loadedAt" class="bg-gradient-to-r from-neo-50 to-white rounded-xl p-5 border border-neo-100 shadow-sm relative overflow-hidden">
+        <div v-if="manageSnapshot.loadedAt" class="bg-gradient-to-r from-neo-500/20 to-slate-800/60 rounded-xl p-5 border border-neo-500/30 shadow-sm relative overflow-hidden backdrop-blur-sm">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-neo-500"></div>
           <h4 class="text-xs font-bold text-neo-800 uppercase tracking-wider mb-4">Current State</h4>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -147,6 +147,8 @@
 <script setup>
 import { inject } from 'vue';
 import { useI18n } from '@/i18n';
+
+const { t } = useI18n();
 
 const studio = inject('studio');
 const {

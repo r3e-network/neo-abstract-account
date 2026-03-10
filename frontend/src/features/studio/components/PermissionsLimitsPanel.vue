@@ -1,5 +1,5 @@
 <template>
-  <section class="bg-white/80 backdrop-blur-sm shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200/60 p-6 sm:p-8">
+  <section class="bg-slate-800/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-slate-700/50 p-6 sm:p-8 dark-panel-override">
     <h2 class="text-xl font-bold text-slate-900 mb-2">{{ t('studioPanels.permissionsTitle', 'Permissions & Limits') }}</h2>
     <p class="text-sm text-slate-500 mb-8">Manage whitelists, blacklists, execution limits, and custom contract verifiers.</p>
 
@@ -58,9 +58,9 @@
       <!-- Whitelist & Blacklist -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Whitelist Configuration -->
-        <div class="bg-gradient-to-br from-green-50/50 to-white rounded-xl border border-green-200/60 p-5 shadow-sm">
+        <div class="bg-gradient-to-br from-emerald-900/20 to-slate-800/40 rounded-xl border border-emerald-500/30 p-5 shadow-sm">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-green-900 flex items-center gap-2">
+            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2 font-outfit">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Global Whitelist
             </h3>
@@ -84,9 +84,9 @@
         </div>
 
         <!-- Blacklist Configuration -->
-        <div class="bg-gradient-to-br from-red-50/50 to-white rounded-xl border border-red-200/60 p-5 shadow-sm">
+        <div class="bg-gradient-to-br from-rose-900/20 to-slate-800/40 rounded-xl border border-rose-500/30 p-5 shadow-sm">
           <div class="mb-4">
-            <h3 class="text-sm font-bold text-red-900 flex items-center gap-2">
+            <h3 class="text-sm font-bold text-rose-400 flex items-center gap-2 font-outfit">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
               Global Blacklist
             </h3>
@@ -110,6 +110,8 @@
 <script setup>
 import { inject } from 'vue';
 import { useI18n } from '@/i18n';
+
+const { t } = useI18n();
 
 const studio = inject('studio');
 const {
