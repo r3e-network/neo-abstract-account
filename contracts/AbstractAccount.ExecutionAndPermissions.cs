@@ -249,6 +249,26 @@ namespace AbstractAccount
             ExecutionEngine.Assert(false, "Method not allowed by policy");
         }
 
+        /// <summary>
+        /// 纯 N3 签名验证：只检查 Runtime.CheckWitness，用于 Verification 阶段。
+        /// Pure N3 signature verification: only checks Runtime.CheckWitness, used in Verification phase.
+        /// </summary>
+        /// <remarks>
+        /// 【使用场景】
+        /// 1. Verify 方法在 Verification 阶段调用（交易验证阶段）
+        /// 2. Execute/ExecuteByAddress 在 Application 阶段调用（纯 N3 执行路径）
+        /// 3. 任何只需要 N3 原生签名的授权检查
+        /// 
+        /// 【与 CheckMixedSignatures 的区别】
+        /// - CheckNativeSignatures：只检查 N3 签名，无法处理 EVM 签名
+        /// - CheckMixedSignatures：同时检查 N3 和 EVM 签名，用于混合授权
+        /// 
+        /// 【Runtime.CheckWitness 工作原理】
+        /// - 检查交易的 Signers 字段是否包含指定地址
+        /// - 验证对应的 Witnesses 字段中的签名是否有效
+        /// - 只能在 Verification 和 Application 阶段使用
+        /// - 无法验证 EIP-712 签名（因为 EVM 签名在交易参数中，不在 Witnesses 中）
+        /// </remarks>
         private static bool CheckNativeSignatures(Neo.SmartContract.Framework.List<UInt160> roles, int threshold)
         {
             if (threshold <= 0 || roles == null || roles.Count == 0) return false;
@@ -278,6 +298,42 @@ namespace AbstractAccount
             return count >= threshold;
         }
 
+        /// <summary>
+        /// 统一阈值算法：同时计数 EVM 签名和 N3 签名，实现混合授权。
+        /// Unified threshold algorithm: counts both EVM and N3 signatures for mixed authorization.
+        /// </summary>
+        /// <remarks>
+        /// 【核心设计理念】
+        /// CheckMixedSignatures 是抽象账户混合授权的核心算法，它统一处理三种授权场景：
+        /// 1. 纯 N3 账户：threshold=1, 只有 N3 签名者，只通过 Runtime.CheckWitness 计数
+        /// 2. 纯 EVM 账户：threshold=1, 只有 EVM 签名者，只通过 verifiedSigners 计数
+        /// 3. 混合账户：threshold=2, N3+EVM 签名者，两种签名方式都计数，达到阈值即通过
+        /// 
+        /// 【两阶段验证模型】
+        /// - Verification 阶段：只能验证 N3 签名（通过 Verify 方法 + CheckNativeSignatures）
+        /// - Application 阶段：可以验证 EVM 签名（通过 ExecuteMetaTx + CheckMixedSignatures）
+        /// 
+        /// 【为什么需要 CheckMixedSignatures】
+        /// 1. EVM 签名无法在 Verification 阶段验证（EIP-712 数据在交易参数中）
+        /// 2. 需要在 Application 阶段同时支持 N3 和 EVM 签名
+        /// 3. 实现统一的阈值检查，无论签名来源
+        /// 
+        /// 【verifiedSigners 参数的来源】
+        /// - 由 ExecuteMetaTx/ExecuteMetaTxByAddress 方法生成
+        /// - 通过 EIP-712 签名验证后，从 uncompressedPubKeys 恢复出 EVM 地址
+        /// - 这些地址已经过密码学验证，可以安全地用于授权检查
+        /// 
+        /// 【计数逻辑】
+        /// 对于 roles 列表中的每个角色地址：
+        /// 1. 先检查是否在 verifiedSigners 中（EVM 签名）
+        /// 2. 如果不在，再检查 Runtime.CheckWitness（N3 签名）
+        /// 3. 任一匹配则 count++
+        /// 4. 最终返回 count >= threshold
+        /// 
+        /// 【与 CheckNativeSignatures 的区别】
+        /// - CheckNativeSignatures：只检查 Runtime.CheckWitness，用于 Verification 阶段
+        /// - CheckMixedSignatures：同时检查 verifiedSigners 和 CheckWitness，用于 Application 阶段
+        /// </remarks>
         private static bool CheckMixedSignatures(Neo.SmartContract.Framework.List<UInt160> roles, int threshold, UInt160[] verifiedSigners)
         {
             if (threshold <= 0 || roles == null || roles.Count == 0) return false;
@@ -286,7 +342,14 @@ namespace AbstractAccount
             {
                 bool matched = false;
 
-                // 1. Check if it's an explicitly verified EVM signature
+                // 1. 检查是否为已验证的 EVM 签名
+                // Check if it's an explicitly verified EVM signature
+                // 
+                // 【EVM 签名验证路径】
+                // - ExecuteMetaTx 已通过 EIP-712 验证了签名的密码学有效性
+                // - verifiedSigners 数组包含从签名恢复的 EVM 地址（通过 DeriveEthAddress）
+                // - 这里只需检查角色列表中是否包含这些已验证的地址
+                // 
                 // This handles Meta-Transactions where an Ethereum user has signed an EIP-712 payload.
                 // The signature is passed in the args, recovered via ecrecover in ExecuteMetaTx, and passed here.
                 if (verifiedSigners != null)
@@ -302,7 +365,20 @@ namespace AbstractAccount
                     }
                 }
 
-                // 2. If not matched explicitly, check if a native Neo witness is attached
+                // 2. 如果未匹配 EVM 签名，检查是否有 N3 原生见证
+                // If not matched explicitly, check if a native Neo witness is attached
+                // 
+                // 【N3 签名验证路径】
+                // - Runtime.CheckWitness 检查交易的 Signers 和 Witnesses 字段
+                // - 这允许中继器或第二个管理员使用 Neo 钱包附加原生签名
+                // - 实现在同一执行过程中安全聚合 N3 和 EVM 签名，满足 threshold > 1 的场景
+                // 
+                // 【混合授权示例】
+                // 假设 threshold=2, roles=[N3_Admin, EVM_Admin]
+                // - EVM_Admin 通过 EIP-712 签名 → verifiedSigners 包含 EVM_Admin → count=1
+                // - N3_Admin 附加交易签名 → Runtime.CheckWitness(N3_Admin)=true → count=2
+                // - count >= threshold → 授权通过
+                // 
                 // This allows a Relayer or a secondary Admin using a Neo wallet to attach their native
                 // signature to the transaction wrapper, securely aggregating N3 and EVM signatures 
                 // in the same execution pass to meet thresholds > 1.
