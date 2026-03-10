@@ -49,22 +49,31 @@ class WalletService {
   }
 
   getConnectProvider() {
+    console.log("[WalletService Debug] Checking wallet providers...");
+    console.log("[WalletService Debug] window.neo3Dapi:", window.neo3Dapi);
+    console.log("[WalletService Debug] window.NEOLine:", window.NEOLine);
+    console.log("[WalletService Debug] window.NEOLineN3:", window.NEOLineN3);
+    
     if (window.neo3Dapi?.getAccount) {
+      console.log("[WalletService Debug] Found neo3Dapi");
       return {
-        name: 'neo3Dapi',
+        name: "neo3Dapi",
         getAccount: () => window.neo3Dapi.getAccount()
       };
     }
 
     if (window.NEOLine?.getAccount) {
+      console.log("[WalletService Debug] Found NEOLine");
       return {
-        name: 'NEOLine',
+        name: "NEOLine",
         getAccount: () => window.NEOLine.getAccount()
       };
     }
 
+    console.log("[WalletService Debug] No wallet provider found");
     return null;
   }
+
 
   getInvokeProvider() {
     if (window.neo3Dapi?.invoke) {
