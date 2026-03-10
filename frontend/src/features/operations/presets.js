@@ -115,9 +115,9 @@ export function buildOperationFromPreset({
       method: 'createAccountBatch',
       args: [
         toArrayArg(accountIds, 'String'),
-        toArrayArg(admins.map(h => \`0x\${h}\`), 'Hash160'),
+        toArrayArg(admins.map(h => `0x${h}`), 'Hash160'),
         toIntegerArg(batch.adminThreshold || 1),
-        toArrayArg(managers.map(h => \`0x\${h}\`), 'Hash160'),
+        toArrayArg(managers.map(h => `0x${h}`), 'Hash160'),
         toIntegerArg(batch.managerThreshold || 0),
       ],
       metadata: {
@@ -160,7 +160,7 @@ export function buildPresetSummary(operation = {}) {
   if (operation.kind === 'transfer') {
     return {
       title: 'NEP-17 Transfer',
-      detail: \`Amount \${operation.args?.[2]?.value || '0'} via \${operation.targetContract || 'token contract pending'}\`,
+      detail: `Amount ${operation.args?.[2]?.value || '0'} via ${operation.targetContract || 'token contract pending'}`,
     };
   }
 
@@ -168,19 +168,19 @@ export function buildPresetSummary(operation = {}) {
     const count = operation.metadata?.accountCount || 0;
     return {
       title: 'Batch Account Creation',
-      detail: \`Creating \${count} account\${count !== 1 ? 's' : ''} with shared governance\`,
+      detail: `Creating ${count} account${count !== 1 ? 's' : ''} with shared governance`,
     };
   }
 
   if (operation.kind === 'multisig') {
     return {
       title: operation.metadata?.title || 'Multisig Draft',
-      detail: operation.metadata?.description || \`\${operation.method || 'method pending'} requires additional co-signers\`,
+      detail: operation.metadata?.description || `${operation.method || 'method pending'} requires additional co-signers`,
     };
   }
 
   return {
     title: 'Generic Invoke',
-    detail: \`\${operation.method || 'method pending'} on \${operation.targetContract || 'target contract pending'}\`,
+    detail: `${operation.method || 'method pending'} on ${operation.targetContract || 'target contract pending'}`,
   };
 }
