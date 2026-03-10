@@ -78,6 +78,19 @@ The signature is attached as a transaction attribute, and the master contract re
 \subsection{Contributions}
 
 
+This paper makes the following contributions:
+
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+
+\item \textbf{Mixed Authorization Protocol}: A unified threshold mechanism that counts both Neo N3 witnesses (secp256r1/SHA256) and EVM EIP-712 signatures (secp256k1/Keccak256) toward a single authorization threshold, enabling cross-ecosystem account abstraction without bridge contracts or state synchronization.
+
+\item \textbf{Deterministic Address Generation}: A zero-deployment account model where verify scripts are deterministically generated and route to a shared master contract, eliminating per-account deployment costs while maintaining address stability.
+
+\item \textbf{Unified Threshold Algorithm}: The CheckMixedSignatures algorithm that seamlessly integrates Neo's Runtime.CheckWitness with EVM signature recovery, supporting pure Neo, pure EVM, and mixed authorization scenarios through a single verification path.
+
+\item \textbf{Formal Security Analysis}: Rigorous security definitions and proofs demonstrating threshold security, replay protection, and authorization correctness under the standard cryptographic assumptions for both signature schemes.
+
+\end{itemize}
 \subsection{EVM Integration and Account Management}
 
 \textbf{How EVM Joins the Abstract Account System.} EVM wallets participate in Neo-AA through EIP-712 typed data signatures. When an EVM signer wants to authorize an operation, they sign a structured message containing the operation parameters (accountId, targetContract, method, argsHash, nonce, deadline). This signature is then embedded into a Neo N3 transaction as a custom attribute. During on-chain verification, the master contract recovers the EVM public key from the signature, derives the corresponding Ethereum address using Keccak-256 hashing, and checks if this address exists in the account's authorization set (admins or managers). If valid, the EVM signature counts toward the threshold requirement alongside any Neo witnesses.
