@@ -534,7 +534,7 @@ The Neo VM verification system operates in two distinct phases (triggers), each 
 \textbf{Phase 2: Application Trigger (Application Execution Phase)}
 
 \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
-\item \textbf{Timing}: Occurs during transaction execution when target contract calls \code{Runtime.CheckWitness(proxyAddress)}
+\item \textbf{Timing}: Occurs during transaction execution when target contract calls \code{Runtime.CheckWitness(accountAddress)}
 \item \textbf{Purpose}: Verify if the current execution path has authority to represent the abstract account
 \item \textbf{Verification Method}: Checks \code{VerifyContext} to ensure only the target contract pre-authorized by Execute/ExecuteMetaTx can pass
 \item \textbf{Verify Method Behavior}: Returns true if and only if the caller is the target contract pre-authorized by the current active execution path
