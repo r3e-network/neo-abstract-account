@@ -467,7 +467,7 @@ Threshold satisfied
 };
 
 \end{tikzpicture}
-\caption{Two-Phase Verification Model: Verification phase (mempool entry) uses CheckNativeSignatures for economic optimization, while Application phase (execution) uses CheckMixedSignatures for security enforcement with unified N3+EVM authorization.}
+\caption{Two-phase verification: mempool uses CheckNativeSignatures, execution uses CheckMixedSignatures for unified N3+EVM authorization.}
 \label{fig:two_phase_verification}
 \end{figure}
 
@@ -814,7 +814,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 };
 
 \end{tikzpicture}
-\caption{CheckMixedSignatures Unified Threshold Algorithm: Iterates through roles, counting both EVM signatures (from verifiedSigners array) and N3 signatures (via Runtime.CheckWitness), returning true when count reaches threshold.}
+\caption{CheckMixedSignatures algorithm: unified counting of EVM (verifiedSigners) and N3 (CheckWitness) signatures toward threshold.}
 \label{fig:checkmixed_algorithm}
 \end{figure}
 
@@ -874,7 +874,7 @@ The mixed authorization protocol supports three distinct operational modes, each
 \node[cell, fill=red!10] (c63) at (8,-8.5) {threshold=2\\(N3 + EVM)};
 
 \end{tikzpicture}
-\caption{Transaction Type Comparison: Pure Neo uses native N3 signatures in both phases; Pure EVM uses relayer witness in Phase 1 and EVM signature verification in Phase 2; Mixed N3+EVM combines both signature types to meet threshold=2 requirement.}
+\caption{Transaction type comparison: Pure Neo, Pure EVM, and Mixed N3+EVM authorization modes.}
 \label{fig:transaction_comparison}
 \end{figure}
 
@@ -1082,7 +1082,7 @@ This per-signer nonce design allows parallel transaction submission from differe
 \draw[arr] (ver4) -- (result);
 
 \end{tikzpicture}
-\caption{Mixed Neo+EVM authorization flow: (1) EVM signs EIP-712 off-chain, (2) Neo embeds EVM signature in transaction, (3) Neo signers add witnesses, (4) Master contract verifies and counts toward threshold $\tau$.}
+\caption{Mixed authorization flow: EVM signs EIP-712 off-chain, Neo embeds signature, both count toward threshold.}
 \label{fig:mixed-flow-detailed}
 \end{figure*}
 
@@ -1164,7 +1164,7 @@ $$\text{Runtime.Time} > \text{deadline}$$
 \node[font=\tiny,text=gray!60,above=0.1cm of witnesses] {4};
 
 \end{tikzpicture}
-\caption{Neo N3 transaction layout: (1) AA invocation script, (2) Verify address, (3) EVM signature with nonce/deadline, (4) Neo witnesses. Both count toward threshold.}
+\caption{Neo N3 transaction layout with AA invocation, verify address, EVM signature, and Neo witnesses.}
 \label{fig:neo-tx-layout}
 \end{figure*}
 
@@ -1240,7 +1240,7 @@ $$\text{Runtime.Time} > \text{deadline}$$
 \draw[arr] (thresh2) -- node[above right,label] {no} (reject);
 
 \end{tikzpicture}
-\caption{Threshold verification algorithm for mixed authorization. The master contract loads account configuration (admin/manager sets and thresholds), iterates through Neo witnesses to count valid signatures, processes EVM signature if present (recovering address and validating nonce/deadline), then sums both counts. Transaction is accepted if total valid signatures $\geq$ threshold $\tau$.}
+\caption{Threshold verification algorithm: loads configuration, counts Neo witnesses and EVM signatures, accepts if total meets threshold.}
 \label{fig:threshold-verification}
 \end{figure*}
 
@@ -1513,7 +1513,7 @@ Future work includes extending to additional blockchains with different signatur
 \node[font=\tiny,text=gray!60,below=0.1cm of trust.south] {On-chain execution};
 
 \end{tikzpicture}
-\caption{System architecture with trust boundaries. Untrusted: UI, wallets, storage, relay. Trusted: verify addresses, master contract, targets, recovery, oracle.}
+\caption{System architecture with trust boundaries: off-chain coordination (untrusted) vs on-chain execution (trusted).}
 \label{fig:system-architecture}
 \end{figure*}
 
