@@ -25,6 +25,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     relayMetaEnabled: false,
     relayRawEnabled: false,
     explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
+    matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
   });
 });
 
@@ -37,6 +38,7 @@ test('getOperationsRuntime derives collaboration and relay flags', () => {
     relayMetaEnabled: true,
     relayRawEnabled: false,
     explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
+    matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
   });
 
   assert.deepEqual(runtime, {
@@ -47,6 +49,7 @@ test('getOperationsRuntime derives collaboration and relay flags', () => {
     relayMetaEnabled: true,
     relayRawEnabled: false,
     explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
+    matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
     supabaseUrl: 'https://example.supabase.co',
     supabaseAnonKey: 'anon',
     broadcastModes: ['client', 'relay'],

@@ -6,6 +6,7 @@ export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '711c1899a3b7fa0e055ae0d17c9acfcd1b
 export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
 export const DEFAULT_EXPLORER_BASE_URL = 'https://testnet.ndoras.com/transaction';
+export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b60a75';
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -71,6 +72,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     explorerBaseUrl: resolveOptionalUrl(
       env.VITE_AA_EXPLORER_BASE_URL || env.VITE_EXPLORER_BASE_URL,
       DEFAULT_EXPLORER_BASE_URL
+    ),
+    matrixContractHash: resolveAbstractAccountHash(
+      env.VITE_AA_MATRIX_CONTRACT_HASH || env.VITE_MATRIX_CONTRACT_HASH || env.VITE_MATRIX_CONTRACT_HASH_TESTNET,
+      DEFAULT_MATRIX_CONTRACT_HASH
     ),
   };
 }

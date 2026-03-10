@@ -6,7 +6,24 @@
     <div class="space-y-8">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="space-y-2">
-          <label class="block text-sm font-semibold text-slate-700">Account ID (UUID or EVM pubkey)</label>
+          <label class="block text-sm font-semibold text-slate-700">.matrix Domain (optional)</label>
+          <input v-model="createForm.matrixDomain" type="text" class="w-full rounded-lg border border-slate-200 py-2.5 px-4 text-sm text-slate-800 focus:border-neo-500 focus:ring-neo-500" placeholder="alice.matrix" />
+          <p class="mt-1 text-xs text-slate-500">Register a memorable .matrix name in the same transaction and later discover your Abstract Accounts through that domain.</p>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-slate-700">Derived Account Address</label>
+          <div class="relative">
+            <input :value="computedAddress || '—'" readonly type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-4 font-mono text-sm text-slate-500 cursor-not-allowed" />
+            <div v-if="computedAddress" class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <details class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <summary class="cursor-pointer text-sm font-semibold text-slate-700">Advanced identity options</summary>
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-semibold text-slate-700">Account ID (advanced override)</label>
           <div class="flex rounded-lg shadow-sm ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-neo-500 transition-shadow">
             <input
               v-model="createForm.accountId"
@@ -24,17 +41,10 @@
               Generate
             </button>
           </div>
+          <p class="mt-1 text-xs text-slate-500">Most users do not need to manage Account ID directly; it is generated automatically unless you override it here.</p>
           <p class="mt-1 text-xs text-neo-600 font-medium" v-if="isEvmWallet">Using connected wallet public key.</p>
         </div>
-
-        <div class="space-y-2">
-          <label class="block text-sm font-semibold text-slate-700">Derived Account Address</label>
-          <div class="relative">
-            <input :value="computedAddress || '—'" readonly type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-4 font-mono text-sm text-slate-500 cursor-not-allowed" />
-            <div v-if="computedAddress" class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
-          </div>
-        </div>
-      </div>
+      </details>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Admins -->

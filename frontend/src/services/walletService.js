@@ -79,6 +79,32 @@ class WalletService {
     return null;
   }
 
+  getBatchInvokeProvider() {
+    if (window.neo3Dapi?.invokeMultiple || window.neo3Dapi?.invokeMulti) {
+      return {
+        name: 'neo3Dapi',
+        invokeMultiple: (params) => (window.neo3Dapi.invokeMultiple || window.neo3Dapi.invokeMulti)(params),
+      };
+    }
+
+    for (const candidate of this.getNeoLineProviderCandidates()) {
+      if (typeof candidate.api?.invokeMultiple === 'function') {
+        return {
+          name: candidate.name,
+          invokeMultiple: (params) => candidate.api.invokeMultiple(params),
+        };
+      }
+      if (typeof candidate.api?.invokeMulti === 'function') {
+        return {
+          name: candidate.name,
+          invokeMultiple: (params) => candidate.api.invokeMulti(params),
+        };
+      }
+    }
+
+    return null;
+  }
+
   getInvokeProvider() {
     if (window.neo3Dapi?.invoke) {
       return {
@@ -171,6 +197,19 @@ class WalletService {
       throw new Error(responsePayload?.message || responsePayload?.error || 'Relay submission failed.');
     }
     return responsePayload;
+  }
+
+  async invokeMultiple({ invokeArgs = [], signers = [] } = {}) {
+    if (!this.isConnected) {
+      throw new Error('Wallet not connected. Connect a Neo wallet integration first.');
+    }
+
+    const provider = this.getBatchInvokeProvider();
+    if (!provider) {
+      throw new Error('Connected Neo wallet does not support invokeMultiple for batched transactions.');
+    }
+
+    return provider.invokeMultiple({ invokeArgs, signers });
   }
 
   async invoke(params) {

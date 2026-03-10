@@ -126,6 +126,85 @@ class AbstractAccountClient {
       deadline,
     });
   }
+
+  async getAccountsByAdmin(address) {
+    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'getAccountsByAdmin',
+      args: [{ type: 'Hash160', value: normalizedAddress }],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`getAccountsByAdmin fault: ${response.exception}`);
+    return response?.stack?.[0]?.value || [];
+  }
+
+  async getAccountsByManager(address) {
+    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'getAccountsByManager',
+      args: [{ type: 'Hash160', value: normalizedAddress }],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`getAccountsByManager fault: ${response.exception}`);
+    return response?.stack?.[0]?.value || [];
+  }
+
+  decodeAddressArray(stackItem) {
+    if (!stackItem || stackItem.type !== 'Array' || !Array.isArray(stackItem.value)) return [];
+    return stackItem.value.map((item) => {
+      let rawHex = '';
+      if (item.type === 'Hash160' && item.value) rawHex = sanitizeHex(item.value);
+      if (item.type === 'ByteString' && item.value) rawHex = sanitizeHex(Buffer.from(item.value, 'base64').toString('hex'));
+      if (!rawHex) return null;
+      return wallet.getAddressFromScriptHash(sanitizeHex(u.reverseHex(rawHex)));
+    }).filter(Boolean);
+  }
+
+  async getAccountAddressesByAdmin(address) {
+    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'getAccountAddressesByAdmin',
+      args: [{ type: 'Hash160', value: normalizedAddress }],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`getAccountAddressesByAdmin fault: ${response.exception}`);
+    return this.decodeAddressArray(response?.stack?.[0]);
+  }
+
+  async getAccountAddressesByManager(address) {
+    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'getAccountAddressesByManager',
+      args: [{ type: 'Hash160', value: normalizedAddress }],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`getAccountAddressesByManager fault: ${response.exception}`);
+    return this.decodeAddressArray(response?.stack?.[0]);
+  }
+
+  createAccountBatchPayload(accountIds, admins = [], adminThreshold = 1, managers = [], managerThreshold = 0) {
+    const normalizeAddress = (addr) => {
+      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'createAccountBatch',
+      args: [
+        sc.ContractParam.array(...accountIds.map((id) => sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(id), true)))),
+        sc.ContractParam.array(...admins.map((addr) => sc.ContractParam.hash160(normalizeAddress(addr)))),
+        sc.ContractParam.integer(adminThreshold),
+        sc.ContractParam.array(...managers.map((addr) => sc.ContractParam.hash160(normalizeAddress(addr)))),
+        sc.ContractParam.integer(managerThreshold),
+      ],
+    };
+  }
+
 }
 
 module.exports = {

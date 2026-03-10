@@ -36,6 +36,24 @@ namespace AbstractAccount
             BindAccountAddressInternal(accountId, accountAddress);
         }
 
+        /// <summary>
+        /// Creates multiple accounts in a single transaction with shared admin/manager configuration.
+        /// If admins list is empty, the transaction sender becomes the sole admin for all accounts.
+        /// </summary>
+        public static void CreateAccountBatch(
+            Neo.SmartContract.Framework.List<ByteString> accountIds,
+            Neo.SmartContract.Framework.List<UInt160>? admins,
+            int adminThreshold,
+            Neo.SmartContract.Framework.List<UInt160>? managers,
+            int managerThreshold)
+        {
+            ExecutionEngine.Assert(accountIds != null && accountIds.Count > 0, "Account IDs required");
+            for (int i = 0; i < accountIds!.Count; i++)
+            {
+                CreateAccountInternal(accountIds[i], admins, adminThreshold, managers, managerThreshold);
+            }
+        }
+
         [Safe]
         /// <summary>
         /// Verification entrypoint for the deterministic proxy witness associated with <paramref name="accountId"/>.

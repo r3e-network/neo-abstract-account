@@ -119,7 +119,11 @@ That means:
 - operators can rotate write-capable links if one leaks
 - operator actions still pass through the signed server-side mutation path when configured
 
-## 7. How a User Uses the Website
+## 7. Human-Readable Domain Access
+
+The frontend can use `.matrix` domains as a discovery layer. During account creation, a compatible Neo wallet can submit a single batched transaction that both creates the AA and registers the `.matrix` domain to the signer wallet. Later, the frontend resolves the domain back to the controller wallet address and discovers associated AA addresses through on-chain admin/manager indexes.
+
+## 8. How a User Uses the Website
 
 ### For a new user
 
@@ -154,7 +158,7 @@ That means:
 3. Read the **Data Flow & Storage** page for boundary ownership
 4. Read **SDK Integration** for runtime and relay configuration
 
-## 8. What Gets Stored Where?
+## 9. What Gets Stored Where?
 
 The draft body and collaboration state live off-chain, while authority and execution rules live on-chain.
 
@@ -164,7 +168,7 @@ The draft body and collaboration state live off-chain, while authority and execu
 
 Shared draft metadata is intentionally bounded: the frontend retains only the latest **100 activity entries** and the latest **12 submission receipts** so collaboration records stay lightweight over time.
 
-## 9. Key Security Boundaries
+## 10. Key Security Boundaries
 
 Every execution path still flows through the same protection layer:
 
@@ -184,7 +188,7 @@ The practical security result is:
 - operator actions use signed server-side mutations
 - direct proxy-signed external spends remain invalid
 
-## 10. Recommended Reading Order
+## 11. Recommended Reading Order
 
 If you are learning the system for the first time, read these pages in order:
 
@@ -194,7 +198,7 @@ If you are learning the system for the first time, read these pages in order:
 4. **Data Flow & Storage**
 5. **SDK Integration**
 
-## 11. Glossary
+## 12. Glossary
 
 - **Abstract Account** — a logical account identified by an `accountId`, enforced by the shared AA contract
 - **Deterministic proxy address** — the Neo address derived from the `verify(accountId)` script

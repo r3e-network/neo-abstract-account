@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_ABSTRACT_ACCOUNT_HASH,
   DEFAULT_EXPLORER_BASE_URL,
+  DEFAULT_MATRIX_CONTRACT_HASH,
   DEFAULT_RPC_URL,
   getRuntimeConfig,
   resolveAbstractAccountHash,
@@ -48,6 +49,7 @@ test('frontend ships a runtime env example for browser and server routes', () =>
   assert.match(example, /VITE_SUPABASE_ANON_KEY=/);
   assert.match(example, /VITE_AA_RELAY_URL=/);
   assert.match(example, /VITE_AA_RELAY_META_ENABLED=/);
+  assert.match(example, /VITE_AA_MATRIX_CONTRACT_HASH=/);
   assert.match(example, /AA_RELAY_RPC_URL=/);
   assert.match(example, /AA_RELAY_WIF=/);
   assert.match(example, /AA_RELAY_ALLOWED_HASH=/);
@@ -72,5 +74,11 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     relayMetaEnabled: false,
     relayRawEnabled: false,
     explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
+    matrixContractHash: DEFAULT_MATRIX_CONTRACT_HASH,
   });
+});
+
+
+test('default matrix contract hash tracks the validated testnet deployment', () => {
+  assert.equal(DEFAULT_MATRIX_CONTRACT_HASH, '89908093c5ccc463e2c5744d6bacb06108b60a75');
 });

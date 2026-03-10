@@ -123,6 +123,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 | `VITE_AA_RELAY_RPC_URL` | Frontend | RPC used by relay-aware runtime helpers. |
 | `VITE_AA_RELAY_META_ENABLED` | Frontend | Tells the UI that relay-ready meta invocations can be submitted directly. |
 | `VITE_AA_EXPLORER_BASE_URL` | Frontend | Optional transaction explorer base for tx links and receipts. |
+| `VITE_AA_MATRIX_CONTRACT_HASH` | Frontend | Optional `.matrix` contract hash override used for domain resolution and same-transaction registration. |
 | `AA_RELAY_RPC_URL` | Server | Preferred RPC for `frontend/api/relay-transaction.js` when you do not want the server to inherit the browser-facing RPC setting. |
 | `AA_RELAY_WIF` | Server | Enables server-side submission of stored `executeMetaTxByAddress` invocations. |
 | `AA_RELAY_ALLOWED_HASH` | Server | Pins relayable meta invocations to the expected Abstract Account contract hash. |
@@ -213,3 +214,8 @@ VITE_AA_EXPLORER_BASE_URL=https://testnet.ndoras.com/transaction
 ## 6. Execution Model Reminder
 
 The typed-data signature authorizes an Abstract Account wrapper call. On hardened deployments, external interactions must flow through AA entrypoints such as `execute`, `executeByAddress`, `executeMetaTx`, or `executeMetaTxByAddress`; raw direct proxy-signed external spends are intentionally rejected.
+
+
+## Matrix Domain Support
+
+The frontend can register a `.matrix` domain in the same wallet transaction as AA creation when the wallet supports batched invocations. Domain resolution is then used as a discovery step: the `.matrix` domain resolves to the controlling wallet address, and the frontend queries the AA contract for bound AA addresses where that wallet is an admin or manager.

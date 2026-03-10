@@ -94,6 +94,18 @@ namespace AbstractAccount
             Neo.SmartContract.Framework.List<UInt160> validatedAdmins = admins!;
             AssertUniqueAccounts(validatedAdmins);
             ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold > 0, "Invalid threshold");
+
+            Neo.SmartContract.Framework.List<UInt160> oldAdmins = GetAdmins(accountId);
+            for (int i = 0; i < oldAdmins.Count; i++)
+            {
+                RemoveFromAdminIndex(oldAdmins[i], accountId);
+            }
+
+            for (int i = 0; i < validatedAdmins.Count; i++)
+            {
+                AddToAdminIndex(validatedAdmins[i], accountId);
+            }
+
             StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
             StorageMap tMap = new StorageMap(Storage.CurrentContext, AdminThresholdPrefix);
             adminsMap.Put(GetStorageKey(accountId), StdLib.Serialize(validatedAdmins));
@@ -152,26 +164,39 @@ namespace AbstractAccount
             SetManagers(accountId, managers, threshold);
         }
 
-        private static void SetManagersInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> managers, int threshold)
+        private static void SetManagersInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160>? managers, int threshold)
         {
             if (managers == null)
             {
                 managers = new Neo.SmartContract.Framework.List<UInt160>();
             }
-            AssertUniqueAccounts(managers);
-            if (managers.Count == 0)
+            Neo.SmartContract.Framework.List<UInt160> validatedManagers = managers;
+            AssertUniqueAccounts(validatedManagers);
+            if (validatedManagers.Count == 0)
             {
                 ExecutionEngine.Assert(threshold == 0, "Invalid threshold");
             }
             else
             {
-                ExecutionEngine.Assert(threshold <= managers.Count && threshold > 0, "Invalid threshold");
+                ExecutionEngine.Assert(threshold <= validatedManagers.Count && threshold > 0, "Invalid threshold");
             }
+
+            Neo.SmartContract.Framework.List<UInt160> oldManagers = GetManagers(accountId);
+            for (int i = 0; i < oldManagers.Count; i++)
+            {
+                RemoveFromManagerIndex(oldManagers[i], accountId);
+            }
+
+            for (int i = 0; i < validatedManagers.Count; i++)
+            {
+                AddToManagerIndex(validatedManagers[i], accountId);
+            }
+
             StorageMap mMap = new StorageMap(Storage.CurrentContext, ManagersPrefix);
             StorageMap tMap = new StorageMap(Storage.CurrentContext, ManagerThresholdPrefix);
-            mMap.Put(GetStorageKey(accountId), StdLib.Serialize(managers));
+            mMap.Put(GetStorageKey(accountId), StdLib.Serialize(validatedManagers));
             tMap.Put(GetStorageKey(accountId), threshold);
-            OnRoleUpdated(accountId, "Managers", managers, threshold);
+            OnRoleUpdated(accountId, "Managers", validatedManagers, threshold);
         }
 
         [Safe]

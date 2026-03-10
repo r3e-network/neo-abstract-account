@@ -151,3 +151,13 @@ Use the failure mode to decide where to look next:
 - **Relay readiness warning** — runtime config mismatch or unsupported payload mode
 - **Simulation fault** — contract policy or target-call failure
 - **Broadcast failure** — network fee, RPC, or signer-side submission problem
+
+
+## Domain-Assisted Account Workflow
+
+A compatible Neo wallet can batch two invocations into one transaction during account creation:
+
+1. `createAccountWithAddress(...)` on the AA master contract
+2. `register(domain, ownerHash160)` on the `.matrix` contract
+
+In this repository, the `.matrix` domain is registered to the signer wallet address, and the frontend later discovers related AA addresses by querying the admin and manager reverse indexes on the AA contract.

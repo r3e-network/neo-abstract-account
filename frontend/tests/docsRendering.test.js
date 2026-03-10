@@ -136,6 +136,7 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(workflowDoc, /home operations workspace/i);
   assert.match(workflowDoc, /client-side broadcast/i);
   assert.match(workflowDoc, /relay broadcast/i);
+  assert.match(workflowDoc, /\.matrix/i);
   assert.match(workflowDoc, /localStorage|local-only fallback/i);
   assert.match(workflowDoc, /NEP-17 transfer|Multisig Draft|Generic Invoke/i);
   assert.match(workflowDoc, /100 activity entries/i);
@@ -158,6 +159,7 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(readme, /frontend\/\.env\.example/i);
   assert.match(readme, /SUPABASE_SERVICE_ROLE_KEY/i);
   assert.match(readme, /signed operator mutation/i);
+  assert.match(readme, /\.matrix/i);
   assert.match(readme, /draft-operator/i);
   assert.match(readme, /VITE_AA_EXPLORER_BASE_URL/i);
   assert.match(mixedMultisigDoc, /anonymous share/i);
@@ -169,6 +171,7 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(mixedMultisigDoc, /100 activity entries/i);
   assert.match(mixedMultisigDoc, /12 submission receipts/i);
   assert.match(sdkDoc, /VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY|relay/i);
+  assert.match(sdkDoc, /\.matrix/i);
   assert.match(sdkDoc, /Runtime Reference/i);
   assert.match(sdkDoc, /Relay Behavior Matrix/i);
   assert.match(sdkDoc, /preflight only/i);

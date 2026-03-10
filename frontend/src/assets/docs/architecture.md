@@ -71,3 +71,7 @@ flowchart TD
 | `contracts/AbstractAccount.Admin.cs` | Role and threshold governance |
 | `contracts/AbstractAccount.Oracle.cs` | Dome oracle flow |
 | `contracts/AbstractAccount.Upgrade.cs` | Deployer-only update path |
+
+## Matrix Naming Layer
+
+The `.matrix` naming layer remains outside the AA master contract trust boundary. Registration can be batched in the same transaction as AA creation, but the domain itself is treated as a human-readable discovery layer rather than a direct authority primitive.

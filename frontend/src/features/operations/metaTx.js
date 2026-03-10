@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { getScriptHashFromAddress } from '../../utils/neo.js';
 import { sanitizeHex } from '../../utils/hex.js';
 
 function decodeBase64ToHex(value) {
@@ -136,7 +137,7 @@ export async function fetchAccountIdForAddress({
     scriptHash: sanitizeHex(aaContractHash),
     operation: 'getAccountIdByAddress',
     args: [
-      { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` }
+      { type: 'Hash160', value: `0x${sanitizeHex(String(accountAddressScriptHash || '').startsWith('N') ? getScriptHashFromAddress(accountAddressScriptHash) : accountAddressScriptHash)}` }
     ],
     fetchImpl,
   });

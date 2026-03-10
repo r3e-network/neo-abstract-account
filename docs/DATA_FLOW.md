@@ -159,3 +159,8 @@ This keeps long-lived drafts explainable and reviewable without letting metadata
 | `WhitelistPrefix` | `0x0B` | Composite key for allowed external contracts. |
 | `MaxTransferPrefix` | `0x0C` | Composite key for token transfer caps. |
 | `VerifierContractPrefix` | `0x12` | Script hash of custom verifier logic. |
+
+
+## Matrix Domain Boundary
+
+The `.matrix` contract acts as an external naming boundary. It is not the source of AA authorization state; instead, it provides a human-readable identifier that resolves to the controlling wallet address. The frontend then combines that address with AA admin/manager discovery reads to find the actual bound AA addresses.

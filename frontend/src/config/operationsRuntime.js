@@ -12,6 +12,7 @@ export function getOperationsRuntime(config = RUNTIME_CONFIG) {
     relayMetaEnabled: Boolean(config.relayMetaEnabled),
     relayRawEnabled: Boolean(config.relayRawEnabled),
     explorerBaseUrl: config.explorerBaseUrl,
+    matrixContractHash: config.matrixContractHash,
     supabaseUrl: config.supabaseUrl,
     supabaseAnonKey: config.supabaseAnonKey,
     broadcastModes: ['client', 'relay'],

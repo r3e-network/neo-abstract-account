@@ -3,6 +3,7 @@ import { createVerifyScript, getAddressFromScriptHash, hash160, invokeReadFuncti
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
+import { buildMatrixRegistrationInvocation, normalizeMatrixDomain, isMatrixDomain } from '@/services/matrixDomainService.js';
 import { CONTRACT_SOURCE_FILES } from './contractSources';
 import {
   STUDIO_TABS,
@@ -337,15 +338,40 @@ export function useStudioController() {
     try {
       const accountIdHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
       const accountScriptHash = hash160Param(computedAddress.value);
+      const createInvocation = {
+        scriptHash: getAbstractAccountHash(),
+        operation: 'createAccountWithAddress',
+        args: [
+          { type: 'ByteArray', value: accountIdHex },
+          { type: 'Hash160', value: accountScriptHash },
+          { type: 'Array', value: toHashArray(validCreateAdmins.value) },
+          { type: 'Integer', value: createForm.value.adminThreshold },
+          { type: 'Array', value: toHashArray(validCreateManagers.value) },
+          { type: 'Integer', value: createForm.value.managerThreshold }
+        ]
+      };
 
-      await invokeOperation('Create account', 'createAccountWithAddress', [
-        { type: 'ByteArray', value: accountIdHex },
-        { type: 'Hash160', value: accountScriptHash },
-        { type: 'Array', value: toHashArray(validCreateAdmins.value) },
-        { type: 'Integer', value: createForm.value.adminThreshold },
-        { type: 'Array', value: toHashArray(validCreateManagers.value) },
-        { type: 'Integer', value: createForm.value.managerThreshold }
-      ]);
+      const matrixDomain = normalizeMatrixDomain(createForm.value.matrixDomain);
+      if (matrixDomain) {
+        if (!isMatrixDomain(matrixDomain)) {
+          throw new Error('Matrix domain must end with .matrix');
+        }
+        const ownerAddress = connectedAccount.value;
+        if (!ownerAddress) {
+          throw new Error('Connect a Neo wallet before registering a .matrix domain.');
+        }
+        const matrixInvocation = buildMatrixRegistrationInvocation(matrixDomain, ownerAddress);
+        const result = await walletService.invokeMultiple({
+          invokeArgs: [createInvocation, matrixInvocation],
+          signers: [{ account: connectedAccount.value, scopes: 1 }]
+        });
+        const txid = result?.txid || result?.transaction || '';
+        if (!txid) throw new Error('No transaction ID returned by wallet provider.');
+        pushTransaction(`Create account + register ${matrixDomain}`, txid);
+        toast.success(`Create account + ${matrixDomain} registration submitted.`);
+      } else {
+        await invokeOperation('Create account', 'createAccountWithAddress', createInvocation.args);
+      }
     } catch (err) {
       console.error(err);
       toast.error(`Creation failed: ${formatErrorMessage(err)}`);

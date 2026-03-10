@@ -69,7 +69,7 @@
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step1Expanded" class="p-6 md:p-8 animate-fade-in">
-              <LoadAccountPanel class="dark-panel-override" :account-id-hex="accountIdHex" :account-address-script-hash="accountAddressScriptHash" @update:account-id-hex="accountIdHex = $event" @update:account-address-script-hash="accountAddressScriptHash = $event" @load="loadAccount" />
+              <LoadAccountPanel class="dark-panel-override" :account-id-hex="accountIdHex" :account-address-script-hash="accountAddressScriptHash" :candidate-addresses="discoveredAccountAddresses" :resolved-owner-address="resolvedMatrixOwnerAddress" @update:account-id-hex="accountIdHex = $event" @update:account-address-script-hash="accountAddressScriptHash = $event" @select-address="selectDiscoveredAccount" @load="loadAccount" />
             </div>
           </div>
 
@@ -184,6 +184,9 @@ import { createOperationsWorkspace } from '@/features/operations/useOperationsWo
 import { buildSubmissionReceipt, getSubmissionButtonLabel, resolveLatestSubmissionReceipt } from '@/features/operations/submissionFeedback.js';
 import { appendSubmissionReceiptEntries, buildSubmissionReceiptHistoryItems, createSubmissionReceiptEntry } from '@/features/operations/submissionReceipts.js';
 import { getAbstractAccountHash, walletService } from '@/services/walletService.js';
+import { getScriptHashFromAddress } from '@/utils/neo.js';
+import { sanitizeHex } from '@/utils/hex.js';
+import { discoverAccountsForMatrixDomain, isMatrixDomain } from '@/services/matrixDomainService.js';
 import ActivitySidebar from './ActivitySidebar.vue';
 import BroadcastOptionsPanel from './BroadcastOptionsPanel.vue';
 import DraftStatusBanner from './DraftStatusBanner.vue';
@@ -203,6 +206,8 @@ const presetOptions = OPERATION_PRESETS;
 
 const accountIdHex = ref('');
 const accountAddressScriptHash = ref('');
+const discoveredAccountAddresses = ref([]);
+const resolvedMatrixOwnerAddress = ref('');
 const preset = ref('invoke');
 const targetContract = ref('');
 const method = ref('');
@@ -376,26 +381,73 @@ async function connectEvmWalletAction() {
   }
 }
 
-async function loadAccount() {
-  let resolvedId = accountIdHex.value;
-  if (!resolvedId && accountAddressScriptHash.value) {
-    try {
-      resolvedId = await fetchAccountIdForAddress({ 
-        rpcUrl: walletService.rpcUrl, 
-        aaContractHash: getAbstractAccountHash(), 
-        accountAddressScriptHash: accountAddressScriptHash.value 
-      });
-      accountIdHex.value = resolvedId;
-    } catch (e) {
-      console.warn('Could not auto-resolve Account ID. It might not be deployed or mapped yet.', e);
+async function loadAccount(overrideAddress = '') {
+  const lookup = String(overrideAddress || accountAddressScriptHash.value || '').trim();
+  if (!lookup) {
+    statusMessage.value = 'Enter an Abstract Account address or .matrix domain.';
+    return;
+  }
+
+  let resolvedAddress = lookup;
+  let resolvedAddressScriptHash = lookup;
+  discoveredAccountAddresses.value = [];
+  resolvedMatrixOwnerAddress.value = '';
+
+  if (isMatrixDomain(lookup)) {
+    const discovery = await discoverAccountsForMatrixDomain(lookup, {
+      rpcUrl: walletService.rpcUrl,
+      aaContractHash: getAbstractAccountHash(),
+      matrixContractHash: runtime.matrixContractHash,
+    });
+    resolvedMatrixOwnerAddress.value = discovery.ownerAddress;
+
+    if (discovery.accountAddresses.length > 1) {
+      discoveredAccountAddresses.value = discovery.accountAddresses;
+      statusMessage.value = 'Domain resolved to multiple Abstract Accounts. Select one to continue.';
+      return;
+    }
+
+    if (discovery.accountAddresses.length === 1) {
+      resolvedAddress = discovery.accountAddresses[0];
+    } else if (discovery.ownerAddress) {
+      resolvedAddress = discovery.ownerAddress;
+    } else {
+      statusMessage.value = 'No address could be resolved from that .matrix domain.';
+      return;
     }
   }
 
-  workspace.loadAbstractAccount({ accountIdHex: resolvedId, accountAddressScriptHash: accountAddressScriptHash.value });
+  resolvedAddressScriptHash = resolvedAddress.startsWith('N')
+    ? getScriptHashFromAddress(resolvedAddress)
+    : sanitizeHex(resolvedAddress);
+
+  let resolvedId = accountIdHex.value;
+  try {
+    resolvedId = await fetchAccountIdForAddress({
+      rpcUrl: walletService.rpcUrl,
+      aaContractHash: getAbstractAccountHash(),
+      accountAddressScriptHash: resolvedAddressScriptHash,
+    });
+    accountIdHex.value = resolvedId;
+    accountAddressScriptHash.value = resolvedAddressScriptHash;
+  } catch (e) {
+    console.warn('Could not auto-resolve Account ID. It might not be deployed or mapped yet.', e);
+  }
+
+  if (!resolvedId) {
+    statusMessage.value = isMatrixDomain(lookup)
+      ? 'The .matrix domain resolved, but no bound Abstract Account was found for that controller address.'
+      : 'No bound Abstract Account mapping was found for that address.';
+    return;
+  }
+
+  workspace.loadAbstractAccount({ accountIdHex: resolvedId, accountAddressScriptHash: resolvedAddressScriptHash });
   syncSignerRequirements();
   signerId.value = walletService.address || workspace.account.value.accountAddressScriptHash;
   appendActivity(createActivityEvent({ type: 'account_loaded', actor: 'workspace', detail: 'Abstract account loaded' }));
-  statusMessage.value = 'Abstract Account loaded into the home workspace.';
+  statusMessage.value = isMatrixDomain(lookup)
+    ? `Abstract Account loaded via ${lookup}.`
+    : 'Abstract Account loaded into the home workspace.';
 }
 
 function stageOperation() {
@@ -450,6 +502,12 @@ function resolveSignerId(kindValue) {
   if (signerId.value) return signerId.value.trim();
   if (kindValue === 'evm') return evmAddress.value || 'evm-wallet-pending';
   return walletService.address || workspace.account.value.accountAddressScriptHash || 'neo-wallet-pending';
+}
+
+function selectDiscoveredAccount(address) {
+  accountAddressScriptHash.value = address.startsWith('N') ? getScriptHashFromAddress(address) : sanitizeHex(address);
+  discoveredAccountAddresses.value = [];
+  void loadAccount(address);
 }
 
 async function appendManualSignature() {

@@ -65,8 +65,7 @@ The implementation in this repository extends this foundation with:
   \item EVM-compatible EIP-712 meta-transaction authorization,
   \item policy gates for whitelist, blacklist, and transfer limits,
   \item optional relay-assisted submission,
-  \item off-chain collaborative transaction drafts with scoped URLs,
-  \item optional custom verifiers and recovery verifiers,
+  \item off-chain collaborative transaction drafts with scoped URLs,\n  \item optional `.matrix` domain registration and discovery for human-readable account access,\n  \item optional custom verifiers and recovery verifiers,
   \item deployment and live validation evidence on Neo N3 testnet.
 \end{itemize}
 
@@ -217,7 +216,7 @@ For each logical account, the system derives a deterministic verify script from 
 \end{table}
 
 \subsection{Off-Chain Collaboration State}
-The collaboration layer stores draft-oriented coordination data rather than authorization truth. A draft \must{} be treated as a coordination artifact, not as an authority source.
+The collaboration layer stores draft-oriented coordination data rather than authorization truth. A draft \must{} be treated as a coordination artifact, not as an authority source. Likewise, a `.matrix` domain \must{} be treated as a discovery layer rather than the underlying source of account authorization.
 
 \begin{table}[h!]
   \centering
@@ -268,7 +267,7 @@ A valid deterministic proxy witness is not enough by itself. After hardening, th
 \end{figure}
 
 \subsection{Application Phase}
-Once verification succeeds, the master contract enforces the application policy before calling the target contract. This separation between verification and application is fundamental to the design.
+Once verification succeeds, the master contract enforces the application policy before calling the target contract. This separation between verification and application is fundamental to the design. Domain registration, when used during creation, is performed as a separate invocation in the same transaction batch rather than by expanding the master contract trust surface.
 
 \begin{figure}[h!]
 \centering
@@ -355,8 +354,7 @@ The repository supports three major workflow classes:
 \subsection{Collaborative Draft Flow}
 A collaborative draft implementation \must{} preserve the following scope semantics:
 \begin{itemize}
-  \item public share links are read-only,
-  \item collaborator links are signature-only,
+  \item public share links are read-only,\n  \item `.matrix` domain lookups are a discovery convenience and do not override on-chain account authority,\n  \item collaborator links are signature-only,
   \item operator links govern relay, receipt, and rotation actions,
   \item operator-class actions may be mediated by a signed server-side mutation path.
 \end{itemize}

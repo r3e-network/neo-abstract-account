@@ -38,3 +38,8 @@ This index keeps the root documentation set visible and easy to browse.
 
 - `docs/specification/neo_abstract_account_spec.tex` — formal paper-style LaTeX specification
 - `docs/specification/README.md` — build instructions
+
+## Matrix Domain Support
+
+- same-transaction AA creation plus `.matrix` registration is supported for compatible Neo wallets
+- `.matrix` resolution is used to discover linked AA addresses through admin/manager indexes

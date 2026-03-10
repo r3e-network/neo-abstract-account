@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(import.meta.dirname, '..');
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
+
+test('frontend adds matrix domain resolution and registration flow', () => {
+  const servicePath = path.resolve(root, 'src/services/matrixDomainService.js');
+  assert.equal(fs.existsSync(servicePath), true, 'expected matrixDomainService to exist');
+  const serviceSource = fs.readFileSync(servicePath, 'utf8');
+  assert.match(serviceSource, /\.matrix/);
+  assert.match(serviceSource, /resolveMatrixDomain/);
+
+  const loadPanel = read('src/features/operations/components/LoadAccountPanel.vue');
+  assert.match(loadPanel, /\.matrix/);
+
+  const studioPanel = read('src/features/studio/components/CreateAccountPanel.vue');
+  assert.match(studioPanel, /\.matrix/);
+
+  const workspace = read('src/features/operations/components/HomeOperationsWorkspace.vue');
+  const studioController = read('src/features/studio/useStudioController.js');
+  assert.match(workspace, /resolveMatrixDomain|discoverAccountsForMatrixDomain/);
+  assert.match(studioController, /invokeMultiple/);
+});

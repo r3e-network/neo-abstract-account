@@ -190,3 +190,7 @@ If you are learning the system for the first time, read these pages in order:
 - **Operator link** — a scoped link for relay, broadcast, receipts, and link rotation
 - **Relay preflight** — a server-backed simulation of a relay-ready invocation before submission
 - **Meta invocation** — the AA wrapper payload created from EVM typed-data signatures
+
+## Matrix Domain Access
+
+Users do not have to memorize raw `accountId` values. The frontend can register a `.matrix` domain during AA creation and later use that domain as a discovery input. The domain resolves to the controller wallet address, and the frontend then discovers linked AA addresses where that wallet is an admin or manager.

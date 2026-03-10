@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
+const path = require('path');
 
 function loadAccountModule() {
   const modulePath = path.join(__dirname, 'account.js');
@@ -105,4 +105,11 @@ test('deriveAaAddressFromId preserves raw accountId byte order in the verify scr
   const result = deriveAaAddressFromId('aa55', '10203040');
   assert.match(result.verificationScript, /^0c0410203040/);
   assert.doesNotMatch(result.verificationScript, /^0c0440302010/);
+});
+
+
+test('sdk client source exposes account-address discovery helpers', () => {
+  const source = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'index.js'), 'utf8');
+  assert.match(source, /getAccountAddressesByAdmin/);
+  assert.match(source, /getAccountAddressesByManager/);
 });

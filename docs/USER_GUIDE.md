@@ -119,3 +119,8 @@ const txid = await walletService.sendTransaction(payload);
 - `docs/WORKFLOWS.md`
 - `docs/DATA_FLOW.md`
 - `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md`
+
+
+## Loading by `.matrix`
+
+If you remember your `.matrix` name more easily than an AA address, enter the domain in the load field. The frontend resolves the domain to the controlling wallet address and then looks up any bound AA addresses where that wallet is an admin or manager. If multiple AAs are found, you can choose the correct one from the returned list.

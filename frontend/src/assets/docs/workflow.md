@@ -4,7 +4,7 @@ The Neo N3 Abstract Account workflow turns user intent into verified on-chain ex
 
 ## Home Operations Workspace
 
-The home operations workspace is now the fastest path for day-to-day usage. It lets a user load an Abstract Account, stage the AA wrapper invocation, persist an immutable share draft, collect mixed Neo + EVM approvals, and then choose the final submission path. For client-side Neo execution, the workspace now stages a concrete `executeByAddress` wrapper call against the AA contract instead of pointing the wallet directly at the downstream target contract.
+The home operations workspace is now the fastest path for day-to-day usage. It lets a user load an Abstract Account by AA address or `.matrix` domain, stage the AA wrapper invocation, persist an immutable share draft, collect mixed Neo + EVM approvals, and then choose the final submission path. For client-side Neo execution, the workspace now stages a concrete `executeByAddress` wrapper call against the AA contract instead of pointing the wallet directly at the downstream target contract.
 
 For v1, both broadcast modes are supported:
 
@@ -151,3 +151,8 @@ Use the failure mode to decide where to look next:
 - **Relay readiness warning** — runtime config mismatch or unsupported payload mode
 - **Simulation fault** — contract policy or target-call failure
 - **Broadcast failure** — network fee, RPC, or signer-side submission problem
+
+
+## Matrix Domain Discovery
+
+If a user enters a `.matrix` domain instead of an AA address, the frontend resolves the domain to the controlling wallet address and then queries the AA contract for bound AA addresses where that wallet appears as an admin or manager. If exactly one AA is found, the workspace loads it automatically; if multiple are found, the user can choose which AA to open.

@@ -84,6 +84,8 @@ namespace AbstractAccount
         private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
         private static readonly byte[] VerifierContractPrefix = new byte[] { 0x12 };
         private static readonly byte[] ContractHashKey = new byte[] { 0x13 };
+        private static readonly byte[] AdminIndexPrefix = new byte[] { 0x20 };
+        private static readonly byte[] ManagerIndexPrefix = new byte[] { 0x21 };
         private static readonly byte[] GlobalExecutionLockKey = new byte[] { 0x14 };
         private static readonly byte[] MetaTxContextPrefix = new byte[] { 0xFF };
 

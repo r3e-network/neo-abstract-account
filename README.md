@@ -10,7 +10,7 @@ This project contains the comprehensive standard, smart contract implementation,
 
 ## Home Workspace Deployment
 
-The frontend home page now exposes an app-first operations workspace for loading an Abstract Account, building an invocation, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, and choosing either client-side or relay broadcast in v1.
+The frontend home page now exposes an app-first operations workspace for loading an Abstract Account, building an invocation, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, choosing either client-side or relay broadcast in v1, and resolving or registering `.matrix` domains so users do not need to rely on raw account IDs.
 
 For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, and `VITE_AA_RELAY_RPC_URL`, then apply the Supabase draft migrations in order. Start with `supabase/migrations/20260308_home_operations_workspace.sql`, then apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql`, `supabase/migrations/20260309_submission_receipts.sql`, `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql`, `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql`, `supabase/migrations/20260312_scoped_draft_access.sql`, `supabase/migrations/20260313_activity_scope_guards.sql`, and `supabase/migrations/20260314_signed_operator_mutations.sql`. That full chain keeps the public share link read-only, narrows collaborator links to signature-safe writes, and moves operator-only status/relay mutations behind the signed operator mutation server route in `frontend/api/draft-operator.js`.
 
@@ -31,6 +31,7 @@ Shared draft metadata is intentionally bounded: the frontend keeps the latest 10
 - Apply `supabase/migrations/20260314_signed_operator_mutations.sql` so operator-only writes move behind the signed operator mutation flow and direct anon operator RPCs are revoked.
 - Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for browser-side anonymous draft persistence.
 - Share the normal draft URL for read-only review, the collaborator link for signature collection, and the operator link for relay checks, broadcast, and other operator-only actions. Signer links cannot append operator-class relay or broadcast activity entries.
+- Users can also register a `.matrix` domain during AA creation and later load associated AA addresses by resolving the domain back to the controlling wallet and on-chain admin/manager indexes.
 - Use the Rotate Collaborator Link action when a signer link leaks, and rotate the operator link if an operator-only URL should be invalidated without rebuilding the draft.
 - Set `VITE_AA_RELAY_URL`, `VITE_AA_RELAY_RPC_URL`, and server-side `AA_RELAY_WIF` before enabling relay submission flows.
 - Set server-only `SUPABASE_SERVICE_ROLE_KEY` so `frontend/api/draft-operator.js` can accept signed operator mutation requests for status changes, relay-preflight persistence, submission receipts, and link rotation.

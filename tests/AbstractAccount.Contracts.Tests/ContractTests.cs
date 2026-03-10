@@ -69,6 +69,31 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
     }
 
     [TestMethod]
+    public void CreateAccountWithAddressIndexesBoundAddressForManagers()
+    {
+        var accountId = new byte[] { 0x11, 0x22, 0x33, 0x44 };
+        var expectedAddress = BuildVerifyProxyHash(accountId);
+
+        Engine.SetTransactionSigners(Alice);
+        Contract.CreateAccountWithAddress(accountId, expectedAddress, new List<object> { Alice.Account }, 1, new List<object> { Alice.Account }, 1);
+
+        var managerAddresses = Contract.GetAccountAddressesByManager(Alice.Account);
+
+        Assert.IsNotNull(managerAddresses);
+        Assert.AreEqual(1, managerAddresses.Count);
+
+        var managerAddress = managerAddresses[0] switch
+        {
+            UInt160 hash => hash,
+            Neo.VM.Types.ByteString bytes => new UInt160(bytes.GetSpan().ToArray()),
+            byte[] bytes => new UInt160(bytes),
+            _ => throw new AssertFailedException($"Unexpected manager address payload: {managerAddresses[0]?.GetType().FullName}")
+        };
+
+        Assert.AreEqual(expectedAddress, managerAddress);
+    }
+
+    [TestMethod]
     public void BindAccountAddressRejectsNonDeterministicProxyAddress()
     {
         var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
@@ -80,7 +105,7 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
     }
 
     [TestMethod]
-    public void ManualVerifyProxyHashMatchesScriptBuilder()
+    public void ManualVerifyProxyHashMatchesDeterministicProxyHelper()
     {
         var accountId = new byte[] { 0x10, 0x20, 0x30, 0x40 };
 
@@ -147,6 +172,25 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
 
         CollectionAssert.AreNotEqual(shortAccountId, storageKey);
         Assert.AreEqual(shortAccountId.Length + 1, storageKey.Length);
+    }
+
+
+    [TestMethod]
+    public void AddressIndexSourceIncludesBoundAccountAddressGetters()
+    {
+        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
+
+        StringAssert.Contains(storageSource, "GetAccountAddressesByAdmin");
+        StringAssert.Contains(storageSource, "GetAccountAddressesByManager");
+    }
+
+    [TestMethod]
+    public void SetManagersInternalMaintainsManagerReverseIndexes()
+    {
+        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
+
+        StringAssert.Contains(adminSource, "RemoveFromManagerIndex");
+        StringAssert.Contains(adminSource, "AddToManagerIndex");
     }
 
     [TestMethod]
@@ -236,9 +280,7 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
 
     private UInt160 BuildVerifyProxyHash(byte[] accountId)
     {
-        using var sb = new ScriptBuilder();
-        sb.EmitDynamicCall(Contract.Hash, "verify", CallFlags.All, accountId);
-        return Neo.SmartContract.Helper.ToScriptHash(sb.ToArray());
+        return BuildManualVerifyProxyHash(accountId);
     }
 
     private UInt160 BuildManualVerifyProxyHash(byte[] accountId)
@@ -251,7 +293,10 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
             new byte[] { 0x0C, 0x14 },
             Contract.Hash.ToArray(),
             new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 });
-        return Neo.SmartContract.Helper.ToScriptHash(script);
+
+        var scriptHash = Neo.Cryptography.Crypto.Hash160(script);
+        Array.Reverse(scriptHash);
+        return new UInt160(scriptHash);
     }
 
     private static byte[] BuildSelfCallScript(UInt160 walletHash, string method, params object[] args)

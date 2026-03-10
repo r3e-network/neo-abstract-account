@@ -10,7 +10,7 @@ import {
 test('preset registry exposes invoke, NEP-17 transfer, and multisig draft templates', () => {
   assert.deepEqual(
     OPERATION_PRESETS.map((item) => item.id),
-    ['invoke', 'nep17Transfer', 'multisigDraft']
+    ['invoke', 'nep17Transfer', 'batchCreate', 'multisigDraft']
   );
 });
 
