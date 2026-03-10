@@ -9,14 +9,14 @@
   
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 rounded-full border-2 border-transparent bg-clip-padding;
+    @apply bg-slate-300 rounded-full border border-transparent bg-clip-padding transition-colors;
   }
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-slate-400;
@@ -25,30 +25,95 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex justify-center items-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-neo-600 to-neo-500 hover:from-neo-700 hover:to-neo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform active:scale-[0.98] hover:shadow-md;
+    @apply inline-flex justify-center items-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-lg shadow-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 focus:ring-offset-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply inline-flex justify-center items-center px-5 py-2.5 border border-slate-200 shadow-sm text-sm font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform active:scale-[0.98];
+    @apply inline-flex justify-center items-center px-5 py-2.5 border border-slate-200 shadow-sm text-sm font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 focus:ring-offset-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-warning {
-    @apply inline-flex justify-center items-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-amber-800 bg-amber-100 hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform active:scale-[0.98];
+    @apply inline-flex justify-center items-center px-4 py-2 border border-amber-200 shadow-sm text-sm font-medium rounded-md text-amber-800 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
 
   .btn-danger {
-    @apply inline-flex justify-center items-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform active:scale-[0.98];
+    @apply inline-flex justify-center items-center px-4 py-2 border border-rose-200 shadow-sm text-sm font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
 
   .btn-ghost {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg text-neo-700 bg-neo-50 hover:bg-neo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300;
+    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-slate-600 bg-transparent hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
 
   .input-field {
-    @apply shadow-sm focus:ring-neo-500 focus:border-neo-500 block w-full sm:text-sm border-slate-300 rounded-lg transition-colors duration-200 focus:shadow-md;
+    @apply shadow-sm focus:ring-neo-500 focus:border-neo-500 block w-full sm:text-sm border-slate-300 rounded-lg transition-all duration-200 bg-white/90 focus:bg-white;
   }
 
   .glass-panel {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+    @apply bg-white/70 backdrop-blur-md border border-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-900/5 transition-all duration-300;
+  }
+
+  .dark-panel-override {
+    @apply !bg-transparent !border-transparent !shadow-none !text-white;
+  }
+  .dark-panel-override input, .dark-panel-override textarea, .dark-panel-override select {
+    @apply !bg-slate-900/50 !border-slate-700/50 !text-white;
+  }
+  .dark-panel-override input::placeholder, .dark-panel-override textarea::placeholder {
+    color: theme('colors.slate.500') !important;
+  }
+  .dark-panel-override input:focus, .dark-panel-override textarea:focus, .dark-panel-override select:focus {
+    @apply !border-neo-500 !ring-neo-500;
+  }
+  .dark-panel-override button:not([class*="btn-"]) {
+    color: theme('colors.slate.300') !important;
+  }
+  .dark-panel-override button.bg-neo-50 {
+    @apply !bg-neo-500/20 !border-neo-500/50 !text-white;
+  }
+  .dark-panel-override p, .dark-panel-override span, .dark-panel-override label {
+    color: theme('colors.slate.300') !important;
+  }
+  .dark-panel-override h1, .dark-panel-override h2, .dark-panel-override h3, .dark-panel-override h4 {
+    color: theme('colors.white') !important;
+  }
+  .dark-panel-override .bg-slate-50, .dark-panel-override .bg-white {
+    @apply !bg-slate-800/40;
+  }
+  .dark-panel-override .bg-emerald-50 {
+    @apply !bg-emerald-500/20 !border-emerald-500/30;
+    color: theme('colors.emerald.300') !important;
+  }
+  .dark-panel-override .bg-rose-50, .dark-panel-override .bg-red-50 {
+    @apply !bg-rose-500/20 !border-rose-500/30;
+    color: theme('colors.rose.300') !important;
+  }
+  .dark-panel-override .bg-amber-50 {
+    @apply !bg-amber-500/20 !border-amber-500/30;
+    color: theme('colors.amber.300') !important;
+  }
+  .dark-panel-override .border-slate-200, .dark-panel-override .border-slate-300 {
+    @apply !border-slate-700/50;
+  }
+  .dark-panel-override .text-slate-900, .dark-panel-override .text-slate-800 {
+    color: theme('colors.white') !important;
+  }
+  .dark-panel-override .text-slate-700, .dark-panel-override .text-slate-600 {
+    color: theme('colors.slate.300') !important;
+  }
+  .dark-panel-override .text-slate-500 {
+    color: theme('colors.slate.400') !important;
+  }
+  .dark-panel-override pre, .dark-panel-override code {
+    @apply !bg-slate-900/80 !border-slate-700/50;
+    color: theme('colors.neo.300') !important;
+  }
+  .dark-panel-override .text-emerald-800 {
+    color: theme('colors.emerald.300') !important;
+  }
+  .dark-panel-override .text-rose-800, .dark-panel-override .text-red-800 {
+    color: theme('colors.rose.300') !important;
+  }
+  .dark-panel-override .text-amber-800 {
+    color: theme('colors.amber.300') !important;
   }
 }

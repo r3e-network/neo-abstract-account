@@ -1,24 +1,24 @@
 <template>
-  <section class="rounded-2xl border border-slate-200 bg-white p-5">
+  <section class="rounded-2xl border border-slate-700/50 bg-slate-800/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl">
     <div class="mb-4 flex items-center justify-between gap-3">
       <div>
-        <h2 class="text-lg font-bold text-slate-900">{{ title }}</h2>
-        <p class="text-sm text-slate-500">Quick scan of the account, operation, signer progress, relay mode, and latest activity.</p>
+        <h2 class="text-lg font-bold text-white font-outfit">{{ title }}</h2>
+        <p class="text-sm text-slate-400">Quick scan of the account, operation, signer progress, relay mode, and latest activity.</p>
       </div>
     </div>
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-      <div v-for="item in summaryItems" :key="item.label" class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div v-for="item in summaryItems" :key="item.label" class="rounded-2xl border border-slate-700/50 bg-slate-900/40 p-4 shadow-inner hover:bg-slate-900/60 transition-colors">
         <div class="mb-2 flex items-start justify-between gap-3">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{{ item.label }}</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-neo-500">{{ item.label }}</p>
           <button
             v-if="summaryActions[item.label]"
-            class="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+            class="rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 hover:text-white px-2.5 py-1 text-[11px] font-semibold text-slate-300 transition-colors"
             @click="emitSummaryAction(item, summaryActions[item.label])"
           >
             {{ feedbackLabel(summaryActions[item.label], item.label) }}
           </button>
         </div>
-        <div class="text-sm text-slate-700 break-all">{{ item.value }}</div>
+        <div class="text-sm font-semibold text-slate-200 break-all">{{ item.value }}</div>
       </div>
     </div>
   </section>

@@ -1,59 +1,64 @@
 <template>
-  <aside class="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
+  <aside class="rounded-2xl border border-slate-700/50 bg-slate-800/60 p-6 shadow-2xl backdrop-blur-xl">
     <div class="mb-5 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-slate-900">{{ t('operations.activitySidebarTitle', 'Draft Activity') }}</h2>
+      <h2 class="text-lg font-bold text-white font-outfit flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-neo-500 animate-pulse"></span>
+        {{ t('operations.activitySidebarTitle', 'Draft Activity') }}
+      </h2>
       <span class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em]"
-        :class="shareStatus === 'draft' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'"
+        :class="shareStatus === 'draft' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-neo-500/20 text-neo-300 border border-neo-500/30'"
       >
         {{ shareStatus || 'local' }}
       </span>
     </div>
-    <dl class="space-y-4 text-sm text-slate-600">
-      <div>
-        <dt class="font-medium text-slate-700">Draft ID</dt>
-        <dd class="break-all font-mono text-xs">{{ draftId || 'Not persisted yet' }}</dd>
+    <dl class="space-y-4 text-sm text-slate-400">
+      <div class="border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Draft ID</dt>
+        <dd class="break-all font-mono text-xs text-slate-500 mt-1">{{ draftId || 'Not persisted yet' }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Share URL</dt>
-        <dd class="break-all font-mono text-xs">{{ shareUrl || sharePath || 'Not generated yet' }}</dd>
+      <div class="border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Share URL</dt>
+        <dd class="break-all font-mono text-xs text-slate-500 mt-1">{{ shareUrl || sharePath || 'Not generated yet' }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Collaborator URL</dt>
-        <dd class="break-all font-mono text-xs">{{ collaborationUrl || 'Read-only viewers should use the Share URL.' }}</dd>
+      <div class="border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Collaborator URL</dt>
+        <dd class="break-all font-mono text-xs text-slate-500 mt-1">{{ collaborationUrl || 'Read-only viewers should use the Share URL.' }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Operator URL</dt>
-        <dd class="break-all font-mono text-xs">{{ operatorUrl || 'Operator link hidden in signer and read-only views.' }}</dd>
+      <div class="border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Operator URL</dt>
+        <dd class="break-all font-mono text-xs text-slate-500 mt-1">{{ operatorUrl || 'Operator link hidden in signer and read-only views.' }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Access Mode</dt>
-        <dd>{{ accessModeLabel }}</dd>
+      <div class="flex justify-between items-center border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Access Mode</dt>
+        <dd class="font-semibold text-white bg-slate-700/50 px-2 py-0.5 rounded text-xs">{{ accessModeLabel }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Signature Progress</dt>
-        <dd>{{ signatureCount }} / {{ requiredSignerCount }} collected</dd>
+      <div class="flex justify-between items-center border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Signature Progress</dt>
+        <dd class="font-semibold text-white"><span class="text-neo-400">{{ signatureCount }}</span> / {{ requiredSignerCount }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Pending Signers</dt>
-        <dd>{{ pendingSignerCount }}</dd>
+      <div class="flex justify-between items-center border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Pending Signers</dt>
+        <dd class="font-semibold text-white">{{ pendingSignerCount }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Relay Readiness</dt>
+      <div class="border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300 flex justify-between">Relay Readiness <span class="font-semibold" :class="relayLevelClass">{{ relayReadinessLabel }}</span></dt>
         <dd>
-          <span class="font-semibold" :class="relayLevelClass">{{ relayReadinessLabel }}</span>
-          <span class="block text-xs text-slate-500">{{ relayReadinessDetail }}</span>
+          <span class="block text-xs text-slate-500 mt-1">{{ relayReadinessDetail }}</span>
         </dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Broadcast Mode</dt>
-        <dd>{{ broadcastMode }}</dd>
+      <div class="flex justify-between items-center border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Broadcast Mode</dt>
+        <dd class="font-semibold text-white">{{ broadcastMode }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">Last Broadcast</dt>
-        <dd class="break-all font-mono text-xs">{{ lastTxid || 'Not broadcast yet' }}</dd>
+      <div class="border-b border-slate-700/50 pb-3">
+        <dt class="font-bold text-slate-300">Last Broadcast</dt>
+        <dd class="break-all font-mono text-xs text-slate-500 mt-1">{{ lastTxid || 'Not broadcast yet' }}</dd>
       </div>
-      <div>
-        <dt class="font-medium text-slate-700">{{ t('operations.recentActivityTitle', 'Recent Activity') }}</dt>
+      <div class="pt-2">
+        <dt class="font-bold text-slate-300 flex items-center gap-2 mb-3">
+          <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {{ t('operations.recentActivityTitle', 'Recent Activity') }}
+        </dt>
         <dd class="mt-2">
           <ActivityTimeline :items="activityItems" :action-context="actionContext" :preference-key="timelinePreferenceKey" @activity-action="$emit('activity-action', $event)" />
         </dd>
@@ -97,8 +102,8 @@ const accessModeLabel = computed(() => {
   return 'Read-only';
 });
 const relayLevelClass = computed(() => {
-  if (props.relayReadinessLevel === 'ready') return 'text-emerald-700';
-  if (props.relayReadinessLevel === 'warning') return 'text-amber-700';
-  return 'text-rose-700';
+  if (props.relayReadinessLevel === 'ready') return 'text-neo-400';
+  if (props.relayReadinessLevel === 'warning') return 'text-amber-400';
+  return 'text-rose-400';
 });
 </script>

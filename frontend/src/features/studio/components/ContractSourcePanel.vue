@@ -1,20 +1,20 @@
 <template>
-  <section class="bg-white shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden border border-slate-200 flex flex-col h-[700px]">
-    <div class="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+  <section class="bg-slate-800/60 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border border-slate-700/50 flex flex-col h-[700px] backdrop-blur-xl dark-panel-override">
+    <div class="px-6 py-5 border-b border-slate-700/50 bg-slate-800/40 flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-slate-900">Contract Explorer</h2>
-        <p class="text-xs text-slate-500 font-medium">C# Smart Contract Modules</p>
+        <h2 class="text-lg font-bold text-slate-100 font-outfit">Contract Explorer</h2>
+        <p class="text-xs text-slate-400 font-medium font-mono">C# Smart Contract Modules</p>
       </div>
     </div>
     <div class="flex flex-col md:flex-row flex-1 min-h-0">
-      <div class="md:w-72 bg-slate-50/50 border-r border-slate-200 overflow-y-auto hidden md:block">
+      <div class="md:w-72 bg-slate-900/40 border-r border-slate-700/50 overflow-y-auto hidden md:block custom-scrollbar-dark">
         <nav class="flex-1 p-3 space-y-1">
           <button
             v-for="(file, idx) in contractFiles"
             :key="file.name"
             @click="activeFileIdx = idx"
             :class="[
-              activeFileIdx === idx ? 'bg-neo-100 text-neo-900 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium',
+              activeFileIdx === idx ? 'bg-neo-500/20 text-neo-300 font-bold shadow-sm ring-1 ring-neo-500/40' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 font-medium',
               'group w-full flex items-center px-3 py-2.5 text-[13px] rounded-lg font-mono text-left transition-all duration-200'
             ]"
           >
@@ -25,8 +25,8 @@
           </button>
         </nav>
       </div>
-      <div class="flex-1 bg-[#0d1117] flex flex-col min-w-0">
-        <div class="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-[#30363d]">
+      <div class="flex-1 bg-slate-900 flex flex-col min-w-0">
+        <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
           <div class="flex items-center gap-2">
             <div class="flex gap-1.5 mr-2">
               <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
@@ -39,7 +39,7 @@
             {{ copied ? 'Copied!' : 'Copy Code' }}
           </button>
         </div>
-        <div class="flex-1 overflow-auto p-4 md:p-6 text-[13px] font-mono text-slate-300 custom-scrollbar">
+        <div class="flex-1 overflow-auto p-4 md:p-6 text-[13px] font-mono text-slate-300 custom-scrollbar-dark">
           <highlightjs autodetect :code="contractFiles[activeFileIdx]?.content" />
         </div>
       </div>

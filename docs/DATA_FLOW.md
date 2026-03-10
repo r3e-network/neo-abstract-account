@@ -7,18 +7,34 @@ The Abstract Account model centralizes all on-chain authority inside the **Maste
 The easiest way to understand the system is to separate it into trust boundaries.
 
 ```mermaid
-flowchart LR
-  Browser[Browser / UI]
-  Local[localStorage fallback]
-  Supabase[Supabase draft store]
-  Relay[Relay + signed operator APIs]
-  Chain[Neo N3 chain]
+flowchart TD
+  subgraph Client [Client Environment]
+    Browser[Browser / UI]
+    Local[(localStorage)]
+  end
 
-  Browser --> Local
-  Browser --> Supabase
-  Browser --> Relay
-  Browser --> Chain
-  Relay --> Chain
+  subgraph Cloud [Off-Chain Cloud]
+    Supabase[(Supabase Drafts)]
+    Relay[Relay & Operator APIs]
+  end
+
+  subgraph Blockchain [Neo N3 Network]
+    Chain[On-Chain AA Contract]
+  end
+
+  Browser -->|Offline Fallback| Local
+  Browser <-->|Collaboration| Supabase
+  Browser -->|API Requests| Relay
+  Browser -->|Client Broadcast| Chain
+  Relay -->|Relay Submission| Chain
+
+  classDef client fill:#eff6ff,stroke:#93c5fd,stroke-width:2px,color:#1e3a8a
+  classDef cloud fill:#f0fdfa,stroke:#5eead4,stroke-width:2px,color:#115e59
+  classDef chain fill:#fef2f2,stroke:#fca5a5,stroke-width:2px,color:#991b1b
+
+  class Browser,Local client
+  class Supabase,Relay cloud
+  class Chain chain
 ```
 
 Those boundaries do different jobs:
@@ -45,11 +61,22 @@ Not every boundary is allowed to mutate the same data.
 
 ```mermaid
 flowchart TD
-  Public[Public share link] --> ReadOnly[Read-only access]
-  Collaborator[Collaborator link] --> SigOnly[Signature-only append path]
-  Operator[Operator link] --> SignedServer[Signed operator mutation route]
-  SignedServer --> Receipts[Receipts / relay preflight / rotation / status]
-  Chain[On-chain execution] --> Policy[Final policy enforcement]
+  Public([Public Share Link]) -->|View| ReadOnly[Read-Only Access]
+  Collaborator([Collaborator Link]) -->|Sign| SigOnly[Signature-Only Append]
+  Operator([Operator Link]) -->|Mutate| SignedServer[Signed Operator Route]
+  
+  SignedServer --> Receipts[Manage Receipts & Status]
+  SignedServer --> Rotation[Link Rotation & Preflight]
+  
+  Chain([On-Chain Execution]) --> Policy[Final Policy Enforcement]
+
+  classDef link fill:#fffbeb,stroke:#fcd34d,stroke-width:2px,color:#92400e
+  classDef action fill:#ecfdf5,stroke:#6ee7b7,stroke-width:2px,color:#065f46
+  classDef enforce fill:#fef2f2,stroke:#fca5a5,stroke-width:2px,color:#991b1b
+  
+  class Public,Collaborator,Operator link
+  class ReadOnly,SigOnly,SignedServer,Receipts,Rotation action
+  class Chain,Policy enforce
 ```
 
 Practical meaning:
@@ -65,15 +92,25 @@ The contract utilizes a unified internal storage mapping where keys are derived 
 
 ```mermaid
 flowchart TD
-    A[Master Contract Storage] --> B(Admins Map)
+    subgraph Storage [Master Contract Storage]
+      A[Unified Storage Map]
+    end
+
+    A --> B(Admins Map)
     A --> C(Managers Map)
     A --> D(Dome Configuration)
     A --> E(Limits & Restrictions)
 
-    B --> B1[Prefix: 0x01 + sha256(accountId)]
-    C --> C1[Prefix: 0x03 + sha256(accountId)]
-    D --> D1[Prefix: 0x0E + sha256(accountId)]
-    E --> E1[Prefix: 0x09 / 0x0B / 0x0C composite keys]
+    B -.-> B1[Prefix: 0x01 + sha256]
+    C -.-> C1[Prefix: 0x03 + sha256]
+    D -.-> D1[Prefix: 0x0E + sha256]
+    E -.-> E1[Prefix: 0x09/0x0B/0x0C composite]
+
+    classDef map fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#334155
+    classDef prefix fill:#f0fdfa,stroke:#5eead4,stroke-width:1px,stroke-dasharray: 5 5,color:#115e59
+    
+    class B,C,D,E map
+    class B1,C1,D1,E1 prefix
 ```
 
 ## 5. Internal Data Flow During Execution
@@ -82,40 +119,52 @@ When an execution command enters the Master Contract, it flows through a rigid p
 
 ```mermaid
 flowchart TD
-    Start[Transaction Payload Received] --> HasID{Account ID Valid?}
+    Start([Tx Payload Received]) --> HasID{Account ID Valid?}
+    
     HasID -- Yes --> ActiveLock{Execution Lock Active?}
-    HasID -- No --> Reject[Revert: Invalid ID]
+    HasID -- No --> Reject1[Revert: Invalid ID]
 
-    ActiveLock -- Yes --> RejectLock[Revert: Re-entrancy Blocked]
+    ActiveLock -- Yes --> Reject2[Revert: Re-entrancy Blocked]
     ActiveLock -- No --> Lock[Apply Execution Lock]
 
     Lock --> CustomVer{Custom Verifier Set?}
 
-    CustomVer -- Yes --> CallCustom[Contract.Call verifier.verify]
-    CallCustom --> AuthResult
+    CustomVer -- Yes --> CallCustom[Call verifier.verify]
+    CallCustom --> AuthResult{Authorized?}
 
-    CustomVer -- No --> CheckNative[Evaluate M-of-N Thresholds]
-    CheckNative --> AuthResult{Authorized?}
+    CustomVer -- No --> CheckNative[Evaluate Thresholds]
+    CheckNative --> AuthResult
 
     AuthResult -- Yes --> CheckBlacklist{Target Blacklisted?}
-    AuthResult -- No --> RejectAuth[Revert: Unauthorized]
+    AuthResult -- No --> Reject3[Revert: Unauthorized]
 
-    CheckBlacklist -- Yes --> RejectBL[Revert: Target Blacklisted]
+    CheckBlacklist -- Yes --> Reject4[Revert: Target Blacklisted]
     CheckBlacklist -- No --> CheckWhitelist{Whitelist Enabled?}
 
     CheckWhitelist -- Yes --> InWhitelist{Target in Whitelist?}
-    InWhitelist -- No --> RejectWL[Revert: Not Whitelisted]
-    InWhitelist -- Yes --> TokenCheck
+    InWhitelist -- No --> Reject5[Revert: Not Whitelisted]
+    InWhitelist -- Yes --> TokenCheck{Is Token Transfer?}
+    
     CheckWhitelist -- No --> TokenCheck
 
-    TokenCheck{Is Token Transfer?}
-    TokenCheck -- Yes --> OverLimit{Amount > Max Transfer?}
-    OverLimit -- Yes --> RejectLimit[Revert: Exceeds Limit]
-    OverLimit -- No --> Execute
+    TokenCheck -- Yes --> OverLimit{Exceeds Max Limit?}
+    OverLimit -- Yes --> Reject6[Revert: Exceeds Limit]
+    OverLimit -- No --> Execute[Dynamic Call to Target]
+    
     TokenCheck -- No --> Execute
 
-    Execute[Dynamic Call to Target Contract] --> Unlock[Remove Execution Lock]
-    Unlock --> End[Transaction Success]
+    Execute --> Unlock[Remove Execution Lock]
+    Unlock --> End([Transaction Success])
+
+    classDef decision fill:#fffbeb,stroke:#fcd34d,stroke-width:2px,color:#92400e
+    classDef terminal fill:#fef2f2,stroke:#fca5a5,stroke-width:2px,color:#991b1b
+    classDef success fill:#ecfdf5,stroke:#6ee7b7,stroke-width:2px,color:#065f46
+    classDef action fill:#f0fdfa,stroke:#5eead4,stroke-width:2px,color:#115e59
+    
+    class HasID,ActiveLock,CustomVer,AuthResult,CheckBlacklist,CheckWhitelist,InWhitelist,TokenCheck,OverLimit decision
+    class Reject1,Reject2,Reject3,Reject4,Reject5,Reject6 terminal
+    class Start,End success
+    class Lock,CallCustom,CheckNative,Execute,Unlock action
 ```
 
 ## 6. Relay and Signed Operator Mutation Flow
@@ -124,17 +173,18 @@ The relay and operator helper paths exist to improve usability, not to replace t
 
 ```mermaid
 sequenceDiagram
-  participant Browser
-  participant Supabase
-  participant OperatorAPI as draft-operator API
-  participant RelayAPI as relay-transaction API
-  participant Chain
+  autonumber
+  participant B as Browser
+  participant S as Supabase
+  participant O as Operator API
+  participant R as Relay API
+  participant C as Neo Chain
 
-  Browser->>Supabase: Read or append draft collaboration data
-  Browser->>OperatorAPI: Send signed operator mutation request
-  OperatorAPI->>Supabase: Persist operator-class change
-  Browser->>RelayAPI: Request simulation or relay submission
-  RelayAPI->>Chain: Simulate or submit supported payload
+  B->>S: Read or append draft collaboration data
+  B->>O: Send signed operator mutation request
+  O->>S: Persist operator-class change
+  B->>R: Request simulation or relay submission
+  R->>C: Simulate or submit supported payload
 ```
 
 ## 7. Retention and Practical Limits

@@ -1,36 +1,41 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up">
-    <div class="flex flex-col md:flex-row gap-8">
-      <aside class="md:w-64 flex-shrink-0">
-        <div class="sticky top-24 bg-white p-5 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60">
-          <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 px-2">{{ t('docs.heading', 'Documentation') }}</h3>
-          <nav class="space-y-1">
-            <button
-              v-for="(doc, key) in docs"
-              :key="key"
-              @click="activeDoc = key"
-              :class="[
-                activeDoc === key
-                  ? 'bg-neo-50 text-neo-700 font-bold border-l-4 border-neo-500'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-4 border-transparent font-medium',
-                'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left'
-              ]"
-            >
-              {{ doc.title }}
-            </button>
-          </nav>
-        </div>
-      </aside>
+  <div class="relative min-h-screen bg-slate-900 overflow-hidden font-sans text-slate-300">
+    <div class="absolute inset-0 z-0">
+      <div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-vibrant-glow rounded-full mix-blend-screen opacity-40 animate-pulse-slow"></div>
+    </div>
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up">
+      <div class="flex flex-col md:flex-row gap-8">
+        <aside class="md:w-64 flex-shrink-0">
+          <div class="sticky top-24 bg-slate-800/60 p-5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-700/50 backdrop-blur-xl">
+            <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 px-2 font-outfit">{{ t('docs.heading', 'Documentation') }}</h3>
+            <nav class="space-y-1">
+              <button
+                v-for="(doc, key) in docs"
+                :key="key"
+                @click="activeDoc = key"
+                :class="[
+                  activeDoc === key
+                    ? 'bg-neo-500/20 text-neo-400 font-bold border-l-4 border-neo-500 shadow-[inset_0_0_10px_rgba(34,197,94,0.1)]'
+                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-l-4 border-transparent font-medium',
+                  'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left'
+                ]"
+              >
+                {{ doc.title }}
+              </button>
+            </nav>
+          </div>
+        </aside>
 
-      <main class="flex-1 min-w-0">
-        <div class="prose prose-slate prose-neo max-w-none bg-white p-8 sm:p-12 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-200/60 min-h-[600px]">
-          <transition name="fade" mode="out-in" @after-enter="renderMermaidDiagrams">
-            <div :key="`${activeDoc}:${locale.value}`">
-              <div ref="contentRoot" v-html="compiledMarkdown" class="markdown-body custom-scrollbar"></div>
-            </div>
-          </transition>
-        </div>
-      </main>
+        <main class="flex-1 min-w-0">
+          <div class="prose prose-invert max-w-none bg-slate-800/60 p-8 sm:p-12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-700/50 backdrop-blur-xl min-h-[600px]">
+            <transition name="fade" mode="out-in" @after-enter="renderMermaidDiagrams">
+              <div :key="`${activeDoc}:${locale.value}`">
+                <div ref="contentRoot" v-html="compiledMarkdown" class="markdown-body custom-scrollbar-dark"></div>
+              </div>
+            </transition>
+          </div>
+        </main>
+      </div>
     </div>
   </div>
 </template>
@@ -155,55 +160,60 @@ watch(() => [activeDoc.value, locale.value], ([newKey]) => {
 
 <style>
 .markdown-body pre {
-  background-color: #0d1117 !important;
-  border-radius: 0.5rem;
-  padding: 1rem;
+  background-color: #0F172A !important;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
   overflow-x: auto;
-  border: 1px solid #30363d;
+  border: 1px solid #334155;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
 }
 .markdown-body code:not(pre code) {
-  background-color: #f1f5f9;
-  color: #0f172a;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
+  background-color: #1E293B;
+  color: #34D399;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
   font-size: 0.875em;
   font-weight: 600;
+  border: 1px solid #334155;
 }
 .markdown-body h1 {
-  color: #0f172a;
+  color: #F8FAFC;
   font-weight: 800;
   font-size: 2.25rem;
   margin-bottom: 2rem;
-  background: linear-gradient(to right, #059669, #14b8a6);
+  font-family: 'Outfit', sans-serif;
+  background: linear-gradient(to right, #4ADE80, #14B8A6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  drop-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 .markdown-body h2 {
-  color: #0f172a;
-  border-bottom: 1px solid #e2e8f0;
+  color: #F1F5F9;
+  border-bottom: 1px solid #334155;
   padding-bottom: 0.5rem;
   margin-top: 2.5rem;
   font-weight: 700;
+  font-family: 'Outfit', sans-serif;
 }
 .markdown-body h3 {
-  color: #334155;
+  color: #E2E8F0;
   margin-top: 2rem;
   font-weight: 600;
 }
 .markdown-body p {
-  line-height: 1.75;
-  color: #475569;
+  line-height: 1.8;
+  color: #CBD5E1;
 }
 .markdown-body ul {
   list-style-type: disc;
   padding-left: 1.5rem;
-  color: #475569;
+  color: #CBD5E1;
 }
 .markdown-body li {
   margin-bottom: 0.5rem;
 }
 .markdown-body strong {
-  color: #1e293b;
+  color: #F8FAFC;
 }
 .fade-enter-active,
 .fade-leave-active {

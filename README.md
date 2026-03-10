@@ -7,6 +7,8 @@ This project contains the comprehensive standard, smart contract implementation,
 - **Hardened Policy-Gated Execution**: External interactions must flow through AA entrypoints where method policy, whitelist / blacklist, and transfer-limit controls are enforced.
 - **Cross-Chain EVM Compatibility**: Secp256k1 and Keccak256 native validation. Users can interact via MetaMask / EVM wallets using EIP-712 Meta-Transactions.
 - **Multi-Signature Access Control**: Isolated thresholds for Admins and Managers for modular security.
+- **Role-Based Account Discovery**: Query all accounts where an address is admin or manager via reverse indices. Creator automatically becomes default admin.
+- **Batch Account Creation**: Deploy multiple accounts with shared governance in a single transaction.
 
 ## Home Workspace Deployment
 

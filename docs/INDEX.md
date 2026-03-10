@@ -10,6 +10,7 @@ This index keeps the root documentation set visible and easy to browse.
 - `docs/DATA_FLOW.md` — browser / Supabase / relay / chain boundaries
 - `docs/architecture.md` — technical architecture details
 - `docs/QUICK_REFERENCE.md` — commands and quick lookup material
+- `docs/POST_DEPLOY_SMOKE_TEST.md` — post-deployment frontend smoke-test checklist
 - `docs/ACCOUNT_DISCOVERY.md` — account discovery and batch creation guide
 
 ## Chinese Counterparts

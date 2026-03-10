@@ -35,9 +35,11 @@ test('supplemental root docs are preserved and indexable', () => {
   const workflows = readRepo('docs/WORKFLOWS.md');
   const dataFlow = readRepo('docs/DATA_FLOW.md');
   const quickReference = readRepo('docs/QUICK_REFERENCE.md');
+  const smokeTest = readRepo('docs/POST_DEPLOY_SMOKE_TEST.md');
   const readmeZh = readRepo('README.zh-CN.md');
 
   assert.match(docsIndex, /HOW_IT_WORKS\.md/);
+  assert.match(docsIndex, /POST_DEPLOY_SMOKE_TEST\.md/);
   assert.match(docsIndex, /USER_GUIDE\.md/);
   assert.match(docsIndex, /WORKFLOWS\.md/);
   assert.match(docsIndex, /DATA_FLOW\.md/);
@@ -47,6 +49,8 @@ test('supplemental root docs are preserved and indexable', () => {
   assert.match(workflows, /Workflow|Lifecycle/i);
   assert.match(dataFlow, /Data Flow|Storage/i);
   assert.match(quickReference, /Quick Reference/i);
+  assert.match(smokeTest, /Post-Deploy Smoke Test/i);
+  assert.match(smokeTest, /Wallet Detection/i);
   assert.match(readmeZh, /README\.md/);
 });
 

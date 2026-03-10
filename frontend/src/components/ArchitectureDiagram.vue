@@ -1,8 +1,8 @@
 <template>
-  <div class="h-[500px] w-full rounded-2xl border border-slate-200 shadow-inner bg-slate-50 overflow-hidden">
-    <VueFlow :nodes="nodes" :edges="edges" :fit-view-on-init="true" class="vue-flow-custom">
-      <Background pattern-color="#cbd5e1" :gap="20" />
-      <Controls />
+  <div class="h-[600px] w-full rounded-xl border border-slate-200 bg-slate-50 overflow-hidden shadow-inner">
+    <VueFlow :nodes="nodes" :edges="edges" :fit-view-on-init="true" class="vue-flow-custom-light">
+      <Background pattern-color="#CBD5E1" :gap="24" />
+      <Controls class="light-controls" />
     </VueFlow>
   </div>
 </template>
@@ -16,69 +16,82 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 
+const baseStyle = {
+  borderRadius: '8px',
+  padding: '16px',
+  fontSize: '14px',
+  textAlign: 'center',
+  width: '220px',
+  borderWidth: '2px',
+  borderStyle: 'solid',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+  whiteSpace: 'pre-wrap',
+  lineHeight: '1.4'
+}
+
 const nodes = ref([
   {
     id: '1',
     type: 'input',
     label: 'User / dApp\n(MetaTx)',
-    position: { x: 50, y: 50 },
-    style: { backgroundColor: '#f8fafc', borderColor: '#cbd5e1', color: '#0f172a', fontWeight: 'bold', borderRadius: '8px', padding: '10px' }
+    position: { x: 100, y: 50 },
+    style: { ...baseStyle, backgroundColor: '#ffffff', borderColor: '#e2e8f0', color: '#0f172a', fontWeight: '600' }
   },
   {
     id: '2',
     label: 'Relayer\n(Pays GAS)',
-    position: { x: 250, y: 50 },
-    style: { backgroundColor: '#f1f5f9', borderColor: '#94a3b8', color: '#334155', borderRadius: '8px', padding: '10px' }
+    position: { x: 450, y: 50 },
+    style: { ...baseStyle, backgroundColor: '#f8fafc', borderColor: '#cbd5e1', color: '#334155', fontWeight: '600' }
   },
   {
     id: '3',
     label: 'Neo N3 VM\n(Verification Trigger)',
-    position: { x: 250, y: 150 },
-    style: { backgroundColor: '#e2e8f0', borderColor: '#64748b', color: '#1e293b', fontWeight: 'bold', borderRadius: '8px', padding: '10px' }
+    position: { x: 275, y: 180 },
+    style: { ...baseStyle, backgroundColor: '#ecfdf5', borderColor: '#6ee7b7', color: '#065f46', fontWeight: 'bold' }
   },
   {
     id: '4',
-    label: 'Deterministic Proxy Address\n(Verification Script)',
-    position: { x: 250, y: 250 },
-    style: { backgroundColor: '#14b8a6', borderColor: '#0f766e', color: '#ffffff', fontWeight: 'bold', borderRadius: '8px', padding: '10px' }
+    label: 'Deterministic Proxy\n(Verification Script)',
+    position: { x: 275, y: 310 },
+    style: { ...baseStyle, backgroundColor: '#f0fdfa', borderColor: '#5eead4', color: '#115e59', fontWeight: 'bold' }
   },
   {
     id: '5',
     label: 'Master Entry Contract\n(Gateway)',
-    position: { x: 250, y: 350 },
-    style: { backgroundColor: '#059669', borderColor: '#047857', color: '#ffffff', fontWeight: 'bold', borderRadius: '8px', padding: '10px' }
+    position: { x: 275, y: 440 },
+    style: { ...baseStyle, backgroundColor: '#f0fdfa', borderColor: '#86efac', color: '#14532d', fontWeight: 'bold' }
   },
   {
     id: '6',
     label: 'Custom Verifier',
-    position: { x: 50, y: 450 },
-    style: { backgroundColor: '#fef3c7', borderColor: '#d97706', color: '#92400e', borderRadius: '8px', padding: '10px' }
+    position: { x: 25, y: 570 },
+    style: { ...baseStyle, backgroundColor: '#fffbeb', borderColor: '#fcd34d', color: '#92400e', fontWeight: '600' }
   },
   {
     id: '7',
     label: 'Role Multi-Sig\n(Admin/Manager)',
-    position: { x: 250, y: 450 },
-    style: { backgroundColor: '#eff6ff', borderColor: '#3b82f6', color: '#1e40af', borderRadius: '8px', padding: '10px' }
+    position: { x: 275, y: 570 },
+    style: { ...baseStyle, backgroundColor: '#eff6ff', borderColor: '#93c5fd', color: '#1e3a8a', fontWeight: '600' }
   },
   {
     id: '8',
     label: 'Dome Recovery\n(Oracles & Timeout)',
-    position: { x: 450, y: 450 },
-    style: { backgroundColor: '#fef2f2', borderColor: '#ef4444', color: '#991b1b', borderRadius: '8px', padding: '10px' }
+    position: { x: 525, y: 570 },
+    style: { ...baseStyle, backgroundColor: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b', fontWeight: '600' }
   },
   {
     id: '9',
     type: 'output',
     label: 'Target Smart Contract\n(Execution)',
-    position: { x: 250, y: 550 },
-    style: { backgroundColor: '#f8fafc', borderColor: '#475569', color: '#0f172a', fontWeight: 'bold', borderRadius: '8px', padding: '10px' }
+    position: { x: 275, y: 700 },
+    style: { ...baseStyle, backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#0f172a', fontWeight: 'bold' }
   }
 ])
 
 const edges = ref([
   { id: 'e1-2', source: '1', target: '2', animated: true, label: 'Sign & Relay' },
   { id: 'e2-3', source: '2', target: '3', animated: true },
-  { id: 'e1-3', source: '1', target: '3', type: 'step', style: { strokeDasharray: '5,5' }, label: 'Direct Invocation' },
+  { id: 'e1-3', source: '1', target: '3', type: 'step', style: { strokeDasharray: '5,5', stroke: '#94a3b8' }, label: 'Direct Invocation' },
   { id: 'e3-4', source: '3', target: '4', animated: true },
   { id: 'e4-5', source: '4', target: '5', animated: true, label: 'Forward Context' },
   { id: 'e5-6', source: '5', target: '6', type: 'smoothstep' },
@@ -91,16 +104,30 @@ const edges = ref([
 </script>
 
 <style>
-.vue-flow-custom .vue-flow__edge-path {
+.vue-flow-custom-light .vue-flow__edge-path {
   stroke: #94a3b8;
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
-.vue-flow-custom .vue-flow__edge-text {
-  font-size: 10px;
-  fill: #64748b;
+.vue-flow-custom-light .vue-flow__edge-text {
+  font-size: 12px;
+  fill: #475569;
   font-weight: 600;
 }
-.vue-flow-custom .vue-flow__edge-textbg {
-  fill: rgba(255,255,255,0.8);
+.vue-flow-custom-light .vue-flow__edge-textbg {
+  fill: rgba(255, 255, 255, 0.9);
+  rx: 6px;
+  ry: 6px;
+}
+.light-controls .vue-flow__controls-button {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.light-controls .vue-flow__controls-button:hover {
+  background-color: #f8fafc;
+}
+.light-controls .vue-flow__controls-button svg {
+  fill: #475569;
 }
 </style>
