@@ -79,7 +79,7 @@ Native Neo execution now flows through Abstract Account wrapper methods instead 
 sequenceDiagram
     actor Signer as Admin / Manager
     participant Node as Neo N3 Node
-    participant Proxy as Deterministic Proxy Address
+    participant Proxy as Deterministic Account Address
     participant Master as Master Entry Contract
     participant Target as Target Contract
 

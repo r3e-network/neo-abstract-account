@@ -10,7 +10,7 @@
 - Additional allow-all verification hash: `0x2459d982370b895bb3a78e7a25fa7423fac86b25`
 
 ## Confirmed Findings
-- The contract-facing account creation path is sensitive to `ByteArray` byte order. The validator/SDK path must use raw accountId bytes on-chain when deriving the deterministic proxy address expected by the diagnostic build.
+- The contract-facing account creation path is sensitive to `ByteArray` byte order. The validator/SDK path must use raw accountId bytes on-chain when deriving the deterministic account address expected by the diagnostic build.
 - The proxy signer must use the reversed script-hash form (`signerScriptHash`) as the cosigner account when a real proxy witness is attached.
 - `executeByAddress(..., aaHash, getNonce, ...)` with the owner signer alone succeeds live after a valid account create/bind.
 - The adapted custom-verifier validator now passes live on the validation deployment by proving the custom verifier through owner-only AA wrapper execution rather than the still-broken proxy-signed direct admin mutation path.

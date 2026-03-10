@@ -11,7 +11,7 @@
 - Switched nominal read methods to `CallFlags.ReadOnly` so malicious targets cannot hide writes behind `balanceOf`, `allowance`, `symbol`, `decimals`, or `totalSupply`.
 - Required explicit whitelist entries for external `transfer` / `approve` calls, so asset-moving calls to third-party tokens are always an explicit trust decision.
 - Required manager-threshold witness satisfaction when managers are configured during account bootstrap.
-- Restricted account binding so `createAccountWithAddress` and `bindAccountAddress` only accept the deterministic `verify(accountId)` proxy address.
+- Restricted account binding so `createAccountWithAddress` and `bindAccountAddress` only accept the deterministic `verify(accountId)` account address.
 
 ## Live Validation Evidence
 - Threshold mixed-signature path: `sdk/js/tests/aa_testnet_threshold2_validate.js`

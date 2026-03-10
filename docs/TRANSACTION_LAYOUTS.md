@@ -329,7 +329,7 @@ From `AbstractAccount.AccountLifecycle.cs:RegisterAccount()`:
 
 ```csharp
 // Generate deterministic proxy script
-byte[] proxyScript = new byte[]
+byte[] verifyScript = new byte[]
 {
     (byte)OpCode.PUSHDATA1, 0x14,  // Push 20 bytes
     // ... accountId bytes (20 bytes) ...
@@ -340,7 +340,7 @@ byte[] proxyScript = new byte[]
 };
 
 // Deploy proxy contract at deterministic address
-UInt160 proxyAddress = Helper.GetContractHash(
+UInt160 accountAddress = Helper.GetContractHash(
     UInt160.Zero,
     nefCheckSum,
     contractName
@@ -356,14 +356,14 @@ UInt160 proxyAddress = Helper.GetContractHash(
 
 ```javascript
 // Query the proxy contract address for an accountId
-const proxyAddress = await rpcClient.invokeFunction(
+const accountAddress = await rpcClient.invokeFunction(
   aaContractHash,
   'getAccountAddress',
   [{ type: 'Hash160', value: accountId }]
 );
 
 // Get the proxy contract's verification script
-const contractState = await rpcClient.getContractState(proxyAddress);
+const contractState = await rpcClient.getContractState(accountAddress);
 const verificationScript = contractState.manifest.abi.methods
   .find(m => m.name === 'verify').script;
 ```

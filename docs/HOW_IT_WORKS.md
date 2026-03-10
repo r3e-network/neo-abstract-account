@@ -19,7 +19,7 @@ If you only want one mental model, use this:
 
 An Abstract Account in this project is **not** a new smart contract deployed per user.
 
-Instead, the system uses one global master contract plus a deterministic verification proxy address for each logical account.
+Instead, the system uses one global master contract plus a deterministic verification account address for each logical account.
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,7 @@ flowchart LR
   UI --> Master[UnifiedSmartWallet Master Contract]
   Master --> Policies[Roles + Policies + Limits]
   Master --> Target[Target Contract]
-  Master --> Proxy[Deterministic Verify Proxy Address]
+  Master --> Proxy[Deterministic Verify Account Address]
 ```
 
 The result is:
@@ -201,7 +201,7 @@ If you are learning the system for the first time, read these pages in order:
 ## 12. Glossary
 
 - **Abstract Account** — a logical account identified by an `accountId`, enforced by the shared AA contract
-- **Deterministic proxy address** — the Neo address derived from the `verify(accountId)` script
+- **Deterministic account address** — the Neo address derived from the `verify(accountId)` script
 - **Master contract** — the shared on-chain execution and permission engine
 - **Draft** — the off-chain collaboration record containing operation data, signatures, and metadata
 - **Collaborator link** — a scoped link for signature collection only
