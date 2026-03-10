@@ -19,8 +19,8 @@ namespace AbstractAccount
         }
 
         /// <summary>
-        /// Returns the current account-scoped meta-transaction nonce for the provided signer-style identifier. In this
-        /// contract the nonce is intentionally stored per account, not per recovered signer, to block signer-set replay.
+        /// Legacy convenience getter retained for compatibility. External callers should prefer
+        /// <see cref="GetNonceForAddress(UInt160, UInt160)"/> because the stored nonce is account-scoped, not signer-scoped.
         /// </summary>
         [Safe]
         public static BigInteger GetNonce(UInt160 signer)

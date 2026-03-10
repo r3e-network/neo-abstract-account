@@ -48,6 +48,17 @@ namespace AbstractAccount
             return Execute(accountId, targetContract, method, args);
         }
 
+        private static bool CallCustomVerifierNative(UInt160 customVerifier, ByteString accountId)
+        {
+            return (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+        }
+
+        private static bool CallCustomVerifierMetaTx(UInt160 customVerifier, ByteString accountId, UInt160[] verifiedSigners)
+        {
+            ExecutionEngine.Assert(verifiedSigners != null && verifiedSigners.Length > 0, "Missing verified signers");
+            return (bool)Contract.Call(customVerifier, "verifyMetaTx", CallFlags.ReadOnly, new object[] { accountId, verifiedSigners });
+        }
+
         private static void CheckPermissionsAndExecuteNative(ByteString accountId, UInt160 targetContract, string method, object[] args)
         {
             AssertAccountExists(accountId);
@@ -57,7 +68,7 @@ namespace AbstractAccount
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
             {
-                bool isAuthorized = (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+                bool isAuthorized = CallCustomVerifierNative(customVerifier, accountId);
                 ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
             }
@@ -93,7 +104,7 @@ namespace AbstractAccount
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
             {
-                bool isAuthorized = (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
+                bool isAuthorized = CallCustomVerifierMetaTx(customVerifier, accountId, verifiedSigners);
                 ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
             }

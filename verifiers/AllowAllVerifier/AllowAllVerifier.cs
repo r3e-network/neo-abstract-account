@@ -1,3 +1,4 @@
+using Neo;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Attributes;
 using System.ComponentModel;
@@ -12,6 +13,11 @@ namespace AllowAllVerifierContract
         public static bool Verify(ByteString accountId)
         {
             return accountId != null && accountId.Length > 0;
+        }
+
+        public static bool VerifyMetaTx(ByteString accountId, UInt160[] signerHashes)
+        {
+            return accountId != null && accountId.Length > 0 && signerHashes != null && signerHashes.Length > 0;
         }
     }
 }

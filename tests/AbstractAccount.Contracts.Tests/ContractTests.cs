@@ -194,6 +194,16 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
     }
 
     [TestMethod]
+    public void CustomVerifierMetaTxPathUsesDedicatedVerifierMethod()
+    {
+        var executionSource = ReadRepoFile("contracts/AbstractAccount.ExecutionAndPermissions.cs");
+
+        StringAssert.Contains(executionSource, "CallCustomVerifierNative");
+        StringAssert.Contains(executionSource, "CallCustomVerifierMetaTx");
+        StringAssert.Contains(executionSource, "\"verifyMetaTx\"");
+    }
+
+    [TestMethod]
     public void SetManagersInternalMaintainsManagerReverseIndexes()
     {
         var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");

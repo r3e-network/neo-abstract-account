@@ -45,6 +45,7 @@ namespace AbstractAccount
         "setVerifierContractByAddress",
         "setVerifierContract",
         "verify",
+        "verifyMetaTx",
         "requestDomeActivationByAddress",
         "requestDomeActivation",
         "domeActivationCallback")]

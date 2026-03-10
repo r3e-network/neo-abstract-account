@@ -485,7 +485,8 @@ namespace AbstractAccount
 
         /// <summary>
         /// Returns the optional custom verifier contract configured for the account. When present, native role checks are
-        /// bypassed in favor of the verifier's own <c>verify(accountId)</c> decision.
+        /// bypassed in favor of the verifier's own <c>verify(accountId)</c> decision for native execution or
+        /// <c>verifyMetaTx(accountId, signers)</c> decision for meta-transaction execution.
         /// </summary>
         [Safe]
         public static UInt160 GetVerifierContract(ByteString accountId)
