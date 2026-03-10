@@ -56,10 +56,10 @@ class WalletService {
       };
     }
 
-    if (window.NEOLineN3?.getAccount) {
+    if (window.NEOLine?.getAccount) {
       return {
-        name: 'NEOLineN3',
-        getAccount: () => window.NEOLineN3.getAccount()
+        name: 'NEOLine',
+        getAccount: () => window.NEOLine.getAccount()
       };
     }
 
@@ -74,10 +74,10 @@ class WalletService {
       };
     }
 
-    if (window.NEOLineN3?.invoke) {
+    if (window.NEOLine?.invoke) {
       return {
-        name: 'NEOLineN3',
-        invoke: (params) => window.NEOLineN3.invoke(params)
+        name: 'NEOLine',
+        invoke: (params) => window.NEOLine.invoke(params)
       };
     }
 
@@ -165,7 +165,7 @@ class WalletService {
 
     const provider = this.getInvokeProvider();
     if (!provider) {
-      throw new Error('No browser wallet provider found (neo3Dapi / NEOLineN3 / aaWallet).');
+      throw new Error('No browser wallet provider found (neo3Dapi / NEOLine / aaWallet).');
     }
 
     return provider.invoke(params);
