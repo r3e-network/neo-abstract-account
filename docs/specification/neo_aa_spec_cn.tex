@@ -598,7 +598,7 @@ MetaTransaction {
 \node[fld](fg) at(3,-1.1){\textcircled{2} 签名者};
 \node[fld](fa) at(6,-1.1){\textcircled{3} 属性};
 \node[fld](fw) at(9,-1.1){\textcircled{4} 见证};
-\node[det](ds) at(0,-2.4){\texttt{PUSH accountId}\\\texttt{PUSH aaContract}\\\texttt{SYSCALL Call}};
+\node[det](ds) at(0,-2.4){\texttt{PUSH accountId}\\\texttt{PUSH ``Verify''}\\\texttt{PUSH aaContract}\\\texttt{SYSCALL Call}};
 \node[det](dg) at(3,-2.4){AA 验证地址\\（确定性）};
 \node[det](da) at(6,-2.4){EVM 签名数据\\r,s,v (65B)\\随机数·截止时间};
 \node[det](dw) at(9,-2.4){Neo 见证\\调用脚本\\验证脚本};
