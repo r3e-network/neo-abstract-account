@@ -4,18 +4,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
-const specPath = path.join(repoRoot, 'docs/specification/neo_abstract_account_spec.tex');
+const specPath = path.join(repoRoot, 'docs/specification/neo_aa_spec_sp.tex');
 
 test('formal latex specification exists and covers core sections', () => {
   assert.equal(fs.existsSync(specPath), true, 'expected LaTeX specification file to exist');
   const source = fs.readFileSync(specPath, 'utf8');
 
-  assert.match(source, /\\section\{Abstract\}/);
-  assert.match(source, /\\section\{System Architecture\}/);
-  assert.match(source, /\\section\{Protocol Workflows\}/);
-  assert.match(source, /\\section\{Data Flow and State Model\}/);
-  assert.match(source, /\\section\{Security Considerations\}/);
-  assert.match(source, /\\section\{Recovery Verifiers\}/);
+  assert.match(source, /\\begin\{abstract\}/);
+  assert.match(source, /\\section\{Account Model and Lifecycle\}/);
+  assert.match(source, /\\section\{Mixed Authorization Protocol\}/);
+  assert.match(source, /\\section\{Security Analysis\}/);
+  assert.match(source, /\\section\{Discussion\}/);
+  assert.match(source, /\\section\{Conclusion\}/);
   assert.match(source, /\\begin\{tikzpicture\}/);
   assert.match(source, /\\begin\{table\}/);
 });

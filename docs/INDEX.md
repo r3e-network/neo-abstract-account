@@ -32,7 +32,7 @@ This index keeps the root documentation set visible and easy to browse.
 ## Security Notes
 
 - `SECURITY_IMPROVEMENTS.md`
-- `docs/SECURITY_AUDIT.md`
+- `docs/reports/2026-03-11-security-audit.md`
 - `docs/SECURITY_FIX_REPORT.md`
 
 ## Formal Specification

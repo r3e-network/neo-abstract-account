@@ -7,6 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        ata: {
+          blue: '#00A3FF',
+          green: '#00FF66',
+          dark: '#0B0D11',
+          panel: '#15181E',
+          border: '#2A2E37',
+        },
         neo: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -20,21 +27,21 @@ export default {
           900: '#14532d',
         },
         dark: {
-          900: '#0F172A', // Slate 900
-          800: '#1E293B', // Slate 800
-          700: '#334155', // Slate 700
-          600: '#475569', // Slate 600
+          900: '#0F172A',
+          800: '#1E293B',
+          700: '#334155',
+          600: '#475569',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'Space Grotesk', 'Avenir Next', 'sans-serif'],
-        outfit: ['Outfit', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(ellipse at top, var(--tw-gradient-stops))',
-        'subtle-glass': 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
-        'vibrant-glow': 'radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, transparent 60%)',
+        'subtle-glass': 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.00) 100%)',
+        'vibrant-glow': 'radial-gradient(circle at center, rgba(0, 255, 102, 0.1) 0%, transparent 60%)',
+        'blue-glow': 'radial-gradient(circle at center, rgba(0, 163, 255, 0.1) 0%, transparent 60%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',

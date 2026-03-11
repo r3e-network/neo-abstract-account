@@ -1,0 +1,507 @@
+% Neo-AA 规范（中文版）
+% 编译命令: xelatex neo_aa_spec_cn.tex
+\documentclass[10pt]{article}
+\usepackage[margin=0.75in,columnsep=0.25in]{geometry}
+\usepackage{ctex}          % Chinese typesetting
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,shadows}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\sloppy
+
+\definecolor{sysblue}{HTML}{1F5AA6}
+\definecolor{sysgreen}{HTML}{2C8C62}
+\definecolor{sysorange}{HTML}{C97A12}
+\definecolor{sysred}{HTML}{B44949}
+
+\newtheorem{definition}{定义}[section]
+\newtheorem{theorem}{定理}[section]
+\newtheorem{property}{性质}[section]
+
+\newcommand{\sys}{\textsc{Neo-AA}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\hash}[1]{\mathcal{H}(#1)}
+
+\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=1pt}
+\setlist[enumerate]{leftmargin=*,topsep=2pt,itemsep=1pt}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black}
+
+\usepackage{framed}
+\usepackage{listings}
+
+\newenvironment{conceptbox}[1][]{%
+  \colorlet{shadecolor}{sysblue!5}%
+  \begin{shaded}\noindent\textbf{\large\color{sysblue!80!black} #1}\par\smallskip
+}{%
+  \end{shaded}
+}
+
+\newenvironment{featurebox}[1][]{%
+  \colorlet{shadecolor}{sysgreen!3}%
+  \begin{shaded}\noindent\textbf{\large\color{sysgreen!80!black} #1}\par\smallskip
+}{%
+  \end{shaded}
+}
+
+\newenvironment{warningbox}[1][]{%
+  \colorlet{shadecolor}{sysorange!5}%
+  \begin{shaded}\noindent\textbf{\large\color{sysorange!80!black} #1}\par\smallskip
+}{%
+  \end{shaded}
+}
+
+\lstnewenvironment{codebox}[1][]
+  {\lstset{backgroundcolor=\color{gray!5},basicstyle=\ttfamily\small,frame=single,rulecolor=\color{gray!40},#1}}
+  {}
+
+\begin{document}
+
+\title{Neo-AA：跨生态系统账户抽象\\与异构签名验证}
+\author{R3E Network \\ \small 面向 Neo 生态系统}
+\date{}
+\maketitle
+
+\begin{abstract}
+本文介绍 \sys——一种 Neo N3 账户抽象架构，能够在一个共享主合约中统一原生 Neo 见证授权与 EVM EIP-712 类型化签名。核心设计挑战在于异构性：Neo N3 通过基于 secp256r1 的见证进行交易授权，而以太坊风格的工作流则通过对类型化数据进行 secp256k1 签名恢复来完成授权。\sys 无需为每个用户部署独立的钱包合约，而是将每个逻辑账户标识符绑定到一个确定性抽象账户地址（作为面向用户的身份），而逻辑 \code{accountId} 则作为内部存储、索引和验证的协调键。
+
+系统贡献四项核心内容：其一，引入混合授权协议，将 Neo 见证与恢复的 EVM 签名者地址合并计入一个阈值策略；其二，通过验证代理脚本提供确定性地址生成，无需为每个账户部署合约；其三，通过 \code{.matrix} 域名解析与基于地址的账户查询实现人类可读的账户发现；其四，提供可插拔的恢复架构，包括 Argent 风格的监护人集合、Safe 风格的时间锁恢复、Loopring 风格的监护人哈希恢复，以及由预言机控制的 Dome 不活跃恢复流程。本文全面描述系统架构、状态模型、工作流程和安全属性，并与当前实现及测试网验证流程保持一致。
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% =====================================================
+\section{引言}
+%% =====================================================
+
+\subsection{动机}
+
+随着区块链生态系统的成熟，用户越来越需要跨多个网络管理数字资产。Neo N3 生态系统拥有丰富的原生功能和成熟的工具链，但对来自以太坊生态背景的用户而言设置门槛较高。Neo N3 的验证机制与以太坊截然不同：Neo N3 采用基于 secp256r1（P-256）曲线的见证，通过 \code{Runtime.CheckWitness} 进行授权；而以太坊则采用基于 secp256k1 的 ECDSA 签名（通常通过 \code{ecrecover} 进行链上恢复）。
+
+\subsection{Neo N3 的挑战}
+
+Neo N3 缺乏对 EVM 兼容钱包原生的支持，由此造成了以下具体障碍：
+
+\begin{itemize}
+  \item EVM 用户无法直接使用 MetaMask 等钱包与 Neo N3 交互，需要专用钱包软件；
+  \item 在 Neo N3 上的多签或阈值授权通常需要合约级别的复杂协调逻辑；
+  \item 账户管理原语缺乏统一标准，每种 dApp 各行其是；
+  \item 在发现与安全恢复方面，目前尚无规范路径。
+\end{itemize}
+
+\subsection{挑战}
+
+构建跨生态账户抽象系统时，需克服以下核心挑战：
+
+\begin{conceptbox}[核心技术挑战]
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysblue!80!black}]
+\item[签名异构性] Neo 使用 secp256r1，而 EVM 使用 secp256k1。两者不可直接互换，必须在同一授权框架内共存。
+\item[部署开销] 传统智能合约钱包（如 Safe）为每个用户部署独立合约，成本高昂且难以扩展。
+\item[重放保护] EVM 签名必须绑定到特定操作以防止重放攻击，同时还须兼容 Neo 的原生见证机制。
+\item[可发现性] 用户需要一种人类可读的方式来发现和引用账户，而不必记忆复杂的哈希标识符。
+\end{description}
+\end{conceptbox}
+
+\subsection{解决方案：混合授权协议}
+
+\sys 引入了一种\textit{混合授权协议}：单个 Neo N3 主合约同时接受原生 Neo 见证和 EVM EIP-712 类型化签名，并将两者合并计入同一阈值。核心架构观察在于：两种签名者类型最终都可归一化为地址——Neo 见证通过 \code{Runtime.CheckWitness} 进行验证，而 EVM 签名则在链上完成验证，映射为恢复出的以太坊风格地址，并与相同存储的角色集进行比对。
+
+\begin{conceptbox}[Neo-AA 设计原则]
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysblue!80!black}]
+\item[确定性寻址] 系统为每个账户派生一个确定性验证代理脚本，转发验证请求至主合约。账户在外部以确定性地址进行标识，\code{accountId} 仅作内部协调键。
+\item[地址优先路由] 公共执行路径同时暴露逻辑标识符入口点和基于地址的便捷封装。用户界面只使用确定性 AA 地址或绑定的 \code{.matrix} 域名，而非不透明的逻辑标识符。
+\item[EIP-712 集成] EVM 签名者通过签署与 AA 地址、目标合约、方法哈希、参数哈希、随机数及截止时间相绑定的类型化数据来授权操作。主合约在链上重建摘要，恢复签名者地址，并将其送入与 Neo 执行相同的权限引擎。
+\end{description}
+\end{conceptbox}
+
+\subsection{主要贡献}
+
+\begin{featurebox}[核心贡献]
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysgreen!80!black}]
+\item[混合授权协议] 一种统一阈值机制，将 Neo 见证与 EVM EIP-712 签名合并计入单一授权阈值，无需桥接合约或同步副本状态即可实现跨生态账户抽象。
+\item[确定性地址生成] 零部署账户模型：验证脚本确定性生成并路由至共享主合约，消除每账户部署成本的同时保证地址稳定性。
+\item[统一阈值算法] \code{CheckMixedSignatures} 算法将 Neo 的 \code{Runtime.CheckWitness} 与 EVM 签名恢复无缝集成，通过单一验证路径支持纯 Neo、纯 EVM 及混合授权三种场景。
+\item[形式安全分析] 严格的安全定义和证明，在两种签名方案的标准密码学假设下，验证了阈值安全性、重放保护和授权正确性。
+\end{description}
+\end{featurebox}
+
+\subsection{.matrix 域名集成}
+
+\sys 将 Matrix 命名系统作为发现层集成，而非授权根。当用户输入 \code{alice.matrix} 时，前端从 Matrix 合约解析域名所有者，向 AA 合约查询与该所有者关联的已绑定地址，并展示发现的 AA 账户供选择。
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  bx/.style={draw,rectangle,rounded corners=3pt,minimum width=2.8cm,minimum height=0.6cm,font=\sffamily\scriptsize,align=center,line width=0.7pt},
+  usr/.style={bx,fill=sysblue!10,draw=sysblue!70!black},
+  sys/.style={bx,fill=sysgreen!10,draw=sysgreen!70!black},
+  res/.style={bx,fill=sysorange!10,draw=sysorange!70!black},
+  arr/.style={-{Stealth[length=1.4mm,width=0.9mm]},draw=gray!65,line width=0.6pt},
+  lbl/.style={font=\sffamily\tiny,text=gray!60,fill=white,inner sep=0.5pt},
+  num/.style={circle,draw=sysblue!70!black,fill=sysblue!12,font=\sffamily\scriptsize\bfseries,inner sep=1.5pt,minimum size=0.45cm}
+]
+\node[num] at (-0.1, 0) {1};
+\node[usr] (inp) at (1.4, 0) {\code{alice.matrix}\\（用户输入）};
+\node[num] at (3.7, 0) {2};
+\node[sys] (mx) at (5.1, 0) {Matrix 合约\\解析所有者};
+\node[num] at (7.3, 0) {3};
+\node[sys] (aa) at (8.7, 0) {AA 合约\\查询账户};
+\node[num] at (3.7,-1.4) {4};
+\node[res] (out) at (5.1,-1.4) {AA 地址\\（归并展示）};
+\draw[arr] (inp.east) -- node[lbl,above]{解析} (mx.west);
+\draw[arr] (mx.east) -- node[lbl,above]{getByAdmin+Manager} (aa.west);
+\draw[arr] (aa.south) to[out=270,in=0] node[lbl,right]{账户} (out.east);
+\draw[arr] (mx.south) -- node[lbl,right]{所有者} (out.north);
+\node[font=\sffamily\tiny,text=gray!55] at (4.5,-2.1) {域名为发现提示，授权状态存储于 AA 合约。};
+\end{tikzpicture}
+\caption{\texttt{.matrix} 域名解析流程：域名解析为所有者地址，再查询 AA 合约获取绑定账户。}
+\label{fig:cn-matrix-resolution}
+\end{figure}
+
+\subsection{恢复验证器架构}
+
+Neo-AA 通过标准化接口支持可插拔的恢复验证器。每个账户可选择设置一个实现如下接口的恢复验证器合约：
+
+\begin{codebox}[language=java]
+interface IRecoveryVerifier {
+  bool verifyRecovery(
+    byte[] accountId,
+    byte[] operation,
+    byte[] proof
+  );
+}
+\end{codebox}
+
+\begin{conceptbox}[Argent 风格的监护人恢复]
+\textbf{链上维护的状态}
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+  \item \textbf{监护人集合}：监护人地址的序列化数组（\code{byte[]}），同时支持 Neo 和 EVM 地址。
+  \item \textbf{监护人阈值}：所需的最小监护人签名数量（$m$ of $n$）。
+  \item \textbf{待处理操作}：恢复操作哈希到待处理恢复请求的映射。
+  \item \textbf{时间锁周期}：发起和执行之间可配置的延迟（默认 24 小时）。
+\end{itemize}
+
+\textbf{恢复操作生命周期}
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysblue!80!black}]
+  \item[阶段一：发起] 监护人提交 \code{accountId}、替换管理员和拟定阈值，合约计算哈希 $h = H(\text{accountId} \| \text{newAdmins} \| \text{newThreshold} \| \text{nonce})$，存储待处理操作并发出 \code{RecoveryInitiated} 事件。
+  \item[阶段二：监护人批准] 其他监护人提交操作哈希及其批准签名，验证器验证签名并递增批准计数。
+  \item[阶段三：执行] 阈值满足且时间锁到期后，任何人均可调用 \code{executeRecovery(operationHash)} 执行恢复。
+  \item[取消] 账户当前所有者可随时通过成功执行任意授权交易来取消任何待处理的恢复操作。
+\end{description}
+\end{conceptbox}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  bx/.style={draw,rectangle,rounded corners=3pt,minimum width=2.6cm,minimum height=0.58cm,font=\sffamily\scriptsize,align=center,line width=0.7pt},
+  ph/.style={bx,fill=sysblue!12,draw=sysblue!80!black,font=\sffamily\scriptsize\bfseries},
+  act/.style={bx,fill=sysgreen!10,draw=sysgreen!70!black},
+  can/.style={bx,fill=sysred!10,draw=sysred!70!black},
+  arr/.style={-{Stealth[length=1.4mm,width=0.9mm]},draw=gray!65,line width=0.6pt},
+  lbl/.style={font=\sffamily\tiny,text=gray!60,fill=white,inner sep=0.5pt}
+]
+\node[ph]  at (0,   0) {\textcircled{1} 发起};
+\node[ph]  at (3.2, 0) {\textcircled{2} 批准};
+\node[ph]  at (6.4, 0) {\textcircled{3} 时间锁};
+\node[ph]  (p4) at (9.6, 0) {\textcircled{4} 执行};
+
+\node[act] (d1) at (0,  -1.1) {监护人提交\\操作哈希};
+\node[act] (d2) at (3.2,-1.1) {$m/n$ 监护人\\批准};
+\node[act] (d3) at (6.4,-1.1) {等待 $T_{\text{lock}}$\\（如 24 小时）};
+\node[act] (d4) at (9.6,-1.1) {执行\\管理员更新};
+
+\node[font=\sffamily\tiny,text=gray!55,text width=2.4cm,align=center] at (0,-2.0)    {存储 $h=H(\text{id}\|\text{admins}\|\text{thresh}\|n)$};
+\node[font=\sffamily\tiny,text=gray!55,text width=2.4cm,align=center] at (3.2,-2.0)  {链上批准计数递增};
+\node[font=\sffamily\tiny,text=gray!55,text width=2.4cm,align=center] at (6.4,-2.0)  {所有者可取消};
+\node[font=\sffamily\tiny,text=gray!55,text width=2.4cm,align=center] at (9.6,-2.0)  {验证器调用主合约};
+
+\node[can] (cancel) at (6.4,-3.2) {\texttimes\ 已取消};
+\draw[arr,draw=sysred!70!black] (d3.south) -- node[lbl,right]{所有者操作} (cancel.north);
+
+\draw[arr] (d1) -- (d2); \draw[arr] (d2) -- (d3); \draw[arr] (d3) -- (d4);
+\end{tikzpicture}
+\caption{监护人恢复生命周期（Argent 风格）：四个阶段依次为发起、批准累积、时间锁取消窗口及执行更新。}
+\label{fig:cn-guardian-recovery}
+\end{figure}
+
+\subsection{Dome 不活跃恢复协议}
+
+Dome 机制为长期不活跃的账户提供最后手段恢复。系统跟踪每个账户的最后活跃时间戳，当 $\text{Runtime.Time} - \text{lastActivity} > T_{\text{inactivity}}$ 时，账户被标记为不活跃（默认周期为 180 天）。
+
+\begin{featurebox}[Dome 不活跃恢复流程]
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysgreen!80!black}]
+\item[不活跃检测] 系统持续追踪账户活跃度；超过阈值则允许触发恢复流程。
+\item[预言机控制发起] 指定恢复地址可发起 Dome 恢复，但执行需要外部预言机批准以确认真实不活跃状态。
+\item[预言机验证与恢复] 授权预言机在链下验证后签署批准。批准后需等待最终时间锁（默认 7 天）。在此窗口内，原所有者可通过任意授权交易单方面取消恢复。
+\end{description}
+\end{featurebox}
+
+%% =====================================================
+\section{账户模型与生命周期}
+%% =====================================================
+
+\subsection{账户创建与结构}
+
+\sys 中的抽象账户是一个共享合约钱包实例，具有两个标识符：逻辑 \code{accountId} 和确定性 AA 地址。\code{accountId} 是内部存储键和验证参数；确定性 AA 地址是面向用户的公开身份。这种分离对实现和用户体验都至关重要：用户通过地址对 AA 进行资金转入、发现和调用，而合约则使用逻辑标识符进行紧凑索引、地址派生，以及兼容内部验证例程。
+
+\begin{conceptbox}[身份模型]
+\begin{description}[leftmargin=*,style=sameline,font=\bfseries\color{sysblue!80!black}]
+\item[逻辑身份：] \code{accountId} 创建一次，验证后作为主合约内部持久存储的规范键。
+\item[操作身份：] 确定性 AA 地址是钱包、中继器和下游合约查询和交互的签名者身份。
+\item[绑定层：] 主合约维护 \code{accountId} $\leftrightarrow$ \code{accountAddress} 的权威双向映射。
+\item[用户规则：] 创建后，所有操作路径强烈优先使用 AA 地址；\code{accountId} 仅保留用于初始化、存储索引和基础验证器兼容。
+\end{description}
+\end{conceptbox}
+
+\textbf{账户创建流程}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  bx/.style={draw,rectangle,rounded corners=3pt,minimum width=2.6cm,minimum height=0.58cm,font=\sffamily\scriptsize,align=center,line width=0.7pt},
+  cli/.style={bx,fill=sysblue!10,draw=sysblue!70!black},
+  ctr/.style={bx,fill=sysgreen!10,draw=sysgreen!70!black},
+  chk/.style={draw,diamond,aspect=1.6,font=\sffamily\scriptsize,align=center,inner sep=2pt,line width=0.7pt,fill=sysorange!12,draw=sysorange!80!black},
+  sto/.style={bx,fill=gray!8,draw=gray!45},
+  arr/.style={-{Stealth[length=1.4mm,width=0.9mm]},draw=gray!65,line width=0.6pt},
+  lbl/.style={font=\sffamily\tiny,text=gray!60,fill=white,inner sep=0.5pt}
+]
+\node[cli] (c1) at (0,  0)   {选择 accountId};
+\node[cli] (c2) at (0,-1.1)  {派生 AA 地址};
+\node[cli] (c3) at (0,-2.2)  {createAccount\\WithAddress(...)};
+\node[ctr] (v1) at (4.0,-2.2){验证：ID 唯一\\且地址匹配};
+\node[chk] (ok) at (4.0,-3.6){有效？};
+\node[ctr] (s1) at (4.0,-5.0){存储角色\\并绑定映射};
+\node[sto] (s2) at (4.0,-6.1){管理员、管理者\\accountId $\leftrightarrow$ 地址};
+\node[ctr] (s3) at (4.0,-7.2){初始化活跃度\\自动插入发起者};
+\node[bx,fill=sysred!10,draw=sysred!70!black] (rej) at (7.4,-3.6) {拒绝交易};
+\draw[arr] (c1)--(c2); \draw[arr] (c2)--(c3);
+\draw[arr] (c3.east) to[out=0,in=180] (v1.west);
+\draw[arr] (v1)--(ok);
+\draw[arr] (ok.south) -- node[lbl,right]{是} (s1.north);
+\draw[arr] (ok.east)  -- node[lbl,above]{否} (rej.west);
+\draw[arr] (s1)--(s2); \draw[arr] (s2)--(s3);
+\draw[dashed,gray!40,line width=0.5pt] (2.0,0.4) -- (2.0,-7.6);
+\node[font=\sffamily\tiny\bfseries,text=sysblue!70!black] at (0,-8.0) {客户端（链下）};
+\node[font=\sffamily\tiny\bfseries,text=sysgreen!70!black] at (4.0,-8.0) {主合约（链上）};
+\end{tikzpicture}
+\caption{账户创建与绑定生命周期：客户端从 \texttt{accountId} 派生确定性地址，主合约验证唯一性后存储角色集并绑定双向地址映射。}
+\label{fig:cn-account-creation}
+\end{figure}
+
+\begin{enumerate}
+  \item 客户端选择 \code{accountId}，并确定性地派生对应的 AA 验证代理地址。
+  \item 通用创建路径调用地址绑定创建封装方法 \code{createAccountWithAddress(...)}。
+  \item 主合约验证逻辑标识符是新的、提供的地址与确定性代理派生匹配，且角色阈值格式正确。
+  \item 合约将管理员和管理者集合存储在 \code{accountId} 的规范存储键下，初始化活跃度追踪，并绑定双向地址映射。
+  \item 交易发起者若不在管理员集合中，则自动被插入，确保启动创建不会造成孤立账户。
+\end{enumerate}
+
+\subsection{确定性地址生成}
+
+每个抽象账户均有一个由 \code{accountId} 和主合约哈希确定性派生的 Neo 地址。该确定性地址是账户的公开身份、签名者句柄和发现键。
+
+\begin{conceptbox}[确定性代理寻址]
+Neo 地址计算如下：
+$$\text{address} = \text{Base58Check}(\text{version} \| \text{Hash160}(\text{verifyScript}))$$
+其中 Neo N3 的 \code{version = 0x35}。脚本哈希从代理字节码派生，并在 Base58Check 编码前反转为 Neo 的 \code{UInt160} 表示。
+
+\textbf{核心属性}
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysblue!80!black}]
+  \item[确定性构造] 相同的 \code{accountId} 始终产生完全相同的验证代理地址。
+  \item[零部署成本] 无需为每个账户发送部署交易。
+  \item[地址优先可用性] 账户派生后即可立即通过地址进行充值、发现和引用。
+  \item[绑定完整性] 主合约拒绝将 \code{accountId} 绑定到其数学派生代理地址以外的任何地址。
+\end{description}
+\end{conceptbox}
+
+\subsection{交易结构与验证入口}
+
+\begin{warningbox}[交易完整性规则]
+\textbf{所有使用抽象账户的交易必须将确定性验证地址作为签名者。} 这将严格触发主合约中的验证入口点。
+\end{warningbox}
+
+\begin{featurebox}[标准纯 Neo 交易结构]
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt,label=\textbf{\arabic*.}]
+  \item \textbf{脚本}：调用基于地址的封装方法 \code{executeByAddress(accountAddress, targetContract, method, args)}。
+  \item \textbf{签名者}：包含确定性验证地址（脚本哈希）的数组。
+  \item \textbf{见证}：包含空调用脚本（或签名数据）和确定性验证脚本的见证对象数组。
+\end{enumerate}
+\end{featurebox}
+
+\subsection{混合授权交易结构}
+
+\begin{featurebox}[混合交易结构]
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt,label=\textbf{\arabic*.}]
+  \item \textbf{脚本}：调用基于地址的元交易封装方法 \code{executeMetaTxByAddress(...)}。
+  \item \textbf{签名者}：确定性验证地址（与纯 Neo 交易相同）。
+  \item \textbf{属性}：包含 EVM 签名（$r, s, v$）、随机数和截止时间的自定义交易属性。
+  \item \textbf{见证}：Neo 见证（如果仅使用 EVM 授权，则可为空）。
+\end{enumerate}
+\end{featurebox}
+
+%% =====================================================
+\section{混合授权协议}
+%% =====================================================
+
+\subsection{协议概述}
+
+\begin{featurebox}[混合授权协议阶段]
+\begin{description}[leftmargin=*,style=nextline,font=\bfseries\color{sysgreen!80!black}]
+\item[阶段一：EVM 签名生成]（链下）EVM 签名者构造 EIP-712 类型化数据并使用以太坊钱包签名。签名为 65 字节的 $(r, s, v)$ 值，其中 $r, s \in \mathbb{F}_p$ 为 ECDSA 签名分量，$v \in \{27, 28\}$ 为恢复标识符。
+
+\item[阶段二：交易构造] 构建 Neo 交易，包含：
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+  \item \textbf{脚本}：对主合约封装方法的 \code{CALLT} 调用
+  \item \textbf{签名者}：账户的确定性验证地址
+  \item \textbf{属性}：作为自定义交易属性嵌入的 EVM 签名
+  \item \textbf{见证}：Neo 签名者的占位符
+\end{itemize}
+
+\item[阶段三：Neo 见证收集] Neo 签名者向交易添加见证。每个见证包含调用脚本（通常为空或包含签名）和验证脚本（确定性代理脚本）。
+
+\item[阶段四：链上验证] 主合约验证确定性代理见证，计算 Neo 见证数量，从 EVM 签名中恢复以太坊地址，并检查组合签名载荷是否达到统一操作阈值。
+\end{description}
+\end{featurebox}
+
+\subsection{两阶段验证模型}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  ph/.style={draw,rectangle,rounded corners=3pt,minimum width=3.2cm,minimum height=0.75cm,font=\sffamily\scriptsize\bfseries,align=center,line width=0.8pt},
+  ph1/.style={ph,fill=sysblue!12,draw=sysblue!80!black},
+  ph2/.style={ph,fill=sysgreen!12,draw=sysgreen!80!black},
+  vstep/.style={draw,rectangle,rounded corners=3pt,minimum width=3.0cm,minimum height=0.6cm,font=\sffamily\scriptsize,align=center,line width=0.6pt},
+  s1/.style={vstep,fill=sysblue!8,draw=sysblue!60!black},
+  s2/.style={vstep,fill=sysgreen!8,draw=sysgreen!60!black},
+  note/.style={draw,rectangle,rounded corners=3pt,fill=gray!6,draw=gray!35,font=\sffamily\scriptsize,align=left,inner sep=5pt,line width=0.6pt},
+  arr/.style={-{Stealth[length=1.5mm,width=1mm]},draw=gray!70,line width=0.7pt},
+  lbl/.style={font=\sffamily\tiny,text=gray!60,fill=white,inner sep=0.5pt}
+]
+\node[ph1] at (0, 0)   {阶段一：验证\\（内存池准入）};
+\node[s1]  at (0,-1.1) {\texttt{Verify()}};
+\node[s1]  at (0,-2.0) {CheckNative 签名\\（仅 N3 见证）};
+\node[font=\sffamily\tiny,text=gray!55] at (0,-2.8) {经济过滤——阻止燃气攻击};
+
+\node[ph2] at (5.5, 0)  {阶段二：应用\\（执行期）};
+\node[s2]  at (5.5,-1.1){\texttt{Execute()} / \texttt{MetaTx()}};
+\node[s2]  at (5.5,-2.0){CheckMixed 签名\\（N3 + EVM 统一）};
+\node[font=\sffamily\tiny,text=gray!55] at (5.5,-2.8) {安全执行——检查阈值};
+
+\draw[arr,line width=1.0pt] (1.6,0) -- node[above,lbl]{交易流} (3.9,0);
+
+\node[note,text width=2.8cm] at (0,-4.5) {
+  \textbf{纯 Neo：}两阶段均验证 N3\\[3pt]
+  \textbf{纯 EVM：}阶段一中继器代理；阶段二 EVM 签名
+};
+\node[note,text width=2.8cm] at (5.5,-4.5) {
+  \textbf{混合 N3+EVM：}阶段一 N3 见证；阶段二 N3+EVM 达阈值
+};
+\end{tikzpicture}
+\caption{Neo-AA 中的两阶段验证：验证触发器对原生 Neo 路径进行身份验证，应用触发器为混合授权合并 Neo 和 EVM 签名者。}
+\label{fig:cn-two-phase}
+\end{figure}
+
+\subsection{CheckMixedSignatures：统一阈值算法}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw,rectangle,rounded corners=3pt,minimum width=2.4cm,minimum height=0.6cm,font=\sffamily\scriptsize,align=center,line width=0.7pt},
+  start/.style={box,fill=sysblue!12,draw=sysblue!80!black},
+  proc/.style={box,fill=sysgreen!10,draw=sysgreen!70!black},
+  cond/.style={draw,diamond,aspect=1.6,font=\sffamily\scriptsize,align=center,inner sep=2pt,line width=0.7pt,fill=sysorange!12,draw=sysorange!80!black},
+  ok/.style={box,minimum width=2.0cm,fill=sysgreen!14,draw=sysgreen!80!black,font=\sffamily\scriptsize\bfseries},
+  fail/.style={box,minimum width=2.0cm,fill=sysred!10,draw=sysred!80!black,font=\sffamily\scriptsize\bfseries},
+  note/.style={draw,rectangle,rounded corners=3pt,fill=gray!6,draw=gray!40,font=\sffamily\scriptsize,align=left,inner sep=5pt,line width=0.6pt},
+  arr/.style={-{Stealth[length=1.5mm,width=1mm]},draw=gray!70,line width=0.7pt},
+  lbl/.style={font=\sffamily\tiny,text=gray!65,fill=white,inner sep=0.5pt}
+]
+\node[start] (S)   at (0, 0)   {\textbf{CheckMixed}\\Signatures(...)};
+\node[proc]  (I)   at (0,-1.1) {count=0 \quad i=0};
+\node[cond]  (L)   at (0,-2.4) {i < 数量?};
+
+\node[cond]  (T)   at (3.8,-2.4) {count $\geq\tau$?};
+\node[ok]    (OK)  at (6.8,-1.7) {\checkmark\ 已授权};
+\node[fail]  (NO)  at (6.8,-3.1) {\texttimes\ 未授权};
+
+\node[cond]  (EVM) at (0,-3.9)  {EVM 匹配?};
+\node[proc]  (EC)  at (3.8,-3.9){count++};
+\node[cond]  (NEO) at (0,-5.4)  {Neo 见证?};
+\node[proc]  (NC)  at (3.8,-5.4){count++};
+\node[proc]  (INC) at (0,-6.7)  {i++};
+
+\node[note,text width=3.2cm] at (3.8,-6.7) {
+  \textbf{统一计数：}\\每个角色至多计数一次\\（EVM 或 Neo，非两者）
+};
+
+\draw[arr] (S)--(I); \draw[arr] (I)--(L);
+\draw[arr] (L.east)  -- node[lbl,above]{否} (T.west);
+\draw[arr] (T.north east) to[out=50,in=180] node[lbl,above]{是} (OK.west);
+\draw[arr] (T.south east) to[out=-50,in=180] node[lbl,below]{否} (NO.west);
+\draw[arr] (L.south) -- node[lbl,right]{是} (EVM.north);
+\draw[arr] (EVM.east) -- node[lbl,above]{是} (EC.west);
+\draw[arr] (EC.south) -- ++(0,-0.3) -| (INC.east);
+\draw[arr] (EVM.south) -- node[lbl,right]{否} (NEO.north);
+\draw[arr] (NEO.east) -- node[lbl,above]{是} (NC.west);
+\draw[arr] (NC.south) -- ++(0,-0.3) -| (INC.east);
+\draw[arr] (NEO.south) -- node[lbl,right]{否} (INC.north);
+\draw[arr] (INC.west) -- ++(-0.9,0) |- node[lbl,left,pos=0.25]{下一个} (L.west);
+\end{tikzpicture}
+\caption{CheckMixedSignatures 中的统一阈值评估：恢复的 EVM 签名者与 Neo 见证合并计入一个策略阈值。}
+\label{fig:cn-checkmixed}
+\end{figure}
+
+%% =====================================================
+\section{安全分析}
+%% =====================================================
+
+\subsection{威胁模型}
+
+安全分析基于标准密码学敌手模型：
+
+\begin{itemize}
+  \item \textbf{网络敌手}：可观察和修改网络流量，但无法破解底层密码原语。
+  \item \textbf{合约敌手}：可部署任意合约并以任意顺序发送交易。
+  \item \textbf{侧信道假设}：不考虑实现层面的侧信道攻击。
+\end{itemize}
+
+\subsection{形式安全定义}
+
+\begin{definition}[阈值安全性]
+若任意多项式时间敌手在没有至少 $\tau$ 个有效授权者签名的情况下，无法以不可忽略的概率使合约执行任意操作，则称混合授权协议满足阈值安全性。
+\end{definition}
+
+\begin{theorem}[统一阈值安全性]
+在 secp256r1 和 secp256k1 的离散对数困难假设以及 EIP-712 域分隔的安全性下，\sys 的混合授权协议满足阈值安全性。
+\end{theorem}
+
+%% =====================================================
+\section{相关工作}
+%% =====================================================
+
+\subsection{账户抽象系统}
+
+账户抽象领域已有大量研究。EVM 生态中，ERC-4337 通过 UserOperation 和打包器网络实现链下签名聚合，但仅适用于 EVM 兼容链。Safe（原 Gnosis Safe）提供多签合约钱包，依赖每用户部署合约。Argent 引入了监护人恢复的社会恢复机制。
+
+\sys 的独特之处在于：在 Neo N3 原生验证机制框架内、无需桥接合约的情况下，将 EVM 兼容签名者引入 Neo N3 生态系统。
+
+\subsection{定位}
+
+\sys 填补了现有系统留下的空白：跨越 Neo N3 和 EVM 生态系统，同时利用 Neo N3 的原生合约能力提供高效、低成本的账户抽象。
+
+%% =====================================================
+\section{结论}
+%% =====================================================
+
+本文介绍了 \sys——一种面向 Neo N3 的跨生态账户抽象架构。通过混合授权协议、确定性地址生成、\code{.matrix} 域名集成和可插拔恢复架构，\sys 为 Neo N3 生态系统提供了一个完整的账户抽象解决方案。
+
+该系统的核心创新在于 \code{CheckMixedSignatures} 算法：将 Neo N3 的原生见证机制与 EVM EIP-712 签名恢复统一至单一授权阈值，实现了真正的跨生态账户抽象，且无需部署桥接合约或维护跨链同步状态。
+
+\end{document}

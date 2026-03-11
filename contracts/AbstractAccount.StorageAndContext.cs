@@ -101,13 +101,16 @@ namespace AbstractAccount
             var tx = (Transaction)Runtime.Transaction;
             UInt160 creator = tx.Sender;
 
-            Neo.SmartContract.Framework.List<UInt160> finalAdmins = admins ?? new Neo.SmartContract.Framework.List<UInt160>();
-            bool creatorExists = false;
-            for (int i = 0; i < finalAdmins.Count; i++)
+            Neo.SmartContract.Framework.List<UInt160> finalAdmins;
+            if (admins == null || admins.Count == 0)
             {
-                if (finalAdmins[i] == creator) { creatorExists = true; break; }
+                finalAdmins = new Neo.SmartContract.Framework.List<UInt160>();
+                finalAdmins.Add(creator);
             }
-            if (!creatorExists) finalAdmins.Add(creator);
+            else
+            {
+                finalAdmins = admins;
+            }
 
             int finalAdminThreshold = (adminThreshold > 0 && adminThreshold <= finalAdmins.Count) ? adminThreshold : 1;
 
@@ -221,6 +224,14 @@ namespace AbstractAccount
         }
 
         private static readonly byte[] ContractCallSyscall = new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 };
+        private static readonly string[] AllowedProxyVerificationMethods = new string[]
+        {
+            "execute",
+            "executeByAddress",
+            "executeMetaTx",
+            "executeMetaTxByAddress"
+        };
+
 
         private static UInt160 GetWalletContractHash()
         {
@@ -230,7 +241,10 @@ namespace AbstractAccount
         }
         private static bool IsAllowedProxyVerificationTransaction()
         {
-            return IsSingleSelfCallScript((byte[])Runtime.Transaction.Script, (byte[])GetWalletContractHash());
+            byte[] script = (byte[])Runtime.Transaction.Script;
+            byte[] contractHash = (byte[])GetWalletContractHash();
+            return IsSingleSelfCallScript(script, contractHash)
+                && EndsWithAllowedProxyMethodSuffix(script, contractHash);
         }
 
         internal static bool IsSingleSelfCallScript(byte[] script, byte[] contractHash)
@@ -306,6 +320,42 @@ namespace AbstractAccount
             }
 
             return count;
+        }
+
+        private static bool EndsWithAllowedProxyMethodSuffix(byte[] script, byte[] contractHash)
+        {
+            if (script == null || contractHash == null || contractHash.Length != 20) return false;
+            for (int i = 0; i < AllowedProxyVerificationMethods.Length; i++)
+            {
+                byte[] suffix = BuildProxyMethodSuffix(AllowedProxyVerificationMethods[i], contractHash);
+                if (EndsWith(script, suffix)) return true;
+            }
+            return false;
+        }
+
+        private static byte[] BuildProxyMethodSuffix(string method, byte[] contractHash)
+        {
+            byte[] methodBytes = ToAsciiBytes(method);
+            ExecutionEngine.Assert(methodBytes.Length <= 255, "Method name too long");
+            return ConcatBytes(
+                new byte[] { (byte)OpCode.PUSHDATA1, (byte)methodBytes.Length },
+                methodBytes,
+                new byte[] { (byte)OpCode.PUSHDATA1, 0x14 },
+                contractHash,
+                ContractCallSyscall
+            );
+        }
+
+        private static byte[] ToAsciiBytes(string value)
+        {
+            ExecutionEngine.Assert(value != null, "Invalid method name");
+            string validatedValue = value!;
+            byte[] bytes = new byte[validatedValue.Length];
+            for (int i = 0; i < validatedValue.Length; i++)
+            {
+                bytes[i] = (byte)validatedValue[i];
+            }
+            return bytes;
         }
 
         private static bool EndsWith(byte[] source, byte[] suffix)

@@ -163,14 +163,16 @@ namespace AbstractAccount
                 recoveredSigners[i] = DeriveEthAddress(signerPubKeys[i]);
             }
 
+            UInt160[] uniqueRecoveredSigners = DeduplicateSignerHashes(recoveredSigners);
+
             // Consume the nonce before dispatch so a nested or replayed execution cannot reuse the same signed payload.
             IncrementNonce(accountId);
-            CheckPermissionsAndExecute(accountId, recoveredSigners, targetContract, method, args);
+            CheckPermissionsAndExecute(accountId, uniqueRecoveredSigners, targetContract, method, args);
 
             // Scope the recovered signer set and verify target to this single execution path only. Admin/oracle helpers
             // can consult that context during internal self-calls, but it is cleared immediately afterward.
             EnterExecution(accountId);
-            SetMetaTxContext(accountId, recoveredSigners);
+            SetMetaTxContext(accountId, uniqueRecoveredSigners);
             SetVerifyContext(accountId, targetContract);
             try
             {
@@ -303,6 +305,35 @@ namespace AbstractAccount
                 }
                 offset += chunk.Length;
             }
+            return result;
+        }
+
+        private static UInt160[] DeduplicateSignerHashes(UInt160[] signerHashes)
+        {
+            ExecutionEngine.Assert(signerHashes != null && signerHashes.Length > 0, "Missing signer hashes");
+            UInt160[] validatedSignerHashes = signerHashes!;
+            UInt160[] unique = new UInt160[validatedSignerHashes.Length];
+            int count = 0;
+            for (int i = 0; i < validatedSignerHashes.Length; i++)
+            {
+                UInt160 candidate = validatedSignerHashes[i];
+                bool exists = false;
+                for (int j = 0; j < count; j++)
+                {
+                    if (unique[j] == candidate)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists)
+                {
+                    unique[count] = candidate;
+                    count++;
+                }
+            }
+            UInt160[] result = new UInt160[count];
+            for (int i = 0; i < count; i++) result[i] = unique[i];
             return result;
         }
 

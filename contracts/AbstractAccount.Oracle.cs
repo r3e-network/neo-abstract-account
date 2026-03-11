@@ -438,7 +438,7 @@ namespace AbstractAccount
             ByteString? urlBytes = urlMap.Get(GetStorageKey(accountId));
             string? configuredOracle = urlBytes == null ? null : (string)urlBytes!;
             string url = ExtractDomeOracleRequestUrl(configuredOracle);
-            if (url == "") return true; // If no oracle configured, it's implicitly unlocked
+            if (url == "") return false;
 
             StorageMap unlockMap = new StorageMap(Storage.CurrentContext, DomeOracleUnlockPrefix);
             ByteString? unlocked = unlockMap.Get(GetStorageKey(accountId));

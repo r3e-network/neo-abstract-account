@@ -1,13 +1,13 @@
 <template>
-  <div class="relative min-h-screen bg-slate-900 overflow-hidden font-sans text-slate-300">
+  <div class="relative min-h-screen bg-ata-dark overflow-hidden font-sans text-slate-300">
     <div class="absolute inset-0 z-0">
       <div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-vibrant-glow rounded-full mix-blend-screen opacity-40 animate-pulse-slow"></div>
     </div>
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up">
       <div class="flex flex-col md:flex-row gap-8">
         <aside class="md:w-64 flex-shrink-0">
-          <div class="sticky top-24 bg-slate-800/60 p-5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-700/50 backdrop-blur-xl">
-            <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 px-2 font-outfit">{{ t('docs.heading', 'Documentation') }}</h3>
+          <div class="sticky top-24 bg-ata-panel/60 p-5 rounded-lg shadow-[0_0_15px_rgba(0,163,255,0.05)] border border-ata-border backdrop-blur-xl">
+            <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 px-2 font-mono">{{ t('docs.heading', 'Documentation') }}</h3>
             <nav class="space-y-1">
               <button
                 v-for="(doc, key) in docs"
@@ -15,8 +15,8 @@
                 @click="activeDoc = key"
                 :class="[
                   activeDoc === key
-                    ? 'bg-neo-500/20 text-neo-400 font-bold border-l-4 border-neo-500 shadow-[inset_0_0_10px_rgba(34,197,94,0.1)]'
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white border-l-4 border-transparent font-medium',
+                    ? 'bg-ata-green/20 text-ata-green font-bold border-l-4 border-ata-green shadow-[inset_0_0_10px_rgba(0,255,102,0.1)]'
+                    : 'text-slate-400 hover:bg-ata-dark hover:text-white border-l-4 border-transparent font-medium',
                   'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left'
                 ]"
               >
@@ -27,7 +27,7 @@
         </aside>
 
         <main class="flex-1 min-w-0">
-          <div class="prose prose-invert max-w-none bg-slate-800/60 p-8 sm:p-12 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-slate-700/50 backdrop-blur-xl min-h-[600px]">
+          <div class="prose prose-invert max-w-none bg-ata-panel/60 p-8 sm:p-12 rounded-lg shadow-[0_0_15px_rgba(0,163,255,0.05)] border border-ata-border backdrop-blur-xl min-h-[600px]">
             <transition name="fade" mode="out-in" @after-enter="renderMermaidDiagrams">
               <div :key="`${activeDoc}:${locale.value}`">
                 <div ref="contentRoot" v-html="compiledMarkdown" class="markdown-body custom-scrollbar-dark"></div>
@@ -131,7 +131,7 @@ async function renderMermaidDiagrams() {
       container.innerHTML = svg;
     } catch (err) {
       console.warn('Failed to render specific mermaid diagram', err);
-      container.innerHTML = `<pre class="text-red-500 text-xs overflow-auto">${err.message}</pre>`;
+      container.innerHTML = `<pre class="text-rose-400 text-xs overflow-auto">${err.message}</pre>`;
     }
   }
 }
@@ -149,7 +149,7 @@ const renderMarkdown = async (key) => {
     }
   } catch (err) {
     console.error('Failed to load markdown', err);
-    compiledMarkdown.value = '<p class="text-red-500">Documentation failed to load.</p>';
+    compiledMarkdown.value = '<p class="text-rose-400">Documentation failed to load.</p>';
   }
 };
 

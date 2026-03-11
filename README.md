@@ -10,6 +10,10 @@ This project contains the comprehensive standard, smart contract implementation,
 - **Role-Based Account Discovery**: Query all accounts where an address is admin or manager via reverse indices. Creator automatically becomes default admin.
 - **Batch Account Creation**: Deploy multiple accounts with shared governance in a single transaction.
 
+## Security Reports
+- `docs/reports/2026-03-11-security-audit.md` — formal security audit summary, findings, remediation, and verification evidence
+- `docs/SECURITY_FIX_REPORT.md` — implementation-focused remediation notes
+
 ## Home Workspace Deployment
 
 The frontend home page now exposes an app-first operations workspace for loading an Abstract Account, building an invocation, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, choosing either client-side or relay broadcast in v1, and resolving or registering `.matrix` domains so users do not need to rely on raw account IDs.

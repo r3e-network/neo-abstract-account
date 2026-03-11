@@ -1,14 +1,14 @@
 <template>
-  <section class="rounded-2xl border p-4 shadow-sm"
+  <section class="rounded-lg border p-4 shadow-sm"
     :class="toneClass"
   >
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p class="text-xs font-bold uppercase tracking-[0.18em]" :class="titleToneClass">{{ title }}</p>
-        <div class="mt-1 text-sm font-semibold text-slate-900">{{ label }}</div>
-        <div class="text-sm text-slate-600">{{ detail }}</div>
+        <div class="mt-1 text-sm font-semibold text-white">{{ label }}</div>
+        <div class="text-sm text-slate-400">{{ detail }}</div>
       </div>
-      <div class="text-[11px] font-medium text-slate-500">{{ timestamp || 'Just now' }}</div>
+      <div class="text-[11px] font-medium text-slate-400">{{ timestamp || 'Just now' }}</div>
     </div>
   </section>
 </template>
@@ -35,14 +35,14 @@ const detail = computed(() => banner.value.detail);
 const timestamp = computed(() => banner.value.timestamp);
 
 const toneClass = computed(() => {
-  if (banner.value.tone === 'relay') return 'border-emerald-200 bg-emerald-50';
-  if (banner.value.tone === 'client') return 'border-blue-200 bg-blue-50';
-  return 'border-amber-200 bg-amber-50';
+  if (banner.value.tone === 'relay') return 'border-ata-green/30 bg-ata-green/10';
+  if (banner.value.tone === 'client') return 'border-ata-blue/30 bg-ata-blue/10';
+  return 'border-amber-500/30 bg-amber-500/10';
 });
 
 const titleToneClass = computed(() => {
-  if (banner.value.tone === 'relay') return 'text-emerald-700';
-  if (banner.value.tone === 'client') return 'text-blue-700';
-  return 'text-amber-700';
+  if (banner.value.tone === 'relay') return 'text-ata-green';
+  if (banner.value.tone === 'client') return 'text-ata-blue';
+  return 'text-amber-400';
 });
 </script>

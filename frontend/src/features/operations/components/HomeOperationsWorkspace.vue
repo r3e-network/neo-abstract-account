@@ -1,11 +1,11 @@
 <template>
-  <section class="rounded-3xl border border-slate-700/50 bg-slate-900/60 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-6 md:p-8 relative overflow-hidden">
-    <div class="absolute inset-0 bg-gradient-to-br from-neo-500/5 to-transparent pointer-events-none"></div>
+  <section class="rounded-lg border border-ata-border bg-ata-dark/60 backdrop-blur-xl shadow-[0_0_15px_rgba(0,163,255,0.05)] p-6 md:p-8 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-ata-green/5 to-transparent pointer-events-none"></div>
     <div class="relative z-10">
       <div class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="mb-2 text-xs font-bold uppercase tracking-widest text-neo-400">Abstract Account Workspace</p>
-          <h1 class="text-3xl font-extrabold tracking-tight text-white font-outfit">Load, compose, sign, and broadcast</h1>
+          <p class="mb-2 text-xs font-bold uppercase tracking-widest text-ata-green">Abstract Account Workspace</p>
+          <h1 class="text-3xl font-extrabold uppercase tracking-widest text-white font-mono">Load, compose, sign, and broadcast</h1>
         </div>
         <div class="flex flex-wrap gap-3">
           <button class="btn-secondary" @click="connectNeoWallet">
@@ -17,42 +17,42 @@
           <div class="relative">
             <button class="btn-primary" @click="showActionsMenu = !showActionsMenu">Actions <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
             <transition name="fade-in-up">
-              <div v-if="showActionsMenu" class="absolute right-0 mt-3 w-64 rounded-xl bg-slate-800 shadow-2xl border border-slate-700 py-2 z-50 overflow-hidden backdrop-blur-lg">
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!shareUrl" @click="copyShareLink">Copy Share Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorLink">Copy Collaborator Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorLink">Copy Operator Link</button>
-                <div class="border-t border-slate-700 my-1"></div>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl || isSubmissionPending" @click="rotateCollaboratorLink">Rotate Collaborator Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl || isSubmissionPending" @click="rotateOperatorLink">Rotate Operator Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!workspace.transactionBody.value" @click="exportDraftJson">Export Draft JSON</button>
+              <div v-if="showActionsMenu" class="absolute right-0 mt-3 w-64 rounded-lg bg-ata-panel shadow-2xl border border-ata-border py-2 z-50 overflow-hidden backdrop-blur-lg">
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-ata-dark hover:text-white transition-colors disabled:opacity-50" :disabled="!shareUrl" @click="copyShareLink">Copy Share Link</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-ata-dark hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorLink">Copy Collaborator Link</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-ata-dark hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorLink">Copy Operator Link</button>
+                <div class="border-t border-ata-border my-1"></div>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-ata-dark hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl || isSubmissionPending" @click="rotateCollaboratorLink">Rotate Collaborator Link</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-ata-dark hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl || isSubmissionPending" @click="rotateOperatorLink">Rotate Operator Link</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-ata-dark hover:text-white transition-colors disabled:opacity-50" :disabled="!workspace.transactionBody.value" @click="exportDraftJson">Export Draft JSON</button>
               </div>
             </transition>
           </div>
         </div>
       </div>
 
-      <DraftStatusBanner v-if="workspace.operationBody.value || workspace.share.value.draftId || activityItems.length > 0" class="mb-8 rounded-xl border-slate-700/50 shadow-lg" :status="workspace.share.value.status" :activity="activityItems" />
+      <DraftStatusBanner v-if="workspace.operationBody.value || workspace.share.value.draftId || activityItems.length > 0" class="mb-8 rounded-lg border-ata-border shadow-lg" :status="workspace.share.value.status" :activity="activityItems" />
 
       <div class="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
+        <div class="rounded-lg border border-ata-border bg-ata-panel/40 p-5 shadow-inner backdrop-blur-md">
           <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Neo Wallet</p>
           <p class="text-sm text-white font-semibold truncate">{{ neoWalletLabel }}</p>
         </div>
-        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
+        <div class="rounded-lg border border-ata-border bg-ata-panel/40 p-5 shadow-inner backdrop-blur-md">
           <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">EVM Wallet</p>
           <p class="text-sm text-white font-semibold truncate">{{ evmWalletLabel }}</p>
         </div>
-        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
+        <div class="rounded-lg border border-ata-border bg-ata-panel/40 p-5 shadow-inner backdrop-blur-md">
           <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Signatures</p>
           <div class="flex items-center gap-2 mt-1">
-            <div class="w-full bg-slate-700 rounded-full h-1.5"><div class="bg-neo-500 h-1.5 rounded-full" :style="{ width: (signerProgress.requiredCount ? Math.min(100, (signerProgress.signatureCount / signerProgress.requiredCount) * 100) : 0) + '%' }"></div></div>
+            <div class="w-full bg-ata-dark rounded-full h-1.5"><div class="bg-ata-green h-1.5 rounded-full" :style="{ width: (signerProgress.requiredCount ? Math.min(100, (signerProgress.signatureCount / signerProgress.requiredCount) * 100) : 0) + '%' }"></div></div>
             <p class="text-sm text-white font-semibold tabular-nums">{{ signerProgress.signatureCount }} / {{ signerProgress.requiredCount || 0 }}</p>
           </div>
         </div>
-        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
+        <div class="rounded-lg border border-ata-border bg-ata-panel/40 p-5 shadow-inner backdrop-blur-md">
           <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Collaboration</p>
           <div class="flex items-center mt-1">
-            <span class="w-2 h-2 rounded-full mr-2" :class="runtime.collaborationEnabled ? 'bg-neo-500 animate-pulse' : 'bg-slate-500'"></span>
+            <span class="w-2 h-2 rounded-full mr-2" :class="runtime.collaborationEnabled ? 'bg-ata-green animate-pulse' : 'bg-slate-500'"></span>
             <p class="text-sm text-white font-semibold">{{ runtime.collaborationEnabled ? 'Ready' : 'Local' }}</p>
           </div>
         </div>
@@ -60,11 +60,11 @@
 
       <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="space-y-6">
-          <div class="rounded-2xl border border-slate-700/60 bg-slate-800/60 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)] backdrop-blur-lg transition-all duration-300">
-            <button @click="step1Expanded = !step1Expanded" class="w-full bg-slate-800/40 px-6 py-5 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/40 transition-colors">
+          <div class="rounded-lg border border-ata-border bg-ata-panel/60 overflow-hidden shadow-[0_0_15px_rgba(0,163,255,0.05)] backdrop-blur-lg transition-all duration-300">
+            <button @click="step1Expanded = !step1Expanded" class="w-full bg-ata-panel/40 px-6 py-5 border-b border-ata-border flex items-center justify-between hover:bg-ata-dark transition-colors">
               <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">1</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Load Account</h2>
+                <div class="w-8 h-8 rounded-full bg-ata-green/20 border border-ata-green/50 text-ata-green flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(0,255,102,0.2)]">1</div>
+                <h2 class="text-lg font-mono font-bold text-white uppercase tracking-widest">Load Account</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
             </button>
@@ -73,11 +73,11 @@
             </div>
           </div>
 
-          <div class="rounded-2xl border border-slate-700/60 bg-slate-800/60 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)] backdrop-blur-lg transition-all duration-300">
-            <button @click="step2Expanded = !step2Expanded" class="w-full bg-slate-800/40 px-6 py-5 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/40 transition-colors">
+          <div class="rounded-lg border border-ata-border bg-ata-panel/60 overflow-hidden shadow-[0_0_15px_rgba(0,163,255,0.05)] backdrop-blur-lg transition-all duration-300">
+            <button @click="step2Expanded = !step2Expanded" class="w-full bg-ata-panel/40 px-6 py-5 border-b border-ata-border flex items-center justify-between hover:bg-ata-dark transition-colors">
               <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">2</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Compose Operation</h2>
+                <div class="w-8 h-8 rounded-full bg-ata-green/20 border border-ata-green/50 text-ata-green flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(0,255,102,0.2)]">2</div>
+                <h2 class="text-lg font-mono font-bold text-white uppercase tracking-widest">Compose Operation</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step2Expanded ? 'rotate-180' : ''">▼</span>
             </button>
@@ -86,30 +86,30 @@
             </div>
           </div>
 
-          <div class="rounded-2xl border border-slate-700/60 bg-slate-800/60 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)] backdrop-blur-lg transition-all duration-300">
-            <button @click="step3Expanded = !step3Expanded" class="w-full bg-slate-800/40 px-6 py-5 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/40 transition-colors">
+          <div class="rounded-lg border border-ata-border bg-ata-panel/60 overflow-hidden shadow-[0_0_15px_rgba(0,163,255,0.05)] backdrop-blur-lg transition-all duration-300">
+            <button @click="step3Expanded = !step3Expanded" class="w-full bg-ata-panel/40 px-6 py-5 border-b border-ata-border flex items-center justify-between hover:bg-ata-dark transition-colors">
               <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">3</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Collect Signatures</h2>
+                <div class="w-8 h-8 rounded-full bg-ata-green/20 border border-ata-green/50 text-ata-green flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(0,255,102,0.2)]">3</div>
+                <h2 class="text-lg font-mono font-bold text-white uppercase tracking-widest">Collect Signatures</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step3Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step3Expanded" class="p-6 md:p-8 animate-fade-in space-y-6">
               <div class="flex gap-4">
-                <button class="btn-secondary flex-1 border-neo-500/30 text-neo-300 hover:bg-neo-500/10 hover:border-neo-500/60 hover:text-white" :disabled="!workspace.transactionBody.value || isSubmissionPending" @click="signWithEvmWallet">Sign with EVM</button>
+                <button class="btn-secondary flex-1 border-ata-green/30 text-ata-green hover:bg-ata-green/10 hover:border-ata-green/60 hover:text-white" :disabled="!workspace.transactionBody.value || isSubmissionPending" @click="signWithEvmWallet">Sign with EVM</button>
               </div>
               <SignatureWorkflowPanel class="dark-panel-override" :signer-id="signerId" :signer-kind="signerKind" :signature-hex="signatureHex" :required-signer-count="signerProgress.requiredCount" :signature-count="signerProgress.signatureCount" @update:signer-id="signerId = $event" @update:signer-kind="signerKind = $event" @update:signature-hex="signatureHex = $event" @append-signature="appendManualSignature" />
             </div>
           </div>
 
-          <DraftSummaryStrip class="dark-panel-override shadow-xl rounded-xl border border-slate-700/50" v-if="workspace.operationBody.value || workspace.share.value.draftId" :draft="draftSummaryDraft" :action-context="activityActionContext" @summary-action="handleSummaryAction" />
+          <DraftSummaryStrip class="dark-panel-override shadow-xl rounded-lg border border-ata-border" v-if="workspace.operationBody.value || workspace.share.value.draftId" :draft="draftSummaryDraft" :action-context="activityActionContext" @summary-action="handleSummaryAction" />
 
-          <div class="rounded-2xl border border-neo-500/20 bg-slate-800/60 overflow-hidden shadow-[0_4px_30px_rgba(34,197,94,0.05)] backdrop-blur-lg transition-all duration-300 relative">
-            <div class="absolute inset-0 bg-gradient-to-t from-neo-500/5 to-transparent pointer-events-none"></div>
-            <button @click="step4Expanded = !step4Expanded" class="relative w-full bg-slate-800/40 px-6 py-5 border-b border-neo-500/20 flex items-center justify-between hover:bg-slate-700/60 transition-colors">
+          <div class="rounded-lg border border-ata-green/20 bg-ata-panel/60 overflow-hidden shadow-[0_4px_30px_rgba(0,255,102,0.05)] backdrop-blur-lg transition-all duration-300 relative">
+            <div class="absolute inset-0 bg-gradient-to-t from-ata-green/5 to-transparent pointer-events-none"></div>
+            <button @click="step4Expanded = !step4Expanded" class="relative w-full bg-ata-panel/40 px-6 py-5 border-b border-ata-green/20 flex items-center justify-between hover:bg-ata-dark transition-colors">
               <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-full bg-neo-500 text-slate-900 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(34,197,94,0.4)]">4</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Broadcast</h2>
+                <div class="w-8 h-8 rounded-full bg-ata-green text-white flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(0,255,102,0.4)]">4</div>
+                <h2 class="text-lg font-mono font-bold text-white uppercase tracking-widest">Broadcast</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step4Expanded ? 'rotate-180' : ''">▼</span>
             </button>
@@ -117,27 +117,27 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button class="btn-primary" :disabled="!canClientBroadcast || isSubmissionPending" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? 'Broadcasting…' : 'Broadcast with Neo Wallet' }}</button>
                 <button class="btn-secondary" :disabled="relayPayloadOptions.length === 0 || isSubmissionPending" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? 'Checking Relay…' : 'Check Relay' }}</button>
-                <button class="btn-primary bg-neo-600 hover:bg-neo-500 focus:ring-neo-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] border-transparent" :disabled="!canRelayBroadcast || isSubmissionPending" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? 'Submitting…' : 'Submit via Relay' }}</button>
+                <button class="btn-primary bg-ata-green hover:bg-ata-green focus:ring-ata-green shadow-[0_0_20px_rgba(0,255,102,0.3)] border-transparent" :disabled="!canRelayBroadcast || isSubmissionPending" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? 'Submitting…' : 'Submit via Relay' }}</button>
               </div>
               <BroadcastOptionsPanel class="dark-panel-override" :active-mode="workspace.broadcast.value.mode" :modes="runtime.broadcastModes" :active-relay-payload-mode="relayPayloadMode" :relay-payload-options="relayPayloadOptions" :relay-endpoint="runtime.relayEndpoint" @set-mode="workspace.setBroadcastMode($event)" @set-relay-payload-mode="relayPayloadMode = $event" @persist-draft="persistDraft" />
-              <RelayPreflightPanel class="mt-6 dark-panel-override border-slate-700" v-if="relayCheck.level !== 'idle'" :level="relayCheck.level" :status-label="relayCheck.label" :detail="relayCheck.detail" :payload-mode="relayCheck.payloadMode" :vm-state="relayCheck.vmState" :gas-consumed="relayCheck.gasConsumed" :operation="relayCheck.operation" :exception="relayCheck.exception" :stack="relayCheck.stack" :can-copy-payload="Boolean(relayCheckRequest)" :can-copy-stack="relayCheck.stack.length > 0" :can-export-json="Boolean(relayCheckRequest) || relayCheck.stack.length > 0" @copy-payload="copyRelayPayload" @copy-stack="copyRelayStack" @export-json="exportRelayPreflight" />
+              <RelayPreflightPanel class="mt-6 dark-panel-override border-ata-border" v-if="relayCheck.level !== 'idle'" :level="relayCheck.level" :status-label="relayCheck.label" :detail="relayCheck.detail" :payload-mode="relayCheck.payloadMode" :vm-state="relayCheck.vmState" :gas-consumed="relayCheck.gasConsumed" :operation="relayCheck.operation" :exception="relayCheck.exception" :stack="relayCheck.stack" :can-copy-payload="Boolean(relayCheckRequest)" :can-copy-stack="relayCheck.stack.length > 0" :can-export-json="Boolean(relayCheckRequest) || relayCheck.stack.length > 0" @copy-payload="copyRelayPayload" @copy-stack="copyRelayStack" @export-json="exportRelayPreflight" />
               
               <transition name="fade-in-up">
-                <div v-if="activeSubmissionReceipt" class="mt-6 rounded-xl border border-white/5 bg-slate-800/80 backdrop-blur-md px-6 py-5 shadow-xl" :class="activeSubmissionReceipt.tone === 'success' ? 'border-neo-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : activeSubmissionReceipt.tone === 'error' ? 'border-rose-500/30' : 'border-amber-500/30'">
+                <div v-if="activeSubmissionReceipt" class="mt-6 rounded-lg border border-white/5 bg-ata-panel/80 backdrop-blur-md px-6 py-5 shadow-xl" :class="activeSubmissionReceipt.tone === 'success' ? 'border-ata-green/30 shadow-[0_0_20px_rgba(0,255,102,0.1)]' : activeSubmissionReceipt.tone === 'error' ? 'border-rose-500/30' : 'border-amber-500/30'">
                   <div class="flex items-center gap-2 mb-3">
-                    <span class="w-2.5 h-2.5 rounded-full" :class="activeSubmissionReceipt.tone === 'success' ? 'bg-neo-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : activeSubmissionReceipt.tone === 'error' ? 'bg-rose-500' : 'bg-amber-500'"></span>
+                    <span class="w-2.5 h-2.5 rounded-full" :class="activeSubmissionReceipt.tone === 'success' ? 'bg-ata-green shadow-[0_0_8px_rgba(0,255,102,0.8)]' : activeSubmissionReceipt.tone === 'error' ? 'bg-rose-500' : 'bg-amber-500'"></span>
                     <p class="text-xs font-bold uppercase tracking-widest text-white">Submission Receipt</p>
                   </div>
                   <p class="mt-1 text-sm text-slate-300 leading-relaxed">{{ activeSubmissionReceipt.detail }}</p>
-                  <code v-if="activeSubmissionReceipt.txid" class="mt-4 block break-all rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-neo-300 font-mono shadow-inner">{{ activeSubmissionReceipt.txid }}</code>
-                  <a v-if="activeSubmissionReceipt.explorerUrl" :href="activeSubmissionReceipt.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-semibold text-neo-400 hover:text-neo-300 transition-colors">
+                  <code v-if="activeSubmissionReceipt.txid" class="mt-4 block break-all rounded-lg border border-ata-border bg-ata-dark px-4 py-3 text-sm text-ata-green font-mono shadow-inner">{{ activeSubmissionReceipt.txid }}</code>
+                  <a v-if="activeSubmissionReceipt.explorerUrl" :href="activeSubmissionReceipt.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-semibold text-ata-green hover:text-ata-green transition-colors">
                     Open in Explorer <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                   </a>
                   
-                  <div v-if="submissionReceiptHistoryItems && submissionReceiptHistoryItems.length > 0" class="mt-6 border-t border-slate-700/50 pt-5">
+                  <div v-if="submissionReceiptHistoryItems && submissionReceiptHistoryItems.length > 0" class="mt-6 border-t border-ata-border pt-5">
                     <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Receipt History</p>
                     <div class="space-y-3">
-                      <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-3 hover:bg-slate-700/60 transition-colors">
+                      <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-lg border border-ata-border bg-ata-panel/40 px-4 py-3 hover:bg-ata-dark transition-colors">
                         <div class="flex items-center justify-between gap-3 mb-1">
                           <div class="text-sm font-semibold text-white">{{ item.title }}</div>
                           <div class="text-xs text-slate-400">{{ item.createdLabel }}</div>
@@ -152,12 +152,12 @@
           </div>
         </div>
         <div>
-          <ActivitySidebar class="dark-panel-override sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar-dark rounded-2xl border border-slate-700/50 bg-slate-800/50 shadow-2xl backdrop-blur-xl" :draft-id="workspace.share.value.draftId" :share-path="workspace.share.value.sharePath" :share-url="shareUrl" :collaboration-url="collaborationUrl" :operator-url="operatorUrl" :can-write="workspace.share.value.canWrite" :can-operate="workspace.share.value.canOperate" :access-scope="workspace.share.value.accessScope" :share-status="workspace.share.value.status" :broadcast-mode="workspace.broadcast.value.mode" :signature-count="signerProgress.signatureCount" :required-signer-count="signerProgress.requiredCount" :pending-signer-count="signerProgress.pending.length" :relay-readiness-label="relayReadiness.label" :relay-readiness-detail="relayReadiness.detail" :relay-readiness-level="relayReadiness.level" :activity-items="activityItems.slice().reverse().slice(0, 6)" :action-context="activityActionContext" timeline-preference-key="home-sidebar" @activity-action="handleActivityAction" :last-txid="lastBroadcastTxid" />
+          <ActivitySidebar class="dark-panel-override sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar-dark rounded-lg border border-ata-border bg-ata-panel/50 shadow-2xl backdrop-blur-xl" :draft-id="workspace.share.value.draftId" :share-path="workspace.share.value.sharePath" :share-url="shareUrl" :collaboration-url="collaborationUrl" :operator-url="operatorUrl" :can-write="workspace.share.value.canWrite" :can-operate="workspace.share.value.canOperate" :access-scope="workspace.share.value.accessScope" :share-status="workspace.share.value.status" :broadcast-mode="workspace.broadcast.value.mode" :signature-count="signerProgress.signatureCount" :required-signer-count="signerProgress.requiredCount" :pending-signer-count="signerProgress.pending.length" :relay-readiness-label="relayReadiness.label" :relay-readiness-detail="relayReadiness.detail" :relay-readiness-level="relayReadiness.level" :activity-items="activityItems.slice().reverse().slice(0, 6)" :action-context="activityActionContext" timeline-preference-key="home-sidebar" @activity-action="handleActivityAction" :last-txid="lastBroadcastTxid" />
         </div>
       </div>
       <transition name="fade-in-up">
-        <div v-if="statusMessage" class="mt-8 rounded-xl border border-neo-500/20 bg-slate-800/80 backdrop-blur-md px-5 py-4 text-sm text-neo-300 shadow-lg flex items-center">
-          <svg class="w-5 h-5 mr-3 text-neo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div v-if="statusMessage" class="mt-8 rounded-lg border border-ata-green/20 bg-ata-panel/80 backdrop-blur-md px-5 py-4 text-sm text-ata-green shadow-lg flex items-center">
+          <svg class="w-5 h-5 mr-3 text-ata-green flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           <span class="font-medium text-white">{{ statusMessage }}</span>
         </div>
       </transition>

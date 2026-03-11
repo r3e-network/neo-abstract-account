@@ -48,10 +48,12 @@ namespace Neo.SmartContract.Examples
         public static string Version() => "1.1.0";
 
         // Initialize account recovery configuration
-        public static void SetupRecovery(UInt160 accountId, UInt160 owner, ECPoint[] guardians, BigInteger threshold)
+        public static void SetupRecovery(ByteString accountId, UInt160 owner, ECPoint[] guardians, BigInteger threshold)
         {
-            ValidateAddress(accountId, "accountId");
+            ValidateAccountId(accountId, "accountId");
             ValidateAddress(owner, "owner");
+            Assert(Runtime.CheckWitness(owner), "Not owner");
+            Assert(Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId)) == null, "Recovery already setup");
             Assert(guardians.Length >= MIN_GUARDIANS, "Too few guardians");
             Assert(guardians.Length <= MAX_GUARDIANS, "Too many guardians");
             Assert(threshold >= MIN_THRESHOLD, "Threshold too low");
@@ -82,7 +84,7 @@ namespace Neo.SmartContract.Examples
         }
 
         // Configure timelock
-        public static void SetTimelock(UInt160 accountId, ulong timelockDuration)
+        public static void SetTimelock(ByteString accountId, ulong timelockDuration)
         {
             RequireOwner(accountId);
             RequireNotFrozen(accountId);
@@ -93,7 +95,7 @@ namespace Neo.SmartContract.Examples
         }
 
         // Emergency freeze
-        public static void EmergencyFreeze(UInt160 accountId)
+        public static void EmergencyFreeze(ByteString accountId)
         {
             RequireOwner(accountId);
             Storage.Put(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId), 1);
@@ -105,7 +107,7 @@ namespace Neo.SmartContract.Examples
         }
 
         // Unfreeze
-        public static void Unfreeze(UInt160 accountId)
+        public static void Unfreeze(ByteString accountId)
         {
             RequireOwner(accountId);
             Storage.Delete(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId));
@@ -114,13 +116,13 @@ namespace Neo.SmartContract.Examples
 
         // Initiate recovery (with full signature verification)
         public static void InitiateRecovery(
-            UInt160 accountId,
+            ByteString accountId,
             UInt160 newOwner,
             ECPoint[] guardians,
             byte[][] signatures,
             BigInteger nonce)
         {
-            ValidateAddress(accountId, "accountId");
+            ValidateAccountId(accountId, "accountId");
             ValidateAddress(newOwner, "newOwner");
             RequireNotFrozen(accountId);
 
@@ -178,9 +180,9 @@ namespace Neo.SmartContract.Examples
         }
 
         // Execute recovery (with reentrancy protection)
-        public static void ExecuteRecovery(UInt160 accountId)
+        public static void ExecuteRecovery(ByteString accountId)
         {
-            ValidateAddress(accountId, "accountId");
+            ValidateAccountId(accountId, "accountId");
             RequireNotFrozen(accountId);
 
             // Checks
@@ -201,9 +203,9 @@ namespace Neo.SmartContract.Examples
         }
 
         // Cancel recovery (original owner)
-        public static void CancelRecovery(UInt160 accountId)
+        public static void CancelRecovery(ByteString accountId)
         {
-            ValidateAddress(accountId, "accountId");
+            ValidateAccountId(accountId, "accountId");
             RequireOwner(accountId);
 
             var data = Storage.Get(Storage.CurrentContext, Key(PREFIX_RECOVERY, accountId));
@@ -214,9 +216,9 @@ namespace Neo.SmartContract.Examples
         }
 
         // Add guardian
-        public static void AddGuardian(UInt160 accountId, ECPoint guardian)
+        public static void AddGuardian(ByteString accountId, ECPoint guardian)
         {
-            ValidateAddress(accountId, "accountId");
+            ValidateAccountId(accountId, "accountId");
             Assert(guardian != null, "Guardian is null");
             RequireOwner(accountId);
             RequireNotFrozen(accountId);
@@ -234,9 +236,9 @@ namespace Neo.SmartContract.Examples
         }
 
         // Remove guardian
-        public static void RemoveGuardian(UInt160 accountId, ECPoint guardian)
+        public static void RemoveGuardian(ByteString accountId, ECPoint guardian)
         {
-            ValidateAddress(accountId, "accountId");
+            ValidateAccountId(accountId, "accountId");
             Assert(guardian != null, "Guardian is null");
             RequireOwner(accountId);
             RequireNotFrozen(accountId);
@@ -254,37 +256,60 @@ namespace Neo.SmartContract.Examples
         }
 
         // Standard verify interface (for AA calls)
-        public static bool Verify(UInt160 accountId)
+        public static bool Verify(ByteString accountId)
         {
             var frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId));
             if (frozen != null) return false;
 
-            var owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId));
+            var ownerBytes = Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId));
+            if (ownerBytes == null) return false;
+            var owner = (UInt160)ownerBytes;
             return Runtime.CheckWitness(owner);
+        }
+
+        public static bool VerifyMetaTx(ByteString accountId, UInt160[] signerHashes)
+        {
+            var frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId));
+            if (frozen != null) return false;
+            if (signerHashes == null || signerHashes.Length == 0) return false;
+
+            var ownerBytes = Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId));
+            if (ownerBytes == null) return false;
+            var owner = (UInt160)ownerBytes;
+            for (int i = 0; i < signerHashes.Length; i++)
+            {
+                if (signerHashes[i] == owner) return true;
+            }
+            return false;
         }
 
         // Query methods
         [Safe]
-        public static UInt160 GetOwner(UInt160 accountId) =>
+        public static UInt160 GetOwner(ByteString accountId) =>
             (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId));
 
         [Safe]
-        public static BigInteger GetNonce(UInt160 accountId) =>
+        public static BigInteger GetNonce(ByteString accountId) =>
             (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_NONCE, accountId));
 
         [Safe]
-        public static bool IsFrozen(UInt160 accountId) =>
+        public static bool IsFrozen(ByteString accountId) =>
             Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId)) != null;
 
         // Helper methods
-        private static byte[] Key(byte prefix, UInt160 accountId) =>
+        private static byte[] Key(byte prefix, ByteString accountId) =>
             Helper.Concat(new byte[] { prefix }, accountId);
 
-        private static byte[] Key(byte prefix, UInt160 accountId, UInt160 address) =>
+        private static byte[] Key(byte prefix, ByteString accountId, UInt160 address) =>
             Helper.Concat(Helper.Concat(new byte[] { prefix }, accountId), address);
 
-        private static byte[] KeyECPoint(byte prefix, UInt160 accountId, ECPoint pubkey) =>
+        private static byte[] KeyECPoint(byte prefix, ByteString accountId, ECPoint pubkey) =>
             Helper.Concat(Helper.Concat(new byte[] { prefix }, accountId), pubkey);
+
+        private static void ValidateAccountId(ByteString accountId, string name)
+        {
+            Assert(accountId != null && accountId.Length > 0, name + " is null");
+        }
 
         private static void ValidateAddress(UInt160 address, string name)
         {
@@ -292,13 +317,13 @@ namespace Neo.SmartContract.Examples
             Assert(!address.IsZero, name + " is zero");
         }
 
-        private static void RequireOwner(UInt160 accountId)
+        private static void RequireOwner(ByteString accountId)
         {
             var owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId));
             Assert(Runtime.CheckWitness(owner), "Not owner");
         }
 
-        private static void RequireNotFrozen(UInt160 accountId)
+        private static void RequireNotFrozen(ByteString accountId)
         {
             var frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId));
             Assert(frozen == null, "Account frozen");
@@ -311,30 +336,30 @@ namespace Neo.SmartContract.Examples
 
         // Events
         [DisplayName("RecoverySetup")]
-        public static event Action<UInt160, UInt160, BigInteger, BigInteger> OnRecoverySetup;
+        public static event Action<ByteString, UInt160, BigInteger, BigInteger> OnRecoverySetup;
 
         [DisplayName("RecoveryInitiated")]
-        public static event Action<UInt160, UInt160, ECPoint[], BigInteger, ulong> OnRecoveryInitiated;
+        public static event Action<ByteString, UInt160, ECPoint[], BigInteger, ulong> OnRecoveryInitiated;
 
         [DisplayName("RecoveryExecuted")]
-        public static event Action<UInt160, UInt160> OnRecoveryExecuted;
+        public static event Action<ByteString, UInt160> OnRecoveryExecuted;
 
         [DisplayName("RecoveryCancelled")]
-        public static event Action<UInt160> OnRecoveryCancelled;
+        public static event Action<ByteString> OnRecoveryCancelled;
 
         [DisplayName("TimelockUpdated")]
-        public static event Action<UInt160, ulong> OnTimelockUpdated;
+        public static event Action<ByteString, ulong> OnTimelockUpdated;
 
         [DisplayName("EmergencyFreeze")]
-        public static event Action<UInt160> OnEmergencyFreeze;
+        public static event Action<ByteString> OnEmergencyFreeze;
 
         [DisplayName("Unfreeze")]
-        public static event Action<UInt160> OnUnfreeze;
+        public static event Action<ByteString> OnUnfreeze;
 
         [DisplayName("GuardianAdded")]
-        public static event Action<UInt160, ECPoint> OnGuardianAdded;
+        public static event Action<ByteString, ECPoint> OnGuardianAdded;
 
         [DisplayName("GuardianRemoved")]
-        public static event Action<UInt160, ECPoint> OnGuardianRemoved;
+        public static event Action<ByteString, ECPoint> OnGuardianRemoved;
     }
 }

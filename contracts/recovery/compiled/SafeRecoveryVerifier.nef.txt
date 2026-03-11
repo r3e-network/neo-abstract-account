@@ -3,1462 +3,1882 @@
 0000 PUSHDATA1 31-2E-31-2E-30 # as text: "1.1.0"
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Version()
 0007 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
 0008 INITSLOT 02-05 # 2 local variables, 5 arguments
 # Code SafeRecoveryVerifier.cs line 42: ""accountId""
 0011 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
 # Code SafeRecoveryVerifier.cs line 42: "accountId"
 0022 LDARG0
-# Code SafeRecoveryVerifier.cs line 42: "ValidateAddress(accountId, "accountId")"
-0023 CALL_L E5-01-00-00 # pos: 508 (offset: 485)
+# Code SafeRecoveryVerifier.cs line 42: "ValidateAccountId(accountId, "accountId")"
+0023 CALL_L 31-02-00-00 # pos: 584 (offset: 561)
 # Code SafeRecoveryVerifier.cs line 43: ""owner""
 0028 PUSHDATA1 6F-77-6E-65-72 # as text: "owner"
 # Code SafeRecoveryVerifier.cs line 43: "owner"
 0035 LDARG1
 # Code SafeRecoveryVerifier.cs line 43: "ValidateAddress(owner, "owner")"
-0036 CALL_L D8-01-00-00 # pos: 508 (offset: 472)
-# Code SafeRecoveryVerifier.cs line 44: ""Too few guardians""
-0041 PUSHDATA1 54-6F-6F-20-66-65-77-20-67-75-61-72-64-69-61-6E-73 # as text: "Too few guardians"
-# Code SafeRecoveryVerifier.cs line 44: "guardians"
-0060 LDARG2
-# Code SafeRecoveryVerifier.cs line 44: "guardians.Length"
-0061 SIZE
-# Code SafeRecoveryVerifier.cs line 44: "MIN_GUARDIANS"
-0062 PUSH3
-# Code SafeRecoveryVerifier.cs line 44: "guardians.Length >= MIN_GUARDIANS"
-0063 GE
-# Code SafeRecoveryVerifier.cs line 44: "Assert(guardians.Length >= MIN_GUARDIANS, "Too few guardians")"
-0064 CALL_L E7-01-00-00 # pos: 551 (offset: 487)
-# Code SafeRecoveryVerifier.cs line 45: ""Too many guardians""
-0069 PUSHDATA1 54-6F-6F-20-6D-61-6E-79-20-67-75-61-72-64-69-61-6E-73 # as text: "Too many guardians"
-# Code SafeRecoveryVerifier.cs line 45: "guardians"
-0089 LDARG2
-# Code SafeRecoveryVerifier.cs line 45: "guardians.Length"
-0090 SIZE
-# Code SafeRecoveryVerifier.cs line 45: "MAX_GUARDIANS"
-0091 PUSH10
-# Code SafeRecoveryVerifier.cs line 45: "guardians.Length <= MAX_GUARDIANS"
-0092 LE
-# Code SafeRecoveryVerifier.cs line 45: "Assert(guardians.Length <= MAX_GUARDIANS, "Too many guardians")"
-0093 CALL_L CA-01-00-00 # pos: 551 (offset: 458)
-# Code SafeRecoveryVerifier.cs line 46: ""Threshold too low""
-0098 PUSHDATA1 54-68-72-65-73-68-6F-6C-64-20-74-6F-6F-20-6C-6F-77 # as text: "Threshold too low"
-# Code SafeRecoveryVerifier.cs line 46: "threshold"
-0117 LDARG3
-# Code SafeRecoveryVerifier.cs line 46: "2"
-0118 PUSH2
-# Code SafeRecoveryVerifier.cs line 46: "threshold >= 2"
-0119 GE
-# Code SafeRecoveryVerifier.cs line 46: "Assert(threshold >= 2, "Threshold too low")"
-0120 CALL_L AF-01-00-00 # pos: 551 (offset: 431)
-# Code SafeRecoveryVerifier.cs line 47: ""Invalid threshold""
-0125 PUSHDATA1 49-6E-76-61-6C-69-64-20-74-68-72-65-73-68-6F-6C-64 # as text: "Invalid threshold"
+0036 CALL_L 50-02-00-00 # pos: 628 (offset: 592)
+# Code SafeRecoveryVerifier.cs line 44: ""Not owner""
+0041 PUSHDATA1 4E-6F-74-20-6F-77-6E-65-72 # as text: "Not owner"
+# Code SafeRecoveryVerifier.cs line 44: "owner"
+0052 LDARG1
+# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
+0053 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code SafeRecoveryVerifier.cs line 44: "Assert(Runtime.CheckWitness(owner), "Not owner")"
+0058 CALL_L 2E-02-00-00 # pos: 616 (offset: 558)
+# Code SafeRecoveryVerifier.cs line 45: ""Recovery already setup""
+0063 PUSHDATA1 52-65-63-6F-76-65-72-79-20-61-6C-72-65-61-64-79-20-73-65-74-75-70 # as text: "Recovery already setup"
+# Code SafeRecoveryVerifier.cs line 45: "accountId"
+0087 LDARG0
+# Code SafeRecoveryVerifier.cs line 45: "PREFIX_OWNER"
+0088 PUSH1
+# Code SafeRecoveryVerifier.cs line 45: "Key(PREFIX_OWNER, accountId)"
+0089 CALL_L 55-02-00-00 # pos: 686 (offset: 597)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0094 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+0099 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 45: "null"
+0104 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 45: "Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId)) == null"
+0105 EQUAL
+# Code SafeRecoveryVerifier.cs line 45: "Assert(Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId)) == null, "Recovery already setup")"
+0106 CALL_L FE-01-00-00 # pos: 616 (offset: 510)
+# Code SafeRecoveryVerifier.cs line 46: ""Too few guardians""
+0111 PUSHDATA1 54-6F-6F-20-66-65-77-20-67-75-61-72-64-69-61-6E-73 # as text: "Too few guardians"
+# Code SafeRecoveryVerifier.cs line 46: "guardians"
+0130 LDARG2
+# Code SafeRecoveryVerifier.cs line 46: "guardians.Length"
+0131 SIZE
+# Code SafeRecoveryVerifier.cs line 46: "MIN_GUARDIANS"
+0132 PUSH3
+# Code SafeRecoveryVerifier.cs line 46: "guardians.Length >= MIN_GUARDIANS"
+0133 GE
+# Code SafeRecoveryVerifier.cs line 46: "Assert(guardians.Length >= MIN_GUARDIANS, "Too few guardians")"
+0134 CALL_L E2-01-00-00 # pos: 616 (offset: 482)
+# Code SafeRecoveryVerifier.cs line 47: ""Too many guardians""
+0139 PUSHDATA1 54-6F-6F-20-6D-61-6E-79-20-67-75-61-72-64-69-61-6E-73 # as text: "Too many guardians"
 # Code SafeRecoveryVerifier.cs line 47: "guardians"
-0144 LDARG2
+0159 LDARG2
 # Code SafeRecoveryVerifier.cs line 47: "guardians.Length"
-0145 SIZE
-# Code SafeRecoveryVerifier.cs line 47: "threshold"
-0146 LDARG3
-# Code SafeRecoveryVerifier.cs line 47: "guardians.Length >= threshold"
-0147 GE
-# Code SafeRecoveryVerifier.cs line 47: "Assert(guardians.Length >= threshold, "Invalid threshold")"
-0148 CALL_L 93-01-00-00 # pos: 551 (offset: 403)
-# Code SafeRecoveryVerifier.cs line 48: ""Timelock too short""
-0153 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-74-6F-6F-20-73-68-6F-72-74 # as text: "Timelock too short"
-# Code SafeRecoveryVerifier.cs line 48: "timelock"
-0173 LDARG4
-# Code SafeRecoveryVerifier.cs line 48: "MIN_TIMELOCK"
-0174 PUSHINT32 00-5C-26-05 # 86400000
-# Code SafeRecoveryVerifier.cs line 48: "timelock >= MIN_TIMELOCK"
-0179 GE
-# Code SafeRecoveryVerifier.cs line 48: "Assert(timelock >= MIN_TIMELOCK, "Timelock too short")"
-0180 CALL_L 73-01-00-00 # pos: 551 (offset: 371)
-# Code SafeRecoveryVerifier.cs line 51: "0"
-0185 PUSH0
-# Code SafeRecoveryVerifier.cs line 51: "i = 0"
-0186 STLOC0
-0187 JMP_L E2-00-00-00 # pos: 413 (offset: 226)
-# Code SafeRecoveryVerifier.cs line 53: ""Guardian is null""
-0192 PUSHDATA1 47-75-61-72-64-69-61-6E-20-69-73-20-6E-75-6C-6C # as text: "Guardian is null"
-# Code SafeRecoveryVerifier.cs line 53: "guardians"
-0210 LDARG2
-# Code SafeRecoveryVerifier.cs line 53: "i"
-0211 LDLOC0
-# Code SafeRecoveryVerifier.cs line 53: "guardians[i]"
-0212 PICKITEM
-# Code SafeRecoveryVerifier.cs line 53: "null"
-0213 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 53: "guardians[i] != null"
-0214 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 53: "Assert(guardians[i] != null, "Guardian is null")"
-0215 CALL_L 50-01-00-00 # pos: 551 (offset: 336)
-# Code SafeRecoveryVerifier.cs line 54: "i"
-0220 LDLOC0
-# Code SafeRecoveryVerifier.cs line 54: "1"
-0221 PUSH1
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0222 ADD
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0223 DUP
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0224 PUSHINT32 00-00-00-80 # -2147483648
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0229 JMPGE 04 # pos: 233 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0231 JMP 0A # pos: 241 (offset: 10)
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0233 DUP
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0234 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0239 JMPLE 1E # pos: 269 (offset: 30)
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0241 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0250 AND
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0251 DUP
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0252 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0257 JMPLE 0C # pos: 269 (offset: 12)
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0259 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
-# Code SafeRecoveryVerifier.cs line 54: "i + 1"
-0268 SUB
-# Code SafeRecoveryVerifier.cs line 54: "j = i + 1"
-0269 STLOC1
-0270 JMP 56 # pos: 356 (offset: 86)
-# Code SafeRecoveryVerifier.cs line 56: ""Duplicate guardian""
-0272 PUSHDATA1 44-75-70-6C-69-63-61-74-65-20-67-75-61-72-64-69-61-6E # as text: "Duplicate guardian"
-# Code SafeRecoveryVerifier.cs line 56: "guardians"
-0292 LDARG2
+0160 SIZE
+# Code SafeRecoveryVerifier.cs line 47: "MAX_GUARDIANS"
+0161 PUSH10
+# Code SafeRecoveryVerifier.cs line 47: "guardians.Length <= MAX_GUARDIANS"
+0162 LE
+# Code SafeRecoveryVerifier.cs line 47: "Assert(guardians.Length <= MAX_GUARDIANS, "Too many guardians")"
+0163 CALL_L C5-01-00-00 # pos: 616 (offset: 453)
+# Code SafeRecoveryVerifier.cs line 48: ""Threshold too low""
+0168 PUSHDATA1 54-68-72-65-73-68-6F-6C-64-20-74-6F-6F-20-6C-6F-77 # as text: "Threshold too low"
+# Code SafeRecoveryVerifier.cs line 48: "threshold"
+0187 LDARG3
+# Code SafeRecoveryVerifier.cs line 48: "2"
+0188 PUSH2
+# Code SafeRecoveryVerifier.cs line 48: "threshold >= 2"
+0189 GE
+# Code SafeRecoveryVerifier.cs line 48: "Assert(threshold >= 2, "Threshold too low")"
+0190 CALL_L AA-01-00-00 # pos: 616 (offset: 426)
+# Code SafeRecoveryVerifier.cs line 49: ""Invalid threshold""
+0195 PUSHDATA1 49-6E-76-61-6C-69-64-20-74-68-72-65-73-68-6F-6C-64 # as text: "Invalid threshold"
+# Code SafeRecoveryVerifier.cs line 49: "guardians"
+0214 LDARG2
+# Code SafeRecoveryVerifier.cs line 49: "guardians.Length"
+0215 SIZE
+# Code SafeRecoveryVerifier.cs line 49: "threshold"
+0216 LDARG3
+# Code SafeRecoveryVerifier.cs line 49: "guardians.Length >= threshold"
+0217 GE
+# Code SafeRecoveryVerifier.cs line 49: "Assert(guardians.Length >= threshold, "Invalid threshold")"
+0218 CALL_L 8E-01-00-00 # pos: 616 (offset: 398)
+# Code SafeRecoveryVerifier.cs line 50: ""Timelock too short""
+0223 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-74-6F-6F-20-73-68-6F-72-74 # as text: "Timelock too short"
+# Code SafeRecoveryVerifier.cs line 50: "timelock"
+0243 LDARG4
+# Code SafeRecoveryVerifier.cs line 50: "MIN_TIMELOCK"
+0244 PUSHINT32 00-5C-26-05 # 86400000
+# Code SafeRecoveryVerifier.cs line 50: "timelock >= MIN_TIMELOCK"
+0249 GE
+# Code SafeRecoveryVerifier.cs line 50: "Assert(timelock >= MIN_TIMELOCK, "Timelock too short")"
+0250 CALL_L 6E-01-00-00 # pos: 616 (offset: 366)
+# Code SafeRecoveryVerifier.cs line 53: "0"
+0255 PUSH0
+# Code SafeRecoveryVerifier.cs line 53: "i = 0"
+0256 STLOC0
+0257 JMP_L E2-00-00-00 # pos: 483 (offset: 226)
+# Code SafeRecoveryVerifier.cs line 55: ""Guardian is null""
+0262 PUSHDATA1 47-75-61-72-64-69-61-6E-20-69-73-20-6E-75-6C-6C # as text: "Guardian is null"
+# Code SafeRecoveryVerifier.cs line 55: "guardians"
+0280 LDARG2
+# Code SafeRecoveryVerifier.cs line 55: "i"
+0281 LDLOC0
+# Code SafeRecoveryVerifier.cs line 55: "guardians[i]"
+0282 PICKITEM
+# Code SafeRecoveryVerifier.cs line 55: "null"
+0283 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 55: "guardians[i] != null"
+0284 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 55: "Assert(guardians[i] != null, "Guardian is null")"
+0285 CALL_L 4B-01-00-00 # pos: 616 (offset: 331)
 # Code SafeRecoveryVerifier.cs line 56: "i"
-0293 LDLOC0
-# Code SafeRecoveryVerifier.cs line 56: "guardians[i]"
-0294 PICKITEM
-# Code SafeRecoveryVerifier.cs line 56: "guardians"
-0295 LDARG2
+0290 LDLOC0
+# Code SafeRecoveryVerifier.cs line 56: "1"
+0291 PUSH1
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0292 ADD
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0293 DUP
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0294 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0299 JMPGE 04 # pos: 303 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0301 JMP 0A # pos: 311 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0303 DUP
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0304 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0309 JMPLE 1E # pos: 339 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0311 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0320 AND
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0321 DUP
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0322 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0327 JMPLE 0C # pos: 339 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0329 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 56: "i + 1"
+0338 SUB
+# Code SafeRecoveryVerifier.cs line 56: "j = i + 1"
+0339 STLOC1
+0340 JMP 56 # pos: 426 (offset: 86)
+# Code SafeRecoveryVerifier.cs line 58: ""Duplicate guardian""
+0342 PUSHDATA1 44-75-70-6C-69-63-61-74-65-20-67-75-61-72-64-69-61-6E # as text: "Duplicate guardian"
+# Code SafeRecoveryVerifier.cs line 58: "guardians"
+0362 LDARG2
+# Code SafeRecoveryVerifier.cs line 58: "i"
+0363 LDLOC0
+# Code SafeRecoveryVerifier.cs line 58: "guardians[i]"
+0364 PICKITEM
+# Code SafeRecoveryVerifier.cs line 58: "guardians"
+0365 LDARG2
+# Code SafeRecoveryVerifier.cs line 58: "j"
+0366 LDLOC1
+# Code SafeRecoveryVerifier.cs line 58: "guardians[j]"
+0367 PICKITEM
+# Code SafeRecoveryVerifier.cs line 58: "guardians[i].Equals(guardians[j])"
+0368 EQUAL
+# Code SafeRecoveryVerifier.cs line 58: "!guardians[i].Equals(guardians[j])"
+0369 NOT
+# Code SafeRecoveryVerifier.cs line 58: "Assert(!guardians[i].Equals(guardians[j]), "Duplicate guardian")"
+0370 CALL_L F6-00-00-00 # pos: 616 (offset: 246)
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0375 LDLOC1
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0376 DUP
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0377 INC
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0378 DUP
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0379 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0384 JMPGE 04 # pos: 388 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0386 JMP 0A # pos: 396 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0388 DUP
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0389 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0394 JMPLE 1E # pos: 424 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0396 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0405 AND
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0406 DUP
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0407 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0412 JMPLE 0C # pos: 424 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0414 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0423 SUB
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0424 STLOC1
+# Code SafeRecoveryVerifier.cs line 56: "j++"
+0425 DROP
 # Code SafeRecoveryVerifier.cs line 56: "j"
-0296 LDLOC1
-# Code SafeRecoveryVerifier.cs line 56: "guardians[j]"
-0297 PICKITEM
-# Code SafeRecoveryVerifier.cs line 56: "guardians[i].Equals(guardians[j])"
-0298 EQUAL
-# Code SafeRecoveryVerifier.cs line 56: "!guardians[i].Equals(guardians[j])"
-0299 NOT
-# Code SafeRecoveryVerifier.cs line 56: "Assert(!guardians[i].Equals(guardians[j]), "Duplicate guardian")"
-0300 CALL_L FB-00-00-00 # pos: 551 (offset: 251)
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0305 LDLOC1
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0306 DUP
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0307 INC
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0308 DUP
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0309 PUSHINT32 00-00-00-80 # -2147483648
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0314 JMPGE 04 # pos: 318 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0316 JMP 0A # pos: 326 (offset: 10)
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0318 DUP
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0319 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0324 JMPLE 1E # pos: 354 (offset: 30)
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0326 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0335 AND
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0336 DUP
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0337 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0342 JMPLE 0C # pos: 354 (offset: 12)
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0344 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0353 SUB
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0354 STLOC1
-# Code SafeRecoveryVerifier.cs line 54: "j++"
-0355 DROP
-# Code SafeRecoveryVerifier.cs line 54: "j"
-0356 LDLOC1
-# Code SafeRecoveryVerifier.cs line 54: "guardians"
-0357 LDARG2
-# Code SafeRecoveryVerifier.cs line 54: "guardians.Length"
-0358 SIZE
-# Code SafeRecoveryVerifier.cs line 54: "j < guardians.Length"
-0359 LT
-0360 JMPIF A8 # pos: 272 (offset: -88)
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0362 LDLOC0
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0363 DUP
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0364 INC
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0365 DUP
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0366 PUSHINT32 00-00-00-80 # -2147483648
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0371 JMPGE 04 # pos: 375 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0373 JMP 0A # pos: 383 (offset: 10)
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0375 DUP
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0376 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0381 JMPLE 1E # pos: 411 (offset: 30)
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0383 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0392 AND
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0393 DUP
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0394 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0399 JMPLE 0C # pos: 411 (offset: 12)
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0401 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0410 SUB
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0411 STLOC0
-# Code SafeRecoveryVerifier.cs line 51: "i++"
-0412 DROP
-# Code SafeRecoveryVerifier.cs line 51: "i"
-0413 LDLOC0
-# Code SafeRecoveryVerifier.cs line 51: "guardians"
-0414 LDARG2
-# Code SafeRecoveryVerifier.cs line 51: "guardians.Length"
-0415 SIZE
-# Code SafeRecoveryVerifier.cs line 51: "i < guardians.Length"
-0416 LT
-0417 JMPIF_L 1F-FF-FF-FF # pos: 192 (offset: -225)
-# Code SafeRecoveryVerifier.cs line 65: "true"
-0422 PUSHT
-# Code SafeRecoveryVerifier.cs line 64: "timelock"
-0423 LDARG4
-# Code SafeRecoveryVerifier.cs line 63: "threshold"
-0424 LDARG3
-# Code SafeRecoveryVerifier.cs line 62: "guardians"
-0425 LDARG2
-# Code SafeRecoveryVerifier.cs line 60: "new RecoveryModule"
-# Code SafeRecoveryVerifier.cs line 60: "{"
-# Code SafeRecoveryVerifier.cs line 60: "Guardians = guardians,"
-# Code SafeRecoveryVerifier.cs line 60: "Threshold = threshold,"
-# Code SafeRecoveryVerifier.cs line 60: "Timelock = timelock,"
-# Code SafeRecoveryVerifier.cs line 60: "Enabled = true"
-# Code SafeRecoveryVerifier.cs line 60: "}"
-0426 PUSH4
-# Code SafeRecoveryVerifier.cs line 60: "new RecoveryModule"
-# Code SafeRecoveryVerifier.cs line 60: "{"
-# Code SafeRecoveryVerifier.cs line 60: "Guardians = guardians,"
-# Code SafeRecoveryVerifier.cs line 60: "Threshold = threshold,"
-# Code SafeRecoveryVerifier.cs line 60: "Timelock = timelock,"
-# Code SafeRecoveryVerifier.cs line 60: "Enabled = true"
-# Code SafeRecoveryVerifier.cs line 60: "}"
-0427 PACK
-# Code SafeRecoveryVerifier.cs line 60: "module = new RecoveryModule"
-# Code SafeRecoveryVerifier.cs line 60: "{"
-# Code SafeRecoveryVerifier.cs line 60: "Guardians = guardians,"
-# Code SafeRecoveryVerifier.cs line 60: "Threshold = threshold,"
-# Code SafeRecoveryVerifier.cs line 60: "Timelock = timelock,"
-# Code SafeRecoveryVerifier.cs line 60: "Enabled = true"
-# Code SafeRecoveryVerifier.cs line 60: "}"
-0428 STLOC0
-# Code SafeRecoveryVerifier.cs line 68: "owner"
-0429 LDARG1
-# Code SafeRecoveryVerifier.cs line 68: "accountId"
-0430 LDARG0
-# Code SafeRecoveryVerifier.cs line 68: "PREFIX_OWNER"
-0431 PUSH1
-# Code SafeRecoveryVerifier.cs line 68: "Key(PREFIX_OWNER, accountId)"
-0432 CALL_L 8B-00-00-00 # pos: 571 (offset: 139)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0437 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
-0442 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 69: "module"
-0447 LDLOC0
-# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
-0448 CALLT 00-00 # StdLib.serialize token call
-# Code SafeRecoveryVerifier.cs line 69: "accountId"
-0451 LDARG0
-# Code SafeRecoveryVerifier.cs line 69: "PREFIX_RECOVERY_MODULE"
-0452 PUSH2
-# Code SafeRecoveryVerifier.cs line 69: "Key(PREFIX_RECOVERY_MODULE, accountId)"
-0453 CALL 76 # pos: 571 (offset: 118)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0455 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
-0460 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 70: "0"
-0465 PUSH0
+0426 LDLOC1
+# Code SafeRecoveryVerifier.cs line 56: "guardians"
+0427 LDARG2
+# Code SafeRecoveryVerifier.cs line 56: "guardians.Length"
+0428 SIZE
+# Code SafeRecoveryVerifier.cs line 56: "j < guardians.Length"
+0429 LT
+0430 JMPIF A8 # pos: 342 (offset: -88)
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0432 LDLOC0
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0433 DUP
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0434 INC
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0435 DUP
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0436 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0441 JMPGE 04 # pos: 445 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0443 JMP 0A # pos: 453 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0445 DUP
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0446 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0451 JMPLE 1E # pos: 481 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0453 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0462 AND
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0463 DUP
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0464 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0469 JMPLE 0C # pos: 481 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0471 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0480 SUB
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0481 STLOC0
+# Code SafeRecoveryVerifier.cs line 53: "i++"
+0482 DROP
+# Code SafeRecoveryVerifier.cs line 53: "i"
+0483 LDLOC0
+# Code SafeRecoveryVerifier.cs line 53: "guardians"
+0484 LDARG2
+# Code SafeRecoveryVerifier.cs line 53: "guardians.Length"
+0485 SIZE
+# Code SafeRecoveryVerifier.cs line 53: "i < guardians.Length"
+0486 LT
+0487 JMPIF_L 1F-FF-FF-FF # pos: 262 (offset: -225)
+# Code SafeRecoveryVerifier.cs line 67: "true"
+0492 PUSHT
+# Code SafeRecoveryVerifier.cs line 66: "timelock"
+0493 LDARG4
+# Code SafeRecoveryVerifier.cs line 65: "threshold"
+0494 LDARG3
+# Code SafeRecoveryVerifier.cs line 64: "guardians"
+0495 LDARG2
+# Code SafeRecoveryVerifier.cs line 62: "new RecoveryModule"
+# Code SafeRecoveryVerifier.cs line 62: "{"
+# Code SafeRecoveryVerifier.cs line 62: "Guardians = guardians,"
+# Code SafeRecoveryVerifier.cs line 62: "Threshold = threshold,"
+# Code SafeRecoveryVerifier.cs line 62: "Timelock = timelock,"
+# Code SafeRecoveryVerifier.cs line 62: "Enabled = true"
+# Code SafeRecoveryVerifier.cs line 62: "}"
+0496 PUSH4
+# Code SafeRecoveryVerifier.cs line 62: "new RecoveryModule"
+# Code SafeRecoveryVerifier.cs line 62: "{"
+# Code SafeRecoveryVerifier.cs line 62: "Guardians = guardians,"
+# Code SafeRecoveryVerifier.cs line 62: "Threshold = threshold,"
+# Code SafeRecoveryVerifier.cs line 62: "Timelock = timelock,"
+# Code SafeRecoveryVerifier.cs line 62: "Enabled = true"
+# Code SafeRecoveryVerifier.cs line 62: "}"
+0497 PACK
+# Code SafeRecoveryVerifier.cs line 62: "module = new RecoveryModule"
+# Code SafeRecoveryVerifier.cs line 62: "{"
+# Code SafeRecoveryVerifier.cs line 62: "Guardians = guardians,"
+# Code SafeRecoveryVerifier.cs line 62: "Threshold = threshold,"
+# Code SafeRecoveryVerifier.cs line 62: "Timelock = timelock,"
+# Code SafeRecoveryVerifier.cs line 62: "Enabled = true"
+# Code SafeRecoveryVerifier.cs line 62: "}"
+0498 STLOC0
+# Code SafeRecoveryVerifier.cs line 70: "owner"
+0499 LDARG1
 # Code SafeRecoveryVerifier.cs line 70: "accountId"
-0466 LDARG0
-# Code SafeRecoveryVerifier.cs line 70: "PREFIX_NONCE"
-0467 PUSH4
-# Code SafeRecoveryVerifier.cs line 70: "Key(PREFIX_NONCE, accountId)"
-0468 CALL 67 # pos: 571 (offset: 103)
+0500 LDARG0
+# Code SafeRecoveryVerifier.cs line 70: "PREFIX_OWNER"
+0501 PUSH1
+# Code SafeRecoveryVerifier.cs line 70: "Key(PREFIX_OWNER, accountId)"
+0502 CALL_L B8-00-00-00 # pos: 686 (offset: 184)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0470 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
-0475 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 72: "threshold"
-0480 LDARG3
-# Code SafeRecoveryVerifier.cs line 72: "guardians"
-0481 LDARG2
-# Code SafeRecoveryVerifier.cs line 72: "guardians.Length"
-0482 SIZE
-# Code SafeRecoveryVerifier.cs line 72: "owner"
-0483 LDARG1
+0507 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+0512 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 71: "module"
+0517 LDLOC0
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+0518 CALLT 00-00 # StdLib.serialize token call
+# Code SafeRecoveryVerifier.cs line 71: "accountId"
+0521 LDARG0
+# Code SafeRecoveryVerifier.cs line 71: "PREFIX_RECOVERY_MODULE"
+0522 PUSH2
+# Code SafeRecoveryVerifier.cs line 71: "Key(PREFIX_RECOVERY_MODULE, accountId)"
+0523 CALL_L A3-00-00-00 # pos: 686 (offset: 163)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0528 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+0533 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 72: "0"
+0538 PUSH0
 # Code SafeRecoveryVerifier.cs line 72: "accountId"
-0484 LDARG0
-# Code SafeRecoveryVerifier.cs line 72: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
-0485 PUSH4
-# Code SafeRecoveryVerifier.cs line 72: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
-0486 PACK
-# Code SafeRecoveryVerifier.cs line 72: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
-0487 PUSHDATA1 52-65-63-6F-76-65-72-79-53-65-74-75-70 # as text: "RecoverySetup"
-# Code SafeRecoveryVerifier.cs line 72: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
-0502 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
-# Code SafeRecoveryVerifier.cs line 73: "}"
-0507 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
-0508 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 242: "name"
-0511 LDARG1
-# Code SafeRecoveryVerifier.cs line 242: "" is null""
-0512 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
-# Code SafeRecoveryVerifier.cs line 242: "name + " is null""
-0522 CAT
-# Code SafeRecoveryVerifier.cs line 242: "name + " is null""
-0523 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 242: "address"
-0525 LDARG0
-# Code SafeRecoveryVerifier.cs line 242: "null"
-0526 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 242: "address != null"
-0527 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 242: "Assert(address != null, name + " is null")"
-0528 CALL 17 # pos: 551 (offset: 23)
-# Code SafeRecoveryVerifier.cs line 243: "name"
-0530 LDARG1
-# Code SafeRecoveryVerifier.cs line 243: "" is zero""
-0531 PUSHDATA1 20-69-73-20-7A-65-72-6F # as text: " is zero"
-# Code SafeRecoveryVerifier.cs line 243: "name + " is zero""
-0541 CAT
-# Code SafeRecoveryVerifier.cs line 243: "name + " is zero""
-0542 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 243: "address"
-0544 LDARG0
-# Code UInt160.cs line 28: "OpCode(OpCode.PUSH0)"
-0545 PUSH0
-# Code UInt160.cs line 29: "OpCode(OpCode.NUMEQUAL)"
-0546 NUMEQUAL
-# Code SafeRecoveryVerifier.cs line 243: "!address.IsZero"
-0547 NOT
-# Code SafeRecoveryVerifier.cs line 243: "Assert(!address.IsZero, name + " is zero")"
-0548 CALL 03 # pos: 551 (offset: 3)
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
-# Code SafeRecoveryVerifier.cs line 244: "}"
-0550 RET
+0539 LDARG0
+# Code SafeRecoveryVerifier.cs line 72: "PREFIX_NONCE"
+0540 PUSH4
+# Code SafeRecoveryVerifier.cs line 72: "Key(PREFIX_NONCE, accountId)"
+0541 CALL_L 91-00-00-00 # pos: 686 (offset: 145)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+0546 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+0551 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 74: "threshold"
+0556 LDARG3
+# Code SafeRecoveryVerifier.cs line 74: "guardians"
+0557 LDARG2
+# Code SafeRecoveryVerifier.cs line 74: "guardians.Length"
+0558 SIZE
+# Code SafeRecoveryVerifier.cs line 74: "owner"
+0559 LDARG1
+# Code SafeRecoveryVerifier.cs line 74: "accountId"
+0560 LDARG0
+# Code SafeRecoveryVerifier.cs line 74: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0561 PUSH4
+# Code SafeRecoveryVerifier.cs line 74: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0562 PACK
+# Code SafeRecoveryVerifier.cs line 74: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0563 PUSHDATA1 52-65-63-6F-76-65-72-79-53-65-74-75-70 # as text: "RecoverySetup"
+# Code SafeRecoveryVerifier.cs line 74: "OnRecoverySetup(accountId, owner, guardians.Length, threshold)"
+0578 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.SetupRecovery(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
+# Code SafeRecoveryVerifier.cs line 75: "}"
+0583 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAccountId(Neo.SmartContract.Framework.ByteString, string)
+0584 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 270: "name"
+0587 LDARG1
+# Code SafeRecoveryVerifier.cs line 270: "" is null""
+0588 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
+# Code SafeRecoveryVerifier.cs line 270: "name + " is null""
+0598 CAT
+# Code SafeRecoveryVerifier.cs line 270: "name + " is null""
+0599 CONVERT 28 # ByteString type
+# Code SafeRecoveryVerifier.cs line 270: "accountId"
+0601 LDARG0
+# Code SafeRecoveryVerifier.cs line 270: "null"
+0602 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 270: "accountId != null"
+0603 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 270: "accountId != null && accountId.Length > 0"
+0604 JMPIF 05 # pos: 609 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 270: "accountId != null && accountId.Length > 0"
+0606 PUSHF
+# Code SafeRecoveryVerifier.cs line 270: "accountId != null && accountId.Length > 0"
+0607 JMP 06 # pos: 613 (offset: 6)
+# Code SafeRecoveryVerifier.cs line 270: "accountId"
+0609 LDARG0
+# Code ByteString.cs line 32: "OpCode(OpCode.SIZE)"
+0610 SIZE
+# Code SafeRecoveryVerifier.cs line 270: "0"
+0611 PUSH0
+# Code SafeRecoveryVerifier.cs line 270: "accountId.Length > 0"
+0612 GT
+# Code SafeRecoveryVerifier.cs line 270: "Assert(accountId != null && accountId.Length > 0, name + " is null")"
+0613 CALL 03 # pos: 616 (offset: 3)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAccountId(Neo.SmartContract.Framework.ByteString, string)
+# Code SafeRecoveryVerifier.cs line 271: "}"
+0615 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Assert(bool, string)
-0551 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 260: "condition"
-0554 LDARG0
-# Code SafeRecoveryVerifier.cs line 260: "!condition"
-0555 NOT
-# Code SafeRecoveryVerifier.cs line 260: "if (!condition) throw new Exception(message);"
-0556 JMPIFNOT 04 # pos: 560 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 260: "message"
-0558 LDARG1
-# Code SafeRecoveryVerifier.cs line 260: "throw new Exception(message);"
-0559 THROW
+0616 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 293: "condition"
+0619 LDARG0
+# Code SafeRecoveryVerifier.cs line 293: "!condition"
+0620 NOT
+# Code SafeRecoveryVerifier.cs line 293: "if (!condition) throw new Exception(message);"
+0621 JMPIFNOT 04 # pos: 625 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 293: "message"
+0623 LDARG1
+# Code SafeRecoveryVerifier.cs line 293: "throw new Exception(message);"
+0624 THROW
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Assert(bool, string)
-# Code SafeRecoveryVerifier.cs line 261: "}"
-0560 RET
-0561 PUSH0
-0562 NUMEQUAL
-0563 RET
-0564 RET
-0565 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-0570 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160)
-0571 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 238: "new byte[] { prefix }"
-0574 PUSH1
-# Code SafeRecoveryVerifier.cs line 238: "new byte[] { prefix }"
-0575 NEWBUFFER
-# Code SafeRecoveryVerifier.cs line 238: "new byte[] { prefix }"
-0576 DUP
-# Code SafeRecoveryVerifier.cs line 238: "new byte[] { prefix }"
-0577 PUSH0
-# Code SafeRecoveryVerifier.cs line 238: "prefix"
-0578 LDARG0
-# Code SafeRecoveryVerifier.cs line 238: "new byte[] { prefix }"
-0579 SETITEM
-# Code SafeRecoveryVerifier.cs line 238: "accountId"
-0580 LDARG1
+# Code SafeRecoveryVerifier.cs line 294: "}"
+0625 RET
+0626 SIZE
+0627 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
+0628 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 275: "name"
+0631 LDARG1
+# Code SafeRecoveryVerifier.cs line 275: "" is null""
+0632 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
+# Code SafeRecoveryVerifier.cs line 275: "name + " is null""
+0642 CAT
+# Code SafeRecoveryVerifier.cs line 275: "name + " is null""
+0643 CONVERT 28 # ByteString type
+# Code SafeRecoveryVerifier.cs line 275: "address"
+0645 LDARG0
+# Code SafeRecoveryVerifier.cs line 275: "null"
+0646 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 275: "address != null"
+0647 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 275: "Assert(address != null, name + " is null")"
+0648 CALL E0 # pos: 616 (offset: -32)
+# Code SafeRecoveryVerifier.cs line 276: "name"
+0650 LDARG1
+# Code SafeRecoveryVerifier.cs line 276: "" is zero""
+0651 PUSHDATA1 20-69-73-20-7A-65-72-6F # as text: " is zero"
+# Code SafeRecoveryVerifier.cs line 276: "name + " is zero""
+0661 CAT
+# Code SafeRecoveryVerifier.cs line 276: "name + " is zero""
+0662 CONVERT 28 # ByteString type
+# Code SafeRecoveryVerifier.cs line 276: "address"
+0664 LDARG0
+# Code UInt160.cs line 28: "OpCode(OpCode.PUSH0)"
+0665 PUSH0
+# Code UInt160.cs line 29: "OpCode(OpCode.NUMEQUAL)"
+0666 NUMEQUAL
+# Code SafeRecoveryVerifier.cs line 276: "!address.IsZero"
+0667 NOT
+# Code SafeRecoveryVerifier.cs line 276: "Assert(!address.IsZero, name + " is zero")"
+0668 CALL CC # pos: 616 (offset: -52)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
+# Code SafeRecoveryVerifier.cs line 277: "}"
+0670 RET
+0671 PUSH0
+0672 NUMEQUAL
+0673 RET
+0674 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+0679 RET
+0680 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+0685 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.ByteString)
+0686 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 266: "new byte[] { prefix }"
+0689 PUSH1
+# Code SafeRecoveryVerifier.cs line 266: "new byte[] { prefix }"
+0690 NEWBUFFER
+# Code SafeRecoveryVerifier.cs line 266: "new byte[] { prefix }"
+0691 DUP
+# Code SafeRecoveryVerifier.cs line 266: "new byte[] { prefix }"
+0692 PUSH0
+# Code SafeRecoveryVerifier.cs line 266: "prefix"
+0693 LDARG0
+# Code SafeRecoveryVerifier.cs line 266: "new byte[] { prefix }"
+0694 SETITEM
+# Code SafeRecoveryVerifier.cs line 266: "accountId"
+0695 LDARG1
 # Code Helper.cs line 200: "OpCode(OpCode.CAT)"
-0581 CAT
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.UInt160)
-0582 RET
-0583 CAT
-0584 RET
-0585 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-0590 RET
-0591 CALLT 00-00 # StdLib.serialize token call
-0594 RET
-0595 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-0600 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.UpdateModule(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
-0601 INITSLOT 02-04 # 2 local variables, 4 arguments
-# Code SafeRecoveryVerifier.cs line 77: ""accountId""
-0604 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
-# Code SafeRecoveryVerifier.cs line 77: "accountId"
-0615 LDARG0
-# Code SafeRecoveryVerifier.cs line 77: "ValidateAddress(accountId, "accountId")"
-0616 CALL 94 # pos: 508 (offset: -108)
-# Code SafeRecoveryVerifier.cs line 78: "accountId"
-0618 LDARG0
-# Code SafeRecoveryVerifier.cs line 78: "RequireOwner(accountId)"
-0619 CALL_L D7-00-00-00 # pos: 834 (offset: 215)
+0696 CAT
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.ByteString)
+0697 RET
+0698 CAT
+0699 RET
+0700 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+0705 RET
+0706 RET
+0707 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+0712 RET
+0713 CALLT 00-00 # StdLib.serialize token call
+0716 RET
+0717 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+0722 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.UpdateModule(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
+0723 INITSLOT 03-04 # 3 local variables, 4 arguments
+# Code SafeRecoveryVerifier.cs line 79: ""accountId""
+0726 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
 # Code SafeRecoveryVerifier.cs line 79: "accountId"
-0624 LDARG0
-# Code SafeRecoveryVerifier.cs line 79: "RequireNotFrozen(accountId)"
-0625 CALL_L 14-01-00-00 # pos: 901 (offset: 276)
-# Code SafeRecoveryVerifier.cs line 82: "accountId"
-0630 LDARG0
-# Code SafeRecoveryVerifier.cs line 82: "PREFIX_PENDING_RECOVERY"
-0631 PUSH5
-# Code SafeRecoveryVerifier.cs line 82: "Key(PREFIX_PENDING_RECOVERY, accountId)"
-0632 CALL C3 # pos: 571 (offset: -61)
+0737 LDARG0
+# Code SafeRecoveryVerifier.cs line 79: "ValidateAccountId(accountId, "accountId")"
+0738 CALL_L 66-FF-FF-FF # pos: 584 (offset: -154)
+# Code SafeRecoveryVerifier.cs line 80: "accountId"
+0743 LDARG0
+# Code SafeRecoveryVerifier.cs line 80: "RequireOwner(accountId)"
+0744 CALL_L C7-01-00-00 # pos: 1199 (offset: 455)
+# Code SafeRecoveryVerifier.cs line 81: "accountId"
+0749 LDARG0
+# Code SafeRecoveryVerifier.cs line 81: "RequireNotFrozen(accountId)"
+0750 CALL_L F8-01-00-00 # pos: 1254 (offset: 504)
+# Code SafeRecoveryVerifier.cs line 84: "accountId"
+0755 LDARG0
+# Code SafeRecoveryVerifier.cs line 84: "PREFIX_PENDING_RECOVERY"
+0756 PUSH5
+# Code SafeRecoveryVerifier.cs line 84: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+0757 CALL B9 # pos: 686 (offset: -71)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0634 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+0759 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-0639 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 82: "pendingRecovery = Storage.Get(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId))"
-0644 STLOC0
-# Code SafeRecoveryVerifier.cs line 83: ""Recovery in progress""
-0645 PUSHDATA1 52-65-63-6F-76-65-72-79-20-69-6E-20-70-72-6F-67-72-65-73-73 # as script hash: 0x73736572676f7270206e6920797265766f636552, as text: "Recovery in progress"
-# Code SafeRecoveryVerifier.cs line 83: "pendingRecovery"
-0667 LDLOC0
-# Code SafeRecoveryVerifier.cs line 83: "null"
-0668 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 83: "pendingRecovery == null"
-0669 EQUAL
-# Code SafeRecoveryVerifier.cs line 83: "Assert(pendingRecovery == null, "Recovery in progress")"
-0670 CALL 89 # pos: 551 (offset: -119)
-# Code SafeRecoveryVerifier.cs line 85: ""Invalid guardian count""
-0672 PUSHDATA1 49-6E-76-61-6C-69-64-20-67-75-61-72-64-69-61-6E-20-63-6F-75-6E-74 # as text: "Invalid guardian count"
-# Code SafeRecoveryVerifier.cs line 85: "guardians"
-0696 LDARG1
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length"
-0697 SIZE
-# Code SafeRecoveryVerifier.cs line 85: "MIN_GUARDIANS"
-0698 PUSH3
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length >= MIN_GUARDIANS"
-0699 GE
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
-0700 JMPIF 05 # pos: 705 (offset: 5)
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
-0702 PUSHF
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
-0703 JMP 06 # pos: 709 (offset: 6)
-# Code SafeRecoveryVerifier.cs line 85: "guardians"
-0705 LDARG1
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length"
-0706 SIZE
-# Code SafeRecoveryVerifier.cs line 85: "MAX_GUARDIANS"
-0707 PUSH10
-# Code SafeRecoveryVerifier.cs line 85: "guardians.Length <= MAX_GUARDIANS"
-0708 LE
-# Code SafeRecoveryVerifier.cs line 85: "Assert(guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS, "Invalid guardian count")"
-0709 CALL_L 62-FF-FF-FF # pos: 551 (offset: -158)
-# Code SafeRecoveryVerifier.cs line 86: ""Invalid threshold""
-0714 PUSHDATA1 49-6E-76-61-6C-69-64-20-74-68-72-65-73-68-6F-6C-64 # as text: "Invalid threshold"
-# Code SafeRecoveryVerifier.cs line 86: "threshold"
-0733 LDARG2
-# Code SafeRecoveryVerifier.cs line 86: "2"
-0734 PUSH2
-# Code SafeRecoveryVerifier.cs line 86: "threshold >= 2"
-0735 GE
-# Code SafeRecoveryVerifier.cs line 86: "threshold >= 2 && guardians.Length >= threshold"
-0736 JMPIF 05 # pos: 741 (offset: 5)
-# Code SafeRecoveryVerifier.cs line 86: "threshold >= 2 && guardians.Length >= threshold"
-0738 PUSHF
-# Code SafeRecoveryVerifier.cs line 86: "threshold >= 2 && guardians.Length >= threshold"
-0739 JMP 06 # pos: 745 (offset: 6)
-# Code SafeRecoveryVerifier.cs line 86: "guardians"
-0741 LDARG1
-# Code SafeRecoveryVerifier.cs line 86: "guardians.Length"
-0742 SIZE
-# Code SafeRecoveryVerifier.cs line 86: "threshold"
-0743 LDARG2
-# Code SafeRecoveryVerifier.cs line 86: "guardians.Length >= threshold"
-0744 GE
-# Code SafeRecoveryVerifier.cs line 86: "Assert(threshold >= 2 && guardians.Length >= threshold, "Invalid threshold")"
-0745 CALL_L 3E-FF-FF-FF # pos: 551 (offset: -194)
-# Code SafeRecoveryVerifier.cs line 87: ""Timelock too short""
-0750 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-74-6F-6F-20-73-68-6F-72-74 # as text: "Timelock too short"
-# Code SafeRecoveryVerifier.cs line 87: "timelock"
-0770 LDARG3
-# Code SafeRecoveryVerifier.cs line 87: "MIN_TIMELOCK"
-0771 PUSHINT32 00-5C-26-05 # 86400000
-# Code SafeRecoveryVerifier.cs line 87: "timelock >= MIN_TIMELOCK"
-0776 GE
-# Code SafeRecoveryVerifier.cs line 87: "Assert(timelock >= MIN_TIMELOCK, "Timelock too short")"
-0777 CALL_L 1E-FF-FF-FF # pos: 551 (offset: -226)
-# Code SafeRecoveryVerifier.cs line 94: "true"
-0782 PUSHT
-# Code SafeRecoveryVerifier.cs line 93: "timelock"
-0783 LDARG3
-# Code SafeRecoveryVerifier.cs line 92: "threshold"
-0784 LDARG2
-# Code SafeRecoveryVerifier.cs line 91: "guardians"
-0785 LDARG1
-# Code SafeRecoveryVerifier.cs line 89: "new RecoveryModule"
-# Code SafeRecoveryVerifier.cs line 89: "{"
-# Code SafeRecoveryVerifier.cs line 89: "Guardians = guardians,"
-# Code SafeRecoveryVerifier.cs line 89: "Threshold = threshold,"
-# Code SafeRecoveryVerifier.cs line 89: "Timelock = timelock,"
-# Code SafeRecoveryVerifier.cs line 89: "Enabled = true"
-# Code SafeRecoveryVerifier.cs line 89: "}"
-0786 PUSH4
-# Code SafeRecoveryVerifier.cs line 89: "new RecoveryModule"
-# Code SafeRecoveryVerifier.cs line 89: "{"
-# Code SafeRecoveryVerifier.cs line 89: "Guardians = guardians,"
-# Code SafeRecoveryVerifier.cs line 89: "Threshold = threshold,"
-# Code SafeRecoveryVerifier.cs line 89: "Timelock = timelock,"
-# Code SafeRecoveryVerifier.cs line 89: "Enabled = true"
-# Code SafeRecoveryVerifier.cs line 89: "}"
-0787 PACK
-# Code SafeRecoveryVerifier.cs line 89: "module = new RecoveryModule"
-# Code SafeRecoveryVerifier.cs line 89: "{"
-# Code SafeRecoveryVerifier.cs line 89: "Guardians = guardians,"
-# Code SafeRecoveryVerifier.cs line 89: "Threshold = threshold,"
-# Code SafeRecoveryVerifier.cs line 89: "Timelock = timelock,"
-# Code SafeRecoveryVerifier.cs line 89: "Enabled = true"
-# Code SafeRecoveryVerifier.cs line 89: "}"
-0788 STLOC1
-# Code SafeRecoveryVerifier.cs line 97: "module"
-0789 LDLOC1
-# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
-0790 CALLT 00-00 # StdLib.serialize token call
-# Code SafeRecoveryVerifier.cs line 97: "accountId"
-0793 LDARG0
-# Code SafeRecoveryVerifier.cs line 97: "PREFIX_RECOVERY_MODULE"
-0794 PUSH2
-# Code SafeRecoveryVerifier.cs line 97: "Key(PREFIX_RECOVERY_MODULE, accountId)"
-0795 CALL_L 20-FF-FF-FF # pos: 571 (offset: -224)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0800 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
-0805 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 98: "accountId"
-0810 LDARG0
-# Code SafeRecoveryVerifier.cs line 98: "OnModuleUpdated(accountId)"
-0811 PUSH1
-# Code SafeRecoveryVerifier.cs line 98: "OnModuleUpdated(accountId)"
-0812 PACK
-# Code SafeRecoveryVerifier.cs line 98: "OnModuleUpdated(accountId)"
-0813 PUSHDATA1 4D-6F-64-75-6C-65-55-70-64-61-74-65-64 # as text: "ModuleUpdated"
-# Code SafeRecoveryVerifier.cs line 98: "OnModuleUpdated(accountId)"
-0828 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.UpdateModule(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
+0764 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 84: "pendingRecovery = Storage.Get(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId))"
+0769 STLOC0
+# Code SafeRecoveryVerifier.cs line 85: ""Recovery in progress""
+0770 PUSHDATA1 52-65-63-6F-76-65-72-79-20-69-6E-20-70-72-6F-67-72-65-73-73 # as script hash: 0x73736572676f7270206e6920797265766f636552, as text: "Recovery in progress"
+# Code SafeRecoveryVerifier.cs line 85: "pendingRecovery"
+0792 LDLOC0
+# Code SafeRecoveryVerifier.cs line 85: "null"
+0793 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 85: "pendingRecovery == null"
+0794 EQUAL
+# Code SafeRecoveryVerifier.cs line 85: "Assert(pendingRecovery == null, "Recovery in progress")"
+0795 CALL_L 4D-FF-FF-FF # pos: 616 (offset: -179)
+# Code SafeRecoveryVerifier.cs line 87: ""Invalid guardian count""
+0800 PUSHDATA1 49-6E-76-61-6C-69-64-20-67-75-61-72-64-69-61-6E-20-63-6F-75-6E-74 # as text: "Invalid guardian count"
+# Code SafeRecoveryVerifier.cs line 87: "guardians"
+0824 LDARG1
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length"
+0825 SIZE
+# Code SafeRecoveryVerifier.cs line 87: "MIN_GUARDIANS"
+0826 PUSH3
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length >= MIN_GUARDIANS"
+0827 GE
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
+0828 JMPIF 05 # pos: 833 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
+0830 PUSHF
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS"
+0831 JMP 06 # pos: 837 (offset: 6)
+# Code SafeRecoveryVerifier.cs line 87: "guardians"
+0833 LDARG1
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length"
+0834 SIZE
+# Code SafeRecoveryVerifier.cs line 87: "MAX_GUARDIANS"
+0835 PUSH10
+# Code SafeRecoveryVerifier.cs line 87: "guardians.Length <= MAX_GUARDIANS"
+0836 LE
+# Code SafeRecoveryVerifier.cs line 87: "Assert(guardians.Length >= MIN_GUARDIANS && guardians.Length <= MAX_GUARDIANS, "Invalid guardian count")"
+0837 CALL_L 23-FF-FF-FF # pos: 616 (offset: -221)
+# Code SafeRecoveryVerifier.cs line 88: ""Invalid threshold""
+0842 PUSHDATA1 49-6E-76-61-6C-69-64-20-74-68-72-65-73-68-6F-6C-64 # as text: "Invalid threshold"
+# Code SafeRecoveryVerifier.cs line 88: "threshold"
+0861 LDARG2
+# Code SafeRecoveryVerifier.cs line 88: "2"
+0862 PUSH2
+# Code SafeRecoveryVerifier.cs line 88: "threshold >= 2"
+0863 GE
+# Code SafeRecoveryVerifier.cs line 88: "threshold >= 2 && guardians.Length >= threshold"
+0864 JMPIF 05 # pos: 869 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 88: "threshold >= 2 && guardians.Length >= threshold"
+0866 PUSHF
+# Code SafeRecoveryVerifier.cs line 88: "threshold >= 2 && guardians.Length >= threshold"
+0867 JMP 06 # pos: 873 (offset: 6)
+# Code SafeRecoveryVerifier.cs line 88: "guardians"
+0869 LDARG1
+# Code SafeRecoveryVerifier.cs line 88: "guardians.Length"
+0870 SIZE
+# Code SafeRecoveryVerifier.cs line 88: "threshold"
+0871 LDARG2
+# Code SafeRecoveryVerifier.cs line 88: "guardians.Length >= threshold"
+0872 GE
+# Code SafeRecoveryVerifier.cs line 88: "Assert(threshold >= 2 && guardians.Length >= threshold, "Invalid threshold")"
+0873 CALL_L FF-FE-FF-FF # pos: 616 (offset: -257)
+# Code SafeRecoveryVerifier.cs line 89: ""Timelock too short""
+0878 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-74-6F-6F-20-73-68-6F-72-74 # as text: "Timelock too short"
+# Code SafeRecoveryVerifier.cs line 89: "timelock"
+0898 LDARG3
+# Code SafeRecoveryVerifier.cs line 89: "MIN_TIMELOCK"
+0899 PUSHINT32 00-5C-26-05 # 86400000
+# Code SafeRecoveryVerifier.cs line 89: "timelock >= MIN_TIMELOCK"
+0904 GE
+# Code SafeRecoveryVerifier.cs line 89: "Assert(timelock >= MIN_TIMELOCK, "Timelock too short")"
+0905 CALL_L DF-FE-FF-FF # pos: 616 (offset: -289)
+# Code SafeRecoveryVerifier.cs line 90: "0"
+0910 PUSH0
+# Code SafeRecoveryVerifier.cs line 90: "i = 0"
+0911 STLOC1
+0912 JMP_L E2-00-00-00 # pos: 1138 (offset: 226)
+# Code SafeRecoveryVerifier.cs line 92: ""Guardian is null""
+0917 PUSHDATA1 47-75-61-72-64-69-61-6E-20-69-73-20-6E-75-6C-6C # as text: "Guardian is null"
+# Code SafeRecoveryVerifier.cs line 92: "guardians"
+0935 LDARG1
+# Code SafeRecoveryVerifier.cs line 92: "i"
+0936 LDLOC1
+# Code SafeRecoveryVerifier.cs line 92: "guardians[i]"
+0937 PICKITEM
+# Code SafeRecoveryVerifier.cs line 92: "null"
+0938 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 92: "guardians[i] != null"
+0939 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 92: "Assert(guardians[i] != null, "Guardian is null")"
+0940 CALL_L BC-FE-FF-FF # pos: 616 (offset: -324)
+# Code SafeRecoveryVerifier.cs line 93: "i"
+0945 LDLOC1
+# Code SafeRecoveryVerifier.cs line 93: "1"
+0946 PUSH1
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0947 ADD
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0948 DUP
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0949 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0954 JMPGE 04 # pos: 958 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0956 JMP 0A # pos: 966 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0958 DUP
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0959 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0964 JMPLE 1E # pos: 994 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0966 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0975 AND
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0976 DUP
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0977 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0982 JMPLE 0C # pos: 994 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0984 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 93: "i + 1"
+0993 SUB
+# Code SafeRecoveryVerifier.cs line 93: "j = i + 1"
+0994 STLOC2
+0995 JMP 56 # pos: 1081 (offset: 86)
+# Code SafeRecoveryVerifier.cs line 95: ""Duplicate guardian""
+0997 PUSHDATA1 44-75-70-6C-69-63-61-74-65-20-67-75-61-72-64-69-61-6E # as text: "Duplicate guardian"
+# Code SafeRecoveryVerifier.cs line 95: "guardians"
+1017 LDARG1
+# Code SafeRecoveryVerifier.cs line 95: "i"
+1018 LDLOC1
+# Code SafeRecoveryVerifier.cs line 95: "guardians[i]"
+1019 PICKITEM
+# Code SafeRecoveryVerifier.cs line 95: "guardians"
+1020 LDARG1
+# Code SafeRecoveryVerifier.cs line 95: "j"
+1021 LDLOC2
+# Code SafeRecoveryVerifier.cs line 95: "guardians[j]"
+1022 PICKITEM
+# Code SafeRecoveryVerifier.cs line 95: "guardians[i].Equals(guardians[j])"
+1023 EQUAL
+# Code SafeRecoveryVerifier.cs line 95: "!guardians[i].Equals(guardians[j])"
+1024 NOT
+# Code SafeRecoveryVerifier.cs line 95: "Assert(!guardians[i].Equals(guardians[j]), "Duplicate guardian")"
+1025 CALL_L 67-FE-FF-FF # pos: 616 (offset: -409)
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1030 LDLOC2
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1031 DUP
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1032 INC
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1033 DUP
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1034 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1039 JMPGE 04 # pos: 1043 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1041 JMP 0A # pos: 1051 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1043 DUP
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1044 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1049 JMPLE 1E # pos: 1079 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1051 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1060 AND
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1061 DUP
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1062 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1067 JMPLE 0C # pos: 1079 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1069 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1078 SUB
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1079 STLOC2
+# Code SafeRecoveryVerifier.cs line 93: "j++"
+1080 DROP
+# Code SafeRecoveryVerifier.cs line 93: "j"
+1081 LDLOC2
+# Code SafeRecoveryVerifier.cs line 93: "guardians"
+1082 LDARG1
+# Code SafeRecoveryVerifier.cs line 93: "guardians.Length"
+1083 SIZE
+# Code SafeRecoveryVerifier.cs line 93: "j < guardians.Length"
+1084 LT
+1085 JMPIF A8 # pos: 997 (offset: -88)
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1087 LDLOC1
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1088 DUP
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1089 INC
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1090 DUP
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1091 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1096 JMPGE 04 # pos: 1100 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1098 JMP 0A # pos: 1108 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1100 DUP
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1101 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1106 JMPLE 1E # pos: 1136 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1108 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1117 AND
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1118 DUP
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1119 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1124 JMPLE 0C # pos: 1136 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1126 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1135 SUB
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1136 STLOC1
+# Code SafeRecoveryVerifier.cs line 90: "i++"
+1137 DROP
+# Code SafeRecoveryVerifier.cs line 90: "i"
+1138 LDLOC1
+# Code SafeRecoveryVerifier.cs line 90: "guardians"
+1139 LDARG1
+# Code SafeRecoveryVerifier.cs line 90: "guardians.Length"
+1140 SIZE
+# Code SafeRecoveryVerifier.cs line 90: "i < guardians.Length"
+1141 LT
+1142 JMPIF_L 1F-FF-FF-FF # pos: 917 (offset: -225)
+# Code SafeRecoveryVerifier.cs line 104: "true"
+1147 PUSHT
+# Code SafeRecoveryVerifier.cs line 103: "timelock"
+1148 LDARG3
+# Code SafeRecoveryVerifier.cs line 102: "threshold"
+1149 LDARG2
+# Code SafeRecoveryVerifier.cs line 101: "guardians"
+1150 LDARG1
+# Code SafeRecoveryVerifier.cs line 99: "new RecoveryModule"
+# Code SafeRecoveryVerifier.cs line 99: "{"
+# Code SafeRecoveryVerifier.cs line 99: "Guardians = guardians,"
+# Code SafeRecoveryVerifier.cs line 99: "Threshold = threshold,"
+# Code SafeRecoveryVerifier.cs line 99: "Timelock = timelock,"
+# Code SafeRecoveryVerifier.cs line 99: "Enabled = true"
 # Code SafeRecoveryVerifier.cs line 99: "}"
-0833 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.UInt160)
-0834 INITSLOT 01-01 # 1 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 248: "accountId"
-0837 LDARG0
-# Code SafeRecoveryVerifier.cs line 248: "PREFIX_OWNER"
-0838 PUSH1
-# Code SafeRecoveryVerifier.cs line 248: "Key(PREFIX_OWNER, accountId)"
-0839 CALL_L F4-FE-FF-FF # pos: 571 (offset: -268)
+1151 PUSH4
+# Code SafeRecoveryVerifier.cs line 99: "new RecoveryModule"
+# Code SafeRecoveryVerifier.cs line 99: "{"
+# Code SafeRecoveryVerifier.cs line 99: "Guardians = guardians,"
+# Code SafeRecoveryVerifier.cs line 99: "Threshold = threshold,"
+# Code SafeRecoveryVerifier.cs line 99: "Timelock = timelock,"
+# Code SafeRecoveryVerifier.cs line 99: "Enabled = true"
+# Code SafeRecoveryVerifier.cs line 99: "}"
+1152 PACK
+# Code SafeRecoveryVerifier.cs line 99: "module = new RecoveryModule"
+# Code SafeRecoveryVerifier.cs line 99: "{"
+# Code SafeRecoveryVerifier.cs line 99: "Guardians = guardians,"
+# Code SafeRecoveryVerifier.cs line 99: "Threshold = threshold,"
+# Code SafeRecoveryVerifier.cs line 99: "Timelock = timelock,"
+# Code SafeRecoveryVerifier.cs line 99: "Enabled = true"
+# Code SafeRecoveryVerifier.cs line 99: "}"
+1153 STLOC1
+# Code SafeRecoveryVerifier.cs line 107: "module"
+1154 LDLOC1
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1155 CALLT 00-00 # StdLib.serialize token call
+# Code SafeRecoveryVerifier.cs line 107: "accountId"
+1158 LDARG0
+# Code SafeRecoveryVerifier.cs line 107: "PREFIX_RECOVERY_MODULE"
+1159 PUSH2
+# Code SafeRecoveryVerifier.cs line 107: "Key(PREFIX_RECOVERY_MODULE, accountId)"
+1160 CALL_L 26-FE-FF-FF # pos: 686 (offset: -474)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0844 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-0849 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0854 DUP
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0855 ISNULL
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0856 JMPIF 09 # pos: 865 (offset: 9)
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0858 DUP
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0859 SIZE
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0860 PUSHINT8 14 # 20
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0862 JMPEQ 03 # pos: 865 (offset: 3)
-# Code SafeRecoveryVerifier.cs line 248: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0864 THROW
-# Code SafeRecoveryVerifier.cs line 248: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-0865 STLOC0
-# Code SafeRecoveryVerifier.cs line 249: ""Not owner""
-0866 PUSHDATA1 4E-6F-74-20-6F-77-6E-65-72 # as text: "Not owner"
-# Code SafeRecoveryVerifier.cs line 249: "owner"
-0877 LDLOC0
-# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
-0878 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
-# Code SafeRecoveryVerifier.cs line 249: "Assert(Runtime.CheckWitness(owner), "Not owner")"
-0883 CALL_L B4-FE-FF-FF # pos: 551 (offset: -332)
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 250: "}"
-0888 RET
-0889 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-0894 RET
-0895 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
-0900 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.UInt160)
-0901 INITSLOT 01-01 # 1 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 254: "accountId"
-0904 LDARG0
-# Code SafeRecoveryVerifier.cs line 254: "PREFIX_FROZEN"
-0905 PUSH3
-# Code SafeRecoveryVerifier.cs line 254: "Key(PREFIX_FROZEN, accountId)"
-0906 CALL_L B1-FE-FF-FF # pos: 571 (offset: -335)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0911 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-0916 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 254: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
-0921 STLOC0
-# Code SafeRecoveryVerifier.cs line 255: ""Account frozen""
-0922 PUSHDATA1 41-63-63-6F-75-6E-74-20-66-72-6F-7A-65-6E # as text: "Account frozen"
-# Code SafeRecoveryVerifier.cs line 255: "frozen"
-0938 LDLOC0
-# Code SafeRecoveryVerifier.cs line 255: "null"
-0939 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 255: "frozen == null"
-0940 EQUAL
-# Code SafeRecoveryVerifier.cs line 255: "Assert(frozen == null, "Account frozen")"
-0941 CALL_L 7A-FE-FF-FF # pos: 551 (offset: -390)
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 256: "}"
-0946 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, byte[][], System.Numerics.BigInteger)
-0947 INITSLOT 07-04 # 7 local variables, 4 arguments
-# Code SafeRecoveryVerifier.cs line 108: ""accountId""
-0950 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+1165 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1170 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
 # Code SafeRecoveryVerifier.cs line 108: "accountId"
-0961 LDARG0
-# Code SafeRecoveryVerifier.cs line 108: "ValidateAddress(accountId, "accountId")"
-0962 CALL_L 3A-FE-FF-FF # pos: 508 (offset: -454)
-# Code SafeRecoveryVerifier.cs line 109: ""newOwner""
-0967 PUSHDATA1 6E-65-77-4F-77-6E-65-72 # as text: "newOwner"
-# Code SafeRecoveryVerifier.cs line 109: "newOwner"
-0977 LDARG1
-# Code SafeRecoveryVerifier.cs line 109: "ValidateAddress(newOwner, "newOwner")"
-0978 CALL_L 2A-FE-FF-FF # pos: 508 (offset: -470)
-# Code SafeRecoveryVerifier.cs line 110: "accountId"
-0983 LDARG0
-# Code SafeRecoveryVerifier.cs line 110: "RequireNotFrozen(accountId)"
-0984 CALL AD # pos: 901 (offset: -83)
-# Code SafeRecoveryVerifier.cs line 113: "accountId"
-0986 LDARG0
-# Code SafeRecoveryVerifier.cs line 113: "PREFIX_NONCE"
-0987 PUSH4
-# Code SafeRecoveryVerifier.cs line 113: "Key(PREFIX_NONCE, accountId)"
-0988 CALL_L 5F-FE-FF-FF # pos: 571 (offset: -417)
+1175 LDARG0
+# Code SafeRecoveryVerifier.cs line 108: "OnModuleUpdated(accountId)"
+1176 PUSH1
+# Code SafeRecoveryVerifier.cs line 108: "OnModuleUpdated(accountId)"
+1177 PACK
+# Code SafeRecoveryVerifier.cs line 108: "OnModuleUpdated(accountId)"
+1178 PUSHDATA1 4D-6F-64-75-6C-65-55-70-64-61-74-65-64 # as text: "ModuleUpdated"
+# Code SafeRecoveryVerifier.cs line 108: "OnModuleUpdated(accountId)"
+1193 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.UpdateModule(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.ECPoint[], System.Numerics.BigInteger, ulong)
+# Code SafeRecoveryVerifier.cs line 109: "}"
+1198 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.ByteString)
+1199 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 281: "accountId"
+1202 LDARG0
+# Code SafeRecoveryVerifier.cs line 281: "PREFIX_OWNER"
+1203 PUSH1
+# Code SafeRecoveryVerifier.cs line 281: "Key(PREFIX_OWNER, accountId)"
+1204 CALL_L FA-FD-FF-FF # pos: 686 (offset: -518)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-0993 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+1209 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-0998 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
-1003 DUP
-# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
-1004 ISNULL
-# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
-1005 JMPIFNOT 06 # pos: 1011 (offset: 6)
-# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
-1007 DROP
-# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
-1008 PUSH0
-# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
-1009 JMP 04 # pos: 1013 (offset: 4)
-# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
-1011 CONVERT 21 # Integer type
-# Code SafeRecoveryVerifier.cs line 113: "currentNonce = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_NONCE, accountId))"
-1013 STLOC0
-# Code SafeRecoveryVerifier.cs line 114: ""Invalid nonce""
-1014 PUSHDATA1 49-6E-76-61-6C-69-64-20-6E-6F-6E-63-65 # as text: "Invalid nonce"
-# Code SafeRecoveryVerifier.cs line 114: "nonce"
-1029 LDARG3
-# Code SafeRecoveryVerifier.cs line 114: "currentNonce"
-1030 LDLOC0
-# Code SafeRecoveryVerifier.cs line 114: "nonce == currentNonce"
-1031 EQUAL
-# Code SafeRecoveryVerifier.cs line 114: "Assert(nonce == currentNonce, "Invalid nonce")"
-1032 CALL_L 1F-FE-FF-FF # pos: 551 (offset: -481)
-# Code SafeRecoveryVerifier.cs line 116: "accountId"
-1037 LDARG0
-# Code SafeRecoveryVerifier.cs line 116: "PREFIX_RECOVERY_MODULE"
-1038 PUSH2
-# Code SafeRecoveryVerifier.cs line 116: "Key(PREFIX_RECOVERY_MODULE, accountId)"
-1039 CALL_L 2C-FE-FF-FF # pos: 571 (offset: -468)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1044 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-1049 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 116: "moduleData = Storage.Get(Storage.CurrentContext, Key(PREFIX_RECOVERY_MODULE, accountId))"
-1054 STLOC1
-# Code SafeRecoveryVerifier.cs line 117: ""Module not setup""
-1055 PUSHDATA1 4D-6F-64-75-6C-65-20-6E-6F-74-20-73-65-74-75-70 # as text: "Module not setup"
-# Code SafeRecoveryVerifier.cs line 117: "moduleData"
-1073 LDLOC1
-# Code SafeRecoveryVerifier.cs line 117: "null"
-1074 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 117: "moduleData != null"
-1075 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 117: "Assert(moduleData != null, "Module not setup")"
-1076 CALL_L F3-FD-FF-FF # pos: 551 (offset: -525)
-# Code SafeRecoveryVerifier.cs line 119: "moduleData"
-1081 LDLOC1
-# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
-1082 CALLT 01-00 # StdLib.deserialize token call
-# Code SafeRecoveryVerifier.cs line 119: "module = (RecoveryModule)StdLib.Deserialize(moduleData)"
-1085 STLOC2
-# Code SafeRecoveryVerifier.cs line 120: ""Module disabled""
-1086 PUSHDATA1 4D-6F-64-75-6C-65-20-64-69-73-61-62-6C-65-64 # as text: "Module disabled"
-# Code SafeRecoveryVerifier.cs line 120: "module"
-1103 LDLOC2
-# Code SafeRecoveryVerifier.cs line 120: "module.Enabled"
-1104 PUSH3
-# Code SafeRecoveryVerifier.cs line 120: "module.Enabled"
-1105 PICKITEM
-# Code SafeRecoveryVerifier.cs line 120: "Assert(module.Enabled, "Module disabled")"
-1106 CALL_L D5-FD-FF-FF # pos: 551 (offset: -555)
-# Code SafeRecoveryVerifier.cs line 121: ""Not enough signatures""
-1111 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Not enough signatures"
-# Code SafeRecoveryVerifier.cs line 121: "signatures"
-1134 LDARG2
-# Code SafeRecoveryVerifier.cs line 121: "signatures.Length"
-1135 SIZE
-# Code SafeRecoveryVerifier.cs line 121: "module"
-1136 LDLOC2
-# Code SafeRecoveryVerifier.cs line 121: "module.Threshold"
-1137 PUSH1
-# Code SafeRecoveryVerifier.cs line 121: "module.Threshold"
-1138 PICKITEM
-# Code SafeRecoveryVerifier.cs line 121: "signatures.Length >= module.Threshold"
-1139 GE
-# Code SafeRecoveryVerifier.cs line 121: "Assert(signatures.Length >= module.Threshold, "Not enough signatures")"
-1140 CALL_L B3-FD-FF-FF # pos: 551 (offset: -589)
-# Code SafeRecoveryVerifier.cs line 122: ""Mismatched arrays""
-1145 PUSHDATA1 4D-69-73-6D-61-74-63-68-65-64-20-61-72-72-61-79-73 # as text: "Mismatched arrays"
-# Code SafeRecoveryVerifier.cs line 122: "signatures"
-1164 LDARG2
-# Code SafeRecoveryVerifier.cs line 122: "signatures.Length"
-1165 SIZE
-# Code SafeRecoveryVerifier.cs line 122: "module"
-1166 LDLOC2
-# Code SafeRecoveryVerifier.cs line 122: "module.Guardians"
-1167 PUSH0
-# Code SafeRecoveryVerifier.cs line 122: "module.Guardians"
-1168 PICKITEM
-# Code SafeRecoveryVerifier.cs line 122: "module.Guardians.Length"
-1169 SIZE
-# Code SafeRecoveryVerifier.cs line 122: "signatures.Length == module.Guardians.Length"
-1170 EQUAL
-# Code SafeRecoveryVerifier.cs line 122: "Assert(signatures.Length == module.Guardians.Length, "Mismatched arrays")"
-1171 CALL_L 94-FD-FF-FF # pos: 551 (offset: -620)
-# Code SafeRecoveryVerifier.cs line 125: "accountId"
-1176 LDARG0
-# Code SafeRecoveryVerifier.cs line 125: "newOwner"
-1177 LDARG1
-# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
-1178 CAT
-# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
-1179 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 125: "nonce"
-1181 LDARG3
-# Code SafeRecoveryVerifier.cs line 125: "((BigInteger)nonce).ToByteArray()"
-1182 CONVERT 30 # Buffer type
-# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
-1184 CONVERT 28 # ByteString type
-# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
-1186 CAT
-# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
-1187 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 125: "message = Helper.Concat(Helper.Concat(accountId, newOwner), (ByteString)((BigInteger)nonce).ToByteArray())"
-1189 STLOC3
-# Code SafeRecoveryVerifier.cs line 126: "message"
-1190 LDLOC3
-# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
-1191 CALLT 02-00 # CryptoLib.sha256 token call
-# Code SafeRecoveryVerifier.cs line 126: "messageHash = CryptoLib.Sha256(message)"
-1194 STLOC4
-# Code SafeRecoveryVerifier.cs line 129: "0"
-1195 PUSH0
-# Code SafeRecoveryVerifier.cs line 129: "validSigs = 0"
-1196 STLOC5
-# Code SafeRecoveryVerifier.cs line 130: "0"
-1197 PUSH0
-# Code SafeRecoveryVerifier.cs line 130: "i = 0"
-1198 STLOC6
-1199 JMP 4C # pos: 1275 (offset: 76)
-# Code SafeRecoveryVerifier.cs line 132: "NamedCurveHash.secp256r1SHA256"
-1201 PUSHINT8 17 # 23
-# Code SafeRecoveryVerifier.cs line 132: "signatures"
-1203 LDARG2
-# Code SafeRecoveryVerifier.cs line 132: "i"
-1204 LDLOC6
-# Code SafeRecoveryVerifier.cs line 132: "signatures[i]"
-1205 PICKITEM
-# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
-1206 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 132: "module"
-1208 LDLOC2
-# Code SafeRecoveryVerifier.cs line 132: "module.Guardians"
-1209 PUSH0
-# Code SafeRecoveryVerifier.cs line 132: "module.Guardians"
-1210 PICKITEM
-# Code SafeRecoveryVerifier.cs line 132: "i"
-1211 LDLOC6
-# Code SafeRecoveryVerifier.cs line 132: "module.Guardians[i]"
-1212 PICKITEM
-# Code SafeRecoveryVerifier.cs line 132: "messageHash"
-1213 LDLOC4
-# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
-1214 CALLT 03-00 # CryptoLib.verifyWithECDsa token call
-# Code SafeRecoveryVerifier.cs line 132: "if (CryptoLib.VerifyWithECDsa(messageHash, module.Guardians[i], (ByteString)signatures[i], NamedCurveHash.secp256r1SHA256))"
-# Code SafeRecoveryVerifier.cs line 132: "{"
-# Code SafeRecoveryVerifier.cs line 132: "validSigs++;"
-# Code SafeRecoveryVerifier.cs line 132: "}"
-1217 JMPIFNOT 07 # pos: 1224 (offset: 7)
-# Code SafeRecoveryVerifier.cs line 134: "validSigs++"
-1219 LDLOC5
-# Code SafeRecoveryVerifier.cs line 134: "validSigs++"
-1220 DUP
-# Code SafeRecoveryVerifier.cs line 134: "validSigs++"
-1221 INC
-# Code SafeRecoveryVerifier.cs line 134: "validSigs++"
-1222 STLOC5
-# Code SafeRecoveryVerifier.cs line 134: "validSigs++"
-1223 DROP
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1224 LDLOC6
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1225 DUP
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1226 INC
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1227 DUP
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1228 PUSHINT32 00-00-00-80 # -2147483648
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1233 JMPGE 04 # pos: 1237 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1235 JMP 0A # pos: 1245 (offset: 10)
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1237 DUP
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1238 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1243 JMPLE 1E # pos: 1273 (offset: 30)
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1245 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1254 AND
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1255 DUP
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1256 PUSHINT32 FF-FF-FF-7F # 2147483647
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1261 JMPLE 0C # pos: 1273 (offset: 12)
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1263 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1272 SUB
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1273 STLOC6
-# Code SafeRecoveryVerifier.cs line 130: "i++"
-1274 DROP
-# Code SafeRecoveryVerifier.cs line 130: "i"
-1275 LDLOC6
-# Code SafeRecoveryVerifier.cs line 130: "signatures"
-1276 LDARG2
-# Code SafeRecoveryVerifier.cs line 130: "signatures.Length"
-1277 SIZE
-# Code SafeRecoveryVerifier.cs line 130: "i < signatures.Length"
-1278 LT
-1279 JMPIF B2 # pos: 1201 (offset: -78)
-# Code SafeRecoveryVerifier.cs line 138: ""Not enough valid signatures""
-1281 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-76-61-6C-69-64-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Not enough valid signatures"
-# Code SafeRecoveryVerifier.cs line 138: "validSigs"
-1310 LDLOC5
-# Code SafeRecoveryVerifier.cs line 138: "module"
-1311 LDLOC2
-# Code SafeRecoveryVerifier.cs line 138: "module.Threshold"
-1312 PUSH1
-# Code SafeRecoveryVerifier.cs line 138: "module.Threshold"
-1313 PICKITEM
-# Code SafeRecoveryVerifier.cs line 138: "validSigs >= module.Threshold"
-1314 GE
-# Code SafeRecoveryVerifier.cs line 138: "Assert(validSigs >= module.Threshold, "Not enough valid signatures")"
-1315 CALL_L 04-FD-FF-FF # pos: 551 (offset: -764)
-# Code SafeRecoveryVerifier.cs line 141: "module"
-1320 LDLOC2
-# Code SafeRecoveryVerifier.cs line 141: "module.Timelock"
-1321 PUSH2
-# Code SafeRecoveryVerifier.cs line 141: "module.Timelock"
-1322 PICKITEM
-# Code SafeRecoveryVerifier.cs line 141: "0"
-1323 PUSH0
-# Code SafeRecoveryVerifier.cs line 141: "module.Timelock > 0"
-1324 GT
-# Code SafeRecoveryVerifier.cs line 141: "if (module.Timelock > 0)"
-# Code SafeRecoveryVerifier.cs line 141: "{"
-# Code SafeRecoveryVerifier.cs line 141: "var pendingRecovery = new PendingRecovery"
-# Code SafeRecoveryVerifier.cs line 141: "{"
-# Code SafeRecoveryVerifier.cs line 141: "NewOwner = newOwner,"
-# Code SafeRecoveryVerifier.cs line 141: "InitiatedAt = Runtime.Time,"
-# Code SafeRecoveryVerifier.cs line 141: "ExecutableAt = Runtime.Time + module.Timelock"
-# Code SafeRecoveryVerifier.cs line 141: "};"
-# Code SafeRecoveryVerifier.cs line 141: ""
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId), StdLib.Serialize(pendingRecovery));"
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
-# Code SafeRecoveryVerifier.cs line 141: ""
-# Code SafeRecoveryVerifier.cs line 141: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt);"
-# Code SafeRecoveryVerifier.cs line 141: "}"
-# Code SafeRecoveryVerifier.cs line 141: "else"
-# Code SafeRecoveryVerifier.cs line 141: "{"
-# Code SafeRecoveryVerifier.cs line 141: "// No timelock, execute immediately (CEI pattern)"
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_OWNER, accountId), newOwner);"
-# Code SafeRecoveryVerifier.cs line 141: ""
-# Code SafeRecoveryVerifier.cs line 141: "OnRecoveryExecuted(accountId, newOwner);"
-# Code SafeRecoveryVerifier.cs line 141: "}"
-1325 JMPIFNOT_L 8D-00-00-00 # pos: 1466 (offset: 141)
-# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
-1330 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
-# Code SafeRecoveryVerifier.cs line 147: "module"
-1335 LDLOC2
-# Code SafeRecoveryVerifier.cs line 147: "module.Timelock"
-1336 PUSH2
-# Code SafeRecoveryVerifier.cs line 147: "module.Timelock"
-1337 PICKITEM
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1338 ADD
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1339 DUP
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1340 PUSH0
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1341 JMPGE 04 # pos: 1345 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1343 JMP 16 # pos: 1365 (offset: 22)
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1345 DUP
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1346 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1363 JMPLE 14 # pos: 1383 (offset: 20)
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1365 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
-# Code SafeRecoveryVerifier.cs line 147: "Runtime.Time + module.Timelock"
-1382 AND
-# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
-1383 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
-# Code SafeRecoveryVerifier.cs line 145: "newOwner"
-1388 LDARG1
-# Code SafeRecoveryVerifier.cs line 143: "new PendingRecovery"
-# Code SafeRecoveryVerifier.cs line 143: "{"
-# Code SafeRecoveryVerifier.cs line 143: "NewOwner = newOwner,"
-# Code SafeRecoveryVerifier.cs line 143: "InitiatedAt = Runtime.Time,"
-# Code SafeRecoveryVerifier.cs line 143: "ExecutableAt = Runtime.Time + module.Timelock"
-# Code SafeRecoveryVerifier.cs line 143: "}"
-1389 PUSH3
-# Code SafeRecoveryVerifier.cs line 143: "new PendingRecovery"
-# Code SafeRecoveryVerifier.cs line 143: "{"
-# Code SafeRecoveryVerifier.cs line 143: "NewOwner = newOwner,"
-# Code SafeRecoveryVerifier.cs line 143: "InitiatedAt = Runtime.Time,"
-# Code SafeRecoveryVerifier.cs line 143: "ExecutableAt = Runtime.Time + module.Timelock"
-# Code SafeRecoveryVerifier.cs line 143: "}"
-1390 PACK
-# Code SafeRecoveryVerifier.cs line 143: "pendingRecovery = new PendingRecovery"
-# Code SafeRecoveryVerifier.cs line 143: "{"
-# Code SafeRecoveryVerifier.cs line 143: "NewOwner = newOwner,"
-# Code SafeRecoveryVerifier.cs line 143: "InitiatedAt = Runtime.Time,"
-# Code SafeRecoveryVerifier.cs line 143: "ExecutableAt = Runtime.Time + module.Timelock"
-# Code SafeRecoveryVerifier.cs line 143: "}"
-1391 STLOC6
-# Code SafeRecoveryVerifier.cs line 150: "pendingRecovery"
-1392 LDLOC6
-# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
-1393 CALLT 00-00 # StdLib.serialize token call
-# Code SafeRecoveryVerifier.cs line 150: "accountId"
-1396 LDARG0
-# Code SafeRecoveryVerifier.cs line 150: "PREFIX_PENDING_RECOVERY"
-1397 PUSH5
-# Code SafeRecoveryVerifier.cs line 150: "Key(PREFIX_PENDING_RECOVERY, accountId)"
-1398 CALL_L C5-FC-FF-FF # pos: 571 (offset: -827)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1403 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
-1408 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 151: "currentNonce"
-1413 LDLOC0
-# Code SafeRecoveryVerifier.cs line 151: "1"
-1414 PUSH1
-# Code SafeRecoveryVerifier.cs line 151: "currentNonce + 1"
-1415 ADD
-# Code SafeRecoveryVerifier.cs line 151: "accountId"
-1416 LDARG0
-# Code SafeRecoveryVerifier.cs line 151: "PREFIX_NONCE"
-1417 PUSH4
-# Code SafeRecoveryVerifier.cs line 151: "Key(PREFIX_NONCE, accountId)"
-1418 CALL_L B1-FC-FF-FF # pos: 571 (offset: -847)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1423 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
-1428 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 153: "pendingRecovery"
-1433 LDLOC6
-# Code SafeRecoveryVerifier.cs line 153: "pendingRecovery.ExecutableAt"
-1434 PUSH2
-# Code SafeRecoveryVerifier.cs line 153: "pendingRecovery.ExecutableAt"
-1435 PICKITEM
-# Code SafeRecoveryVerifier.cs line 153: "newOwner"
-1436 LDARG1
-# Code SafeRecoveryVerifier.cs line 153: "accountId"
-1437 LDARG0
-# Code SafeRecoveryVerifier.cs line 153: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
-1438 PUSH3
-# Code SafeRecoveryVerifier.cs line 153: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
-1439 PACK
-# Code SafeRecoveryVerifier.cs line 153: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
-1440 PUSHDATA1 52-65-63-6F-76-65-72-79-49-6E-69-74-69-61-74-65-64 # as text: "RecoveryInitiated"
-# Code SafeRecoveryVerifier.cs line 153: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
-1459 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Code SafeRecoveryVerifier.cs line 141: "if (module.Timelock > 0)"
-# Code SafeRecoveryVerifier.cs line 141: "{"
-# Code SafeRecoveryVerifier.cs line 141: "var pendingRecovery = new PendingRecovery"
-# Code SafeRecoveryVerifier.cs line 141: "{"
-# Code SafeRecoveryVerifier.cs line 141: "NewOwner = newOwner,"
-# Code SafeRecoveryVerifier.cs line 141: "InitiatedAt = Runtime.Time,"
-# Code SafeRecoveryVerifier.cs line 141: "ExecutableAt = Runtime.Time + module.Timelock"
-# Code SafeRecoveryVerifier.cs line 141: "};"
-# Code SafeRecoveryVerifier.cs line 141: ""
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId), StdLib.Serialize(pendingRecovery));"
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
-# Code SafeRecoveryVerifier.cs line 141: ""
-# Code SafeRecoveryVerifier.cs line 141: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt);"
-# Code SafeRecoveryVerifier.cs line 141: "}"
-# Code SafeRecoveryVerifier.cs line 141: "else"
-# Code SafeRecoveryVerifier.cs line 141: "{"
-# Code SafeRecoveryVerifier.cs line 141: "// No timelock, execute immediately (CEI pattern)"
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
-# Code SafeRecoveryVerifier.cs line 141: "Storage.Put(Storage.CurrentContext, Key(PREFIX_OWNER, accountId), newOwner);"
-# Code SafeRecoveryVerifier.cs line 141: ""
-# Code SafeRecoveryVerifier.cs line 141: "OnRecoveryExecuted(accountId, newOwner);"
-# Code SafeRecoveryVerifier.cs line 141: "}"
-1464 JMP 43 # pos: 1531 (offset: 67)
-# Code SafeRecoveryVerifier.cs line 158: "currentNonce"
-1466 LDLOC0
-# Code SafeRecoveryVerifier.cs line 158: "1"
-1467 PUSH1
-# Code SafeRecoveryVerifier.cs line 158: "currentNonce + 1"
-1468 ADD
-# Code SafeRecoveryVerifier.cs line 158: "accountId"
-1469 LDARG0
-# Code SafeRecoveryVerifier.cs line 158: "PREFIX_NONCE"
-1470 PUSH4
-# Code SafeRecoveryVerifier.cs line 158: "Key(PREFIX_NONCE, accountId)"
-1471 CALL_L 7C-FC-FF-FF # pos: 571 (offset: -900)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1476 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
-1481 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 159: "newOwner"
-1486 LDARG1
-# Code SafeRecoveryVerifier.cs line 159: "accountId"
-1487 LDARG0
-# Code SafeRecoveryVerifier.cs line 159: "PREFIX_OWNER"
-1488 PUSH1
-# Code SafeRecoveryVerifier.cs line 159: "Key(PREFIX_OWNER, accountId)"
-1489 CALL_L 6A-FC-FF-FF # pos: 571 (offset: -918)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1494 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
-1499 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 161: "newOwner"
-1504 LDARG1
-# Code SafeRecoveryVerifier.cs line 161: "accountId"
-1505 LDARG0
-# Code SafeRecoveryVerifier.cs line 161: "OnRecoveryExecuted(accountId, newOwner)"
-1506 PUSH2
-# Code SafeRecoveryVerifier.cs line 161: "OnRecoveryExecuted(accountId, newOwner)"
-1507 PACK
-# Code SafeRecoveryVerifier.cs line 161: "OnRecoveryExecuted(accountId, newOwner)"
-1508 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
-# Code SafeRecoveryVerifier.cs line 161: "OnRecoveryExecuted(accountId, newOwner)"
-1526 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.UInt160, Neo.SmartContract.Framework.UInt160, byte[][], System.Numerics.BigInteger)
-# Code SafeRecoveryVerifier.cs line 163: "}"
-1531 RET
-1532 DUP
-1533 ISNULL
-1534 JMPIFNOT 06 # pos: 1540 (offset: 6)
-1536 DROP
-1537 PUSH0
-1538 JMP 04 # pos: 1542 (offset: 4)
-1540 CONVERT 21 # Integer type
-1542 RET
-1543 CALLT 01-00 # StdLib.deserialize token call
-1546 RET
-1547 CAT
-1548 CONVERT 28 # ByteString type
-1550 RET
-1551 CONVERT 28 # ByteString type
-1553 RET
-1554 CALLT 02-00 # CryptoLib.sha256 token call
-1557 RET
-1558 CALLT 03-00 # CryptoLib.verifyWithECDsa token call
-1561 RET
-1562 RET
-1563 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
-1568 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.FinalizeRecovery(Neo.SmartContract.Framework.UInt160)
-1569 INITSLOT 02-01 # 2 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 168: ""accountId""
-1572 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
-# Code SafeRecoveryVerifier.cs line 168: "accountId"
-1583 LDARG0
-# Code SafeRecoveryVerifier.cs line 168: "ValidateAddress(accountId, "accountId")"
-1584 CALL_L CC-FB-FF-FF # pos: 508 (offset: -1076)
-# Code SafeRecoveryVerifier.cs line 169: "accountId"
-1589 LDARG0
-# Code SafeRecoveryVerifier.cs line 169: "RequireNotFrozen(accountId)"
-1590 CALL_L 4F-FD-FF-FF # pos: 901 (offset: -689)
-# Code SafeRecoveryVerifier.cs line 171: "accountId"
-1595 LDARG0
-# Code SafeRecoveryVerifier.cs line 171: "PREFIX_PENDING_RECOVERY"
-1596 PUSH5
-# Code SafeRecoveryVerifier.cs line 171: "Key(PREFIX_PENDING_RECOVERY, accountId)"
-1597 CALL_L FE-FB-FF-FF # pos: 571 (offset: -1026)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1602 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-1607 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 171: "data = Storage.Get(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId))"
-1612 STLOC0
-# Code SafeRecoveryVerifier.cs line 172: ""No pending recovery""
-1613 PUSHDATA1 4E-6F-20-70-65-6E-64-69-6E-67-20-72-65-63-6F-76-65-72-79 # as text: "No pending recovery"
-# Code SafeRecoveryVerifier.cs line 172: "data"
-1634 LDLOC0
-# Code SafeRecoveryVerifier.cs line 172: "null"
-1635 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 172: "data != null"
-1636 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 172: "Assert(data != null, "No pending recovery")"
-1637 CALL_L C2-FB-FF-FF # pos: 551 (offset: -1086)
-# Code SafeRecoveryVerifier.cs line 174: "data"
-1642 LDLOC0
-# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
-1643 CALLT 01-00 # StdLib.deserialize token call
-# Code SafeRecoveryVerifier.cs line 174: "pending = (PendingRecovery)StdLib.Deserialize(data)"
-1646 STLOC1
-# Code SafeRecoveryVerifier.cs line 175: ""Timelock not expired""
-1647 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-6E-6F-74-20-65-78-70-69-72-65-64 # as script hash: 0x6465726970786520746f6e206b636f6c656d6954, as text: "Timelock not expired"
-# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
-1669 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
-# Code SafeRecoveryVerifier.cs line 175: "pending"
-1674 LDLOC1
-# Code SafeRecoveryVerifier.cs line 175: "pending.ExecutableAt"
-1675 PUSH2
-# Code SafeRecoveryVerifier.cs line 175: "pending.ExecutableAt"
-1676 PICKITEM
-# Code SafeRecoveryVerifier.cs line 175: "Runtime.Time >= pending.ExecutableAt"
-1677 GE
-# Code SafeRecoveryVerifier.cs line 175: "Assert(Runtime.Time >= pending.ExecutableAt, "Timelock not expired")"
-1678 CALL_L 99-FB-FF-FF # pos: 551 (offset: -1127)
-# Code SafeRecoveryVerifier.cs line 178: "accountId"
-1683 LDARG0
-# Code SafeRecoveryVerifier.cs line 178: "PREFIX_PENDING_RECOVERY"
-1684 PUSH5
-# Code SafeRecoveryVerifier.cs line 178: "Key(PREFIX_PENDING_RECOVERY, accountId)"
-1685 CALL_L A6-FB-FF-FF # pos: 571 (offset: -1114)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1690 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
-1695 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
-# Code SafeRecoveryVerifier.cs line 179: "pending"
-1700 LDLOC1
-# Code SafeRecoveryVerifier.cs line 179: "pending.NewOwner"
-1701 PUSH0
-# Code SafeRecoveryVerifier.cs line 179: "pending.NewOwner"
-1702 PICKITEM
-# Code SafeRecoveryVerifier.cs line 179: "accountId"
-1703 LDARG0
-# Code SafeRecoveryVerifier.cs line 179: "PREFIX_OWNER"
-1704 PUSH1
-# Code SafeRecoveryVerifier.cs line 179: "Key(PREFIX_OWNER, accountId)"
-1705 CALL_L 92-FB-FF-FF # pos: 571 (offset: -1134)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1710 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
-1715 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 181: "pending"
-1720 LDLOC1
-# Code SafeRecoveryVerifier.cs line 181: "pending.NewOwner"
-1721 PUSH0
-# Code SafeRecoveryVerifier.cs line 181: "pending.NewOwner"
-1722 PICKITEM
-# Code SafeRecoveryVerifier.cs line 181: "accountId"
-1723 LDARG0
-# Code SafeRecoveryVerifier.cs line 181: "OnRecoveryExecuted(accountId, pending.NewOwner)"
-1724 PUSH2
-# Code SafeRecoveryVerifier.cs line 181: "OnRecoveryExecuted(accountId, pending.NewOwner)"
-1725 PACK
-# Code SafeRecoveryVerifier.cs line 181: "OnRecoveryExecuted(accountId, pending.NewOwner)"
-1726 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
-# Code SafeRecoveryVerifier.cs line 181: "OnRecoveryExecuted(accountId, pending.NewOwner)"
-1744 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.FinalizeRecovery(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 182: "}"
-1749 RET
-1750 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
-1755 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.UInt160)
-1756 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 187: ""accountId""
-1759 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
-# Code SafeRecoveryVerifier.cs line 187: "accountId"
-1770 LDARG0
-# Code SafeRecoveryVerifier.cs line 187: "ValidateAddress(accountId, "accountId")"
-1771 CALL_L 11-FB-FF-FF # pos: 508 (offset: -1263)
-# Code SafeRecoveryVerifier.cs line 188: "accountId"
-1776 LDARG0
-# Code SafeRecoveryVerifier.cs line 188: "RequireOwner(accountId)"
-1777 CALL_L 51-FC-FF-FF # pos: 834 (offset: -943)
-# Code SafeRecoveryVerifier.cs line 190: "accountId"
-1782 LDARG0
-# Code SafeRecoveryVerifier.cs line 190: "PREFIX_PENDING_RECOVERY"
-1783 PUSH5
-# Code SafeRecoveryVerifier.cs line 190: "Key(PREFIX_PENDING_RECOVERY, accountId)"
-1784 CALL_L 43-FB-FF-FF # pos: 571 (offset: -1213)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1789 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
-1794 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
-# Code SafeRecoveryVerifier.cs line 191: "accountId"
-1799 LDARG0
-# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryCancelled(accountId)"
-1800 PUSH1
-# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryCancelled(accountId)"
-1801 PACK
-# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryCancelled(accountId)"
-1802 PUSHDATA1 52-65-63-6F-76-65-72-79-43-61-6E-63-65-6C-6C-65-64 # as text: "RecoveryCancelled"
-# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryCancelled(accountId)"
-1821 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 192: "}"
-1826 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.UInt160)
-1827 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 204: "accountId"
-1830 LDARG0
-# Code SafeRecoveryVerifier.cs line 204: "RequireOwner(accountId)"
-1831 CALL_L 1B-FC-FF-FF # pos: 834 (offset: -997)
-# Code SafeRecoveryVerifier.cs line 205: "1"
-1836 PUSH1
-# Code SafeRecoveryVerifier.cs line 205: "accountId"
-1837 LDARG0
-# Code SafeRecoveryVerifier.cs line 205: "PREFIX_FROZEN"
-1838 PUSH3
-# Code SafeRecoveryVerifier.cs line 205: "Key(PREFIX_FROZEN, accountId)"
-1839 CALL_L 0C-FB-FF-FF # pos: 571 (offset: -1268)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1844 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
-1849 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
-# Code SafeRecoveryVerifier.cs line 206: "accountId"
-1854 LDARG0
-# Code SafeRecoveryVerifier.cs line 206: "PREFIX_PENDING_RECOVERY"
-1855 PUSH5
-# Code SafeRecoveryVerifier.cs line 206: "Key(PREFIX_PENDING_RECOVERY, accountId)"
-1856 CALL_L FB-FA-FF-FF # pos: 571 (offset: -1285)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1861 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
-1866 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
-# Code SafeRecoveryVerifier.cs line 207: "accountId"
-1871 LDARG0
-# Code SafeRecoveryVerifier.cs line 207: "OnEmergencyFreeze(accountId)"
-1872 PUSH1
-# Code SafeRecoveryVerifier.cs line 207: "OnEmergencyFreeze(accountId)"
-1873 PACK
-# Code SafeRecoveryVerifier.cs line 207: "OnEmergencyFreeze(accountId)"
-1874 PUSHDATA1 45-6D-65-72-67-65-6E-63-79-46-72-65-65-7A-65 # as text: "EmergencyFreeze"
-# Code SafeRecoveryVerifier.cs line 207: "OnEmergencyFreeze(accountId)"
-1891 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 208: "}"
-1896 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.UInt160)
-1897 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 212: "accountId"
-1900 LDARG0
-# Code SafeRecoveryVerifier.cs line 212: "RequireOwner(accountId)"
-1901 CALL_L D5-FB-FF-FF # pos: 834 (offset: -1067)
-# Code SafeRecoveryVerifier.cs line 213: "accountId"
-1906 LDARG0
-# Code SafeRecoveryVerifier.cs line 213: "PREFIX_FROZEN"
-1907 PUSH3
-# Code SafeRecoveryVerifier.cs line 213: "Key(PREFIX_FROZEN, accountId)"
-1908 CALL_L C7-FA-FF-FF # pos: 571 (offset: -1337)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1913 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
-1918 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
-# Code SafeRecoveryVerifier.cs line 214: "accountId"
-1923 LDARG0
-# Code SafeRecoveryVerifier.cs line 214: "OnUnfreeze(accountId)"
-1924 PUSH1
-# Code SafeRecoveryVerifier.cs line 214: "OnUnfreeze(accountId)"
-1925 PACK
-# Code SafeRecoveryVerifier.cs line 214: "OnUnfreeze(accountId)"
-1926 PUSHDATA1 55-6E-66-72-65-65-7A-65 # as text: "Unfreeze"
-# Code SafeRecoveryVerifier.cs line 214: "OnUnfreeze(accountId)"
-1936 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 215: "}"
-1941 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.UInt160)
-1942 INITSLOT 02-01 # 2 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 220: "accountId"
-1945 LDARG0
-# Code SafeRecoveryVerifier.cs line 220: "PREFIX_FROZEN"
-1946 PUSH3
-# Code SafeRecoveryVerifier.cs line 220: "Key(PREFIX_FROZEN, accountId)"
-1947 CALL_L A0-FA-FF-FF # pos: 571 (offset: -1376)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1952 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-1957 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 220: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
-1962 STLOC0
-# Code SafeRecoveryVerifier.cs line 221: "frozen"
-1963 LDLOC0
-# Code SafeRecoveryVerifier.cs line 221: "null"
-1964 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 221: "frozen != null"
-1965 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 221: "if (frozen != null) return false;"
-1966 JMPIFNOT 05 # pos: 1971 (offset: 5)
-# Code SafeRecoveryVerifier.cs line 221: "false"
-1968 PUSHF
-# Code SafeRecoveryVerifier.cs line 221: "return false;"
-1969 JMP 27 # pos: 2008 (offset: 39)
-# Code SafeRecoveryVerifier.cs line 223: "accountId"
-1971 LDARG0
-# Code SafeRecoveryVerifier.cs line 223: "PREFIX_OWNER"
-1972 PUSH1
-# Code SafeRecoveryVerifier.cs line 223: "Key(PREFIX_OWNER, accountId)"
-1973 CALL_L 86-FA-FF-FF # pos: 571 (offset: -1402)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-1978 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-1983 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1988 DUP
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1989 ISNULL
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1990 JMPIF 09 # pos: 1999 (offset: 9)
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1992 DUP
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1993 SIZE
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1994 PUSHINT8 14 # 20
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1996 JMPEQ 03 # pos: 1999 (offset: 3)
-# Code SafeRecoveryVerifier.cs line 223: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1998 THROW
-# Code SafeRecoveryVerifier.cs line 223: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-1999 STLOC1
-# Code SafeRecoveryVerifier.cs line 224: "owner"
-2000 LDLOC1
+1214 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1219 DUP
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1220 ISNULL
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1221 JMPIF 09 # pos: 1230 (offset: 9)
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1223 DUP
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1224 SIZE
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1225 PUSHINT8 14 # 20
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1227 JMPEQ 03 # pos: 1230 (offset: 3)
+# Code SafeRecoveryVerifier.cs line 281: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1229 THROW
+# Code SafeRecoveryVerifier.cs line 281: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+1230 STLOC0
+# Code SafeRecoveryVerifier.cs line 282: ""Not owner""
+1231 PUSHDATA1 4E-6F-74-20-6F-77-6E-65-72 # as text: "Not owner"
+# Code SafeRecoveryVerifier.cs line 282: "owner"
+1242 LDLOC0
 # Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
-2001 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
-# Code SafeRecoveryVerifier.cs line 224: "return Runtime.CheckWitness(owner);"
-2006 JMP 02 # pos: 2008 (offset: 2)
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 225: "}"
-2008 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.UInt160)
-2009 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 230: "accountId"
-2012 LDARG0
-# Code SafeRecoveryVerifier.cs line 230: "PREFIX_OWNER"
-2013 PUSH1
-# Code SafeRecoveryVerifier.cs line 230: "Key(PREFIX_OWNER, accountId)"
-2014 CALL_L 5D-FA-FF-FF # pos: 571 (offset: -1443)
+1243 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code SafeRecoveryVerifier.cs line 282: "Assert(Runtime.CheckWitness(owner), "Not owner")"
+1248 CALL_L 88-FD-FF-FF # pos: 616 (offset: -632)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 283: "}"
+1253 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.ByteString)
+1254 INITSLOT 01-01 # 1 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 287: "accountId"
+1257 LDARG0
+# Code SafeRecoveryVerifier.cs line 287: "PREFIX_FROZEN"
+1258 PUSH3
+# Code SafeRecoveryVerifier.cs line 287: "Key(PREFIX_FROZEN, accountId)"
+1259 CALL_L C3-FD-FF-FF # pos: 686 (offset: -573)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-2019 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+1264 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-2024 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2029 DUP
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2030 ISNULL
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2031 JMPIF 09 # pos: 2040 (offset: 9)
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2033 DUP
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2034 SIZE
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2035 PUSHINT8 14 # 20
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2037 JMPEQ 03 # pos: 2040 (offset: 3)
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2039 THROW
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.UInt160)
-# Code SafeRecoveryVerifier.cs line 230: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2040 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.UInt160)
-2041 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 234: "accountId"
-2044 LDARG0
-# Code SafeRecoveryVerifier.cs line 234: "PREFIX_NONCE"
-2045 PUSH4
-# Code SafeRecoveryVerifier.cs line 234: "Key(PREFIX_NONCE, accountId)"
-2046 CALL_L 3D-FA-FF-FF # pos: 571 (offset: -1475)
+1269 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 287: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+1274 STLOC0
+# Code SafeRecoveryVerifier.cs line 288: ""Account frozen""
+1275 PUSHDATA1 41-63-63-6F-75-6E-74-20-66-72-6F-7A-65-6E # as text: "Account frozen"
+# Code SafeRecoveryVerifier.cs line 288: "frozen"
+1291 LDLOC0
+# Code SafeRecoveryVerifier.cs line 288: "null"
+1292 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 288: "frozen == null"
+1293 EQUAL
+# Code SafeRecoveryVerifier.cs line 288: "Assert(frozen == null, "Account frozen")"
+1294 CALL_L 5A-FD-FF-FF # pos: 616 (offset: -678)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 289: "}"
+1299 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160, byte[][], System.Numerics.BigInteger)
+1300 INITSLOT 07-04 # 7 local variables, 4 arguments
+# Code SafeRecoveryVerifier.cs line 118: ""accountId""
+1303 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code SafeRecoveryVerifier.cs line 118: "accountId"
+1314 LDARG0
+# Code SafeRecoveryVerifier.cs line 118: "ValidateAccountId(accountId, "accountId")"
+1315 CALL_L 25-FD-FF-FF # pos: 584 (offset: -731)
+# Code SafeRecoveryVerifier.cs line 119: ""newOwner""
+1320 PUSHDATA1 6E-65-77-4F-77-6E-65-72 # as text: "newOwner"
+# Code SafeRecoveryVerifier.cs line 119: "newOwner"
+1330 LDARG1
+# Code SafeRecoveryVerifier.cs line 119: "ValidateAddress(newOwner, "newOwner")"
+1331 CALL_L 41-FD-FF-FF # pos: 628 (offset: -703)
+# Code SafeRecoveryVerifier.cs line 120: "accountId"
+1336 LDARG0
+# Code SafeRecoveryVerifier.cs line 120: "RequireNotFrozen(accountId)"
+1337 CALL AD # pos: 1254 (offset: -83)
+# Code SafeRecoveryVerifier.cs line 123: "accountId"
+1339 LDARG0
+# Code SafeRecoveryVerifier.cs line 123: "PREFIX_NONCE"
+1340 PUSH4
+# Code SafeRecoveryVerifier.cs line 123: "Key(PREFIX_NONCE, accountId)"
+1341 CALL_L 71-FD-FF-FF # pos: 686 (offset: -655)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-2051 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+1346 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-2056 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+1351 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
 # Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
-2061 DUP
+1356 DUP
 # Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
-2062 ISNULL
+1357 ISNULL
 # Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
-2063 JMPIFNOT 06 # pos: 2069 (offset: 6)
+1358 JMPIFNOT 06 # pos: 1364 (offset: 6)
 # Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
-2065 DROP
+1360 DROP
 # Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
-2066 PUSH0
+1361 PUSH0
 # Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
-2067 JMP 04 # pos: 2071 (offset: 4)
+1362 JMP 04 # pos: 1366 (offset: 4)
 # Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
-2069 CONVERT 21 # Integer type
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.UInt160)
-2071 RET
+1364 CONVERT 21 # Integer type
+# Code SafeRecoveryVerifier.cs line 123: "currentNonce = (BigInteger)Storage.Get(Storage.CurrentContext, Key(PREFIX_NONCE, accountId))"
+1366 STLOC0
+# Code SafeRecoveryVerifier.cs line 124: ""Invalid nonce""
+1367 PUSHDATA1 49-6E-76-61-6C-69-64-20-6E-6F-6E-63-65 # as text: "Invalid nonce"
+# Code SafeRecoveryVerifier.cs line 124: "nonce"
+1382 LDARG3
+# Code SafeRecoveryVerifier.cs line 124: "currentNonce"
+1383 LDLOC0
+# Code SafeRecoveryVerifier.cs line 124: "nonce == currentNonce"
+1384 EQUAL
+# Code SafeRecoveryVerifier.cs line 124: "Assert(nonce == currentNonce, "Invalid nonce")"
+1385 CALL_L FF-FC-FF-FF # pos: 616 (offset: -769)
+# Code SafeRecoveryVerifier.cs line 126: "accountId"
+1390 LDARG0
+# Code SafeRecoveryVerifier.cs line 126: "PREFIX_RECOVERY_MODULE"
+1391 PUSH2
+# Code SafeRecoveryVerifier.cs line 126: "Key(PREFIX_RECOVERY_MODULE, accountId)"
+1392 CALL_L 3E-FD-FF-FF # pos: 686 (offset: -706)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1397 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1402 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 126: "moduleData = Storage.Get(Storage.CurrentContext, Key(PREFIX_RECOVERY_MODULE, accountId))"
+1407 STLOC1
+# Code SafeRecoveryVerifier.cs line 127: ""Module not setup""
+1408 PUSHDATA1 4D-6F-64-75-6C-65-20-6E-6F-74-20-73-65-74-75-70 # as text: "Module not setup"
+# Code SafeRecoveryVerifier.cs line 127: "moduleData"
+1426 LDLOC1
+# Code SafeRecoveryVerifier.cs line 127: "null"
+1427 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 127: "moduleData != null"
+1428 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 127: "Assert(moduleData != null, "Module not setup")"
+1429 CALL_L D3-FC-FF-FF # pos: 616 (offset: -813)
+# Code SafeRecoveryVerifier.cs line 129: "moduleData"
+1434 LDLOC1
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1435 CALLT 01-00 # StdLib.deserialize token call
+# Code SafeRecoveryVerifier.cs line 129: "module = (RecoveryModule)StdLib.Deserialize(moduleData)"
+1438 STLOC2
+# Code SafeRecoveryVerifier.cs line 130: ""Module disabled""
+1439 PUSHDATA1 4D-6F-64-75-6C-65-20-64-69-73-61-62-6C-65-64 # as text: "Module disabled"
+# Code SafeRecoveryVerifier.cs line 130: "module"
+1456 LDLOC2
+# Code SafeRecoveryVerifier.cs line 130: "module.Enabled"
+1457 PUSH3
+# Code SafeRecoveryVerifier.cs line 130: "module.Enabled"
+1458 PICKITEM
+# Code SafeRecoveryVerifier.cs line 130: "Assert(module.Enabled, "Module disabled")"
+1459 CALL_L B5-FC-FF-FF # pos: 616 (offset: -843)
+# Code SafeRecoveryVerifier.cs line 131: ""Not enough signatures""
+1464 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Not enough signatures"
+# Code SafeRecoveryVerifier.cs line 131: "signatures"
+1487 LDARG2
+# Code SafeRecoveryVerifier.cs line 131: "signatures.Length"
+1488 SIZE
+# Code SafeRecoveryVerifier.cs line 131: "module"
+1489 LDLOC2
+# Code SafeRecoveryVerifier.cs line 131: "module.Threshold"
+1490 PUSH1
+# Code SafeRecoveryVerifier.cs line 131: "module.Threshold"
+1491 PICKITEM
+# Code SafeRecoveryVerifier.cs line 131: "signatures.Length >= module.Threshold"
+1492 GE
+# Code SafeRecoveryVerifier.cs line 131: "Assert(signatures.Length >= module.Threshold, "Not enough signatures")"
+1493 CALL_L 93-FC-FF-FF # pos: 616 (offset: -877)
+# Code SafeRecoveryVerifier.cs line 132: ""Mismatched arrays""
+1498 PUSHDATA1 4D-69-73-6D-61-74-63-68-65-64-20-61-72-72-61-79-73 # as text: "Mismatched arrays"
+# Code SafeRecoveryVerifier.cs line 132: "signatures"
+1517 LDARG2
+# Code SafeRecoveryVerifier.cs line 132: "signatures.Length"
+1518 SIZE
+# Code SafeRecoveryVerifier.cs line 132: "module"
+1519 LDLOC2
+# Code SafeRecoveryVerifier.cs line 132: "module.Guardians"
+1520 PUSH0
+# Code SafeRecoveryVerifier.cs line 132: "module.Guardians"
+1521 PICKITEM
+# Code SafeRecoveryVerifier.cs line 132: "module.Guardians.Length"
+1522 SIZE
+# Code SafeRecoveryVerifier.cs line 132: "signatures.Length == module.Guardians.Length"
+1523 EQUAL
+# Code SafeRecoveryVerifier.cs line 132: "Assert(signatures.Length == module.Guardians.Length, "Mismatched arrays")"
+1524 CALL_L 74-FC-FF-FF # pos: 616 (offset: -908)
+# Code SafeRecoveryVerifier.cs line 135: "accountId"
+1529 LDARG0
+# Code SafeRecoveryVerifier.cs line 135: "newOwner"
+1530 LDARG1
+# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
+1531 CAT
+# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1532 CONVERT 28 # ByteString type
+# Code SafeRecoveryVerifier.cs line 135: "nonce"
+1534 LDARG3
+# Code SafeRecoveryVerifier.cs line 135: "((BigInteger)nonce).ToByteArray()"
+1535 CONVERT 30 # Buffer type
+# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1537 CONVERT 28 # ByteString type
+# Code Helper.cs line 203: "OpCode(OpCode.CAT)"
+1539 CAT
+# Code Helper.cs line 204: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1540 CONVERT 28 # ByteString type
+# Code SafeRecoveryVerifier.cs line 135: "message = Helper.Concat(Helper.Concat(accountId, newOwner), (ByteString)((BigInteger)nonce).ToByteArray())"
+1542 STLOC3
+# Code SafeRecoveryVerifier.cs line 136: "message"
+1543 LDLOC3
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+1544 CALLT 02-00 # CryptoLib.sha256 token call
+# Code SafeRecoveryVerifier.cs line 136: "messageHash = CryptoLib.Sha256(message)"
+1547 STLOC4
+# Code SafeRecoveryVerifier.cs line 139: "0"
+1548 PUSH0
+# Code SafeRecoveryVerifier.cs line 139: "validSigs = 0"
+1549 STLOC5
+# Code SafeRecoveryVerifier.cs line 140: "0"
+1550 PUSH0
+# Code SafeRecoveryVerifier.cs line 140: "i = 0"
+1551 STLOC6
+1552 JMP 4C # pos: 1628 (offset: 76)
+# Code SafeRecoveryVerifier.cs line 142: "NamedCurveHash.secp256r1SHA256"
+1554 PUSHINT8 17 # 23
+# Code SafeRecoveryVerifier.cs line 142: "signatures"
+1556 LDARG2
+# Code SafeRecoveryVerifier.cs line 142: "i"
+1557 LDLOC6
+# Code SafeRecoveryVerifier.cs line 142: "signatures[i]"
+1558 PICKITEM
+# Code ByteString.cs line 55: "OpCode(OpCode.CONVERT, StackItemType.ByteString)"
+1559 CONVERT 28 # ByteString type
+# Code SafeRecoveryVerifier.cs line 142: "module"
+1561 LDLOC2
+# Code SafeRecoveryVerifier.cs line 142: "module.Guardians"
+1562 PUSH0
+# Code SafeRecoveryVerifier.cs line 142: "module.Guardians"
+1563 PICKITEM
+# Code SafeRecoveryVerifier.cs line 142: "i"
+1564 LDLOC6
+# Code SafeRecoveryVerifier.cs line 142: "module.Guardians[i]"
+1565 PICKITEM
+# Code SafeRecoveryVerifier.cs line 142: "messageHash"
+1566 LDLOC4
+# Code CryptoLib.cs line 19: "Contract("0x726cb6e0cd8628a1350a611384688911ab75f51b")"
+1567 CALLT 03-00 # CryptoLib.verifyWithECDsa token call
+# Code SafeRecoveryVerifier.cs line 142: "if (CryptoLib.VerifyWithECDsa(messageHash, module.Guardians[i], (ByteString)signatures[i], NamedCurveHash.secp256r1SHA256))"
+# Code SafeRecoveryVerifier.cs line 142: "{"
+# Code SafeRecoveryVerifier.cs line 142: "validSigs++;"
+# Code SafeRecoveryVerifier.cs line 142: "}"
+1570 JMPIFNOT 07 # pos: 1577 (offset: 7)
+# Code SafeRecoveryVerifier.cs line 144: "validSigs++"
+1572 LDLOC5
+# Code SafeRecoveryVerifier.cs line 144: "validSigs++"
+1573 DUP
+# Code SafeRecoveryVerifier.cs line 144: "validSigs++"
+1574 INC
+# Code SafeRecoveryVerifier.cs line 144: "validSigs++"
+1575 STLOC5
+# Code SafeRecoveryVerifier.cs line 144: "validSigs++"
+1576 DROP
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1577 LDLOC6
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1578 DUP
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1579 INC
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1580 DUP
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1581 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1586 JMPGE 04 # pos: 1590 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1588 JMP 0A # pos: 1598 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1590 DUP
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1591 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1596 JMPLE 1E # pos: 1626 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1598 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1607 AND
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1608 DUP
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1609 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1614 JMPLE 0C # pos: 1626 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1616 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1625 SUB
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1626 STLOC6
+# Code SafeRecoveryVerifier.cs line 140: "i++"
+1627 DROP
+# Code SafeRecoveryVerifier.cs line 140: "i"
+1628 LDLOC6
+# Code SafeRecoveryVerifier.cs line 140: "signatures"
+1629 LDARG2
+# Code SafeRecoveryVerifier.cs line 140: "signatures.Length"
+1630 SIZE
+# Code SafeRecoveryVerifier.cs line 140: "i < signatures.Length"
+1631 LT
+1632 JMPIF B2 # pos: 1554 (offset: -78)
+# Code SafeRecoveryVerifier.cs line 148: ""Not enough valid signatures""
+1634 PUSHDATA1 4E-6F-74-20-65-6E-6F-75-67-68-20-76-61-6C-69-64-20-73-69-67-6E-61-74-75-72-65-73 # as text: "Not enough valid signatures"
+# Code SafeRecoveryVerifier.cs line 148: "validSigs"
+1663 LDLOC5
+# Code SafeRecoveryVerifier.cs line 148: "module"
+1664 LDLOC2
+# Code SafeRecoveryVerifier.cs line 148: "module.Threshold"
+1665 PUSH1
+# Code SafeRecoveryVerifier.cs line 148: "module.Threshold"
+1666 PICKITEM
+# Code SafeRecoveryVerifier.cs line 148: "validSigs >= module.Threshold"
+1667 GE
+# Code SafeRecoveryVerifier.cs line 148: "Assert(validSigs >= module.Threshold, "Not enough valid signatures")"
+1668 CALL_L E4-FB-FF-FF # pos: 616 (offset: -1052)
+# Code SafeRecoveryVerifier.cs line 151: "module"
+1673 LDLOC2
+# Code SafeRecoveryVerifier.cs line 151: "module.Timelock"
+1674 PUSH2
+# Code SafeRecoveryVerifier.cs line 151: "module.Timelock"
+1675 PICKITEM
+# Code SafeRecoveryVerifier.cs line 151: "0"
+1676 PUSH0
+# Code SafeRecoveryVerifier.cs line 151: "module.Timelock > 0"
+1677 GT
+# Code SafeRecoveryVerifier.cs line 151: "if (module.Timelock > 0)"
+# Code SafeRecoveryVerifier.cs line 151: "{"
+# Code SafeRecoveryVerifier.cs line 151: "var pendingRecovery = new PendingRecovery"
+# Code SafeRecoveryVerifier.cs line 151: "{"
+# Code SafeRecoveryVerifier.cs line 151: "NewOwner = newOwner,"
+# Code SafeRecoveryVerifier.cs line 151: "InitiatedAt = Runtime.Time,"
+# Code SafeRecoveryVerifier.cs line 151: "ExecutableAt = Runtime.Time + module.Timelock"
+# Code SafeRecoveryVerifier.cs line 151: "};"
+# Code SafeRecoveryVerifier.cs line 151: ""
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId), StdLib.Serialize(pendingRecovery));"
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code SafeRecoveryVerifier.cs line 151: ""
+# Code SafeRecoveryVerifier.cs line 151: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt);"
+# Code SafeRecoveryVerifier.cs line 151: "}"
+# Code SafeRecoveryVerifier.cs line 151: "else"
+# Code SafeRecoveryVerifier.cs line 151: "{"
+# Code SafeRecoveryVerifier.cs line 151: "// No timelock, execute immediately (CEI pattern)"
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_OWNER, accountId), newOwner);"
+# Code SafeRecoveryVerifier.cs line 151: ""
+# Code SafeRecoveryVerifier.cs line 151: "OnRecoveryExecuted(accountId, newOwner);"
+# Code SafeRecoveryVerifier.cs line 151: "}"
+1678 JMPIFNOT_L 8D-00-00-00 # pos: 1819 (offset: 141)
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1683 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code SafeRecoveryVerifier.cs line 157: "module"
+1688 LDLOC2
+# Code SafeRecoveryVerifier.cs line 157: "module.Timelock"
+1689 PUSH2
+# Code SafeRecoveryVerifier.cs line 157: "module.Timelock"
+1690 PICKITEM
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1691 ADD
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1692 DUP
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1693 PUSH0
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1694 JMPGE 04 # pos: 1698 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1696 JMP 16 # pos: 1718 (offset: 22)
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1698 DUP
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1699 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1716 JMPLE 14 # pos: 1736 (offset: 20)
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1718 PUSHINT128 FF-FF-FF-FF-FF-FF-FF-FF-00-00-00-00-00-00-00-00 # 18446744073709551615
+# Code SafeRecoveryVerifier.cs line 157: "Runtime.Time + module.Timelock"
+1735 AND
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+1736 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code SafeRecoveryVerifier.cs line 155: "newOwner"
+1741 LDARG1
+# Code SafeRecoveryVerifier.cs line 153: "new PendingRecovery"
+# Code SafeRecoveryVerifier.cs line 153: "{"
+# Code SafeRecoveryVerifier.cs line 153: "NewOwner = newOwner,"
+# Code SafeRecoveryVerifier.cs line 153: "InitiatedAt = Runtime.Time,"
+# Code SafeRecoveryVerifier.cs line 153: "ExecutableAt = Runtime.Time + module.Timelock"
+# Code SafeRecoveryVerifier.cs line 153: "}"
+1742 PUSH3
+# Code SafeRecoveryVerifier.cs line 153: "new PendingRecovery"
+# Code SafeRecoveryVerifier.cs line 153: "{"
+# Code SafeRecoveryVerifier.cs line 153: "NewOwner = newOwner,"
+# Code SafeRecoveryVerifier.cs line 153: "InitiatedAt = Runtime.Time,"
+# Code SafeRecoveryVerifier.cs line 153: "ExecutableAt = Runtime.Time + module.Timelock"
+# Code SafeRecoveryVerifier.cs line 153: "}"
+1743 PACK
+# Code SafeRecoveryVerifier.cs line 153: "pendingRecovery = new PendingRecovery"
+# Code SafeRecoveryVerifier.cs line 153: "{"
+# Code SafeRecoveryVerifier.cs line 153: "NewOwner = newOwner,"
+# Code SafeRecoveryVerifier.cs line 153: "InitiatedAt = Runtime.Time,"
+# Code SafeRecoveryVerifier.cs line 153: "ExecutableAt = Runtime.Time + module.Timelock"
+# Code SafeRecoveryVerifier.cs line 153: "}"
+1744 STLOC6
+# Code SafeRecoveryVerifier.cs line 160: "pendingRecovery"
+1745 LDLOC6
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1746 CALLT 00-00 # StdLib.serialize token call
+# Code SafeRecoveryVerifier.cs line 160: "accountId"
+1749 LDARG0
+# Code SafeRecoveryVerifier.cs line 160: "PREFIX_PENDING_RECOVERY"
+1750 PUSH5
+# Code SafeRecoveryVerifier.cs line 160: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1751 CALL_L D7-FB-FF-FF # pos: 686 (offset: -1065)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1756 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1761 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 161: "currentNonce"
+1766 LDLOC0
+# Code SafeRecoveryVerifier.cs line 161: "1"
+1767 PUSH1
+# Code SafeRecoveryVerifier.cs line 161: "currentNonce + 1"
+1768 ADD
+# Code SafeRecoveryVerifier.cs line 161: "accountId"
+1769 LDARG0
+# Code SafeRecoveryVerifier.cs line 161: "PREFIX_NONCE"
+1770 PUSH4
+# Code SafeRecoveryVerifier.cs line 161: "Key(PREFIX_NONCE, accountId)"
+1771 CALL_L C3-FB-FF-FF # pos: 686 (offset: -1085)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1776 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+1781 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 163: "pendingRecovery"
+1786 LDLOC6
+# Code SafeRecoveryVerifier.cs line 163: "pendingRecovery.ExecutableAt"
+1787 PUSH2
+# Code SafeRecoveryVerifier.cs line 163: "pendingRecovery.ExecutableAt"
+1788 PICKITEM
+# Code SafeRecoveryVerifier.cs line 163: "newOwner"
+1789 LDARG1
+# Code SafeRecoveryVerifier.cs line 163: "accountId"
+1790 LDARG0
+# Code SafeRecoveryVerifier.cs line 163: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
+1791 PUSH3
+# Code SafeRecoveryVerifier.cs line 163: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
+1792 PACK
+# Code SafeRecoveryVerifier.cs line 163: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
+1793 PUSHDATA1 52-65-63-6F-76-65-72-79-49-6E-69-74-69-61-74-65-64 # as text: "RecoveryInitiated"
+# Code SafeRecoveryVerifier.cs line 163: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt)"
+1812 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Code SafeRecoveryVerifier.cs line 151: "if (module.Timelock > 0)"
+# Code SafeRecoveryVerifier.cs line 151: "{"
+# Code SafeRecoveryVerifier.cs line 151: "var pendingRecovery = new PendingRecovery"
+# Code SafeRecoveryVerifier.cs line 151: "{"
+# Code SafeRecoveryVerifier.cs line 151: "NewOwner = newOwner,"
+# Code SafeRecoveryVerifier.cs line 151: "InitiatedAt = Runtime.Time,"
+# Code SafeRecoveryVerifier.cs line 151: "ExecutableAt = Runtime.Time + module.Timelock"
+# Code SafeRecoveryVerifier.cs line 151: "};"
+# Code SafeRecoveryVerifier.cs line 151: ""
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId), StdLib.Serialize(pendingRecovery));"
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code SafeRecoveryVerifier.cs line 151: ""
+# Code SafeRecoveryVerifier.cs line 151: "OnRecoveryInitiated(accountId, newOwner, pendingRecovery.ExecutableAt);"
+# Code SafeRecoveryVerifier.cs line 151: "}"
+# Code SafeRecoveryVerifier.cs line 151: "else"
+# Code SafeRecoveryVerifier.cs line 151: "{"
+# Code SafeRecoveryVerifier.cs line 151: "// No timelock, execute immediately (CEI pattern)"
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_NONCE, accountId), currentNonce + 1);"
+# Code SafeRecoveryVerifier.cs line 151: "Storage.Put(Storage.CurrentContext, Key(PREFIX_OWNER, accountId), newOwner);"
+# Code SafeRecoveryVerifier.cs line 151: ""
+# Code SafeRecoveryVerifier.cs line 151: "OnRecoveryExecuted(accountId, newOwner);"
+# Code SafeRecoveryVerifier.cs line 151: "}"
+1817 JMP 43 # pos: 1884 (offset: 67)
+# Code SafeRecoveryVerifier.cs line 168: "currentNonce"
+1819 LDLOC0
+# Code SafeRecoveryVerifier.cs line 168: "1"
+1820 PUSH1
+# Code SafeRecoveryVerifier.cs line 168: "currentNonce + 1"
+1821 ADD
+# Code SafeRecoveryVerifier.cs line 168: "accountId"
+1822 LDARG0
+# Code SafeRecoveryVerifier.cs line 168: "PREFIX_NONCE"
+1823 PUSH4
+# Code SafeRecoveryVerifier.cs line 168: "Key(PREFIX_NONCE, accountId)"
+1824 CALL_L 8E-FB-FF-FF # pos: 686 (offset: -1138)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1829 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+1834 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 169: "newOwner"
+1839 LDARG1
+# Code SafeRecoveryVerifier.cs line 169: "accountId"
+1840 LDARG0
+# Code SafeRecoveryVerifier.cs line 169: "PREFIX_OWNER"
+1841 PUSH1
+# Code SafeRecoveryVerifier.cs line 169: "Key(PREFIX_OWNER, accountId)"
+1842 CALL_L 7C-FB-FF-FF # pos: 686 (offset: -1156)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1847 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+1852 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 171: "newOwner"
+1857 LDARG1
+# Code SafeRecoveryVerifier.cs line 171: "accountId"
+1858 LDARG0
+# Code SafeRecoveryVerifier.cs line 171: "OnRecoveryExecuted(accountId, newOwner)"
+1859 PUSH2
+# Code SafeRecoveryVerifier.cs line 171: "OnRecoveryExecuted(accountId, newOwner)"
+1860 PACK
+# Code SafeRecoveryVerifier.cs line 171: "OnRecoveryExecuted(accountId, newOwner)"
+1861 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
+# Code SafeRecoveryVerifier.cs line 171: "OnRecoveryExecuted(accountId, newOwner)"
+1879 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160, byte[][], System.Numerics.BigInteger)
+# Code SafeRecoveryVerifier.cs line 173: "}"
+1884 RET
+1885 DUP
+1886 ISNULL
+1887 JMPIFNOT 06 # pos: 1893 (offset: 6)
+1889 DROP
+1890 PUSH0
+1891 JMP 04 # pos: 1895 (offset: 4)
+1893 CONVERT 21 # Integer type
+1895 RET
+1896 CALLT 01-00 # StdLib.deserialize token call
+1899 RET
+1900 CAT
+1901 CONVERT 28 # ByteString type
+1903 RET
+1904 CONVERT 28 # ByteString type
+1906 RET
+1907 CALLT 02-00 # CryptoLib.sha256 token call
+1910 RET
+1911 CALLT 03-00 # CryptoLib.verifyWithECDsa token call
+1914 RET
+1915 RET
+1916 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+1921 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.FinalizeRecovery(Neo.SmartContract.Framework.ByteString)
+1922 INITSLOT 02-01 # 2 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 178: ""accountId""
+1925 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code SafeRecoveryVerifier.cs line 178: "accountId"
+1936 LDARG0
+# Code SafeRecoveryVerifier.cs line 178: "ValidateAccountId(accountId, "accountId")"
+1937 CALL_L B7-FA-FF-FF # pos: 584 (offset: -1353)
+# Code SafeRecoveryVerifier.cs line 179: "accountId"
+1942 LDARG0
+# Code SafeRecoveryVerifier.cs line 179: "RequireNotFrozen(accountId)"
+1943 CALL_L 4F-FD-FF-FF # pos: 1254 (offset: -689)
+# Code SafeRecoveryVerifier.cs line 181: "accountId"
+1948 LDARG0
+# Code SafeRecoveryVerifier.cs line 181: "PREFIX_PENDING_RECOVERY"
+1949 PUSH5
+# Code SafeRecoveryVerifier.cs line 181: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+1950 CALL_L 10-FB-FF-FF # pos: 686 (offset: -1264)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+1955 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+1960 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 181: "data = Storage.Get(Storage.CurrentContext, Key(PREFIX_PENDING_RECOVERY, accountId))"
+1965 STLOC0
+# Code SafeRecoveryVerifier.cs line 182: ""No pending recovery""
+1966 PUSHDATA1 4E-6F-20-70-65-6E-64-69-6E-67-20-72-65-63-6F-76-65-72-79 # as text: "No pending recovery"
+# Code SafeRecoveryVerifier.cs line 182: "data"
+1987 LDLOC0
+# Code SafeRecoveryVerifier.cs line 182: "null"
+1988 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 182: "data != null"
+1989 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 182: "Assert(data != null, "No pending recovery")"
+1990 CALL_L A2-FA-FF-FF # pos: 616 (offset: -1374)
+# Code SafeRecoveryVerifier.cs line 184: "data"
+1995 LDLOC0
+# Code StdLib.cs line 19: "Contract("0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0")"
+1996 CALLT 01-00 # StdLib.deserialize token call
+# Code SafeRecoveryVerifier.cs line 184: "pending = (PendingRecovery)StdLib.Deserialize(data)"
+1999 STLOC1
+# Code SafeRecoveryVerifier.cs line 185: ""Timelock not expired""
+2000 PUSHDATA1 54-69-6D-65-6C-6F-63-6B-20-6E-6F-74-20-65-78-70-69-72-65-64 # as script hash: 0x6465726970786520746f6e206b636f6c656d6954, as text: "Timelock not expired"
+# Code Runtime.cs line 88: "Syscall("System.Runtime.GetTime")"
+2022 SYSCALL B7-C3-88-03 # System.Runtime.GetTime SysCall
+# Code SafeRecoveryVerifier.cs line 185: "pending"
+2027 LDLOC1
+# Code SafeRecoveryVerifier.cs line 185: "pending.ExecutableAt"
+2028 PUSH2
+# Code SafeRecoveryVerifier.cs line 185: "pending.ExecutableAt"
+2029 PICKITEM
+# Code SafeRecoveryVerifier.cs line 185: "Runtime.Time >= pending.ExecutableAt"
+2030 GE
+# Code SafeRecoveryVerifier.cs line 185: "Assert(Runtime.Time >= pending.ExecutableAt, "Timelock not expired")"
+2031 CALL_L 79-FA-FF-FF # pos: 616 (offset: -1415)
+# Code SafeRecoveryVerifier.cs line 188: "accountId"
+2036 LDARG0
+# Code SafeRecoveryVerifier.cs line 188: "PREFIX_PENDING_RECOVERY"
+2037 PUSH5
+# Code SafeRecoveryVerifier.cs line 188: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+2038 CALL_L B8-FA-FF-FF # pos: 686 (offset: -1352)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2043 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+2048 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code SafeRecoveryVerifier.cs line 189: "pending"
+2053 LDLOC1
+# Code SafeRecoveryVerifier.cs line 189: "pending.NewOwner"
+2054 PUSH0
+# Code SafeRecoveryVerifier.cs line 189: "pending.NewOwner"
+2055 PICKITEM
+# Code SafeRecoveryVerifier.cs line 189: "accountId"
+2056 LDARG0
+# Code SafeRecoveryVerifier.cs line 189: "PREFIX_OWNER"
+2057 PUSH1
+# Code SafeRecoveryVerifier.cs line 189: "Key(PREFIX_OWNER, accountId)"
+2058 CALL_L A4-FA-FF-FF # pos: 686 (offset: -1372)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2063 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 88: "Syscall("System.Storage.Put")"
+2068 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 191: "pending"
+2073 LDLOC1
+# Code SafeRecoveryVerifier.cs line 191: "pending.NewOwner"
+2074 PUSH0
+# Code SafeRecoveryVerifier.cs line 191: "pending.NewOwner"
+2075 PICKITEM
+# Code SafeRecoveryVerifier.cs line 191: "accountId"
+2076 LDARG0
+# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryExecuted(accountId, pending.NewOwner)"
+2077 PUSH2
+# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryExecuted(accountId, pending.NewOwner)"
+2078 PACK
+# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryExecuted(accountId, pending.NewOwner)"
+2079 PUSHDATA1 52-65-63-6F-76-65-72-79-45-78-65-63-75-74-65-64 # as text: "RecoveryExecuted"
+# Code SafeRecoveryVerifier.cs line 191: "OnRecoveryExecuted(accountId, pending.NewOwner)"
+2097 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.FinalizeRecovery(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 192: "}"
+2102 RET
+2103 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+2108 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.ByteString)
+2109 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 197: ""accountId""
+2112 PUSHDATA1 61-63-63-6F-75-6E-74-49-64 # as text: "accountId"
+# Code SafeRecoveryVerifier.cs line 197: "accountId"
+2123 LDARG0
+# Code SafeRecoveryVerifier.cs line 197: "ValidateAccountId(accountId, "accountId")"
+2124 CALL_L FC-F9-FF-FF # pos: 584 (offset: -1540)
+# Code SafeRecoveryVerifier.cs line 198: "accountId"
+2129 LDARG0
+# Code SafeRecoveryVerifier.cs line 198: "RequireOwner(accountId)"
+2130 CALL_L 5D-FC-FF-FF # pos: 1199 (offset: -931)
+# Code SafeRecoveryVerifier.cs line 200: "accountId"
+2135 LDARG0
+# Code SafeRecoveryVerifier.cs line 200: "PREFIX_PENDING_RECOVERY"
+2136 PUSH5
+# Code SafeRecoveryVerifier.cs line 200: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+2137 CALL_L 55-FA-FF-FF # pos: 686 (offset: -1451)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2142 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+2147 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code SafeRecoveryVerifier.cs line 201: "accountId"
+2152 LDARG0
+# Code SafeRecoveryVerifier.cs line 201: "OnRecoveryCancelled(accountId)"
+2153 PUSH1
+# Code SafeRecoveryVerifier.cs line 201: "OnRecoveryCancelled(accountId)"
+2154 PACK
+# Code SafeRecoveryVerifier.cs line 201: "OnRecoveryCancelled(accountId)"
+2155 PUSHDATA1 52-65-63-6F-76-65-72-79-43-61-6E-63-65-6C-6C-65-64 # as text: "RecoveryCancelled"
+# Code SafeRecoveryVerifier.cs line 201: "OnRecoveryCancelled(accountId)"
+2174 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.CancelRecovery(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 202: "}"
+2179 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.ByteString)
+2180 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 214: "accountId"
+2183 LDARG0
+# Code SafeRecoveryVerifier.cs line 214: "RequireOwner(accountId)"
+2184 CALL_L 27-FC-FF-FF # pos: 1199 (offset: -985)
+# Code SafeRecoveryVerifier.cs line 215: "1"
+2189 PUSH1
+# Code SafeRecoveryVerifier.cs line 215: "accountId"
+2190 LDARG0
+# Code SafeRecoveryVerifier.cs line 215: "PREFIX_FROZEN"
+2191 PUSH3
+# Code SafeRecoveryVerifier.cs line 215: "Key(PREFIX_FROZEN, accountId)"
+2192 CALL_L 1E-FA-FF-FF # pos: 686 (offset: -1506)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2197 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 124: "Syscall("System.Storage.Put")"
+2202 SYSCALL E6-3F-18-84 # System.Storage.Put SysCall
+# Code SafeRecoveryVerifier.cs line 216: "accountId"
+2207 LDARG0
+# Code SafeRecoveryVerifier.cs line 216: "PREFIX_PENDING_RECOVERY"
+2208 PUSH5
+# Code SafeRecoveryVerifier.cs line 216: "Key(PREFIX_PENDING_RECOVERY, accountId)"
+2209 CALL_L 0D-FA-FF-FF # pos: 686 (offset: -1523)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2214 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+2219 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code SafeRecoveryVerifier.cs line 217: "accountId"
+2224 LDARG0
+# Code SafeRecoveryVerifier.cs line 217: "OnEmergencyFreeze(accountId)"
+2225 PUSH1
+# Code SafeRecoveryVerifier.cs line 217: "OnEmergencyFreeze(accountId)"
+2226 PACK
+# Code SafeRecoveryVerifier.cs line 217: "OnEmergencyFreeze(accountId)"
+2227 PUSHDATA1 45-6D-65-72-67-65-6E-63-79-46-72-65-65-7A-65 # as text: "EmergencyFreeze"
+# Code SafeRecoveryVerifier.cs line 217: "OnEmergencyFreeze(accountId)"
+2244 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.EmergencyFreeze(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 218: "}"
+2249 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.ByteString)
+2250 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 222: "accountId"
+2253 LDARG0
+# Code SafeRecoveryVerifier.cs line 222: "RequireOwner(accountId)"
+2254 CALL_L E1-FB-FF-FF # pos: 1199 (offset: -1055)
+# Code SafeRecoveryVerifier.cs line 223: "accountId"
+2259 LDARG0
+# Code SafeRecoveryVerifier.cs line 223: "PREFIX_FROZEN"
+2260 PUSH3
+# Code SafeRecoveryVerifier.cs line 223: "Key(PREFIX_FROZEN, accountId)"
+2261 CALL_L D9-F9-FF-FF # pos: 686 (offset: -1575)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2266 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 201: "Syscall("System.Storage.Delete")"
+2271 SYSCALL 2F-58-C5-ED # System.Storage.Delete SysCall
+# Code SafeRecoveryVerifier.cs line 224: "accountId"
+2276 LDARG0
+# Code SafeRecoveryVerifier.cs line 224: "OnUnfreeze(accountId)"
+2277 PUSH1
+# Code SafeRecoveryVerifier.cs line 224: "OnUnfreeze(accountId)"
+2278 PACK
+# Code SafeRecoveryVerifier.cs line 224: "OnUnfreeze(accountId)"
+2279 PUSHDATA1 55-6E-66-72-65-65-7A-65 # as text: "Unfreeze"
+# Code SafeRecoveryVerifier.cs line 224: "OnUnfreeze(accountId)"
+2289 SYSCALL 95-01-6F-61 # System.Runtime.Notify SysCall
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 225: "}"
+2294 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+2295 INITSLOT 03-01 # 3 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 230: "accountId"
+2298 LDARG0
+# Code SafeRecoveryVerifier.cs line 230: "PREFIX_FROZEN"
+2299 PUSH3
+# Code SafeRecoveryVerifier.cs line 230: "Key(PREFIX_FROZEN, accountId)"
+2300 CALL_L B2-F9-FF-FF # pos: 686 (offset: -1614)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2305 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2310 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 230: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+2315 STLOC0
+# Code SafeRecoveryVerifier.cs line 231: "frozen"
+2316 LDLOC0
+# Code SafeRecoveryVerifier.cs line 231: "null"
+2317 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 231: "frozen != null"
+2318 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 231: "if (frozen != null) return false;"
+2319 JMPIFNOT 05 # pos: 2324 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 231: "false"
+2321 PUSHF
+# Code SafeRecoveryVerifier.cs line 231: "return false;"
+2322 JMP 31 # pos: 2371 (offset: 49)
+# Code SafeRecoveryVerifier.cs line 233: "accountId"
+2324 LDARG0
+# Code SafeRecoveryVerifier.cs line 233: "PREFIX_OWNER"
+2325 PUSH1
+# Code SafeRecoveryVerifier.cs line 233: "Key(PREFIX_OWNER, accountId)"
+2326 CALL_L 98-F9-FF-FF # pos: 686 (offset: -1640)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2331 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2336 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 233: "ownerBytes = Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2341 STLOC1
+# Code SafeRecoveryVerifier.cs line 234: "ownerBytes"
+2342 LDLOC1
+# Code SafeRecoveryVerifier.cs line 234: "null"
+2343 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 234: "ownerBytes == null"
+2344 EQUAL
+# Code SafeRecoveryVerifier.cs line 234: "if (ownerBytes == null) return false;"
+2345 JMPIFNOT 05 # pos: 2350 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 234: "false"
+2347 PUSHF
+# Code SafeRecoveryVerifier.cs line 234: "return false;"
+2348 JMP 17 # pos: 2371 (offset: 23)
+# Code SafeRecoveryVerifier.cs line 235: "ownerBytes"
+2350 LDLOC1
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2351 DUP
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2352 ISNULL
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2353 JMPIF 09 # pos: 2362 (offset: 9)
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2355 DUP
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2356 SIZE
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2357 PUSHINT8 14 # 20
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2359 JMPEQ 03 # pos: 2362 (offset: 3)
+# Code SafeRecoveryVerifier.cs line 235: "(UInt160)ownerBytes"
+2361 THROW
+# Code SafeRecoveryVerifier.cs line 235: "owner = (UInt160)ownerBytes"
+2362 STLOC2
+# Code SafeRecoveryVerifier.cs line 236: "owner"
+2363 LDLOC2
+# Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
+2364 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
+# Code SafeRecoveryVerifier.cs line 236: "return Runtime.CheckWitness(owner);"
+2369 JMP 02 # pos: 2371 (offset: 2)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 237: "}"
+2371 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+2372 INITSLOT 04-02 # 4 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 241: "accountId"
+2375 LDARG0
+# Code SafeRecoveryVerifier.cs line 241: "PREFIX_FROZEN"
+2376 PUSH3
+# Code SafeRecoveryVerifier.cs line 241: "Key(PREFIX_FROZEN, accountId)"
+2377 CALL_L 65-F9-FF-FF # pos: 686 (offset: -1691)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2382 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2387 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 241: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+2392 STLOC0
+# Code SafeRecoveryVerifier.cs line 242: "frozen"
+2393 LDLOC0
+# Code SafeRecoveryVerifier.cs line 242: "null"
+2394 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 242: "frozen != null"
+2395 NOTEQUAL
+# Code SafeRecoveryVerifier.cs line 242: "if (frozen != null) return false;"
+2396 JMPIFNOT 08 # pos: 2404 (offset: 8)
+# Code SafeRecoveryVerifier.cs line 242: "false"
+2398 PUSHF
+# Code SafeRecoveryVerifier.cs line 242: "return false;"
+2399 JMP_L 87-00-00-00 # pos: 2534 (offset: 135)
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes"
+2404 LDARG1
+# Code SafeRecoveryVerifier.cs line 243: "null"
+2405 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes == null"
+2406 EQUAL
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes == null || signerHashes.Length == 0"
+2407 JMPIFNOT 05 # pos: 2412 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes == null || signerHashes.Length == 0"
+2409 PUSHT
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes == null || signerHashes.Length == 0"
+2410 JMP 06 # pos: 2416 (offset: 6)
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes"
+2412 LDARG1
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes.Length"
+2413 SIZE
+# Code SafeRecoveryVerifier.cs line 243: "0"
+2414 PUSH0
+# Code SafeRecoveryVerifier.cs line 243: "signerHashes.Length == 0"
+2415 EQUAL
+# Code SafeRecoveryVerifier.cs line 243: "if (signerHashes == null || signerHashes.Length == 0) return false;"
+2416 JMPIFNOT 05 # pos: 2421 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 243: "false"
+2418 PUSHF
+# Code SafeRecoveryVerifier.cs line 243: "return false;"
+2419 JMP 73 # pos: 2534 (offset: 115)
+# Code SafeRecoveryVerifier.cs line 245: "accountId"
+2421 LDARG0
+# Code SafeRecoveryVerifier.cs line 245: "PREFIX_OWNER"
+2422 PUSH1
+# Code SafeRecoveryVerifier.cs line 245: "Key(PREFIX_OWNER, accountId)"
+2423 CALL_L 37-F9-FF-FF # pos: 686 (offset: -1737)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2428 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2433 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 245: "ownerBytes = Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2438 STLOC1
+# Code SafeRecoveryVerifier.cs line 246: "ownerBytes"
+2439 LDLOC1
+# Code SafeRecoveryVerifier.cs line 246: "null"
+2440 PUSHNULL
+# Code SafeRecoveryVerifier.cs line 246: "ownerBytes == null"
+2441 EQUAL
+# Code SafeRecoveryVerifier.cs line 246: "if (ownerBytes == null) return false;"
+2442 JMPIFNOT 05 # pos: 2447 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 246: "false"
+2444 PUSHF
+# Code SafeRecoveryVerifier.cs line 246: "return false;"
+2445 JMP 59 # pos: 2534 (offset: 89)
+# Code SafeRecoveryVerifier.cs line 247: "ownerBytes"
+2447 LDLOC1
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2448 DUP
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2449 ISNULL
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2450 JMPIF 09 # pos: 2459 (offset: 9)
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2452 DUP
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2453 SIZE
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2454 PUSHINT8 14 # 20
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2456 JMPEQ 03 # pos: 2459 (offset: 3)
+# Code SafeRecoveryVerifier.cs line 247: "(UInt160)ownerBytes"
+2458 THROW
+# Code SafeRecoveryVerifier.cs line 247: "owner = (UInt160)ownerBytes"
+2459 STLOC2
+# Code SafeRecoveryVerifier.cs line 248: "0"
+2460 PUSH0
+# Code SafeRecoveryVerifier.cs line 248: "i = 0"
+2461 STLOC3
+2462 JMP 3F # pos: 2525 (offset: 63)
+# Code SafeRecoveryVerifier.cs line 250: "signerHashes"
+2464 LDARG1
+# Code SafeRecoveryVerifier.cs line 250: "i"
+2465 LDLOC3
+# Code SafeRecoveryVerifier.cs line 250: "signerHashes[i]"
+2466 PICKITEM
+# Code SafeRecoveryVerifier.cs line 250: "owner"
+2467 LDLOC2
+# Code SafeRecoveryVerifier.cs line 250: "signerHashes[i] == owner"
+2468 EQUAL
+# Code SafeRecoveryVerifier.cs line 250: "if (signerHashes[i] == owner) return true;"
+2469 JMPIFNOT 05 # pos: 2474 (offset: 5)
+# Code SafeRecoveryVerifier.cs line 250: "true"
+2471 PUSHT
+# Code SafeRecoveryVerifier.cs line 250: "return true;"
+2472 JMP 3E # pos: 2534 (offset: 62)
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2474 LDLOC3
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2475 DUP
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2476 INC
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2477 DUP
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2478 PUSHINT32 00-00-00-80 # -2147483648
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2483 JMPGE 04 # pos: 2487 (offset: 4)
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2485 JMP 0A # pos: 2495 (offset: 10)
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2487 DUP
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2488 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2493 JMPLE 1E # pos: 2523 (offset: 30)
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2495 PUSHINT64 FF-FF-FF-FF-00-00-00-00 # 4294967295
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2504 AND
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2505 DUP
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2506 PUSHINT32 FF-FF-FF-7F # 2147483647
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2511 JMPLE 0C # pos: 2523 (offset: 12)
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2513 PUSHINT64 00-00-00-00-01-00-00-00 # 4294967296
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2522 SUB
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2523 STLOC3
+# Code SafeRecoveryVerifier.cs line 248: "i++"
+2524 DROP
+# Code SafeRecoveryVerifier.cs line 248: "i"
+2525 LDLOC3
+# Code SafeRecoveryVerifier.cs line 248: "signerHashes"
+2526 LDARG1
+# Code SafeRecoveryVerifier.cs line 248: "signerHashes.Length"
+2527 SIZE
+# Code SafeRecoveryVerifier.cs line 248: "i < signerHashes.Length"
+2528 LT
+2529 JMPIF BF # pos: 2464 (offset: -65)
+# Code SafeRecoveryVerifier.cs line 252: "false"
+2531 PUSHF
+# Code SafeRecoveryVerifier.cs line 252: "return false;"
+2532 JMP 02 # pos: 2534 (offset: 2)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+# Code SafeRecoveryVerifier.cs line 253: "}"
+2534 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+2535 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 258: "accountId"
+2538 LDARG0
+# Code SafeRecoveryVerifier.cs line 258: "PREFIX_OWNER"
+2539 PUSH1
+# Code SafeRecoveryVerifier.cs line 258: "Key(PREFIX_OWNER, accountId)"
+2540 CALL_L C2-F8-FF-FF # pos: 686 (offset: -1854)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2545 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2550 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2555 DUP
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2556 ISNULL
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2557 JMPIF 09 # pos: 2566 (offset: 9)
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2559 DUP
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2560 SIZE
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2561 PUSHINT8 14 # 20
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2563 JMPEQ 03 # pos: 2566 (offset: 3)
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2565 THROW
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 258: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2566 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
+2567 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 262: "accountId"
+2570 LDARG0
+# Code SafeRecoveryVerifier.cs line 262: "PREFIX_NONCE"
+2571 PUSH4
+# Code SafeRecoveryVerifier.cs line 262: "Key(PREFIX_NONCE, accountId)"
+2572 CALL_L A2-F8-FF-FF # pos: 686 (offset: -1886)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2577 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2582 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
+2587 DUP
+# Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
+2588 ISNULL
+# Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
+2589 JMPIFNOT 06 # pos: 2595 (offset: 6)
+# Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
+2591 DROP
+# Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
+2592 PUSH0
+# Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
+2593 JMP 04 # pos: 2597 (offset: 4)
+# Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
+2595 CONVERT 21 # Integer type
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
+2597 RET
