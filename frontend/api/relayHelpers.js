@@ -1,6 +1,6 @@
 import { sanitizeHex } from '../src/utils/hex.js';
 
-export const ALLOWED_RELAY_META_OPERATIONS = ['executeMetaTx', 'executeMetaTxByAddress'];
+export const ALLOWED_RELAY_META_OPERATIONS = ['executeUnified', 'executeUnifiedByAddress'];
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];

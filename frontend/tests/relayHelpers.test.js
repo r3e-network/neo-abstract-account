@@ -18,20 +18,20 @@ test('normalizeRelayPayload prefers raw transactions when provided', () => {
 
 test('sanitizeMetaInvocationForRelay only accepts configured AA wrapper invocations and strips caller signers', () => {
   const metaInvocation = {
-    scriptHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-    operation: 'executeMetaTxByAddress',
+    scriptHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
+    operation: 'executeUnifiedByAddress',
     args: [{ type: 'String', value: 'ok' }],
     signers: [{ account: '0xattacker', scopes: 255 }],
   };
 
-  assert.deepEqual(ALLOWED_RELAY_META_OPERATIONS, ['executeMetaTx', 'executeMetaTxByAddress']);
+  assert.deepEqual(ALLOWED_RELAY_META_OPERATIONS, ['executeUnified', 'executeUnifiedByAddress']);
   assert.deepEqual(
     sanitizeMetaInvocationForRelay(metaInvocation, {
-      aaContractHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+      aaContractHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
     }),
     {
-      scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-      operation: 'executeMetaTxByAddress',
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUnifiedByAddress',
       args: [{ type: 'String', value: 'ok' }],
     },
   );
@@ -41,21 +41,21 @@ test('sanitizeMetaInvocationForRelay rejects wrong contract hashes and unsupport
   assert.equal(
     sanitizeMetaInvocationForRelay({
       scriptHash: '0x1111111111111111111111111111111111111111',
-      operation: 'executeMetaTxByAddress',
+      operation: 'executeUnifiedByAddress',
       args: [],
     }, {
-      aaContractHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+      aaContractHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
     }),
     null,
   );
 
   assert.equal(
     sanitizeMetaInvocationForRelay({
-      scriptHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+      scriptHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
       operation: 'transfer',
       args: [],
     }, {
-      aaContractHash: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+      aaContractHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
     }),
     null,
   );
@@ -63,8 +63,8 @@ test('sanitizeMetaInvocationForRelay rejects wrong contract hashes and unsupport
 
 test('normalizeRelayPayload accepts meta invocation payloads', () => {
   const metaInvocation = {
-    scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-    operation: 'executeMetaTxByAddress',
+    scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+    operation: 'executeUnifiedByAddress',
     args: [{ type: 'String', value: 'ok' }],
   };
 

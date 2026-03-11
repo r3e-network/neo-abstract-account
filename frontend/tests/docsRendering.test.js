@@ -61,13 +61,13 @@ test('docs registry uses the repo README as the overview source of truth', () =>
 
 test('workflow doc explains wrapper execution after proxy hardening', () => {
   const workflowDoc = read('src/assets/docs/workflow.md');
-  assert.match(workflowDoc, /executeByAddress/);
+  assert.match(workflowDoc, /executeUnifiedByAddress/);
   assert.match(workflowDoc, /direct proxy-signed external/i);
 });
 
 test('sdk doc references the verified hardened testnet hash', () => {
   const sdkDoc = read('src/assets/docs/sdk-usage.md');
-  assert.match(sdkDoc, /0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423/i);
+  assert.match(sdkDoc, /0x5be915aea3ce85e4752d522632f0a9520e377aaf/i);
 });
 
 test('repo docs describe a hardened policy-gated execution surface', () => {
@@ -76,7 +76,7 @@ test('repo docs describe a hardened policy-gated execution surface', () => {
 
   assert.match(readme, /policy-gated/i);
   assert.match(architectureDoc, /policy-gated/i);
-  assert.match(architectureDoc, /executeByAddress|executeMetaTx/);
+  assert.match(architectureDoc, /executeUnifiedByAddress|executeUnified/);
   assert.doesNotMatch(architectureDoc, /fully programmable logic gates/i);
 });
 

@@ -91,10 +91,10 @@ const threshold = await client.getManagerThreshold(accountId);
 const payload = client.executePayload(accountId, targetContract, method, args);
 
 // Execute via account address
-const payload = client.executeByAddressPayload(accountAddress, targetContract, method, args);
+const payload = client.executeUnifiedByAddressPayload(accountAddress, targetContract, method, args);
 
 // Execute meta-transaction
-const payload = client.executeMetaTxByAddressPayload(accountAddress, evmPublicKey, targetContract, method, args, argsHash, nonce, deadline, signature);
+const payload = client.executeUnifiedByAddressPayload(accountAddress, evmPublicKey, targetContract, method, args, argsHash, nonce, deadline, signature);
 ```
 
 ## Canonical docs

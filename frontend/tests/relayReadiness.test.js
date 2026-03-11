@@ -40,8 +40,8 @@ test('relay readiness is green for meta invocations when relay meta mode is enab
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [],
         },
       },
@@ -62,8 +62,8 @@ test('relay readiness is warning-only when meta invocations exist but relay meta
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [],
         },
       },

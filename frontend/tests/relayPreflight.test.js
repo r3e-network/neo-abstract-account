@@ -16,8 +16,8 @@ test('buildRelayPreflightRequest reuses the selected relay payload and adds simu
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [{ type: 'String', value: 'ok' }],
         },
       },
@@ -28,8 +28,8 @@ test('buildRelayPreflightRequest reuses the selected relay payload and adds simu
     relayEndpoint: '/api/relay-transaction',
     simulate: true,
     metaInvocation: {
-      scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-      operation: 'executeMetaTxByAddress',
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUnifiedByAddress',
       args: [{ type: 'String', value: 'ok' }],
     },
   });
@@ -41,17 +41,17 @@ test('normalizeRelayPreflightResult marks successful simulations as ready', () =
     ok: true,
     vmState: 'HALT',
     gasConsumed: '12345',
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
   });
 
   assert.deepEqual(result, {
     ok: true,
     level: 'ready',
     label: 'Relay Check Passed',
-    detail: 'executeMetaTxByAddress simulated successfully (gas 12345).',
+    detail: 'executeUnifiedByAddress simulated successfully (gas 12345).',
     vmState: 'HALT',
     gasConsumed: '12345',
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     payloadMode: 'best',
     exception: '',
     supported: true,
@@ -88,7 +88,7 @@ test('normalizeRelayPreflightResult preserves fault details for a failed simulat
     simulate: true,
     ok: false,
     vmState: 'FAULT',
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     gasConsumed: '88',
     exception: 'Invalid Nonce',
   });
@@ -100,7 +100,7 @@ test('normalizeRelayPreflightResult preserves fault details for a failed simulat
     detail: 'Invalid Nonce',
     vmState: 'FAULT',
     gasConsumed: '88',
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     payloadMode: 'best',
     exception: 'Invalid Nonce',
     supported: true,
@@ -114,7 +114,7 @@ test('normalizeRelayPreflightResult preserves returned stack items for inspectio
     ok: true,
     vmState: 'HALT',
     gasConsumed: '99',
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     stack: [{ type: 'Integer', value: '1' }, { type: 'ByteString', value: 'YWJjZA==' }],
   });
 
@@ -127,7 +127,7 @@ test('relay preflight payloads are exportable for draft metadata persistence', (
     ok: true,
     vmState: 'HALT',
     gasConsumed: '77',
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     stack: [{ type: 'Integer', value: '1' }],
   }, 'meta');
 
@@ -145,7 +145,7 @@ test('runRelayPreflight submits simulate requests through the relay transport', 
         ok: true,
         vmState: 'HALT',
         gasConsumed: '77',
-        operation: 'executeMetaTxByAddress',
+        operation: 'executeUnifiedByAddress',
         stack: [{ type: 'Integer', value: '1' }],
       };
     },
@@ -160,8 +160,8 @@ test('runRelayPreflight submits simulate requests through the relay transport', 
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [{ type: 'String', value: 'ok' }],
         },
       },
@@ -171,7 +171,7 @@ test('runRelayPreflight submits simulate requests through the relay transport', 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].simulate, true);
   assert.equal(result.label, 'Relay Check Passed');
-  assert.equal(result.operation, 'executeMetaTxByAddress');
+  assert.equal(result.operation, 'executeUnifiedByAddress');
   assert.equal(result.gasConsumed, '77');
   assert.deepEqual(result.stack, [{ type: 'Integer', value: '1' }]);
 });

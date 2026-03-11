@@ -4,7 +4,7 @@ A single Abstract Account can aggregate native Neo witnesses and EVM EIP-712 sig
 
 ## Verified Mixed Flow
 
-On the hardened verified testnet deployment `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423`, the live validator proved a mixed Neo-relayer + EVM-signer path where:
+On the hardened verified testnet deployment `0x5be915aea3ce85e4752d522632f0a9520e377aaf`, the live validator proved a mixed Neo-relayer + EVM-signer path where:
 
 - the EVM signer authorizes an AA wrapper action with EIP-712 typed data
 - the Neo account relays and pays GAS for the transaction
@@ -27,7 +27,7 @@ Shared draft metadata stays intentionally bounded here as well: the frontend kee
 
 ## Execution Model
 
-Mixed signing does **not** bypass hardening. The combined authorization still has to execute through Abstract Account entrypoints such as `executeMetaTx` or `executeMetaTxByAddress`. Direct proxy-signed external calls remain invalid.
+Mixed signing does **not** bypass hardening. The combined authorization still has to execute through the canonical Abstract Account runtime entrypoints `executeUnified` or `executeUnifiedByAddress`. Direct proxy-signed external calls remain invalid.
 
 ## Practical Example
 

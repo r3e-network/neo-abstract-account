@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ethers } from 'ethers';
 
 import {
-  buildExecuteMetaTxByAddressInvocation,
+  buildExecuteUnifiedByAddressInvocation,
   buildMetaTransactionTypedData,
   computeArgsHash,
   fetchNonceForAddress,
@@ -76,7 +76,7 @@ test('computeArgsHash invokes the contract helper and decodes the returned bytes
 
   const result = await computeArgsHash({
     rpcUrl: 'https://rpc.example.org',
-    aaContractHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
     args: [{ type: 'String', value: 'hello' }],
     fetchImpl,
   });
@@ -102,7 +102,7 @@ test('fetchNonceForAddress reads the current meta-tx nonce for an address signer
 
   const nonce = await fetchNonceForAddress({
     rpcUrl: 'https://rpc.example.org',
-    aaContractHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
     accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
     evmSignerAddress: '0x49c095ce04d38642e39155f5481615c58227a498',
     fetchImpl,
@@ -111,9 +111,9 @@ test('fetchNonceForAddress reads the current meta-tx nonce for an address signer
   assert.equal(nonce, 3n);
 });
 
-test('buildExecuteMetaTxByAddressInvocation builds contract-aligned args for relay or export', () => {
-  const invocation = buildExecuteMetaTxByAddressInvocation({
-    aaContractHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+test('buildExecuteUnifiedByAddressInvocation builds contract-aligned args for relay or export', () => {
+  const invocation = buildExecuteUnifiedByAddressInvocation({
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
     accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
     evmPublicKeyHex: `04${'11'.repeat(64)}`,
     targetContract: 'd2a4cff31913016155e38e474a2c06d08be276cf',
@@ -125,14 +125,14 @@ test('buildExecuteMetaTxByAddressInvocation builds contract-aligned args for rel
     signatureHex: '12'.repeat(64),
   });
 
-  assert.equal(invocation.scriptHash, '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423');
-  assert.equal(invocation.operation, 'executeMetaTxByAddress');
+  assert.equal(invocation.scriptHash, '5be915aea3ce85e4752d522632f0a9520e377aaf');
+  assert.equal(invocation.operation, 'executeUnifiedByAddress');
   assert.deepEqual(invocation.args, [
     { type: 'Hash160', value: '0x13ef519c362973f9a34648a9eac5b71250b2a80a' },
-    { type: 'Array', value: [{ type: 'ByteArray', value: `0x04${'11'.repeat(64)}` }] },
     { type: 'Hash160', value: '0xd2a4cff31913016155e38e474a2c06d08be276cf' },
     { type: 'String', value: 'balanceOf' },
     { type: 'Array', value: [{ type: 'Hash160', value: '0x13ef519c362973f9a34648a9eac5b71250b2a80a' }] },
+    { type: 'Array', value: [{ type: 'ByteArray', value: `0x04${'11'.repeat(64)}` }] },
     { type: 'ByteArray', value: `0x${'ab'.repeat(32)}` },
     { type: 'Integer', value: '4' },
     { type: 'Integer', value: '1710001234' },

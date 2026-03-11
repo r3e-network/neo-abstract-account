@@ -36,8 +36,8 @@ Expected: FAIL because current code still uses `accountId` in typed data and dra
 
 **Step 1: Update struct-hash construction**
 - Make the EIP-712 / meta-tx struct hash use the deterministic AA address as the account identity field.
-- For `ExecuteMetaTxByAddress`, use the provided address directly.
-- For `ExecuteMetaTx`, derive the deterministic AA address from the supplied `accountId` before hashing.
+- For `ExecuteUnifiedByAddress`, use the provided address directly.
+- For `ExecuteUnified`, derive the deterministic AA address from the supplied `accountId` before hashing.
 
 **Step 2: Keep nonce and verification internals intact**
 - Continue resolving account storage through `accountId` internally where needed.

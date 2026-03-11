@@ -33,7 +33,7 @@ function toArrayParam(args = []) {
   };
 }
 
-function buildExecuteByAddressInvocation({ aaContractHash = '', account = {}, operationBody = null, signerAddress = '' } = {}) {
+function buildExecuteUnifiedByAddressInvocation({ aaContractHash = '', account = {}, operationBody = null, signerAddress = '' } = {}) {
   const contractHash = sanitizeHex(aaContractHash || '');
   const accountAddressScriptHash = sanitizeHex(account.accountAddressScriptHash || '');
   const targetContract = sanitizeHex(operationBody?.targetContract || '');
@@ -46,12 +46,17 @@ function buildExecuteByAddressInvocation({ aaContractHash = '', account = {}, op
 
   return {
     scriptHash: contractHash,
-    operation: 'executeByAddress',
+    operation: 'executeUnifiedByAddress',
     args: [
       toHash160Param(accountAddressScriptHash),
       toHash160Param(targetContract),
       { type: 'String', value: method },
       toArrayParam(args),
+      { type: 'Array', value: [] },
+      { type: 'ByteArray', value: '0x' },
+      { type: 'Integer', value: '0' },
+      { type: 'Integer', value: '0' },
+      { type: 'Array', value: [] },
     ],
     signers: signerAddress ? [{ account: signerAddress, scopes: 1 }] : [],
   };
@@ -113,7 +118,7 @@ export function buildStagedTransactionBody({
   notes = '',
   createdAt = new Date().toISOString(),
 } = {}) {
-  const clientInvocation = buildExecuteByAddressInvocation({
+  const clientInvocation = buildExecuteUnifiedByAddressInvocation({
     aaContractHash,
     account,
     operationBody,

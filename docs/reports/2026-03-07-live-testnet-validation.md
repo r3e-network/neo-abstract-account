@@ -15,8 +15,8 @@
 
 ## Confirmed Live Behavior
 - `createAccountWithAddress` and address-path wrapper reads work on the fresh deployment.
-- `executeByAddress(..., aaHash, getNonce, ...)` HALTs with the owner signer alone.
-- Threshold-2 mixed `executeMetaTxByAddress` succeeds live and increments nonce correctly.
+- `executeUnifiedByAddress(..., aaHash, getNonce, ...)` HALTs with the owner signer alone.
+- Threshold-2 mixed `executeUnifiedByAddress` succeeds live and increments nonce correctly.
 - Dome/oracle gating works live: pre-timeout FAULT, post-timeout pre-callback FAULT, post-unlock HALT.
 
 ## Confirmed Live Blockers
@@ -25,7 +25,7 @@
   - `sdk/js/tests/aa_testnet_direct_proxy_spend_validate.js`
   - `sdk/js/tests/aa_testnet_max_transfer_validate.js`
   - `sdk/js/tests/aa_testnet_custom_verifier_validate.js`
-  - manual `executeByAddress(... getNonce ...)` self-call probes with proxy signer/witness
+  - manual `executeUnifiedByAddress(... getNonce ...)` self-call probes with proxy signer/witness
 - Because NEP-17 `transfer` / token `approve` require the source account witness, owner-only wrapper execution reaches the contract but returns `false` for the underlying token operation instead of completing the asset move.
 
 ## Infrastructure Noise

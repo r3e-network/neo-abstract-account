@@ -10,8 +10,8 @@
 
 ## 关键执行入口
 
-- `executeByAddress`：原生钱包客户端路径
-- `executeMetaTxByAddress`：EVM 元交易 / 中继路径
+- `executeUnifiedByAddress`：原生钱包客户端路径
+- `executeUnifiedByAddress`：EVM 元交易 / 中继路径
 
 ## 协作草稿范围
 

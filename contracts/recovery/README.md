@@ -20,9 +20,9 @@ See `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md` for the exact deployme
 
 ## Verified Testnet Deployments
 
-- **ArgentRecoveryVerifier** — `0x260b204b109506140f6e20ef99d02c142d070f72`
-- **SafeRecoveryVerifier** — `0x06a7c50c2dd81f988e2e31b7fd721501008fbfa8`
-- **LoopringRecoveryVerifier** — `0x3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7`
+- **ArgentRecoveryVerifier** — `0xaa25d77353fbc4cceb372f91ebccf5fb726ed10f`
+- **SafeRecoveryVerifier** — `0xfcd8c4601dfa29910d9fec0bf724ce39fc734a74`
+- **LoopringRecoveryVerifier** — `0x5bc837e96b83f5080e722883398c8188177694ea`
 
 ## Key Changes
 
@@ -52,9 +52,9 @@ node sdk/js/tests/recovery_verifier_logic_test.js
 ```bash
 cd sdk/js
 export TEST_WIF="<your-testnet-wif>"
-export RECOVERY_HASH_TESTNET="260b204b109506140f6e20ef99d02c142d070f72"
-export SAFE_RECOVERY_HASH_TESTNET="06a7c50c2dd81f988e2e31b7fd721501008fbfa8"
-export LOOPRING_RECOVERY_HASH_TESTNET="3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7"
+export RECOVERY_HASH_TESTNET="aa25d77353fbc4cceb372f91ebccf5fb726ed10f"
+export SAFE_RECOVERY_HASH_TESTNET="fcd8c4601dfa29910d9fec0bf724ce39fc734a74"
+export LOOPRING_RECOVERY_HASH_TESTNET="5bc837e96b83f5080e722883398c8188177694ea"
 
 npm run testnet:validate:recovery
 npm run testnet:validate:recovery:safe

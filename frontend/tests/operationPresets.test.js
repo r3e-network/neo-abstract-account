@@ -41,8 +41,8 @@ test('multisig preset keeps contract call data and marks the draft as multisig-o
   const operation = buildOperationFromPreset({
     preset: 'multisigDraft',
     invoke: {
-      targetContract: '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-      method: 'executeByAddress',
+      targetContract: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
+      method: 'executeUnifiedByAddress',
       argsText: '[{"type":"String","value":"hello"}]',
     },
     multisig: {
@@ -52,7 +52,7 @@ test('multisig preset keeps contract call data and marks the draft as multisig-o
   });
 
   assert.equal(operation.kind, 'multisig');
-  assert.equal(operation.method, 'executeByAddress');
+  assert.equal(operation.method, 'executeUnifiedByAddress');
   assert.equal(operation.metadata.title, 'Treasury payout');
   assert.equal(operation.metadata.description, 'Needs two signers before relay');
   assert.equal(operation.metadata.requiresAdditionalSigners, true);

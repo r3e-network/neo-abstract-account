@@ -85,7 +85,7 @@ flowchart TD
   class Start,Pass success
 ```
 
-The hardened rule is important: direct proxy-signed external token transfers are rejected. Supported entrypoints are the AA wrapper methods such as `execute`, `executeByAddress`, `executeMetaTx`, and `executeMetaTxByAddress`.
+The hardened rule is important: direct proxy-signed external token transfers are rejected. Supported application entrypoints are the canonical AA runtime methods `executeUnified` and `executeUnifiedByAddress`.
 
 ## 4. Application Execution Pipeline
 
@@ -189,7 +189,7 @@ The contract supports several ways to authorize an action, but they all converge
 
 - **Native Neo signers** using admin / manager threshold logic
 - **Custom verifier contracts** for pluggable authorization logic
-- **EVM EIP-712 signatures** for `executeMetaTx` and `executeMetaTxByAddress`
+- **EVM EIP-712 signatures** for the canonical unified runtime entry (`executeUnified` / `executeUnifiedByAddress`)
 - **Dome recovery actors** once inactivity and optional oracle conditions are satisfied
 
 Custom verifiers extend authorization, but they do **not** bypass whitelist, blacklist, method policy, or max-transfer enforcement.

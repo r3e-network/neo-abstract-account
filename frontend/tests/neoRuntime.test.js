@@ -25,13 +25,13 @@ test('Neo address helpers round-trip a known script hash', () => {
 
 test('createVerifyScript matches the known contract verify script encoding', () => {
   const script = createVerifyScript(
-    '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    '5be915aea3ce85e4752d522632f0a9520e377aaf',
     '56e5bbd0603bdf01699c047b2397ee0e'
   );
 
   assert.equal(
     script,
-    '0c1056e5bbd0603bdf01699c047b2397ee0e11c01f0c067665726966790c142364ef1bcdcf9a7cd1e05a050efab7a399181c7141627d5b52'
+    '0c1056e5bbd0603bdf01699c047b2397ee0e11c01f0c067665726966790c14af7a370e52a9f03226522d75e485cea3ae15e95b41627d5b52'
   );
 });
 

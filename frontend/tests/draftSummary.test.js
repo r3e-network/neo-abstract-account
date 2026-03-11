@@ -11,7 +11,7 @@ test('buildDraftSummaryItems derives account, preset, signer progress, relay mod
       },
       operation_body: {
         kind: 'multisig',
-        method: 'executeByAddress',
+        method: 'executeUnifiedByAddress',
       },
       signer_requirements: [
         { id: 'neo:alice', kind: 'neo' },

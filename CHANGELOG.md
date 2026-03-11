@@ -22,9 +22,9 @@ and this project adheres to Semantic Versioning.
 
 ### Security
 - Deployed and validated the recovery verifier contracts on Neo N3 testnet:
-  - Argent `0x260b204b109506140f6e20ef99d02c142d070f72`
-  - Safe `0x06a7c50c2dd81f988e2e31b7fd721501008fbfa8`
-  - Loopring `0x3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7`
+  - Argent `0xaa25d77353fbc4cceb372f91ebccf5fb726ed10f`
+  - Safe `0xfcd8c4601dfa29910d9fec0bf724ce39fc734a74`
+  - Loopring `0x5bc837e96b83f5080e722883398c8188177694ea`
 - Preserved browser hardening headers in `frontend/vercel.json` and sanitized relay error responses to avoid exposing raw internal failures.
 - Added Supabase performance indexes for common draft lookup paths.
 

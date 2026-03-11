@@ -186,6 +186,7 @@ async function main() {
   const expiredTypedData = buildTypedData({
     chainId: magic,
     verifyingContract: aaHash,
+    accountAddressHash: accountInfo.addressScriptHash,
     accountIdHex: baseline.accountIdForSignature,
     targetContract: aaHash,
     method,
@@ -215,6 +216,7 @@ async function main() {
   const tamperedTypedData = buildTypedData({
     chainId: magic,
     verifyingContract: aaHash,
+    accountAddressHash: accountInfo.addressScriptHash,
     accountIdHex: baseline.accountIdForSignature,
     targetContract: aaHash,
     method,
@@ -243,6 +245,7 @@ async function main() {
   const wrongChainTypedData = buildTypedData({
     chainId: magic + 1,
     verifyingContract: aaHash,
+    accountAddressHash: accountInfo.addressScriptHash,
     accountIdHex: baseline.accountIdForSignature,
     targetContract: aaHash,
     method,
@@ -271,6 +274,7 @@ async function main() {
   const wrongVerifyingTypedData = buildTypedData({
     chainId: magic,
     verifyingContract: `deadbeef${aaHash.slice(8)}`,
+    accountAddressHash: accountInfo.addressScriptHash,
     accountIdHex: baseline.accountIdForSignature,
     targetContract: aaHash,
     method,
@@ -301,6 +305,7 @@ async function main() {
   const correctTypedData = buildTypedData({
     chainId: magic,
     verifyingContract: aaHash,
+    accountAddressHash: accountInfo.addressScriptHash,
     accountIdHex: baseline.accountIdForSignature,
     targetContract: aaHash,
     method,

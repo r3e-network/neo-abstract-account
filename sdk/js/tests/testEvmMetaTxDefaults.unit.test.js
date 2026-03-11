@@ -9,6 +9,6 @@ const helperSource = fs.readFileSync(helperPath, 'utf8');
 test('test-evm-meta-tx defaults to the verified hardened testnet hash', () => {
   assert.match(
     helperSource,
-    /711c1899a3b7fa0e055ae0d17c9acfcd1bef6423/
+    /5be915aea3ce85e4752d522632f0a9520e377aaf/
   );
 });

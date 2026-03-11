@@ -334,7 +334,7 @@ $$\text{address} = \text{Base58Check}(\text{version} \| \text{Hash160}(\text{ver
 
 \begin{featurebox}[标准纯 Neo 交易结构]
 \begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt,label=\textbf{\arabic*.}]
-  \item \textbf{脚本}：调用基于地址的封装方法 \code{executeByAddress(accountAddress, targetContract, method, args)}。
+  \item \textbf{脚本}：调用基于地址的封装方法 \code{executeUnifiedByAddress(accountAddress, targetContract, method, args, ...)}。
   \item \textbf{签名者}：包含确定性验证地址（脚本哈希）的数组。
   \item \textbf{见证}：包含空调用脚本（或签名数据）和确定性验证脚本的见证对象数组。
 \end{enumerate}
@@ -344,7 +344,7 @@ $$\text{address} = \text{Base58Check}(\text{version} \| \text{Hash160}(\text{ver
 
 \begin{featurebox}[混合交易结构]
 \begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt,label=\textbf{\arabic*.}]
-  \item \textbf{脚本}：调用基于地址的元交易封装方法 \code{executeMetaTxByAddress(...)}。
+  \item \textbf{脚本}：调用基于地址的元交易封装方法 \code{executeUnifiedByAddress(...)}。
   \item \textbf{签名者}：确定性验证地址（与纯 Neo 交易相同）。
   \item \textbf{属性}：包含 EVM 签名（$r, s, v$）、随机数和截止时间的自定义交易属性。
   \item \textbf{见证}：Neo 见证（如果仅使用 EVM 授权，则可为空）。

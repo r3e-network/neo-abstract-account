@@ -153,7 +153,7 @@ export async function assertAccountAddressBound({
   return normalizedAddress;
 }
 
-export function buildExecuteMetaTxByAddressInvocation({
+export function buildExecuteUnifiedByAddressInvocation({
   aaContractHash,
   accountAddressScriptHash,
   accountAddressHash,
@@ -168,13 +168,13 @@ export function buildExecuteMetaTxByAddressInvocation({
 } = {}) {
   return {
     scriptHash: sanitizeHex(aaContractHash),
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     args: [
       { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
-      { type: 'Array', value: [{ type: 'ByteArray', value: `0x${sanitizeHex(evmPublicKeyHex)}` }] },
       { type: 'Hash160', value: `0x${sanitizeHex(targetContract)}` },
       { type: 'String', value: String(method || '') },
       { type: 'Array', value: methodArgs },
+      { type: 'Array', value: [{ type: 'ByteArray', value: `0x${sanitizeHex(evmPublicKeyHex)}` }] },
       { type: 'ByteArray', value: `0x${sanitizeHex(argsHashHex)}` },
       { type: 'Integer', value: String(nonce) },
       { type: 'Integer', value: String(deadline) },

@@ -32,7 +32,7 @@ test('resolveAbstractAccountHash falls back for invalid values', () => {
 });
 
 test('default abstract account hash tracks the hardened verified deployment', () => {
-  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423');
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '5be915aea3ce85e4752d522632f0a9520e377aaf');
 });
 
 test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {

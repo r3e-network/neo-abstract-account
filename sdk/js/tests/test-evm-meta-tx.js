@@ -1,15 +1,17 @@
 const { rpc, sc, u, tx, wallet } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
+const crypto = require('crypto');
 const { buildMetaTransactionTypedData, sanitizeHex } = require('../src/metaTx');
 const { bindRpcHelpers } = require('./rpc');
 const { bindParamHelpers } = require('./params');
 const { bindMetaTxHelpers } = require('./meta');
 const { decodeByteStringToHex } = require('./stack');
+const { bindAccountHelpers } = require('./account');
 
 const aaHash = sanitizeHex(
   process.env.AA_HASH_TESTNET
   || process.env.VITE_AA_HASH_TESTNET
-  || '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423'
+  || '5be915aea3ce85e4752d522632f0a9520e377aaf'
 );
 
 async function main() {
@@ -18,12 +20,14 @@ async function main() {
   const { getNetworkMagic, invokeRead } = bindRpcHelpers({ rpcClient, rpc, sc, u });
   const { cpHash160, cpByteArray, cpByteArrayRaw, cpArray } = bindParamHelpers({ sc, u, sanitizeHex });
   const { computeArgsHash, buildTypedData, buildExecuteMetaTxArgs, signTypedDataNoRecovery } = bindMetaTxHelpers({ buildMetaTransactionTypedData, invokeRead, cpArray, cpHash160, cpByteArray, cpByteArrayRaw, decodeByteStringToHex, sanitizeHex, reverseHex: u.reverseHex, sc });
+  const { deriveAaAddressFromId } = bindAccountHelpers({ crypto, sc, u, wallet, sanitizeHex, cpByteArray });
 
   console.log('Checking ExecuteMetaTx with valid EVM public key...');
 
   const evmWallet = ethers.Wallet.createRandom();
   const uncompressedPubKey = sanitizeHex(evmWallet.signingKey.publicKey);
   const accountId = uncompressedPubKey;
+  const accountInfo = deriveAaAddressFromId(aaHash, accountId);
   const deployerWif = process.env.TEST_WIF;
   if (!deployerWif) {
     throw new Error('Missing TEST_WIF');
@@ -46,7 +50,7 @@ async function main() {
   const { domain, types, message } = buildTypedData({
     chainId,
     verifyingContract: aaHash,
-    accountIdHex: accountId,
+    accountAddressHash: accountInfo.addressScriptHash,
     targetContract,
     method,
     argsHashHex: argsHash,

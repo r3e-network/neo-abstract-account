@@ -2,7 +2,7 @@
 
 ## Scope
 - Smart contract authorization, signature validation, nonce handling, reentrancy/callback safety, asset-movement policy enforcement, update path safety, and live testnet validation scripts.
-- Deployment reviewed: `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423`.
+- Deployment reviewed: `0x5be915aea3ce85e4752d522632f0a9520e377aaf`.
 
 ## Fixed During Audit
 - Blocked external `requestDomeActivation*` mutation during active execution.

@@ -30,7 +30,7 @@ const MESSAGES = {
       title: 'Abstract Account Workspace',
       subtitle: 'Load an Abstract Account, compose wrapped operations, collect mixed Neo + EVM approvals, persist anonymous drafts, and choose the final client-side or relay submission path from one app-first home screen.',
       architectureTitle: 'How Abstract Accounts Work on Neo N3',
-      architectureSubtitle: 'The home workspace stages hardened AA wrapper calls like executeByAddress and relay-ready executeMetaTxByAddress flows, while governance, policy checks, and deterministic verification stay enforced by the master contract pipeline.',
+      architectureSubtitle: 'The home workspace stages hardened AA wrapper calls like executeUnifiedByAddress and relay-ready unified runtime flows, while governance, policy checks, and deterministic verification stay enforced by the master contract pipeline.',
     },
     studio: {
       powered: 'Neo N3 Powered',
@@ -171,7 +171,7 @@ const MESSAGES = {
       title: '抽象账户工作台',
       subtitle: '在一个以应用为中心的首页中加载抽象账户、组合封装操作、收集 Neo + EVM 混合签名、持久化匿名草稿，并选择最终的客户端或中继提交流程。',
       architectureTitle: 'Neo N3 抽象账户如何工作',
-      architectureSubtitle: '首页工作台会预构建 executeByAddress 与 executeMetaTxByAddress 这类加固后的 AA 包装调用，而治理、策略检查与确定性验证仍由主合约流水线统一执行。',
+      architectureSubtitle: '首页工作台会预构建 executeUnifiedByAddress 这一统一运行时入口以及兼容包装调用，而治理、策略检查与确定性验证仍由主合约流水线统一执行。',
     },
     studio: {
       powered: '由 Neo N3 驱动',

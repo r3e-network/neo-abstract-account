@@ -17,7 +17,7 @@ test('buildOperationSnapshotItems summarizes operation fields and available payl
       },
       transaction_body: {
         rawTransaction: 'aa',
-        metaInvocation: { operation: 'executeMetaTxByAddress' },
+        metaInvocation: { operation: 'executeUnifiedByAddress' },
       },
     },
     relayReadiness: {

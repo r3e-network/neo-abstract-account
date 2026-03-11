@@ -1,15 +1,15 @@
 # Abstract Account Workflow Lifecycle
 
-The Neo N3 Abstract Account workflow turns user intent into verified on-chain execution through the master contract. After the March 6, 2026 hardening update, deterministic proxy witnesses are only valid for a single top-level self-call back into the Abstract Account contract. That means direct proxy-signed external token transfers are rejected, while wrapper entrypoints such as `execute`, `executeByAddress`, `executeMetaTx`, and `executeMetaTxByAddress` remain the supported execution paths.
+The Neo N3 Abstract Account workflow turns user intent into verified on-chain execution through the master contract. After the March 6, 2026 hardening update, deterministic proxy witnesses are only valid for a single top-level self-call back into the Abstract Account contract. That means direct proxy-signed external token transfers are rejected, while the canonical runtime entrypoints `executeUnified` and `executeUnifiedByAddress` are the supported application paths.
 
 ## Home Operations Workspace
 
-The home operations workspace is now the fastest path for day-to-day usage. It lets a user load an Abstract Account by AA address or `.matrix` domain, stage the AA wrapper invocation, persist an immutable share draft, collect mixed Neo + EVM approvals, and then choose the final submission path. For client-side Neo execution, the workspace now stages a concrete `executeByAddress` wrapper call against the AA contract instead of pointing the wallet directly at the downstream target contract.
+The home operations workspace is now the fastest path for day-to-day usage. It lets a user load an Abstract Account by AA address or `.matrix` domain, stage the AA wrapper invocation, persist an immutable share draft, collect mixed Neo + EVM approvals, and then choose the final submission path. For client-side Neo execution, the workspace now stages a concrete `executeUnifiedByAddress` runtime call against the AA contract instead of pointing the wallet directly at the downstream target contract.
 
 For v1, both broadcast modes are supported:
 
 - **Client-side broadcast:** safest default path; a connected Neo browser wallet signs and submits the invocation directly.
-- **Relay broadcast:** optional path for either already-signed raw transactions or relay-ready `executeMetaTxByAddress` invocations assembled from collected EVM signatures. When a relayer signer is configured, the server can submit those meta invocations without requiring users to reconstruct the call body manually.
+- **Relay broadcast:** optional path for either already-signed raw transactions or relay-ready `executeUnifiedByAddress` invocations assembled from collected EVM signatures. When a relayer signer is configured, the server can submit those meta invocations without requiring users to reconstruct the call body manually.
 
 Anonymous collaboration drafts can be backed by Supabase. The public share link carries only the opaque read slug, a collaborator link carries signature-collection authority, and a separate operator link carries relay, broadcast, and draft-management authority. Signer links also cannot forge relay or broadcast timeline entries; those activity classes are reserved for operator scope. That keeps ordinary shared links read-only while still preserving the cheap anonymous collaboration flow. If either write-capable URL leaks, the workspace can rotate the collaborator or operator link in place without rebuilding the draft.
 
@@ -83,7 +83,7 @@ sequenceDiagram
     participant Master as Master Entry Contract
     participant Target as Target Contract
 
-    Signer->>Node: Submit tx targeting executeByAddress(...)
+    Signer->>Node: Submit tx targeting executeUnifiedByAddress(...)
     activate Node
 
     Note over Node,Proxy: Verification Phase
@@ -96,7 +96,7 @@ sequenceDiagram
     deactivate Master
 
     Note over Node,Target: Application Phase
-    Node->>Master: Run execute / executeByAddress
+    Node->>Master: Run executeUnified / executeUnifiedByAddress
     activate Master
     Master->>Master: Enforce whitelist, blacklist, and max-transfer limits
     Master->>Target: Contract.Call(target, method, args)
@@ -120,7 +120,7 @@ sequenceDiagram
     participant Target as Target Smart Contract
 
     EVM->>Relayer: Sign EIP-712 payload for AA wrapper call
-    Relayer->>Master: executeMetaTx / executeMetaTxByAddress
+    Relayer->>Master: executeUnified / executeUnifiedByAddress
     activate Master
     Master->>Master: Rebuild typed-data payload
     Master->>Master: Recover EVM signer and verify nonce/deadline/argsHash

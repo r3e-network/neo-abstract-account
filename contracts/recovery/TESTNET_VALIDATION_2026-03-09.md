@@ -9,17 +9,17 @@
 
 ### ArgentRecoveryVerifier
 - Deployment txid: `0x8ae760b6ee69dd76b28f73560d0093c0c86cc7924cbc7e6b1241be6bbf3ec4e1`
-- Contract hash: `0x260b204b109506140f6e20ef99d02c142d070f72`
+- Contract hash: `0xaa25d77353fbc4cceb372f91ebccf5fb726ed10f`
 - Deploy VM state: `HALT`
 
 ### SafeRecoveryVerifier
 - Deployment txid: `0xbb0e23d7afe37cce7f8b09090c5284afc1ab2f60c2ffe966d8bb0ad21d3d0c4a`
-- Contract hash: `0x06a7c50c2dd81f988e2e31b7fd721501008fbfa8`
+- Contract hash: `0xfcd8c4601dfa29910d9fec0bf724ce39fc734a74`
 - Deploy VM state: `HALT`
 
 ### LoopringRecoveryVerifier
 - Deployment txid: `0xe8f2e21aecd260c972ea9f451085cb1d27aa2e57c4fd40499752b2a3e419e133`
-- Contract hash: `0x3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7`
+- Contract hash: `0x5bc837e96b83f5080e722883398c8188177694ea`
 - Deploy VM state: `HALT`
 
 ## Local Verification Completed Before Deployment
@@ -35,15 +35,15 @@
 
 ### Official package-script validation
 - Argent command: `cd sdk/js && npm run testnet:validate:recovery`
-- Argent target hash: `0x260b204b109506140f6e20ef99d02c142d070f72`
+- Argent target hash: `0xaa25d77353fbc4cceb372f91ebccf5fb726ed10f`
 - Argent result: `PASS`
 - Argent validation txid: `0xc6c058f5a0a6c7339a4ddc80db595daa472030497ff46277e9a9de04e8ec758c`
 - Safe command: `cd sdk/js && npm run testnet:validate:recovery:safe`
-- Safe target hash: `0x06a7c50c2dd81f988e2e31b7fd721501008fbfa8`
+- Safe target hash: `0xfcd8c4601dfa29910d9fec0bf724ce39fc734a74`
 - Safe result: `PASS`
 - Safe validation txid: `0xfb96dc8cfcf9c740a20133e9b1749527071893bd04dbef8ac6cb8b1315873f32`
 - Loopring command: `cd sdk/js && npm run testnet:validate:recovery:loopring`
-- Loopring target hash: `0x3ed17f73f19a89bc36e2dd82a19fc920aa2e54c7`
+- Loopring target hash: `0x5bc837e96b83f5080e722883398c8188177694ea`
 - Loopring result: `PASS`
 - Loopring validation txid: `0x1c8d5a8cdc26b110fa30dcbc06653187f4d17a5859f58a3481d4bf1326b4b204`
 

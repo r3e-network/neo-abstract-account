@@ -13,6 +13,8 @@ import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
 import docEvm from '@/assets/docs/evm-integration.md?raw';
 import docMixed from '@/assets/docs/mixed-multisig.md?raw';
 import docSdk from '@/assets/docs/sdk-usage.md?raw';
+import docSecurityAudit from '@repo/docs/reports/2026-03-11-security-audit.md?raw';
+import docSecurityAuditZh from '@/assets/docs/security-audit.zh.md?raw';
 
 export const DEFAULT_DOC_KEY = 'guide';
 
@@ -56,6 +58,10 @@ export const DOCS = {
   sdk: {
     title: { en: 'SDK Integration', 'zh-CN': 'SDK 集成' },
     content: { en: docSdk },
+  },
+  securityAudit: {
+    title: { en: 'Security Audit', 'zh-CN': '安全审计' },
+    content: { en: docSecurityAudit, 'zh-CN': docSecurityAuditZh },
   },
 };
 

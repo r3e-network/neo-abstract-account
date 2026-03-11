@@ -154,7 +154,11 @@ namespace Neo.SmartContract.Examples
                     NamedCurveHash.secp256r1SHA256
                 );
 
-                if (valid) validSigs++;
+                if (valid)
+                {
+                    validSigs++;
+                    if (validSigs >= threshold) break; // Gas optimization: Early exit
+                }
             }
 
             Assert(validSigs >= threshold, "Not enough valid signatures");

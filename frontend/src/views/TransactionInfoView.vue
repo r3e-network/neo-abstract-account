@@ -1,13 +1,13 @@
 <template>
-  <div class="relative min-h-screen bg-ata-dark overflow-hidden font-sans text-slate-300">
+  <div class="relative min-h-screen bg-slate-900 overflow-hidden font-sans text-slate-300">
     <div class="absolute inset-0 z-0 pointer-events-none">
       <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-vibrant-glow rounded-full mix-blend-screen opacity-30 animate-pulse-slow"></div>
     </div>
     <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up">
-      <div class="dark-panel-override glass-panel p-6 sm:p-10 rounded-lg relative">
+      <div class="dark-panel-override glass-panel p-6 sm:p-10 rounded-2xl relative">
         <template v-if="draftId">
-          <h1 class="text-2xl font-bold text-white tracking-tight mb-2">{{ t('sharedDraft.title', 'Shared Transaction Draft') }}</h1>
-          <p class="text-sm text-slate-400 mb-8 max-w-2xl">{{ t('sharedDraft.subtitle', 'Load an immutable transaction draft, review collected approvals, append a new signature, and choose the final client-side or relay broadcast path.') }}</p>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-2">{{ t('sharedDraft.title', 'Shared Transaction Draft') }}</h1>
+          <p class="text-sm text-slate-500 mb-8 max-w-2xl">{{ t('sharedDraft.subtitle', 'Load an immutable transaction draft, review collected approvals, append a new signature, and choose the final client-side or relay broadcast path.') }}</p>
           <DraftSummaryStrip class="mb-8" :title="t('sharedDraft.sharedDraftOverview', 'Shared Draft Overview')" :draft="draft" :action-context="activityActionContext" @summary-action="handleSummaryAction" />
 
           <DraftStatusBanner
@@ -17,147 +17,147 @@
           />
 
           <div class="grid gap-4 mb-8 lg:grid-cols-4">
-            <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Draft ID</p>
-              <code class="block text-sm font-mono text-slate-300 break-all">{{ draftId }}</code>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Draft ID</p>
+              <code class="block text-sm font-mono text-slate-800 break-all">{{ draftId }}</code>
             </div>
-            <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Share URL</p>
-              <code class="block text-sm font-mono text-slate-300 break-all">{{ shareUrl || 'Loading…' }}</code>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Share URL</p>
+              <code class="block text-sm font-mono text-slate-800 break-all">{{ shareUrl || 'Loading…' }}</code>
             </div>
-            <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{{ t('sharedDraft.collaboratorLinkLabel', 'Collaborator Link') }}</p>
-              <code class="block text-sm font-mono text-slate-300 break-all">{{ collaborationUrl || 'Read-only access' }}</code>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{{ t('sharedDraft.collaboratorLinkLabel', 'Collaborator Link') }}</p>
+              <code class="block text-sm font-mono text-slate-800 break-all">{{ collaborationUrl || 'Read-only access' }}</code>
             </div>
-            <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{{ t('sharedDraft.operatorLinkLabel', 'Operator Link') }}</p>
-              <code class="block text-sm font-mono text-slate-300 break-all">{{ operatorUrl || 'Operator access required' }}</code>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{{ t('sharedDraft.operatorLinkLabel', 'Operator Link') }}</p>
+              <code class="block text-sm font-mono text-slate-800 break-all">{{ operatorUrl || 'Operator access required' }}</code>
             </div>
-            <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Status</p>
-              <div class="text-sm font-medium text-slate-300">{{ draft?.status || 'loading' }}</div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</p>
+              <div class="text-sm font-medium text-slate-800">{{ draft?.status || 'loading' }}</div>
             </div>
           </div>
-          <div v-if="draft && accessScope === 'read'" class="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400 font-medium">
+          <div v-if="draft && accessScope === 'read'" class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 font-medium">
             {{ t('sharedDraft.readOnlyNotice', 'This shared draft is read-only. Open the Collaborator Link to sign, or the Operator Link to manage relay and broadcast actions.') }}
           </div>
-          <div v-else-if="draft && accessScope === 'sign'" class="mb-6 rounded-lg border border-ata-blue/30 bg-ata-blue/10 px-4 py-3 text-sm text-ata-blue font-medium">
+          <div v-else-if="draft && accessScope === 'sign'" class="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 font-medium">
             {{ t('sharedDraft.signatureOnlyNotice', 'This is a signature-only link. Relay checks, broadcasts, and link rotation require the Operator Link.') }}
           </div>
-          <div v-if="loading" class="text-sm text-slate-400 font-medium">Loading shared draft…</div>
-          <div v-else-if="loadError" class="text-sm text-rose-400 font-medium">{{ loadError }}</div>
+          <div v-if="loading" class="text-sm text-slate-500 font-medium">Loading shared draft…</div>
+          <div v-else-if="loadError" class="text-sm text-rose-600 font-medium">{{ loadError }}</div>
           <div v-else-if="draft" class="space-y-6">
             <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <section class="rounded-lg border border-ata-border bg-ata-panel p-5 shadow-sm">
+              <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white uppercase tracking-widest font-mono">Operation Snapshot</h2>
-                  <p class="text-sm text-slate-400">Key execution details, relay state, and payload availability for this immutable draft.</p>
+                  <h2 class="text-base font-bold text-slate-900">Operation Snapshot</h2>
+                  <p class="text-sm text-slate-500">Key execution details, relay state, and payload availability for this immutable draft.</p>
                 </div>
                 <div class="grid gap-3 md:grid-cols-2">
-                  <div v-for="item in operationSnapshotItems" :key="item.label" class="rounded-lg border border-ata-border bg-ata-panel p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ item.label }}</p>
-                    <div class="mt-1 text-sm font-medium text-slate-300 break-all">{{ item.value }}</div>
-                    <p v-if="item.note" class="mt-1 text-xs text-slate-400">{{ item.note }}</p>
+                  <div v-for="item in operationSnapshotItems" :key="item.label" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ item.label }}</p>
+                    <div class="mt-1 text-sm font-medium text-slate-800 break-all">{{ item.value }}</div>
+                    <p v-if="item.note" class="mt-1 text-xs text-slate-500">{{ item.note }}</p>
                   </div>
                 </div>
               </section>
-              <section class="rounded-lg border border-ata-border bg-ata-panel p-5 shadow-sm">
+              <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white uppercase tracking-widest font-mono">Signer Checklist</h2>
-                  <p class="text-sm text-slate-400">{{ signerProgress.signatureCount }}/{{ signerProgress.requiredCount }} required approvals collected{{ signerProgress.pending.length ? ` · ${signerProgress.pending.length} still pending` : signerProgress.requiredCount ? ' · all required signers satisfied' : ' · no required signer roster recorded' }}.</p>
+                  <h2 class="text-base font-bold text-slate-900">Signer Checklist</h2>
+                  <p class="text-sm text-slate-500">{{ signerProgress.signatureCount }}/{{ signerProgress.requiredCount }} required approvals collected{{ signerProgress.pending.length ? ` · ${signerProgress.pending.length} still pending` : signerProgress.requiredCount ? ' · all required signers satisfied' : ' · no required signer roster recorded' }}.</p>
                 </div>
-                <div v-if="signerChecklistItems.length === 0" class="rounded-lg border border-dashed border-ata-border bg-ata-panel p-4 text-sm text-slate-400">No signer checklist has been recorded for this draft yet.</div>
+                <div v-if="signerChecklistItems.length === 0" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">No signer checklist has been recorded for this draft yet.</div>
                 <div v-else class="space-y-3">
-                  <div v-for="item in signerChecklistItems" :key="item.key" class="flex items-start justify-between gap-3 rounded-lg border border-ata-border bg-ata-panel p-4">
+                  <div v-for="item in signerChecklistItems" :key="item.key" class="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
                     <div class="min-w-0">
-                      <div class="text-sm font-semibold text-slate-300 break-all">{{ item.label }}</div>
-                      <div class="mt-1 text-xs text-slate-400">{{ item.detail }}</div>
-                      <code v-if="item.signaturePreview" class="mt-2 block text-xs text-slate-400">{{ item.signaturePreview }}</code>
+                      <div class="text-sm font-semibold text-slate-800 break-all">{{ item.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500">{{ item.detail }}</div>
+                      <code v-if="item.signaturePreview" class="mt-2 block text-xs text-slate-500">{{ item.signaturePreview }}</code>
                     </div>
-                    <span :class="item.status === 'Collected' ? 'bg-ata-green/10 text-ata-green border-ata-green/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'" class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">{{ item.status }}</span>
+                    <span :class="item.status === 'Collected' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'" class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">{{ item.status }}</span>
                   </div>
                 </div>
               </section>
             </div>
 
             <div class="grid gap-6 lg:grid-cols-2">
-              <section class="rounded-lg border border-ata-border bg-ata-panel p-5 shadow-sm">
+              <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white uppercase tracking-widest font-mono">Signature Actions</h2>
-                  <p class="text-sm text-slate-400">Connect wallets, paste external approvals, or append a contract-aligned EVM signature to the shared draft.</p>
+                  <h2 class="text-base font-bold text-slate-900">Signature Actions</h2>
+                  <p class="text-sm text-slate-500">Connect wallets, paste external approvals, or append a contract-aligned EVM signature to the shared draft.</p>
                 </div>
                 <div class="mb-4 flex flex-wrap gap-2">
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel" @click="connectNeoWallet">{{ t('operations.connectNeoWallet', 'Connect Neo Wallet') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel" @click="connectEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel" @click="copyShareUrl">{{ t('operations.copyShareLink', 'Copy Share Link') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorUrl">{{ t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorUrl">{{ t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel disabled:opacity-50" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ata-panel disabled:opacity-50" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="connectNeoWallet">{{ t('operations.connectNeoWallet', 'Connect Neo Wallet') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="connectEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="copyShareUrl">{{ t('operations.copyShareLink', 'Copy Share Link') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorUrl">{{ t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorUrl">{{ t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
                 </div>
                 <div class="grid gap-4 md:grid-cols-3">
                   <label class="space-y-1 text-sm">
-                    <span class="font-medium text-slate-300">Signer ID</span>
-                    <input v-model="signerId" class="w-full rounded border border-ata-border px-3 py-1.5 text-sm bg-ata-dark" />
+                    <span class="font-medium text-slate-700">Signer ID</span>
+                    <input v-model="signerId" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm" />
                   </label>
                   <label class="space-y-1 text-sm">
-                    <span class="font-medium text-slate-300">Signer Kind</span>
-                    <select v-model="signerKind" class="w-full rounded border border-ata-border px-3 py-1.5 text-sm bg-ata-dark">
+                    <span class="font-medium text-slate-700">Signer Kind</span>
+                    <select v-model="signerKind" class="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm">
                       <option value="neo">Neo</option>
                       <option value="evm">EVM</option>
                     </select>
                   </label>
                   <label class="space-y-1 text-sm">
-                    <span class="font-medium text-slate-300">Signature Hex</span>
-                    <input v-model="signatureHex" class="w-full rounded border border-ata-border px-3 py-1.5 font-mono text-xs bg-ata-dark" />
+                    <span class="font-medium text-slate-700">Signature Hex</span>
+                    <input v-model="signatureHex" class="w-full rounded-md border border-slate-300 px-3 py-1.5 font-mono text-xs" />
                   </label>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="rounded bg-ata-dark px-4 py-2 text-sm font-medium text-white hover:bg-ata-panel disabled:opacity-50" :disabled="!hasSignatureAccess || isSubmissionPending" @click="appendManualSignature">{{ t('operations.appendManualSignature', 'Append Manual Signature') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-4 py-2 text-sm font-medium text-slate-300 hover:bg-ata-panel disabled:opacity-50" :disabled="!hasSignatureAccess || isSubmissionPending" @click="signWithEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
+                  <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50" :disabled="!hasSignatureAccess || isSubmissionPending" @click="appendManualSignature">{{ t('operations.appendManualSignature', 'Append Manual Signature') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50" :disabled="!hasSignatureAccess || isSubmissionPending" @click="signWithEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
                 </div>
-                <p class="mt-4 text-xs text-slate-400">Use manual entry for external multisig collection, or collect an EVM typed-data approval here and keep the relay-ready invocation attached to the draft.</p>
+                <p class="mt-4 text-xs text-slate-500">Use manual entry for external multisig collection, or collect an EVM typed-data approval here and keep the relay-ready invocation attached to the draft.</p>
               </section>
 
-              <section class="rounded-lg border border-ata-border bg-ata-panel p-5 shadow-sm">
+              <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white uppercase tracking-widest font-mono">Broadcast & Relay</h2>
-                  <p class="text-sm text-slate-400">Choose the final submission path after signatures are attached and relay readiness looks healthy.</p>
+                  <h2 class="text-base font-bold text-slate-900">Broadcast & Relay</h2>
+                  <p class="text-sm text-slate-500">Choose the final submission path after signatures are attached and relay readiness looks healthy.</p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Client Broadcast</p>
-                    <div class="mt-1 text-sm font-medium text-slate-300">{{ clientBroadcastReady ? 'Invocation Ready' : 'Invocation Missing' }}</div>
-                    <p class="mt-1 text-xs text-slate-400">{{ walletConnection.isConnected.value ? 'Neo wallet connected and ready to sign.' : 'Connect a Neo wallet before broadcasting client-side.' }}</p>
+                  <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Client Broadcast</p>
+                    <div class="mt-1 text-sm font-medium text-slate-800">{{ clientBroadcastReady ? 'Invocation Ready' : 'Invocation Missing' }}</div>
+                    <p class="mt-1 text-xs text-slate-500">{{ walletConnection.isConnected.value ? 'Neo wallet connected and ready to sign.' : 'Connect a Neo wallet before broadcasting client-side.' }}</p>
                   </div>
-                  <div class="rounded-lg border border-ata-border bg-ata-panel p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Relay Submission</p>
-                    <div class="mt-1 text-sm font-medium text-slate-300">{{ relayReadiness.label }}</div>
-                    <p class="mt-1 text-xs text-slate-400">{{ relayReadiness.detail }}</p>
+                  <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Relay Submission</p>
+                    <div class="mt-1 text-sm font-medium text-slate-800">{{ relayReadiness.label }}</div>
+                    <p class="mt-1 text-xs text-slate-500">{{ relayReadiness.detail }}</p>
                   </div>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="rounded bg-ata-dark px-4 py-2 text-sm font-medium text-white hover:bg-ata-panel disabled:opacity-50" :disabled="!hasOperatorAccess || !clientBroadcastReady || !walletConnection.isConnected.value || isSubmissionPending" :title="getSubmissionButtonLabel('client-broadcast', pendingSubmissionAction)" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? t('sharedDraft.broadcasting', 'Broadcasting…') : t('sharedDraft.broadcastWithNeoWallet', 'Broadcast with Neo Wallet') }}</button>
-                  <button class="rounded border border-ata-border bg-ata-panel px-4 py-2 text-sm font-medium text-slate-300 hover:bg-ata-panel disabled:opacity-50" :disabled="!hasOperatorAccess || relayPayloadOptions.length === 0 || isSubmissionPending" :title="getSubmissionButtonLabel('relay-check', pendingSubmissionAction)" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? t('sharedDraft.checkingRelay', 'Checking Relay…') : t('sharedDraft.checkRelay', 'Check Relay') }}</button>
-                  <button class="rounded bg-ata-green text-ata-dark px-4 py-2 text-sm font-medium text-white hover:opacity-80 disabled:opacity-50" :disabled="!hasOperatorAccess || !relayReadiness.isReady || isSubmissionPending" :title="getSubmissionButtonLabel('relay-submit', pendingSubmissionAction)" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? t('sharedDraft.submitting', 'Submitting…') : t('sharedDraft.submitViaRelay', 'Submit via Relay') }}</button>
-                  <select v-if="relayPayloadOptions.length > 1" v-model="relayPayloadMode" class="rounded border border-ata-border px-3 py-1.5 text-sm bg-ata-dark text-white">
+                  <button class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50" :disabled="!hasOperatorAccess || !clientBroadcastReady || !walletConnection.isConnected.value || isSubmissionPending" :title="getSubmissionButtonLabel('client-broadcast', pendingSubmissionAction)" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? t('sharedDraft.broadcasting', 'Broadcasting…') : t('sharedDraft.broadcastWithNeoWallet', 'Broadcast with Neo Wallet') }}</button>
+                  <button class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50" :disabled="!hasOperatorAccess || relayPayloadOptions.length === 0 || isSubmissionPending" :title="getSubmissionButtonLabel('relay-check', pendingSubmissionAction)" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? t('sharedDraft.checkingRelay', 'Checking Relay…') : t('sharedDraft.checkRelay', 'Check Relay') }}</button>
+                  <button class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50" :disabled="!hasOperatorAccess || !relayReadiness.isReady || isSubmissionPending" :title="getSubmissionButtonLabel('relay-submit', pendingSubmissionAction)" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? t('sharedDraft.submitting', 'Submitting…') : t('sharedDraft.submitViaRelay', 'Submit via Relay') }}</button>
+                  <select v-if="relayPayloadOptions.length > 1" v-model="relayPayloadMode" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
                     <option value="best">Best Available</option>
                     <option value="raw">Signed Raw Tx</option>
                     <option value="meta">Meta Invocation</option>
                   </select>
                 </div>
-                <p class="mt-4 text-xs text-slate-400">Selected relay payload: <span class="font-semibold text-slate-300">{{ selectedRelayPayloadLabel }}</span></p>
+                <p class="mt-4 text-xs text-slate-500">Selected relay payload: <span class="font-semibold text-slate-700">{{ selectedRelayPayloadLabel }}</span></p>
                 <div v-if="activeSubmissionReceipt" class="mt-4 rounded-lg border px-4 py-3 text-sm"
-                  :class="activeSubmissionReceipt.tone === 'success' ? 'border-ata-green/30 bg-ata-green/10 text-ata-green' : activeSubmissionReceipt.tone === 'error' ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : 'border-amber-500/30 bg-amber-500/10 text-amber-400'">
+                  :class="activeSubmissionReceipt.tone === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : activeSubmissionReceipt.tone === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
                   <p class="text-xs font-semibold uppercase tracking-wider">Submission Receipt</p>
                   <div class="mt-1 text-sm font-medium">{{ activeSubmissionReceipt.title }}</div>
                   <p class="mt-1 text-sm">{{ activeSubmissionReceipt.detail }}</p>
-                  <code v-if="activeSubmissionReceipt.txid" class="mt-2 block break-all rounded border border-white/70 bg-ata-panel/70 px-3 py-1.5 text-xs">{{ activeSubmissionReceipt.txid }}</code>
+                  <code v-if="activeSubmissionReceipt.txid" class="mt-2 block break-all rounded-md border border-white/70 bg-white/70 px-3 py-1.5 text-xs">{{ activeSubmissionReceipt.txid }}</code>
                   <a v-if="activeSubmissionReceipt.explorerUrl" :href="activeSubmissionReceipt.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex font-medium text-xs underline">Open in Explorer</a>
                   <div v-if="submissionReceiptHistoryItems.length > 0" class="mt-4 border-t border-current/10 pt-3">
                     <p class="text-xs font-semibold uppercase tracking-wider">Receipt History</p>
                     <div class="mt-2 space-y-2">
-                      <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded border border-white/60 bg-ata-panel/60 px-3 py-2">
+                      <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-md border border-white/60 bg-white/60 px-3 py-2">
                         <div class="flex items-center justify-between gap-3">
                           <div class="text-xs font-medium">{{ item.title }}</div>
                           <div class="text-xs opacity-70">{{ item.createdLabel }}</div>
@@ -168,10 +168,10 @@
                     </div>
                   </div>
                 </div>
-                <div v-if="latestBroadcastTxid" class="mt-4 rounded-lg border border-ata-border bg-ata-panel p-4">
-                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Latest Submission</p>
-                  <code class="mt-1 block break-all text-xs text-slate-300">{{ latestBroadcastTxid }}</code>
-                  <a v-if="latestBroadcastExplorerUrl" :href="latestBroadcastExplorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-ata-panel">View Latest in Explorer</a>
+                <div v-if="latestBroadcastTxid" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Latest Submission</p>
+                  <code class="mt-1 block break-all text-xs text-slate-700">{{ latestBroadcastTxid }}</code>
+                  <a v-if="latestBroadcastExplorerUrl" :href="latestBroadcastExplorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View Latest in Explorer</a>
                 </div>
               </section>
             </div>
@@ -188,35 +188,35 @@
               :exception="relayCheck.exception"
             />
 
-            <section class="rounded-lg border border-ata-border bg-ata-panel p-5 shadow-sm">
-              <h2 class="text-base font-bold text-white mb-3 uppercase tracking-widest font-mono">{{ t('sharedDraft.recentActivityTitle', 'Recent Activity') }}</h2>
+            <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 class="text-base font-bold text-slate-900 mb-3">{{ t('sharedDraft.recentActivityTitle', 'Recent Activity') }}</h2>
               <ActivityTimeline :items="activityEvents" :action-context="activityActionContext" preference-key="shared-draft" @activity-action="handleActivityAction" />
             </section>
 
-            <section class="rounded-lg border border-ata-border bg-ata-panel p-5 shadow-sm">
-              <h2 class="text-base font-bold text-white mb-3 uppercase tracking-widest font-mono">{{ t('sharedDraft.collectedSignaturesTitle', 'Collected Signatures') }}</h2>
-              <div v-if="collectedSignatureCards.length === 0" class="text-sm text-slate-400">{{ t('sharedDraft.noSignaturesYet', 'No signatures have been attached yet.') }}</div>
+            <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 class="text-base font-bold text-slate-900 mb-3">{{ t('sharedDraft.collectedSignaturesTitle', 'Collected Signatures') }}</h2>
+              <div v-if="collectedSignatureCards.length === 0" class="text-sm text-slate-500">{{ t('sharedDraft.noSignaturesYet', 'No signatures have been attached yet.') }}</div>
               <div v-else class="grid gap-3 md:grid-cols-2">
-                <div v-for="signature in collectedSignatureCards" :key="signature.key" class="rounded-lg border border-ata-border bg-ata-panel p-4">
+                <div v-for="signature in collectedSignatureCards" :key="signature.key" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                      <div class="text-sm font-semibold text-slate-300 break-all">{{ signature.label }}</div>
-                      <div class="mt-1 text-xs text-slate-400">Added {{ signature.createdLabel }}</div>
+                      <div class="text-sm font-semibold text-slate-800 break-all">{{ signature.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500">Added {{ signature.createdLabel }}</div>
                     </div>
                     <div class="flex flex-wrap justify-end gap-1">
-                      <span v-for="badge in signature.badges" :key="badge" class="rounded border border-ata-border bg-ata-panel px-2 py-0.5 text-xs font-medium text-slate-400">{{ badge }}</span>
+                      <span v-for="badge in signature.badges" :key="badge" class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600">{{ badge }}</span>
                     </div>
                   </div>
-                  <code class="mt-3 block break-all rounded border border-ata-border bg-ata-panel px-3 py-1.5 text-xs text-slate-400">{{ signature.signaturePreview }}</code>
+                  <code class="mt-3 block break-all rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600">{{ signature.signaturePreview }}</code>
                   <details class="mt-3">
-                    <summary class="cursor-pointer text-xs font-medium text-slate-400 hover:text-white uppercase tracking-widest font-mono">{{ t('sharedDraft.viewFullSignature', 'View Full Signature') }}</summary>
-                    <code class="mt-2 block break-all text-xs text-slate-400 bg-ata-panel border border-ata-border p-2 rounded">{{ signature.signatureHex }}</code>
+                    <summary class="cursor-pointer text-xs font-medium text-slate-600 hover:text-slate-900">{{ t('sharedDraft.viewFullSignature', 'View Full Signature') }}</summary>
+                    <code class="mt-2 block break-all text-xs text-slate-500 bg-white border border-slate-200 p-2 rounded-md">{{ signature.signatureHex }}</code>
                   </details>
                 </div>
               </div>
             </section>
           </div>
-          <p v-if="statusMessage" class="mt-6 rounded-lg border border-ata-border bg-ata-panel px-4 py-3 text-sm text-slate-400 font-medium">
+          <p v-if="statusMessage" class="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 font-medium">
             {{ statusMessage }}
           </p>
           <div class="mt-8">
@@ -224,19 +224,19 @@
           </div>
         </template>
         <template v-else>
-          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-ata-green/10 mb-6 border border-ata-green/30">
-            <svg class="h-8 w-8 text-ata-green animate-fade-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mb-6 border border-emerald-200">
+            <svg class="h-8 w-8 text-emerald-600 animate-fade-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-white tracking-tight mb-2 text-center">Transaction Submitted</h1>
-          <p class="text-sm text-slate-400 mb-8 max-w-lg mx-auto text-center">Your transaction has been securely broadcast to the Neo N3 network.</p>
-          <div class="bg-ata-panel p-5 rounded-lg border border-ata-border mb-8 inline-block w-full max-w-full">
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-2 text-center">Transaction Submitted</h1>
+          <p class="text-sm text-slate-500 mb-8 max-w-lg mx-auto text-center">Your transaction has been securely broadcast to the Neo N3 network.</p>
+          <div class="bg-slate-50 p-5 rounded-lg border border-slate-200 mb-8 inline-block w-full max-w-full">
             <div class="flex items-center justify-between mb-2">
-              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Transaction Hash</p>
-              <button @click="copyHash" class="text-xs font-medium text-slate-400 hover:text-white bg-ata-panel border border-ata-border px-2 py-1 rounded">{{ copied ? 'Copied!' : 'Copy' }}</button>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Transaction Hash</p>
+              <button @click="copyHash" class="text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded">{{ copied ? 'Copied!' : 'Copy' }}</button>
             </div>
-            <code class="block text-sm font-mono text-slate-300 break-all bg-ata-panel border border-ata-border p-3 rounded select-all">{{ txid }}</code>
+            <code class="block text-sm font-mono text-slate-800 break-all bg-white border border-slate-200 p-3 rounded-md select-all">{{ txid }}</code>
           </div>
           <div class="flex flex-col sm:flex-row justify-center gap-3">
             <RouterLink to="/" class="btn-secondary w-full sm:w-auto">Return Home</RouterLink>
@@ -256,7 +256,7 @@ import { useWalletConnection } from '@/composables/useWalletConnection.js';
 import { OPERATIONS_RUNTIME } from '@/config/operationsRuntime.js';
 import { createDraftStore } from '@/features/operations/drafts.js';
 import { buildRelayPayloadOptions, executeBroadcast, resolveRelayPayloadMode } from '@/features/operations/execution.js';
-import { buildExecuteMetaTxByAddressInvocation, buildMetaTransactionTypedData, computeArgsHash, fetchNonceForAddress, recoverPublicKeyFromTypedDataSignature } from '@/features/operations/metaTx.js';
+import { buildExecuteUnifiedByAddressInvocation, buildMetaTransactionTypedData, computeArgsHash, fetchNonceForAddress, recoverPublicKeyFromTypedDataSignature } from '@/features/operations/metaTx.js';
 import { summarizeSignerProgress } from '@/features/operations/signatures.js';
 import { createActivityEvent } from '@/features/operations/activity.js';
 import { createOperationsPreferences } from '@/features/operations/preferences.js';
@@ -517,7 +517,7 @@ async function signWithEvmWallet() {
     });
     const signature = await walletService.signTypedDataWithEvm(typedData);
     const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature });
-    const metaInvocation = buildExecuteMetaTxByAddressInvocation({
+    const metaInvocation = buildExecuteUnifiedByAddressInvocation({
       aaContractHash: verifyingContract,
       accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
       evmPublicKeyHex: publicKey,

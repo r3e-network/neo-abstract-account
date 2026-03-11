@@ -43,7 +43,7 @@ neo-go contract calc-hash \
 
 ```bash
 export TEST_WIF="<your-testnet-wif>"
-export RECOVERY_HASH_TESTNET="260b204b109506140f6e20ef99d02c142d070f72"
+export RECOVERY_HASH_TESTNET="aa25d77353fbc4cceb372f91ebccf5fb726ed10f"
 npm run testnet:validate:recovery
 ```
 

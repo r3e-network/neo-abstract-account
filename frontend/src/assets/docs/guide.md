@@ -88,7 +88,7 @@ sequenceDiagram
   Relay->>Chain: Submit wrapped invocation
 ```
 
-The key design choice is that the downstream target contract is **not** called directly by a raw proxy-signed transaction. Instead, execution routes through AA wrapper entrypoints such as `executeByAddress` or `executeMetaTxByAddress`, where the policy engine can enforce role checks, whitelists, blacklists, and transfer limits.
+The key design choice is that the downstream target contract is **not** called directly by a raw proxy-signed transaction. Instead, execution routes through the canonical AA runtime entrypoint `executeUnifiedByAddress`, where the policy engine can enforce role checks, whitelists, blacklists, and transfer limits.
 
 ## 6. Draft Collaboration Model
 

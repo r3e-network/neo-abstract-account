@@ -142,6 +142,7 @@ namespace Neo.SmartContract.Examples
                 if (CryptoLib.VerifyWithECDsa(messageHash, module.Guardians[i], (ByteString)signatures[i], NamedCurveHash.secp256r1SHA256))
                 {
                     validSigs++;
+                    if (validSigs >= module.Threshold) break; // Gas optimization: Early exit
                 }
             }
             

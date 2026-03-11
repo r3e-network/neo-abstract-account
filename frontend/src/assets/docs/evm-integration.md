@@ -4,17 +4,17 @@ The Abstract Account contract natively supports Secp256k1 + Keccak256 verificati
 
 ## Verified Testnet Path
 
-The current verified hardened testnet deployment is `0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423`. Live validation confirmed:
+The current verified hardened testnet deployment is `0x5be915aea3ce85e4752d522632f0a9520e377aaf`. Live validation confirmed:
 
-- `executeMetaTxByAddress` succeeds with a valid EVM signature
-- `executeMetaTx` succeeds with the account-id path
+- `executeUnifiedByAddress` succeeds with a valid EVM signature
+- `executeUnified` succeeds with the account-id path
 - stale nonces, expired deadlines, wrong chain IDs, wrong verifying contracts, and tampered `argsHash` values are rejected
 
 ## Signing Flow
 
 1. Build the EIP-712 payload from the Neo execution intent.
 2. Sign it in MetaMask or another EVM wallet.
-3. Relay the signature to Neo through `executeMetaTx` or `executeMetaTxByAddress`.
+3. Relay the signature to Neo through `executeUnified` or `executeUnifiedByAddress`.
 4. Let the Abstract Account contract recover the signer and enforce runtime restrictions before calling the target contract.
 
 ## Important Hardening Note

@@ -82,9 +82,9 @@ test('transaction draft export includes body, signatures, and share metadata', (
   assert.equal(exported.broadcast.mode, 'relay');
 });
 
-test('buildStagedTransactionBody wraps client calls through executeByAddress on the AA contract', () => {
+test('buildStagedTransactionBody wraps client calls through executeUnifiedByAddress on the AA contract', () => {
   const body = buildStagedTransactionBody({
-    aaContractHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
     account: {
       accountIdHex: '56e5bbd0603bdf01699c047b2397ee0e',
       accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
@@ -98,13 +98,18 @@ test('buildStagedTransactionBody wraps client calls through executeByAddress on 
     signerAddress: 'NdzSignerAddress',
   });
 
-  assert.equal(body.clientInvocation.scriptHash, '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423');
-  assert.equal(body.clientInvocation.operation, 'executeByAddress');
+  assert.equal(body.clientInvocation.scriptHash, '5be915aea3ce85e4752d522632f0a9520e377aaf');
+  assert.equal(body.clientInvocation.operation, 'executeUnifiedByAddress');
   assert.deepEqual(body.clientInvocation.args, [
     { type: 'Hash160', value: '0x13ef519c362973f9a34648a9eac5b71250b2a80a' },
     { type: 'Hash160', value: '0xd2a4cff31913016155e38e474a2c06d08be276cf' },
     { type: 'String', value: 'balanceOf' },
     { type: 'Array', value: [{ type: 'Hash160', value: '0x13ef519c362973f9a34648a9eac5b71250b2a80a' }] },
+    { type: 'Array', value: [] },
+    { type: 'ByteArray', value: '0x' },
+    { type: 'Integer', value: '0' },
+    { type: 'Integer', value: '0' },
+    { type: 'Array', value: [] },
   ]);
   assert.deepEqual(body.clientInvocation.signers, [{ account: 'NdzSignerAddress', scopes: 1 }]);
 });
@@ -115,7 +120,7 @@ test('buildDraftApprovalTypedData creates an EVM-friendly approval payload from 
       draft_id: 'draft-1',
       share_slug: 'share-1',
       account: { accountIdHex: 'aa11', accountAddressScriptHash: 'bb22' },
-      transaction_body: { txHex: 'deadbeef', method: 'executeByAddress' },
+      transaction_body: { txHex: 'deadbeef', method: 'executeUnifiedByAddress' },
       signer_requirements: [{ id: 'evm:bob', kind: 'evm' }],
       broadcast_mode: 'relay',
     },
@@ -146,8 +151,8 @@ test('broadcast helpers route client broadcasts through the wallet and relay bro
     signerAddress: 'NdzSignerAddress',
     transactionBody: {
       clientInvocation: {
-        scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-        operation: 'executeByAddress',
+        scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+        operation: 'executeUnifiedByAddress',
         args: [{ type: 'String', value: 'ok' }],
       },
     },
@@ -169,8 +174,8 @@ test('broadcast helpers route client broadcasts through the wallet and relay bro
   assert.deepEqual(calls[0], {
     kind: 'invoke',
     input: {
-      scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-      operation: 'executeByAddress',
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUnifiedByAddress',
       args: [{ type: 'String', value: 'ok' }],
       signers: [{ account: 'NdzSignerAddress', scopes: 1 }],
     },
@@ -208,8 +213,8 @@ test('buildRelayPayloadOptions exposes raw mode only when raw relay forwarding i
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [{ type: 'String', value: 'ok' }],
         },
       },
@@ -222,8 +227,8 @@ test('buildRelayPayloadOptions exposes raw mode only when raw relay forwarding i
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [{ type: 'String', value: 'ok' }],
         },
       },
@@ -246,8 +251,8 @@ test('buildRelayBroadcastRequest uses stored meta invocations when raw transacti
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [{ type: 'String', value: 'ok' }],
         },
       },
@@ -257,8 +262,8 @@ test('buildRelayBroadcastRequest uses stored meta invocations when raw transacti
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
     metaInvocation: {
-      scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-      operation: 'executeMetaTxByAddress',
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUnifiedByAddress',
       args: [{ type: 'String', value: 'ok' }],
     },
   });
@@ -286,8 +291,8 @@ test('buildRelayBroadcastRequest honors explicit meta selection when raw and met
       kind: 'evm',
       metadata: {
         metaInvocation: {
-          scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-          operation: 'executeMetaTxByAddress',
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUnifiedByAddress',
           args: [{ type: 'String', value: 'ok' }],
         },
       },
@@ -297,8 +302,8 @@ test('buildRelayBroadcastRequest honors explicit meta selection when raw and met
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
     metaInvocation: {
-      scriptHash: '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423',
-      operation: 'executeMetaTxByAddress',
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUnifiedByAddress',
       args: [{ type: 'String', value: 'ok' }],
     },
   });

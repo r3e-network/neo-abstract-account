@@ -11,11 +11,11 @@ test('serializeRelayPreflightPayload returns pretty JSON for relay requests', ()
   const output = serializeRelayPreflightPayload({
     relayEndpoint: '/api/relay-transaction',
     simulate: true,
-    metaInvocation: { scriptHash: '0x1234', operation: 'executeMetaTxByAddress' },
+    metaInvocation: { scriptHash: '0x1234', operation: 'executeUnifiedByAddress' },
   });
 
   assert.match(output, /relay-transaction/);
-  assert.match(output, /executeMetaTxByAddress/);
+  assert.match(output, /executeUnifiedByAddress/);
 });
 
 test('serializeRelayPreflightStack returns pretty JSON for decoded stack values', () => {
@@ -37,7 +37,7 @@ test('buildRelayPreflightExport includes payload, summary, and decoded stack', (
       payloadMode: 'meta',
       vmState: 'HALT',
       gasConsumed: '42',
-      operation: 'executeMetaTxByAddress',
+      operation: 'executeUnifiedByAddress',
       exception: '',
       stack: [{ type: 'Integer', raw: '1', decoded: '1' }],
     },

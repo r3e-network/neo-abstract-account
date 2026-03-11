@@ -72,6 +72,7 @@ function bindMetaSearchHelpers({
         const typedData = buildTypedData({
           chainId: magic,
           verifyingContract: aaHash,
+          accountAddressHash,
           accountIdHex: accountIdForSignature,
           targetContract,
           method,

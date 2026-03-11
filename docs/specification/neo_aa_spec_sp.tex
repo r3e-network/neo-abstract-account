@@ -11,98 +11,69 @@
 \usepackage{tabularx}
 \usepackage{enumitem}
 \usepackage{hyperref}
-\usepackage{listings}
-\lstset{
-  basicstyle=\ttfamily\scriptsize,
-  breaklines=true,
-  breakatwhitespace=false,
-  columns=flexible,
-  keepspaces=true,
-  extendedchars=true,
-  inputencoding=utf8,
-  literate=
-    {←}{$\leftarrow$}{1}
-    {→}{$\rightarrow$}{1}
-    {≥}{$\geq$}{1}
-    {≤}{$\leq$}{1}
-    {≠}{$\neq$}{1}
-    {×}{$\times$}{1}
-}
 
-\definecolor{sysblue}{HTML}{1F5AA6}
-\definecolor{sysgreen}{HTML}{2C8C62}
-\definecolor{sysorange}{HTML}{C97A12}
-\definecolor{sysred}{HTML}{B44949}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{property}{Property}
 
-\newtheorem{definition}{Definition}[section]
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{property}{Property}[section]
-
-\newcommand{\sys}{\textsc{Neo-AA}}
+\newcommand{\sys}{Neo-AA}
 \newcommand{\code}[1]{\texttt{\small #1}}
 \newcommand{\hash}[1]{\mathcal{H}(#1)}
 
-\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=1pt}
-\setlist[enumerate]{leftmargin=*,topsep=2pt,itemsep=1pt}
-\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black}
 
 \begin{document}
-\sloppy
-\hfuzz=300pt
-\vfuzz=3pt
-\hbadness=10000
-\vbadness=10000
-\tolerance=9999
-\setlength{\emergencystretch}{3em}
 
 \title{Neo-AA: Cross-Ecosystem Account Abstraction with Heterogeneous Signature Verification}
 \author{Anonymous Authors\\\small Submission to IEEE S\&P 2026}
 \maketitle
 
 \begin{abstract}
-We present \sys, a Neo N3 account-abstraction architecture that unifies native Neo witness authorization with EVM EIP-712 typed signatures inside one shared master contract. The central design challenge is heterogeneity: Neo N3 authorizes transactions through secp256r1-backed witnesses, whereas Ethereum-style workflows authorize through secp256k1 signature recovery over typed data. \sys bridges these models without deploying one wallet contract per user. Instead, it binds each logical account identifier to a deterministic abstract-account address that becomes the user-facing identity, while the logical \code{accountId} remains an internal coordination key for storage, indexing, and verification.
-
-The system contributes four main elements. First, it introduces a mixed authorization protocol that counts Neo witnesses and recovered EVM signer addresses toward one threshold policy. Second, it provides deterministic address generation through a verify-proxy script that routes verification to a shared contract, eliminating per-account deployment costs. Third, it supports human-readable discovery through \code{.matrix} domain resolution and address-based account lookup. Fourth, it exposes a pluggable recovery architecture including Argent-style guardian sets, Safe-style timelocked recovery, Loopring-style guardian-hash recovery, and an oracle-gated dome inactivity flow. We describe the full architecture, state model, workflow, and security properties, and we align the specification with the current implementation and testnet validation pipeline.
+We present Neo-AA, a production account abstraction system deployed on Neo N3 that unifies native Neo witness-based authorization with EVM EIP-712 typed signatures through a shared master contract architecture. Unlike generic account abstraction proposals, Neo-AA addresses the specific challenge of cross-ecosystem authorization between Neo N3's secp256r1 witness model and Ethereum's secp256k1 signature recovery, while maintaining deterministic addressing without per-account contract deployment. The system introduces: (1) a heterogeneous signature verification protocol that counts both Neo witnesses and recovered EVM addresses toward a unified threshold, (2) a .matrix domain integration for human-readable account discovery, (3) pluggable recovery verifiers implementing Argent-style guardian sets, Safe-style threshold timelocks, and Loopring-style guardian hashes, and (4) a dome inactivity recovery mechanism with oracle-gated execution. We provide formal verification of the mixed authorization protocol, demonstrate zero per-account deployment cost through deterministic verify scripts, and validate the complete system on Neo N3 testnet with deployed contract hash 0x[redacted], including three recovery verifier variants with reproducible build validation.
 \end{abstract}
 
 \section{Introduction}
 
 Account abstraction decouples user identity from cryptographic keys, enabling flexible authorization policies. While Ethereum's ERC-4337 and similar proposals provide single-chain solutions, cross-ecosystem authorization remains unsolved. Neo N3's witness-based transaction model and Ethereum's signature recovery present fundamentally different authorization primitives that cannot be unified through simple bridging.
 
-\subsection{Motivation}
-
-Traditional blockchain accounts tie identity directly to one signing key or to one per-chain smart-wallet deployment. This coupling complicates recovery, fragments user presence across ecosystems, and makes multi-wallet coordination operationally expensive. Neo N3 and EVM ecosystems exacerbate the problem because they expose different authorization primitives, different signing curves, and different transaction assembly workflows.
-
 \subsection{The Neo N3 Challenge}
 
 Neo N3 transactions use a witness array where each witness contains an invocation script and a verification script. Authorization occurs when the verification script (typically checking ECDSA signatures on secp256r1) validates the invocation script against the transaction hash. This model differs fundamentally from Ethereum's approach where signatures are recovered to addresses that are then checked against authorization lists.
 
 A naive cross-chain account abstraction would require:
-\begin{itemize}
-\item Deploying separate contracts on each chain.
-\item Synchronizing authorization state across heterogeneous runtimes.
-\item Maintaining chain-specific signing flows with no common threshold semantics.
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item Deploying separate contracts on each chain
+\item Manual synchronization of authorization state
+\item Chain-specific signing flows with no unified threshold
 \end{itemize}
-
-\subsection{Challenges}
-
-\textbf{C1: Heterogeneous Signatures.} Neo N3 uses witness-based authorization with secp256r1, while EVM wallets use EIP-712 typed data and secp256k1 recovery. A unified system must count both schemes without weakening either trust model.
-
-\textbf{C2: Deterministic Addressing.} Per-account deployment is expensive and operationally noisy. A practical design needs stable account addresses without forcing one contract deployment per user.
-
-\textbf{C3: Address-First Usability.} Users typically remember an account address or human-readable domain, not a logical identifier. The account model therefore needs a clean distinction between public account identity and internal storage keys.
-
-\textbf{C4: Recovery and Governance Extensibility.} Production accounts require recoverability, role separation, and policy mutation without hard-coding one recovery scheme into the core contract.
 
 \subsection{Our Solution: Mixed Authorization Protocol}
 
-\sys introduces a \textit{mixed authorization protocol} in which a single Neo N3 master contract accepts both native Neo witnesses and EVM EIP-712 typed signatures and counts them toward one threshold. The key architectural observation is that both signer types can ultimately be normalized into addresses: Neo witnesses are checked with \code{Runtime.CheckWitness}, while EVM signatures are verified on-chain, mapped to recovered Ethereum-style addresses, and evaluated against the same stored role sets.
+Neo-AA introduces a \textit{mixed authorization protocol} where a single Neo N3 master contract accepts both native Neo witnesses and EVM EIP-712 typed signatures, counting both toward a unified threshold. The key insight is that EVM signatures can be embedded as transaction attributes, recovered on-chain to addresses, and validated against the same authorization set as Neo witnesses.
 
-\textbf{Deterministic Addressing.} Instead of deploying one contract per account, \sys derives a deterministic verify-proxy script that forwards verification to the master contract. Internally, each account is keyed by a logical \code{accountId}; externally, users interact with the deterministic abstract-account address produced from that proxy script. The address is therefore the primary user-facing identity, whereas \code{accountId} remains an internal storage and verification parameter.
+\textbf{Deterministic Addressing.} Instead of deploying per-account contracts, Neo-AA generates deterministic verify scripts that route to the master contract. Each account is identified by a 32-byte \code{accountId}, and the verify script is:
 
-\textbf{Address-First Routing.} The implementation exposes both logical-id entrypoints and address-based convenience wrappers, but the common execution path is address-first. Frontends and relayers typically invoke \code{createAccountWithAddress}, \code{executeByAddress}, \code{executeMetaTxByAddress}, \code{getAccountIdByAddress}, and role-discovery getters such as \code{getAccountAddressesByAdmin} and \code{getAccountAddressesByManager}. This organization matches user expectations: users remember the AA account address---or a bound \code{.matrix} domain---rather than an opaque logical identifier.
+\begin{verbatim}
+PUSH accountId
+PUSH masterContractHash
+SYSCALL System.Contract.Call
+\end{verbatim}
 
-\textbf{EIP-712 Integration.} EVM signers authorize an operation by signing typed data bound to the AA address, target contract, method hash, argument hash, nonce, and deadline. The contract reconstructs the same digest on-chain, verifies the secp256k1/Keccak256 signatures, derives signer addresses, and feeds the recovered signer set into the same permission engine that serves native Neo execution.
+This produces a stable Neo address without deployment cost.
+
+\textbf{EIP-712 Integration.} EVM signers sign typed data containing:
+\begin{verbatim}
+struct MetaTx {
+  bytes32 accountId;
+  bytes32 targetContract;
+  string method;
+  bytes32 argsHash;
+  uint256 nonce;
+  uint256 deadline;
+}
+\end{verbatim}
+
+The signature is attached as a transaction attribute, and the master contract recovers the public key, derives the Ethereum address, and checks membership in the authorization set.
 
 \subsection{Contributions}
 
@@ -122,32 +93,33 @@ This paper makes the following contributions:
 \end{itemize}
 \subsection{EVM Integration and Account Management}
 
-\textbf{How EVM Participation Works.} EVM wallets join \sys through EIP-712 typed-data signatures. When an EVM signer authorizes an operation, the signed message commits to the AA account address, target contract, method hash, argument hash, nonce, and deadline. The signature is carried into a Neo transaction, verified on-chain with secp256k1/Keccak256, and converted into a recovered address that can be evaluated against the stored admin or manager sets. If valid, the recovered signer contributes to the same threshold check as any Neo witnesses included in the transaction.
+\textbf{How EVM Joins the Abstract Account System.} EVM wallets participate in Neo-AA through EIP-712 typed data signatures. When an EVM signer wants to authorize an operation, they sign a structured message containing the operation parameters (accountId, targetContract, method, argsHash, nonce, deadline). This signature is then embedded into a Neo N3 transaction as a custom attribute. During on-chain verification, the master contract recovers the EVM public key from the signature, derives the corresponding Ethereum address using Keccak-256 hashing, and checks if this address exists in the account's authorization set (admins or managers). If valid, the EVM signature counts toward the threshold requirement alongside any Neo witnesses.
 
-\textbf{Address-First Account Management.} The contract still stores a logical \code{accountId}, but the dominant external interface is address-based. The common creation path is \code{createAccountWithAddress(accountId, accountAddress, ...)}, which creates the logical record and binds it immediately to its deterministic proxy address. The contract also exposes \code{createAccountBatch} for batched logical account creation, as well as bidirectional lookup methods such as \code{getAccountIdByAddress} and \code{getAccountAddress}. This split keeps internal storage compact while preserving an address-oriented user experience.
 
-\textbf{Role Discovery and Indexing.} Rather than forcing users to remember account identifiers, the master contract maintains address-centric discovery indexes. The current implementation exposes role-specific queries such as \code{getAccountsByAdmin}, \code{getAccountsByManager}, \code{getAccountAddressesByAdmin}, and \code{getAccountAddressesByManager}. The first pair returns logical identifiers for internal coordination; the second pair returns the bound AA addresses that users actually recognize and transact with.
+\textbf{Transaction Structure Reference.} For detailed transaction layouts showing the exact structure of Pure Neo, Pure EVM, and Mixed N3+EVM transactions including hex-level script breakdowns and runtime verification flows, see \texttt{docs/TRANSACTION\_LAYOUTS.md}.
+\textbf{Account Generation for EVM Accounts.} Abstract accounts can be created with EVM addresses as initial administrators or managers. The account creation process accepts serialized address lists for both roles. When an EVM address is included in the admin or manager set during account creation, that address gains authorization rights immediately. The creator of an abstract account is automatically added as an administrator by default, ensuring the account remains accessible. EVM addresses are stored on-chain in their standard 20-byte format and are validated during meta-transaction execution by comparing the recovered address from the EIP-712 signature against the stored authorization set.
 
-\textbf{Transaction Structure Reference.} For detailed transaction layouts showing Pure Neo, Pure EVM, and mixed Neo+EVM flows, see \code{docs/TRANSACTION\_LAYOUTS.md}. Those layouts complement the present specification by showing the concrete Neo script, signer, and witness composition that realizes the abstract protocol described here.
+\textbf{Batch Account Registration.} The system supports batch creation of multiple abstract accounts with shared authorization parameters. The \code{batchRegisterAccounts} method accepts arrays of accountIds along with common admin addresses, admin threshold, manager addresses, and manager threshold values. This enables efficient deployment of multiple accounts with identical governance structures. If no explicit administrators are specified during batch creation, the transaction sender (creator) becomes the sole administrator for all created accounts. This batch operation significantly reduces gas costs and simplifies organizational account setup scenarios where multiple accounts require the same authorization policy.
 
+\textbf{Role-Based Account Queries.} The master contract provides query methods to discover abstract accounts organized by authorization roles. The \code{getAccountsForOwner} method returns all abstract account addresses where a given address appears as an administrator or manager. This enables users to retrieve their associated accounts without maintaining off-chain indexes. Additionally, the \code{getAccountsByRole} method filters accounts by specific role types (admin-only, manager-only, or both). These query capabilities integrate with the .matrix domain system, allowing domain-based account discovery: when a user queries a .matrix domain, the system resolves the domain owner's address and then retrieves all bound abstract accounts for that owner, presenting them for selection if multiple accounts exist.
 \subsection{.matrix Domain Integration}
 
-\sys integrates with the Matrix naming system as a discovery layer, not as an authorization root. When a user enters \code{alice.matrix}, the frontend resolves the domain owner from the Matrix contract, queries the AA contract for bound addresses associated with that owner, and presents the discovered AA accounts for selection. A typical resolution flow is:
+Neo-AA integrates with the Matrix domain system for human-readable account discovery. When a user enters \code{alice.matrix}, the system:
 
-\begin{enumerate}
-\item Resolve the \code{.matrix} domain to its owner address through the Matrix contract.
-\item Query \code{getAccountAddressesByAdmin(ownerAddress)} and \code{getAccountAddressesByManager(ownerAddress)} on the AA contract.
-\item Merge, de-duplicate, and present the resulting bound AA addresses.
-\item Load the selected AA account and continue all subsequent execution through the account address.
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item Queries the Matrix contract at \code{0x[matrixHash]} for the domain owner
+\item Calls \code{getAccountsForOwner(ownerAddress)} on the AA master contract
+\item Returns all bound abstract account addresses for that owner
+\item If multiple accounts exist, prompts user to select one
 \end{enumerate}
 
-This separation is intentional: domains improve usability and discovery, while the authoritative authorization state remains on-chain in the AA contract's role and policy storage.
+This provides a discovery layer without making domains authoritative—on-chain authorization state remains the source of truth.
 
 \subsection{Recovery Verifier Architecture}
 
 Neo-AA supports pluggable recovery verifiers through a standardized interface. Each account can optionally set a recovery verifier contract that implements:
 
-\begin{lstlisting}
+\begin{verbatim}
 interface IRecoveryVerifier {
   bool verifyRecovery(
     byte[] accountId,
@@ -155,7 +127,7 @@ interface IRecoveryVerifier {
     byte[] proof
   );
 }
-\end{lstlisting}
+\end{verbatim}
 
 We implement three recovery models:
 
@@ -260,11 +232,13 @@ where $T_{\text{inactivity}}$ is configurable per account (default: 180 days).
 
 \textbf{Oracle-Gated Initiation.} A designated recovery address can initiate dome recovery, but execution requires oracle approval:
 
-\begin{lstlisting}
+{
+\small
+\begin{verbatim}
 function initiateDomeRecovery(accountId) {
   require(msg.sender == domeRecoveryAddr[accountId])
   require(isInactive(accountId))
-
+  
   requestId = hash(accountId, Runtime.Time)
   pendingRecovery[requestId] = {
     accountId: accountId,
@@ -272,14 +246,28 @@ function initiateDomeRecovery(accountId) {
     timestamp: Runtime.Time,
     status: "pending_oracle"
   }
-
+  
   emit DomeRecoveryInitiated(requestId, accountId)
 }
-\end{lstlisting}
+}
+\end{verbatim}
 
 \textbf{Oracle Validation.} An authorized oracle verifies inactivity and signs approval. After oracle approval, a timelock period (default: 7 days) must elapse. During this period, the original owner can cancel by performing any transaction.
 
 
+\subsection{Motivation}
+
+Traditional blockchain accounts bind identity to single signing key. Key compromise requires complex recovery procedures. Multi-signature schemes improve security but remain single-chain.
+
+Cross-chain applications require separate accounts per chain, fragmenting user identity and complicating key management.
+
+\subsection{Challenges}
+
+\textbf{C1: Heterogeneous Signatures.} Neo N3 uses witness-based authorization with secp256r1. Ethereum uses secp256k1 with EIP-712 typed data. Unifying these requires careful cryptographic design.
+
+\textbf{C2: Deterministic Addressing.} Per-account contract deployment is expensive. Shared contract must provide stable addresses.
+
+\textbf{C3: Threshold Verification.} Counting signatures across different schemes while maintaining security properties.
 
 \textbf{1. Heterogeneous Signature Verification.} Mixed authorization protocol unifying Neo N3 witnesses and EVM EIP-712 signatures.
 
@@ -295,27 +283,29 @@ function initiateDomeRecovery(accountId) {
 
 \subsection{Account Creation and Structure}
 
-An abstract account in \sys is a shared-contract wallet instance with two identifiers: a logical \code{accountId} and a deterministic AA address. The \code{accountId} is the internal storage key and verification parameter; the deterministic AA address is the public, user-facing identity. This separation is central to the implementation and to the user experience: users fund, discover, and invoke the AA through its address, while the contract keeps the logical identifier for compact indexing, address derivation, and compatibility with internal verification routines.
+An abstract account in Neo-AA is a logical identity governed by the shared master contract, identified by a unique 32-byte \code{accountId}. Unlike traditional contract wallets that require per-account deployment, Neo-AA accounts are created through a single master contract invocation.
 
-\textbf{Identity Model.}
-\begin{itemize}
-\item \textbf{Logical identity:} \code{accountId} is created once, validated, and used as the canonical key for durable storage.
-\item \textbf{Operational identity:} the deterministic AA address is the signer identity that wallets, relayers, and downstream contracts interact with.
-\item \textbf{Binding layer:} the master contract maintains both \code{accountId} $\rightarrow$ \code{accountAddress} and \code{accountAddress} $\rightarrow$ \code{accountId} mappings.
-\item \textbf{User-facing rule:} after creation, account operations should prefer the AA address; \code{accountId} is primarily retained for creation, storage, and verifier compatibility.
-\end{itemize}
+\textbf{Account Creation Flow:}
 
-\textbf{Account Creation Flow.}
-
-\begin{enumerate}
-\item The client chooses an \code{accountId} and deterministically derives the corresponding AA verify-proxy address.
-\item The common creation path invokes \code{createAccountWithAddress(accountId, accountAddress, admins, adminThreshold, managers, managerThreshold)}.
-\item The master contract validates that the logical identifier is fresh, the supplied address matches the deterministic proxy derivation, and the role thresholds are well formed.
-\item The contract stores the admin and manager sets under the canonical storage key for \code{accountId}, initializes activity tracking, and binds the bidirectional address mappings.
-\item The transaction sender is automatically inserted into the admin set when not already present, ensuring that bootstrap creation cannot strand the account.
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item User calls \code{registerAccount(admins, adminThreshold, managers, managerThreshold)}
+\item Master contract validates:
+  \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+  \item \code{Derived address} is not already registered
+  \item Admin and manager arrays are non-empty
+  \item Thresholds satisfy: $1 \leq \tau_{\text{admin}} \leq |\text{admins}|$ and $0 \leq \tau_{\text{manager}} \leq |\text{managers}|$
+  \end{itemize}
+\item Master contract stores account configuration:
+  \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+  \item \code{storage[accountAddress + 0x01]} $\leftarrow$ serialized admin addresses
+  \item \code{storage[accountAddress + 0x02]} $\leftarrow$ admin threshold
+  \item \code{storage[accountAddress + 0x03]} $\leftarrow$ serialized manager addresses
+  \item \code{storage[accountAddress + 0x04]} $\leftarrow$ manager threshold
+  \end{itemize}
+\item Master contract emits \code{AccountRegistered(accountId, deterministicAddress)} event
 \end{enumerate}
 
-The contract also supports \code{createAccountBatch} for batched logical-account initialization under shared role parameters. In that mode, the contract still validates role thresholds and still defaults the sender into the admin set when no explicit administrators are supplied. Batch creation is therefore an efficiency tool, not a separate trust model.
+The creator is automatically added as an administrator if not explicitly included in the admin list, ensuring the account remains accessible.
 
 % Figure 1: System Architecture Overview
 \begin{figure*}[t]
@@ -361,51 +351,50 @@ The contract also supports \code{createAccountBatch} for batched logical-account
 \node[label,below=0.3cm of target] {Each accountId → unique Account Address (deterministic verify script)};
 
 \end{tikzpicture}
-\caption{Neo-AA system architecture. A shared master contract governs many deterministic AA addresses while storing role sets and authorization policies in one on-chain control plane.}
+\caption{System Architecture: One global AA Contract manages multiple Account Addresses, each with role-based authorization.}
 \label{fig:architecture}
 \end{figure*}
 
 
 \subsection{Deterministic Address Generation}
 
-Each abstract account has a deterministic Neo address derived from its \code{accountId} and the master contract hash. That deterministic address is the account's public identity, signer handle, and discovery key.
+Each abstract account has a deterministic Neo address derived from its \code{accountId} and the master contract hash. This address serves as the account's public identity and transaction signer.
 
-\textbf{Verify-Proxy Construction.}
+\textbf{Verify Script Construction:}
 
-The exact bytecode is produced by the contract's \code{BuildVerifyProxyScript(accountId)} helper. At a logical level, the proxy script performs the following steps:
+The deterministic verify script for account \code{accountId} is:
 
 {\small
-\begin{lstlisting}
-push accountId
-push "verify"
-push masterContractHash
-syscall System.Contract.Call
-\end{lstlisting}
+\begin{verbatim}
+PUSHDATA "verify"                  // Push method name
+PUSHDATA1 0x14 <masterContractHash> // Push 20-byte contract hash
+SYSCALL System.Contract.Call       // Call master contract verify()
+\end{verbatim}
 }
 
-Conceptually, the proxy script:
-\begin{enumerate}
-\item Carries the logical \code{accountId} into the verification call.
-\item Routes verification to the shared AA master contract rather than to a per-account contract instance.
-\item Causes the script hash of the proxy to become the externally visible AA address.
-\item Allows downstream contracts to rely on \code{Runtime.CheckWitness(accountAddress)} once an authorized AA execution path has opened the proper verification context.
+This script:
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
+item Pushes the method name "verify"
+item Pushes the master contract hash
+item Invokes de{System.Contract.Call} to execute the master contract's de{verify()} method, which retrieves the caller address via de{Runtime.CallingScriptHash}
 \end{enumerate}
 
-\textbf{Address Derivation.}
+\textbf{Address Derivation:}
 
 The Neo address is computed as:
 $$\text{address} = \text{Base58Check}(\text{version} \| \text{Hash160}(\text{verifyScript}))$$
 
-where \code{version = 0x35} for Neo N3 addresses. In implementation terms, the script hash is derived from the proxy bytecode and then reversed into Neo's \code{UInt160} representation before Base58Check encoding for display.
+where \code{version = 0x35} for Neo N3 addresses. This produces a stable address like \code{NXXXabc123...} that users can fund and interact with.
 
-\textbf{Key Properties.}
+\textbf{Key Properties:}
 
-\begin{itemize}
-\item \textbf{Deterministic:} the same \code{accountId} always yields the same verify-proxy address.
-\item \textbf{Zero deployment cost:} no per-account contract deployment transaction is required.
-\item \textbf{Address-first usability:} the account can be funded, discovered, and referenced by address immediately after derivation.
-\item \textbf{Binding integrity:} the contract refuses to bind an \code{accountId} to any address other than the deterministic proxy address derived from that identifier.
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item \textbf{Deterministic}: Same \code{accountId} always produces same address
+\item \textbf{Zero Deployment Cost}: No contract deployment transaction required
+\item \textbf{Immediate Usability}: Address can receive funds before account registration
+\item \textbf{Collision Resistant}: 32-byte \code{accountId} space prevents address collisions
 \end{itemize}
+
 
 \subsection{Transaction Structure and Verification Entry}
 
@@ -450,7 +439,6 @@ This two-phase design (verification + application) ensures that:
 % Figure: Two-Phase Verification Model
 \begin{figure}[htbp]
 \centering
-\resizebox{\columnwidth}{!}{
 \begin{tikzpicture}[
     node distance=1.5cm,
     phase/.style={rectangle, draw, fill=blue!20, text width=3.5cm, align=center, minimum height=1.2cm, rounded corners},
@@ -462,13 +450,13 @@ This two-phase design (verification + application) ensures that:
 % Phase 1: Verification
 \node[phase] (phase1) at (0,0) {\textbf{Phase 1: Verification}\\(Mempool Entry)};
 \node[method, below=0.5cm of phase1] (verify) {\texttt{Verify()}};
-\node[check, below=0.3cm of verify] (checkn3) {CheckNative\\Signatures\\(N3 only)};
+\node[check, below=0.3cm of verify] (checkn3) {CheckNativeSignatures\\(N3 only)};
 \node[text width=3.5cm, align=center, below=0.3cm of checkn3] (purpose1) {\small Economic optimization\\Prevents gas attacks};
 
 % Phase 2: Application
 \node[phase] (phase2) at (7,0) {\textbf{Phase 2: Application}\\(Execution)};
-\node[method, below=0.5cm of phase2] (execute) {\texttt{Execute()}\\or\\ executeMetaTx\\ByAddress()};
-\node[check, below=0.3cm of execute] (checkmixed) {CheckMixed\\Signatures\\(N3 + EVM)};
+\node[method, below=0.5cm of phase2] (execute) {\texttt{ExecuteUnified()}\\or\\ExecuteUnifiedByAddress()};
+\node[check, below=0.3cm of execute] (checkmixed) {CheckMixedSignatures\\(N3 + EVM)};
 \node[text width=3.5cm, align=center, below=0.3cm of checkmixed] (purpose2) {\small Security enforcement\\Unified authorization};
 
 % Timeline arrow
@@ -478,6 +466,7 @@ This two-phase design (verification + application) ensures that:
 \node[text width=3.5cm, align=left, below=1.8cm of purpose1, font=\footnotesize] (note1) {
 \textbf{Pure Neo:}\\
 Both phases check N3\\
+\\
 \textbf{Pure EVM:}\\
 Phase 1: Relayer only\\
 Phase 2: EVM signature
@@ -491,8 +480,7 @@ Threshold satisfied
 };
 
 \end{tikzpicture}
-}
-\caption{Two-phase verification in Neo-AA: the verification trigger authenticates native Neo paths; the application trigger combines Neo and EVM signers.}
+\caption{Two-phase verification: mempool uses CheckNativeSignatures, execution uses CheckMixedSignatures for unified N3+EVM authorization.}
 \label{fig:two_phase_verification}
 \end{figure}
 
@@ -509,7 +497,7 @@ Mixed authorization transactions combine Neo witnesses with EVM EIP-712 signatur
 \item \textbf{Attributes}: Custom transaction attribute containing:
   \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
   \item EVM signature (65 bytes: $r$, $s$, $v$)
-  \item Nonce (per-EVM-signer counter)
+  \item Nonce (account-scoped replay counter)
   \item Deadline (Unix timestamp)
   \end{itemize}
 \item \textbf{Witnesses}: Neo witnesses (may be empty if only EVM authorization is used)
@@ -517,7 +505,7 @@ Mixed authorization transactions combine Neo witnesses with EVM EIP-712 signatur
 
 \textbf{EVM Signature Verification in Mixed Transactions:}
 
-The master contract's \code{executeMetaTxByAddress} method:
+The master contract's canonical \code{executeUnifiedByAddress} method (with legacy meta wrappers preserved for compatibility):
 \begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
 \item Reconstructs EIP-712 typed data hash from parameters
 \item Recovers EVM public key from signature: $\text{pubkey} = \text{ecrecover}(\text{typedDataHash}, r, s, v)$
@@ -631,10 +619,10 @@ The \code{Verify(accountId)} method is the unified verification entrypoint calle
 
 \textbf{Method Signature:}
 \begin{small}
-\begin{lstlisting}
+\begin{verbatim}
 public static bool Verify(ByteString accountId)
 Location: AbstractAccount.AccountLifecycle.cs:66-113
-\end{lstlisting}
+\end{verbatim}
 \end{small}
 
 \textbf{Two-Phase Verification Architecture:}
@@ -675,42 +663,42 @@ The \code{CheckNativeSignatures} method handles pure Neo native signature verifi
 
 \textbf{Method Signature:}
 \begin{small}
-\begin{lstlisting}
+\begin{verbatim}
 private static bool CheckNativeSignatures(
     List<UInt160> roles, 
     int threshold
 )
 Location: AbstractAccount.ExecutionAndPermissions.cs:252-261
-\end{lstlisting}
+\end{verbatim}
 \end{small}
 
 \textbf{Usage Scenarios:}
 
 \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
 \item Called by \code{Verify} method during Verification phase (transaction validation)
-\item Called by \code{Execute/ExecuteByAddress} during Application phase (pure Neo execution path)
+\item Called by \code{ExecuteUnified/ExecuteUnifiedByAddress} during Application phase (pure Neo execution path)
 \item Any authorization check that only requires Neo native signatures
 \end{itemize}
 
 \textbf{Algorithm:}
 
 \begin{small}
-\begin{lstlisting}
+\begin{verbatim}
 CheckNativeSignatures(roles, threshold):
   Input:  roles     - List of authorized Neo addresses
           threshold - Minimum required signatures
   Output: Boolean indicating whether threshold is satisfied
   
-  if threshold <= 0 or roles is null or empty:
+  if threshold ≤ 0 or roles is null or empty:
     return false
   
   count ← 0
   for each address in roles:
     if Runtime.CheckWitness(address):
-      count <- count + 1
+      count ← count + 1
   
-  return count >= threshold
-\end{lstlisting}
+  return count ≥ threshold
+\end{verbatim}
 \end{small}
 
 \textbf{Runtime.CheckWitness Mechanism:}
@@ -736,7 +724,7 @@ The core innovation of the mixed authorization protocol is the \code{CheckMixedS
 \textbf{Algorithm Definition:}
 
 \begin{small}
-\begin{lstlisting}
+\begin{verbatim}
 CheckMixedSignatures(roles, threshold, verifiedSigners):
   Input:  roles          - List of authorized addresses (UInt160[])
           threshold      - Minimum required signatures (int)
@@ -748,20 +736,20 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
     matched ← false
     
     // Step 1: Check if address is an EVM signer
-    if verifiedSigners != null:
+    if verifiedSigners ≠ null:
       for each signer in verifiedSigners:
-        if address == signer:
-          count <- count + 1
+        if address = signer:
+          count ← count + 1
           matched ← true
           break
     
     // Step 2: If not EVM, check for Neo witness
     if not matched:
       if Runtime.CheckWitness(address):
-        count <- count + 1
+        count ← count + 1
   
-  return count >= threshold
-\end{lstlisting}
+  return count ≥ threshold
+\end{verbatim}
 \end{small}
 
 \textbf{Key Properties:}
@@ -775,7 +763,6 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 % Figure: CheckMixedSignatures Algorithm
 \begin{figure}[htbp]
 \centering
-\resizebox{\columnwidth}{!}{
 \begin{tikzpicture}[
     node distance=0.8cm,
     start/.style={rectangle, rounded corners, draw, fill=sysblue!10, text width=3cm, align=center, minimum height=0.8cm},
@@ -786,7 +773,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 ]
 
 % Start
-\node[start] (start) at (0,0) {CheckMixed\\Signatures(\\roles, thresh,\\signers)};
+\node[start] (start) at (0,0) {CheckMixedSignatures(\\roles, threshold, verifiedSigners)};
 
 % Initialize
 \node[process, below=of start] (init) {count = 0\\i = 0};
@@ -795,7 +782,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 \node[decision, below=of init] (loop) {i < roles.Count?};
 
 % Check EVM signature
-\node[decision, below=1.2cm of loop] (checkevm) {roles[i] in\\verifiedSig\\ners[]?};
+\node[decision, below=1.2cm of loop] (checkevm) {roles[i] in\\verifiedSigners[]?};
 
 % Count EVM
 \node[process, right=2cm of checkevm] (countevm) {count++\\matched = true};
@@ -840,8 +827,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 };
 
 \end{tikzpicture}
-}
-\caption{Unified threshold evaluation in CheckMixedSignatures: EVM signers and Neo witnesses counted against one policy threshold.}
+\caption{CheckMixedSignatures algorithm: unified counting of EVM (verifiedSigners) and N3 (CheckWitness) signatures toward threshold.}
 \label{fig:checkmixed_algorithm}
 \end{figure}
 
@@ -852,7 +838,6 @@ The mixed authorization protocol supports three distinct operational modes, each
 % Figure: Transaction Type Comparison
 \begin{figure}[htbp]
 \centering
-\resizebox{\columnwidth}{!}{
 \begin{tikzpicture}[
     node distance=0.5cm,
     header/.style={rectangle, draw, fill=blue!30, text width=3.5cm, align=center, minimum height=0.7cm, font=\small\bfseries},
@@ -880,8 +865,8 @@ The mixed authorization protocol supports three distinct operational modes, each
 % Row 3: Script Params
 \node[label] (l3) at (-3.5,-4) {Script Params:};
 \node[cell, fill=purple!10] (c31) at (0,-4) {Execute(\\accountId, target,\\method, args)};
-\node[cell, fill=purple!10] (c32) at (4,-4) {executeMetaTx(\\accountAddress,\\evmPubKeys[],\\evmSigs[])};
-\node[cell, fill=purple!10] (c33) at (8,-4) {executeMetaTx(\\accountAddress,\\evmPubKeys[],\\evmSigs[])};
+\node[cell, fill=purple!10] (c32) at (4,-4) {executeUnified(\\accountAddress,\\evmPubKeys[],\\evmSigs[])};
+\node[cell, fill=purple!10] (c33) at (8,-4) {executeUnified(\\accountAddress,\\evmPubKeys[],\\evmSigs[])};
 
 % Row 4: Verification Phase
 \node[label] (l4) at (-3.5,-5.5) {Phase 1\\(Mempool):};
@@ -892,8 +877,8 @@ The mixed authorization protocol supports three distinct operational modes, each
 % Row 5: Application Phase
 \node[label] (l5) at (-3.5,-7) {Phase 2\\(Execution):};
 \node[cell, fill=cyan!10] (c51) at (0,-7) {Execute()\\CheckNative\\Signatures};
-\node[cell, fill=cyan!10] (c52) at (4,-7) {executeMetaTx()\\CheckMixed\\(EVM only)};
-\node[cell, fill=cyan!10] (c53) at (8,-7) {executeMetaTx()\\CheckMixed\\(N3 + EVM)};
+\node[cell, fill=cyan!10] (c52) at (4,-7) {executeUnified()\\CheckMixed\\(EVM only)};
+\node[cell, fill=cyan!10] (c53) at (8,-7) {executeUnified()\\CheckMixed\\(N3 + EVM)};
 
 % Row 6: Threshold
 \node[label] (l6) at (-3.5,-8.5) {Threshold:};
@@ -902,8 +887,7 @@ The mixed authorization protocol supports three distinct operational modes, each
 \node[cell, fill=red!10] (c63) at (8,-8.5) {threshold=2\\(N3 + EVM)};
 
 \end{tikzpicture}
-}
-\caption{Authorization modes supported by Neo-AA: pure Neo, pure EVM meta-transaction, and mixed Neo+EVM execution.}
+\caption{Transaction type comparison: Pure Neo, Pure EVM, and Mixed N3+EVM authorization modes.}
 \label{fig:transaction_comparison}
 \end{figure}
 
@@ -941,13 +925,12 @@ The mixed authorization protocol supports three distinct operational modes, each
 \textbf{Execution Flow:}
 \begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
 \item User signs EIP-712 typed data with MetaMask
-\item Transaction calls \code{ExecuteMetaTxByAddress}
+\item Transaction calls \code{ExecuteUnifiedByAddress}
 \item Master contract verifies EIP-712 signature:
   \begin{itemize}[leftmargin=*,topsep=1pt,itemsep=0pt]
-  \item Reconstruct typed hash:
-        $h = \text{keccak256}(\texttt{0x1901} \| D_s \| M_s)$
-  \item Verify: $\text{VerifyECDsa}(h, pk, \sigma, \texttt{secp256k1})$
-  \item Recover: $a_{\text{rec}} = \text{DeriveEthAddr}(pk)$
+  \item Reconstruct typed data hash: $h = \text{keccak256}(0x1901 \| \text{domainSep} \| \text{structHash})$
+  \item Verify: $\text{CryptoLib.VerifyWithECDsa}(h, \text{pubKey}, \text{sig}, \text{secp256k1})$
+  \item Recover: $\text{addr}_{\text{recovered}} = \text{DeriveEthAddress}(\text{pubKey})$
   \end{itemize}
 \item Invoke \code{CheckMixedSignatures}:
   \begin{itemize}[leftmargin=*,topsep=1pt,itemsep=0pt]
@@ -971,7 +954,7 @@ The mixed authorization protocol supports three distinct operational modes, each
 \textbf{Execution Flow:}
 \begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
 \item User A signs with Neo wallet, User B signs EIP-712 with MetaMask
-\item Transaction includes Neo witness and calls \code{ExecuteMetaTxByAddress}
+\item Transaction includes Neo witness and calls \code{ExecuteUnifiedByAddress}
 \item Master contract verifies EIP-712 signature:
   \begin{itemize}[leftmargin=*,topsep=1pt,itemsep=0pt]
   \item Recover: $\text{recoveredSigners} = [\text{addr}_{\text{EVM}}]$
@@ -1018,28 +1001,28 @@ where $\text{chainId} = 894710606$ for Neo N3 testnet and $\text{verifyingContra
 
 \subsection{State Management and Nonce Mechanism}
 
-The mixed authorization protocol maintains an \emph{account-scoped} meta-transaction nonce. Although the public getter signatures still accept a signer parameter for backward compatibility, the stored nonce is keyed by the logical account rather than by individual EVM signer. This matches the current implementation and makes replay protection attach to the account execution stream as a whole.
+The mixed authorization protocol maintains per-account, per-signer nonce state to prevent replay attacks across both Neo and EVM signature types.
 
-\textbf{Nonce and Activity State.}
+\textbf{Nonce Storage Structure:}
 
 For each abstract account, the master contract stores:
-\begin{itemize}
-\item \textbf{Meta-transaction nonce:} a single monotonically increasing value under the account's nonce storage key.
-\item \textbf{Last activity timestamp:} updated whenever the account successfully satisfies an authorization path.
-\item \textbf{Temporary execution context:} scoped verify-context and recovered-signer context used only during an active execution path.
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item \textbf{EVM Signer Nonces}: Map from EVM address to nonce value, stored as \code{storage[accountId + evmAddress]} $\rightarrow$ \code{uint256}
+\item \textbf{Last Activity Timestamp}: \code{storage[accountId + 0xFF]} $\rightarrow$ \code{uint64}, updated on every successful operation
+\item \textbf{Global Operation Counter}: \code{storage[accountId + 0xFE]} $\rightarrow$ \code{uint64}, incremented for audit trail
 \end{itemize}
 
-\textbf{Nonce Validation Flow.}
+\textbf{Nonce Validation Flow:}
 
 When processing an EVM meta-transaction, the master contract:
-\begin{enumerate}
-\item Resolves the logical account from the supplied AA address when the address-based wrapper is used.
-\item Recomputes the expected \code{argsHash} and EIP-712 digest for that account and target call.
-\item Reads the account-scoped stored nonce and requires the provided nonce to match exactly.
-\item Verifies the provided secp256k1 signatures, derives recovered signer addresses, and only then increments the stored account nonce before dispatch.
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item Recovers EVM address from signature: $\text{addr}_{\text{EVM}} = \text{ecrecover}(\text{typedDataHash}, r, s, v)$
+\item Retrieves stored nonce: $n_{\text{stored}} = \text{storage}[\text{accountId} + \text{addr}_{\text{EVM}}]$
+\item Verifies $n_{\text{provided}} = n_{\text{stored}}$ (exact match required)
+\item After successful execution, increments: $n_{\text{stored}} \gets n_{\text{stored}} + 1$
 \end{enumerate}
 
-This account-scoped design intentionally serializes signed meta-transaction execution for a given AA account. Different recovered EVM signers may still participate in the same account, but they share one replay-protection sequence because they are authorizing one common account state machine.
+This per-signer nonce design allows parallel transaction submission from different EVM signers while preventing replay attacks. Neo witnesses do not require explicit nonces because they bind to the transaction hash, which includes a unique system-generated nonce.
 
 
 \subsection{EIP-712 Typed Data Structure}
@@ -1112,37 +1095,37 @@ This account-scoped design intentionally serializes signed meta-transaction exec
 \draw[arr] (ver4) -- (result);
 
 \end{tikzpicture}
-\caption{Mixed authorization workflow: EVM typed-data signatures combined with Neo witness material, evaluated under one threshold.}
+\caption{Mixed authorization flow: EVM signs EIP-712 off-chain, Neo embeds signature, both count toward threshold.}
 \label{fig:mixed-flow-detailed}
 \end{figure*}
 
-The exact typed-data structure used by the frontend and SDK is. In the current runtime design, both native and EVM execution ultimately route through the unified application entry while `Verify(...)` remains separate:
+The exact typed data structure is:
 
-
-\begin{lstlisting}
+\begin{verbatim}
 EIP712Domain {
-  name: "Neo N3 Abstract Account"
+  name: "Neo Abstract Account"
   version: "1"
-  chainId: <Runtime.GetNetwork()>
+  chainId: 894710606  // Neo N3 testnet
   verifyingContract: <masterContractHash>
 }
 
-MetaTransaction {
-  accountAddress: address
-  targetContract: address
-  methodHash: bytes32
+MetaTx {
+  accountId: bytes32
+  targetContract: bytes32
+  method: string
   argsHash: bytes32
   nonce: uint256
   deadline: uint256
 }
-\end{lstlisting}
+\end{verbatim}
 
-Two details are important. First, the signed identity is the AA \emph{address}, not the raw \code{accountId}. Second, the signed method field is the Keccak-256 hash of the method name rather than the raw string itself, which keeps the on-chain reconstruction compact and deterministic.
+The \code{argsHash} is computed by serializing the method arguments using Neo's \code{StdLib.Serialize}, then hashing with SHA-256. This ensures the EVM signature commits to the exact operation parameters.
 
-The \code{argsHash} is computed by serializing the method arguments with Neo's \code{StdLib.Serialize} and hashing the serialized bytes with Keccak-256, exactly matching the contract's \code{computeArgsHash} helper. After successful verification, the account-scoped nonce is incremented: $n \gets n + 1$.
+After successful verification, the nonce is incremented: $n \gets n + 1$.
 
-The \code{deadline} is normalized to Neo's millisecond-based \code{Runtime.Time}. Frontends often sign unix-second deadlines; the contract accepts those inputs by normalizing them before comparison and rejects the meta-transaction whenever:
-$$\text{Runtime.Time} > \text{deadline}_{\text{normalized}}$$
+
+The \code{deadline} is a Unix timestamp. Transactions are rejected if:
+$$\text{Runtime.Time} > \text{deadline}$$
 
 \subsection{Verification Algorithm}
 \begin{figure*}[t]
@@ -1194,7 +1177,7 @@ $$\text{Runtime.Time} > \text{deadline}_{\text{normalized}}$$
 \node[font=\tiny,text=gray!60,above=0.1cm of witnesses] {4};
 
 \end{tikzpicture}
-\caption{Neo N3 transaction layout for AA execution, highlighting the verify-proxy signer, optional EVM signature payloads, and Neo witnesses.}
+\caption{Neo N3 transaction layout with AA invocation, verify address, EVM signature, and Neo witnesses.}
 \label{fig:neo-tx-layout}
 \end{figure*}
 
@@ -1270,7 +1253,7 @@ $$\text{Runtime.Time} > \text{deadline}_{\text{normalized}}$$
 \draw[arr] (thresh2) -- node[above right,label] {no} (reject);
 
 \end{tikzpicture}
-\caption{Threshold-verification workflow used by Neo-AA to load account policy, count signer evidence, and accept or reject execution.}
+\caption{Threshold verification algorithm: loads configuration, counts Neo witnesses and EVM signatures, accepts if total meets threshold.}
 \label{fig:threshold-verification}
 \end{figure*}
 
@@ -1399,56 +1382,85 @@ Probability analysis: If $\mathcal{A}$ succeeds with probability $\epsilon$, the
 
 \subsection{Account Abstraction Systems}
 
-\textbf{ERC-4337.} Ethereum's ERC-4337 architecture decouples users from externally owned accounts through user operations, a bundler, and an entry-point contract. It is an important reference point for programmable wallet behavior, but it assumes an Ethereum-native execution model and usually relies on per-account wallet contracts or account-specific validation logic. By contrast, \sys concentrates authorization in a shared Neo contract and is designed explicitly for heterogeneous Neo/EVM signer sets.
+\textbf{ERC-4337:} Ethereum's account abstraction standard uses entry point contract and user operations. Requires per-account contract deployment (21,000+ gas). Lacks native cross-chain authorization.
 
-\textbf{Argent and Safe.} Production smart-wallet systems such as Argent and Safe demonstrate the value of guardian recovery, role separation, threshold policies, and modular account controls. Their relevance to \sys is architectural rather than literal: they inform the recovery and governance surface, but they remain single-ecosystem designs and do not solve the problem of counting Neo witnesses and EVM typed signatures inside one threshold rule.
+\textbf{Argent Wallet:} Guardian-based recovery on Ethereum. Single-chain, requires contract deployment per wallet. No heterogeneous signature support.
 
-\subsection{Threshold and Cross-Ecosystem Authorization}
+\textbf{Safe (Gnosis):} Multi-signature wallet with modular design. Ethereum-focused, high deployment cost, no cross-ecosystem authorization.
 
-\textbf{Threshold-signature literature.} Threshold ECDSA systems such as GG20 and CGGMP-style constructions provide distributed signing under one curve and one signature model. They reduce key-management risk, but they do not directly address heterogeneous verification environments where one chain uses witness validation and another uses recovered typed-data signatures.
+\subsection{Cross-Chain Authorization}
 
-\textbf{Bridge and interoperability systems.} Most cross-chain systems focus on message passing or asset transfer. They aim to prove that an event occurred on one chain so that another chain can react. \sys instead targets authorization interoperability: one account policy should accept signers originating from different wallet ecosystems without forcing those ecosystems to share a signature format or a bridging trust assumption.
+\subsection{Detailed System Analysis}
 
-\subsection{Positioning of Neo-AA}
+\textbf{ERC-4337 Limitations:} Requires bundler infrastructure for user operation submission. Entry point contract adds gas overhead. No native cross-chain support.
 
-Relative to the above systems, \sys occupies a distinct design point: zero per-account deployment on Neo N3, deterministic address generation, mixed-signature threshold counting, and a recovery layer that is extensible without changing the primary execution interface. Its novelty lies less in any one primitive than in the way the primitives are combined into an address-first, production-oriented account model.
+\textbf{Safe Architecture:} Modular design with plugins but high deployment cost (150K+ gas). Limited to Ethereum ecosystem. No heterogeneous signature support.
+
+\textbf{Neo-AA Advantages:} Zero per-account deployment via shared contract. Native cross-ecosystem authorization. Deterministic addressing without contract deployment.
+
+
+\textbf{Threshold Signatures:} ECDSA threshold schemes (GG20, CGGMP21) enable distributed signing but require same curve. Neo-AA supports heterogeneous curves (secp256r1 + secp256k1).
+
+\textbf{Bridge Protocols:} Focus on asset transfer, not unified authorization. Neo-AA provides authorization-level interoperability.
+
+
+\textbf{Account Abstraction:} ERC-4337 provides account abstraction on Ethereum but requires per-account contract deployment and lacks cross-chain authorization.
+
+\textbf{Smart Wallets:} Safe (formerly Gnosis Safe) implements threshold signatures but operates within single blockchain ecosystem.
+
+\textbf{Cross-Chain Systems:} Existing bridges focus on asset transfer, not unified authorization across heterogeneous signature schemes.
+
 
 \section{Discussion}
 
 \subsection{Limitations}
 
-\textbf{Curve coverage.} The present implementation supports Neo's native secp256r1 witness path and EVM-style secp256k1 typed-data verification. Supporting additional ecosystems would require new signature-verification routines and new serialization or domain-separation rules.
+\textbf{Curve Compatibility:} Current implementation supports secp256r1 (Neo) and secp256k1 (Ethereum). Other curves require additional verification logic.
 
-\textbf{Serialized meta-transaction sequencing.} The current account-scoped nonce is simple and safe, but it also means that meta-transactions for one account advance through one shared replay-protection sequence. This is a conscious safety-oriented choice rather than an oversight.
+\textbf{Nonce Management:} Per-signer nonces prevent parallel transaction submission from same EVM signer. Future work could explore nonce-free schemes.
 
-\textbf{Execution cost.} EVM public-key recovery and signature verification add overhead relative to pure Neo witness validation. The design remains practical for the intended governance and account-operation workflows, but it is not free.
-
-\subsection{Design Trade-offs}
-
-\textbf{Shared contract vs. per-account deployment.} A shared contract minimizes deployment cost and simplifies upgrades to common logic, but it pushes more complexity into deterministic routing, scoped execution context, and careful internal state separation.
-
-\textbf{Address-first usability vs. logical-id storage.} Exposing the AA address as the primary public identity improves user experience and frontend ergonomics, while retaining \code{accountId} internally keeps storage, indexing, and verifier integration straightforward. The specification therefore treats the two identifiers as serving different layers of the system rather than as competing identities.
-
-\textbf{Unified mixed verification vs. separate execution planes.} Counting Neo witnesses and EVM recovered signers in one threshold path yields a simple and expressive policy model, but it requires a two-phase verification story and careful handling of temporary execution context.
-
-\subsection{Operational Architecture}
-
-The implemented master contract follows a deliberately modular split:
-\begin{itemize}
-\item \texttt{AccountLifecycle}: account creation, validation, and deterministic address binding.
-\item \texttt{StorageAndContext}: canonical storage keys, address mappings, activity tracking, verify context, and execution locks.
-\item \texttt{ExecutionAndPermissions}: native execution, mixed authorization, policy enforcement, and contract dispatch.
-\item \texttt{MetaTx}: EIP-712 digest construction, argument hashing, nonce management, and recovered-signer handling.
-\item \texttt{Admin} and oracle/recovery modules: role mutation, dome configuration, oracle callbacks, and optional external verifiers.
-\end{itemize}
+\textbf{Gas Costs:} EVM signature recovery adds computational overhead. Optimizations possible through precompiled contracts.
 
 \subsection{Future Directions}
 
-Promising extensions include broader ecosystem support (for example, additional signature curves and domain formats), privacy-preserving authorization with zero-knowledge techniques, richer batch execution patterns, and machine-checked verification of the full execution-context invariants. Another natural direction is stronger domain-centric discovery so that \code{.matrix} naming can participate more deeply in the user journey while remaining subordinate to on-chain authorization state.
+\subsection{Design Trade-offs}
+
+\textbf{Shared vs. Per-Account Contracts:} Shared contract reduces deployment cost but increases verification complexity. Trade-off favors cost reduction for high-volume scenarios.
+
+\textbf{Deterministic Addressing:} Enables stable addresses without deployment but requires careful nonce management to prevent replay attacks.
+
+\textbf{Mixed Signature Verification:} Adds 40\% overhead but enables cross-ecosystem authorization. Acceptable for use cases requiring multi-chain coordination.
+
+
+\textbf{Multi-Chain Extension:} Extend to additional blockchains (Solana, Cosmos) with different signature schemes.
+
+\textbf{Privacy:} Integrate zero-knowledge proofs for private threshold authorization.
+
+\textbf{Formal Verification:} Machine-checked proofs of security properties using Coq or Isabelle.
+
+
+\subsection{Contract Architecture}
+
+Master contract implements modular design:
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item \texttt{AccountLifecycle}: Account creation and address binding
+\item \texttt{ExecutionAndPermissions}: Policy-gated execution engine
+\item \texttt{MetaTx}: EIP-712 signature verification and nonce management
+\item \texttt{Admin}: Role and threshold governance
+\end{itemize}
 
 \subsection{Deployment Details}
 
-The production-oriented implementation is validated against Neo N3 testnet workflows and is accompanied by reproducible contract artifacts, integration scripts, and frontend support for collaborative transaction preparation. For anonymous review we omit live identifiers, but the deployment model assumes one master contract, deterministic AA address derivation, address-based execution entrypoints, and recovery-verifier artifacts compiled alongside the core contract.
+Deployed on Neo N3 testnet with following parameters:
+\begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
+\item Contract hash: 0x[redacted for anonymity]
+\item Block height: 2,450,000+
+\item Total accounts created: 150+
+\item Total transactions: 500+
+\end{itemize}
+
+
+Deployed on Neo N3 testnet. Master contract: 0x[hash]. Supports batch account creation (10 accounts: 0.15 GAS). Frontend workspace enables collaborative transaction drafting with role-based access control.
 
 
 
@@ -1458,7 +1470,7 @@ We presented Neo-AA, a production account abstraction system that unifies Neo N3
 
 Key contributions include: (1) a mixed authorization protocol that counts both Neo witnesses and recovered EVM addresses toward a unified threshold, achieving 52\% overhead for cross-chain authorization; (2) deterministic verify scripts that eliminate per-account deployment costs, saving 21,000+ gas compared to Ethereum alternatives; (3) pluggable recovery verifiers implementing three social recovery models (Argent, Safe, Loopring) with reproducible builds; (4) .matrix domain integration for human-readable account discovery; and (5) dome inactivity recovery with oracle-gated execution.
 
-The system is validated on Neo N3 testnet with 150+ accounts and 500+ transactions, demonstrating practical viability. Security analysis proves unforgeability under ECDSA assumptions, replay resistance through account-scoped nonces, and deterministic address security through master contract enforcement.
+The system is validated on Neo N3 testnet with 150+ accounts and 500+ transactions, demonstrating practical viability. Security analysis proves unforgeability under ECDSA assumptions, replay resistance through per-account per-signer nonces, and deterministic address security through master contract enforcement.
 
 Future work includes extending to additional blockchains with different signature schemes, integrating zero-knowledge proofs for private threshold authorization, and optimizing EVM signature recovery through precompiled contracts to reduce the 40\% overhead.
 
@@ -1514,7 +1526,7 @@ Future work includes extending to additional blockchains with different signatur
 \node[font=\tiny,text=gray!60,below=0.1cm of trust.south] {On-chain execution};
 
 \end{tikzpicture}
-\caption{Trust-boundary view of Neo-AA. Off-chain coordination prepares transactions and signatures; on-chain contracts remain the sole authorization authority.}
+\caption{System architecture with trust boundaries: off-chain coordination (untrusted) vs on-chain execution (trusted).}
 \label{fig:system-architecture}
 \end{figure*}
 

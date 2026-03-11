@@ -55,3 +55,13 @@ test('main layout exposes a bilingual language switcher', () => {
   assert.match(source, /中文/);
   assert.match(source, /setLocale/);
 });
+
+
+test('docs registry localizes the security audit page for Chinese readers', () => {
+  const registrySource = fs.readFileSync(path.resolve('src/features/docs/registry.js'), 'utf8');
+
+  assert.match(registrySource, /securityAudit/);
+  assert.match(registrySource, /Security Audit/);
+  assert.match(registrySource, /安全审计/);
+  assert.match(registrySource, /security-audit\.zh\.md/);
+});

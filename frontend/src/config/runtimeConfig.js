@@ -2,7 +2,7 @@ import { sanitizeHex } from '../utils/hex.js';
 
 export { sanitizeHex };
 
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '711c1899a3b7fa0e055ae0d17c9acfcd1bef6423';
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '5be915aea3ce85e4752d522632f0a9520e377aaf';
 export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
 export const DEFAULT_EXPLORER_BASE_URL = 'https://testnet.ndoras.com/transaction';

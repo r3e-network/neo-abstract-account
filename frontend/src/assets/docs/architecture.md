@@ -40,7 +40,7 @@ flowchart TD
   Auth -- Yes --> Pass[Verification succeeds]
 ```
 
-The hardened rule blocks direct proxy-signed external token transfers. Supported entrypoints include `executeByAddress`, `executeMetaTx`, and `executeMetaTxByAddress`.
+The hardened rule blocks direct proxy-signed external token transfers. The canonical runtime entrypoints are `executeUnified` and `executeUnifiedByAddress`.
 
 ## 3. Application Execution Pipeline
 

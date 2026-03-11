@@ -87,9 +87,9 @@ Hex:
 │ Phase 2: Application (Transaction executes)                │
 │ 阶段2：应用（交易执行）                                      │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. Script executes: AAContract.executeMetaTxByAddress(...) │
+│ 1. Script executes: AAContract.executeUnifiedByAddress(...) │
 │                                                             │
-│ 2. Calls ExecuteMetaTxInternal()                           │
+│ 2. Calls ExecuteUnifiedInternal()                           │
 │    ┌─────────────────────────────────────────────────┐    │
 │    │ EIP-712 Signature Verification                  │    │
 │    ├─────────────────────────────────────────────────┤    │
@@ -161,7 +161,7 @@ Hex:
     }
   ],
 
-  "script": "0c14...1400...",  // Calls: AAContract.executeMetaTxByAddress(...)
+  "script": "0c14...1400...",  // Calls: AAContract.executeUnifiedByAddress(...)
 
   "witnesses": [
     {
@@ -181,7 +181,7 @@ Hex:
 ### 脚本分解（十六进制 → 操作码）
 
 ```
-Script calls: AAContract.executeMetaTxByAddress(
+Script calls: AAContract.executeUnifiedByAddress(
   accountAddressScriptHash,
   evmPublicKeys[],      // Contains EVM public key
   targetContract,
@@ -217,7 +217,7 @@ Hex:
   13                       PACK
 
   0c 16 657865637574654d657461547842794164647265737320
-                           PUSH "executeMetaTxByAddress"
+                           PUSH "executeUnifiedByAddress"
   14 aaaa...bbbb           PUSH AA contract hash
   41 627d5b52              SYSCALL System.Contract.Call
 ```
@@ -248,9 +248,9 @@ Hex:
 │ Phase 2: Application (Transaction executes)                │
 │ 阶段2：应用（交易执行）                                      │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. Script executes: AAContract.executeMetaTxByAddress(...) │
+│ 1. Script executes: AAContract.executeUnifiedByAddress(...) │
 │                                                             │
-│ 2. Calls ExecuteMetaTxInternal()                           │
+│ 2. Calls ExecuteUnifiedInternal()                           │
 │    ┌─────────────────────────────────────────────────┐    │
 │    │ EIP-712 Signature Verification                  │    │
 │    ├─────────────────────────────────────────────────┤    │
@@ -301,15 +301,15 @@ Hex:
 
 | Transaction Type | Verification Phase | Application Phase | Signature Verification Method |
 |------------------|-------------------|-------------------|-------------------------------|
-| **Type 1: Pure Neo** | Verify() checks N3 witness via Runtime.CheckWitness() | Execute() checks N3 witness again | secp256r1 + SHA256 (Neo native) |
-| **Type 2: Pure EVM** | Relayer's witness only (no AA verification) | executeMetaTxByAddress() verifies EIP-712 signature | secp256k1 + Keccak256 (EVM) |
-| **Type 3: Mixed N3+EVM** | Relayer + N3 Admin witnesses verified | executeMetaTxByAddress() verifies EIP-712 + checks N3 witness | Both methods unified in CheckMixedSignatures() |
+| **Type 1: Pure Neo** | Verify() checks N3 witness via Runtime.CheckWitness() | ExecuteUnified() checks N3 witness again | secp256r1 + SHA256 (Neo native) |
+| **Type 2: Pure EVM** | Relayer's witness only (no AA verification) | executeUnifiedByAddress() verifies EIP-712 signature | secp256k1 + Keccak256 (EVM) |
+| **Type 3: Mixed N3+EVM** | Relayer + N3 Admin witnesses verified | executeUnifiedByAddress() verifies EIP-712 + checks N3 witness | Both methods unified in CheckMixedSignatures() |
 
 | 交易类型 | 验证阶段 | 应用阶段 | 签名验证方法 |
 |---------|---------|---------|-------------|
-| **类型1：纯 Neo** | Verify() 通过 Runtime.CheckWitness() 检查 N3 见证 | Execute() 再次检查 N3 见证 | secp256r1 + SHA256（Neo 原生） |
-| **类型2：纯 EVM** | 仅中继器见证（无 AA 验证） | executeMetaTxByAddress() 验证 EIP-712 签名 | secp256k1 + Keccak256（EVM） |
-| **类型3：混合 N3+EVM** | 中继器 + N3 管理员见证被验证 | executeMetaTxByAddress() 验证 EIP-712 + 检查 N3 见证 | 两种方法在 CheckMixedSignatures() 中统一 |
+| **类型1：纯 Neo** | Verify() 通过 Runtime.CheckWitness() 检查 N3 见证 | ExecuteUnified() 再次检查 N3 见证 | secp256r1 + SHA256（Neo 原生） |
+| **类型2：纯 EVM** | 仅中继器见证（无 AA 验证） | executeUnifiedByAddress() 验证 EIP-712 签名 | secp256k1 + Keccak256（EVM） |
+| **类型3：混合 N3+EVM** | 中继器 + N3 管理员见证被验证 | executeUnifiedByAddress() 验证 EIP-712 + 检查 N3 见证 | 两种方法在 CheckMixedSignatures() 中统一 |
 
 ---
 
@@ -371,19 +371,19 @@ const verificationScript = contractState.manifest.abi.methods
 **Method 2: Use frontend helper**
 **方法2：使用前端辅助函数**
 
-The frontend provides `buildExecuteMetaTxByAddressInvocation()` which constructs the entire transaction script automatically.
+The frontend provides `buildExecuteUnifiedByAddressInvocation()` which constructs the entire transaction script automatically.
 
-前端提供 `buildExecuteMetaTxByAddressInvocation()` 函数，自动构造整个交易脚本。
+前端提供 `buildExecuteUnifiedByAddressInvocation()` 函数，自动构造整个交易脚本。
 
 ---
 
-## Frontend Helper: buildExecuteMetaTxByAddressInvocation
-## 前端辅助函数：buildExecuteMetaTxByAddressInvocation
+## Frontend Helper: buildExecuteUnifiedByAddressInvocation
+## 前端辅助函数：buildExecuteUnifiedByAddressInvocation
 
 From `/home/neo/git/neo-abstract-account/frontend/src/features/operations/metaTx.js`:
 
 ```javascript
-export function buildExecuteMetaTxByAddressInvocation({
+export function buildExecuteUnifiedByAddressInvocation({
   aaContractHash,
   accountAddressScriptHash,
   evmPublicKeyHex,
@@ -397,7 +397,7 @@ export function buildExecuteMetaTxByAddressInvocation({
 } = {}) {
   return {
     scriptHash: sanitizeHex(aaContractHash),
-    operation: 'executeMetaTxByAddress',
+    operation: 'executeUnifiedByAddress',
     args: [
       { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
       { type: 'Array', value: [
@@ -438,7 +438,7 @@ const signature = await ethereum.request({
 });
 
 // 2. Build transaction invocation
-const invocation = buildExecuteMetaTxByAddressInvocation({
+const invocation = buildExecuteUnifiedByAddressInvocation({
   aaContractHash,
   accountAddressScriptHash,
   evmPublicKeyHex: recoveredPublicKey,
@@ -471,13 +471,13 @@ const tx = await relayer.submitTransaction(invocation);
 Verification Phase (Mempool)     Application Phase (Execution)
 验证阶段（内存池）                应用阶段（执行）
         │                                │
-        ├─ Pure Neo: Verify()            ├─ Execute()
+        ├─ Pure Neo: Verify()            ├─ ExecuteUnified()
         │  checks N3 witness             │  checks N3 witness again
         │                                │
-        ├─ Pure EVM: Relayer only        ├─ executeMetaTxByAddress()
+        ├─ Pure EVM: Relayer only        ├─ executeUnifiedByAddress()
         │  (no AA verification)          │  verifies EIP-712 signature
         │                                │
-        └─ Mixed: Relayer + N3           └─ executeMetaTxByAddress()
+        └─ Mixed: Relayer + N3           └─ executeUnifiedByAddress()
            witnesses verified               verifies EIP-712 + checks N3
 ```
 
@@ -557,7 +557,7 @@ Step 3: Transaction Construction
 ├─ Relayer creates transaction with:
 │  ├─ signers[0]: Relayer (pays gas)
 │  ├─ signers[1]: N3 Admin (provides N3 signature)
-│  ├─ script: executeMetaTxByAddress(...)
+│  ├─ script: executeUnifiedByAddress(...)
 │  ├─ witnesses[0]: Relayer's N3 signature
 │  └─ witnesses[1]: N3 Admin's N3 signature
 └─ EVM signature embedded in script parameters
@@ -570,7 +570,7 @@ Step 4: Mempool Validation (Verification Phase)
 
 Step 5: Execution (Application Phase)
 步骤5：执行（应用阶段）
-├─ Script calls executeMetaTxByAddress(...)
+├─ Script calls executeUnifiedByAddress(...)
 ├─ Contract verifies EIP-712 signature:
 │  ├─ Reconstructs typed data hash
 │  ├─ Recovers EVM address via secp256k1

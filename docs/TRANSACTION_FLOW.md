@@ -1,8 +1,8 @@
 # Neo Abstract Account Transaction Execution Flow
 # Neo 抽象账户交易执行流程
 
-## Complete Flow: From Verify to ExecuteMetaTx
-## 完整流程：从 Verify 到 ExecuteMetaTx
+## Complete Flow: From Verify to ExecuteUnified
+## 完整流程：从 Verify 到 ExecuteUnified
 
 ### Phase 1: Transaction Construction (Frontend/SDK)
 ### 阶段1：交易构造（前端/SDK）
@@ -31,10 +31,10 @@ const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature 
 **Step 2: Build Transaction Script**
 **步骤2：构造交易脚本**
 
-The transaction script is built to call `ExecuteMetaTxByAddress`:
+The transaction script is built to call `ExecuteUnifiedByAddress`:
 
 ```javascript
-const invocation = buildExecuteMetaTxByAddressInvocation({
+const invocation = buildExecuteUnifiedByAddressInvocation({
   aaContractHash,
   accountAddressScriptHash,
   evmPublicKeyHex: publicKey,
@@ -48,7 +48,7 @@ const invocation = buildExecuteMetaTxByAddressInvocation({
 });
 
 // This creates a script that calls:
-// AAContract.ExecuteMetaTxByAddress(
+// AAContract.ExecuteUnifiedByAddress(
 //   accountAddress,      // Hash160
 //   [publicKey],         // Array of ByteArray (uncompressed EVM public keys)
 //   targetContract,      // Hash160
@@ -169,19 +169,19 @@ Transaction Script:
   PUSH nonce
   PUSH deadline
   PUSH [signature]
-  PUSH "executeMetaTxByAddress"
+  PUSH "executeUnifiedByAddress"
   PUSH aaContractHash
   SYSCALL System.Contract.Call
 ```
 
-This calls: `AAContract.ExecuteMetaTxByAddress(...)`
+This calls: `AAContract.ExecuteUnifiedByAddress(...)`
 
-**Step 2: ExecuteMetaTx Verifies EVM Signatures**
-**步骤2：ExecuteMetaTx 验证 EVM 签名**
+**Step 2: ExecuteUnified Verifies EVM Signatures**
+**步骤2：ExecuteUnified 验证 EVM 签名**
 
 ```csharp
-// AbstractAccount.MetaTx.cs:90-103
-public static object ExecuteMetaTxByAddress(
+// AbstractAccount.ExecutionAndPermissions.cs / AbstractAccount.MetaTx.cs unified runtime path
+public static object ExecuteUnifiedByAddress(
     UInt160 accountAddress,
     List<ByteString> uncompressedPubKeys,  // EVM public keys
     UInt160 targetContract,
@@ -193,14 +193,14 @@ public static object ExecuteMetaTxByAddress(
     List<ByteString> signatures)           // EVM signatures
 {
     ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-    return ExecuteMetaTxInternal(accountId, uncompressedPubKeys, targetContract, 
+    return ExecuteUnified(accountId, targetContract, 
                                  method, args, argsHash, nonce, deadline, signatures);
 }
 ```
 
 
-**Step 3: ExecuteMetaTxInternal - EIP-712 Signature Verification**
-**步骤3：ExecuteMetaTxInternal - EIP-712 签名验证**
+**Step 3: ExecuteUnifiedInternal - EIP-712 Signature Verification**
+**步骤3：ExecuteUnifiedInternal - EIP-712 签名验证**
 
 ```csharp
 // AbstractAccount.MetaTx.cs:105-186
@@ -313,8 +313,8 @@ private static bool CheckMixedSignatures(
     {
         bool matched = false;
         
-        // 1. Check if role is an EVM signer (from ExecuteMetaTx)
-        // 检查角色是否为 EVM 签名者（来自 ExecuteMetaTx）
+        // 1. Check if role is an EVM signer (from ExecuteUnified)
+        // 检查角色是否为 EVM 签名者（来自 ExecuteUnified）
         if (verifiedSigners != null)
         {
             foreach (var signer in verifiedSigners)
@@ -355,15 +355,15 @@ private static bool CheckMixedSignatures(
 ## Complete Flow Summary
 ## 完整流程总结
 
-### The Key Connection: Transaction Script Bridges Verify and ExecuteMetaTx
-### 关键连接：交易脚本连接 Verify 和 ExecuteMetaTx
+### The Key Connection: Transaction Script Bridges Verify and ExecuteUnified
+### 关键连接：交易脚本连接 Verify 和 ExecuteUnified
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ PHASE 1: Transaction Construction (Frontend)                    │
 ├─────────────────────────────────────────────────────────────────┤
 │ 1. User signs EIP-712 with EVM wallet                          │
-│ 2. Build transaction script calling ExecuteMetaTxByAddress     │
+│ 2. Build transaction script calling ExecuteUnifiedByAddress     │
 │ 3. Add relayer's Neo witness (optional)                        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
@@ -380,9 +380,9 @@ private static bool CheckMixedSignatures(
 │ PHASE 3: Application Phase (Block Execution)                   │
 ├─────────────────────────────────────────────────────────────────┤
 │ Transaction Script Executes:                                   │
-│   PUSH params... → CALL ExecuteMetaTxByAddress                │
+│   PUSH params... → CALL ExecuteUnifiedByAddress                │
 │                              ↓                                  │
-│ ExecuteMetaTxInternal:                                         │
+│ ExecuteUnifiedInternal:                                         │
 │   ├─ Rebuild EIP-712 digest                                   │
 │   ├─ Verify EVM signatures (CryptoLib.VerifyWithECDsa)       │
 │   ├─ Recover EVM addresses → verifiedSigners[]               │
@@ -402,15 +402,15 @@ private static bool CheckMixedSignatures(
 ### Key Insights
 ### 关键要点
 
-1. **Verify and ExecuteMetaTx are SEPARATE phases**
-   **Verify 和 ExecuteMetaTx 是分离的阶段**
+1. **Verify and ExecuteUnified are SEPARATE phases**
+   **Verify 和 ExecuteUnified 是分离的阶段**
    - Verify runs in Verification phase (memory pool entry)
-   - ExecuteMetaTx runs in Application phase (block execution)
+   - ExecuteUnified runs in Application phase (block execution)
    - They are connected by the transaction script
 
 2. **Transaction Script is the Bridge**
    **交易脚本是桥梁**
-   - Script contains the call to ExecuteMetaTxByAddress
+   - Script contains the call to ExecuteUnifiedByAddress
    - Script parameters include EVM signatures and public keys
    - Script execution happens AFTER Verify passes
 
@@ -421,7 +421,7 @@ private static bool CheckMixedSignatures(
 
 4. **CheckMixedSignatures Unifies Both**
    **CheckMixedSignatures 统一两者**
-   - Counts EVM signatures from ExecuteMetaTx (verifiedSigners)
+   - Counts EVM signatures from ExecuteUnified (verifiedSigners)
    - Counts Neo witnesses from transaction (Runtime.CheckWitness)
    - Single threshold check for both signature types
 
