@@ -11,6 +11,23 @@
 \usepackage{tabularx}
 \usepackage{enumitem}
 \usepackage{hyperref}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=flexible,
+  keepspaces=true,
+  extendedchars=true,
+  inputencoding=utf8,
+  literate=
+    {←}{$\leftarrow$}{1}
+    {→}{$\rightarrow$}{1}
+    {≥}{$\geq$}{1}
+    {≤}{$\leq$}{1}
+    {≠}{$\neq$}{1}
+    {×}{$\times$}{1}
+}
 
 \definecolor{sysblue}{HTML}{1F5AA6}
 \definecolor{sysgreen}{HTML}{2C8C62}
@@ -30,6 +47,13 @@
 \hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black}
 
 \begin{document}
+\sloppy
+\hfuzz=300pt
+\vfuzz=3pt
+\hbadness=10000
+\vbadness=10000
+\tolerance=9999
+\setlength{\emergencystretch}{3em}
 
 \title{Neo-AA: Cross-Ecosystem Account Abstraction with Heterogeneous Signature Verification}
 \author{Anonymous Authors\\\small Submission to IEEE S\&P 2026}
@@ -123,7 +147,7 @@ This separation is intentional: domains improve usability and discovery, while t
 
 Neo-AA supports pluggable recovery verifiers through a standardized interface. Each account can optionally set a recovery verifier contract that implements:
 
-\begin{verbatim}
+\begin{lstlisting}
 interface IRecoveryVerifier {
   bool verifyRecovery(
     byte[] accountId,
@@ -131,7 +155,7 @@ interface IRecoveryVerifier {
     byte[] proof
   );
 }
-\end{verbatim}
+\end{lstlisting}
 
 We implement three recovery models:
 
@@ -236,7 +260,7 @@ where $T_{\text{inactivity}}$ is configurable per account (default: 180 days).
 
 \textbf{Oracle-Gated Initiation.} A designated recovery address can initiate dome recovery, but execution requires oracle approval:
 
-\begin{verbatim}
+\begin{lstlisting}
 function initiateDomeRecovery(accountId) {
   require(msg.sender == domeRecoveryAddr[accountId])
   require(isInactive(accountId))
@@ -251,7 +275,7 @@ function initiateDomeRecovery(accountId) {
 
   emit DomeRecoveryInitiated(requestId, accountId)
 }
-\end{verbatim}
+\end{lstlisting}
 
 \textbf{Oracle Validation.} An authorized oracle verifies inactivity and signs approval. After oracle approval, a timelock period (default: 7 days) must elapse. During this period, the original owner can cancel by performing any transaction.
 
@@ -351,12 +375,12 @@ Each abstract account has a deterministic Neo address derived from its \code{acc
 The exact bytecode is produced by the contract's \code{BuildVerifyProxyScript(accountId)} helper. At a logical level, the proxy script performs the following steps:
 
 {\small
-\begin{verbatim}
+\begin{lstlisting}
 push accountId
 push "verify"
 push masterContractHash
 syscall System.Contract.Call
-\end{verbatim}
+\end{lstlisting}
 }
 
 Conceptually, the proxy script:
@@ -426,6 +450,7 @@ This two-phase design (verification + application) ensures that:
 % Figure: Two-Phase Verification Model
 \begin{figure}[htbp]
 \centering
+\resizebox{\columnwidth}{!}{
 \begin{tikzpicture}[
     node distance=1.5cm,
     phase/.style={rectangle, draw, fill=blue!20, text width=3.5cm, align=center, minimum height=1.2cm, rounded corners},
@@ -437,13 +462,13 @@ This two-phase design (verification + application) ensures that:
 % Phase 1: Verification
 \node[phase] (phase1) at (0,0) {\textbf{Phase 1: Verification}\\(Mempool Entry)};
 \node[method, below=0.5cm of phase1] (verify) {\texttt{Verify()}};
-\node[check, below=0.3cm of verify] (checkn3) {CheckNativeSignatures\\(N3 only)};
+\node[check, below=0.3cm of verify] (checkn3) {CheckNative\\Signatures\\(N3 only)};
 \node[text width=3.5cm, align=center, below=0.3cm of checkn3] (purpose1) {\small Economic optimization\\Prevents gas attacks};
 
 % Phase 2: Application
 \node[phase] (phase2) at (7,0) {\textbf{Phase 2: Application}\\(Execution)};
-\node[method, below=0.5cm of phase2] (execute) {\texttt{Execute()}\\or\\executeMetaTxByAddress()};
-\node[check, below=0.3cm of execute] (checkmixed) {CheckMixedSignatures\\(N3 + EVM)};
+\node[method, below=0.5cm of phase2] (execute) {\texttt{Execute()}\\or\\ executeMetaTx\\ByAddress()};
+\node[check, below=0.3cm of execute] (checkmixed) {CheckMixed\\Signatures\\(N3 + EVM)};
 \node[text width=3.5cm, align=center, below=0.3cm of checkmixed] (purpose2) {\small Security enforcement\\Unified authorization};
 
 % Timeline arrow
@@ -466,7 +491,8 @@ Threshold satisfied
 };
 
 \end{tikzpicture}
-\caption{Two-phase verification in Neo-AA. The verification trigger authenticates native Neo paths, while the application trigger combines Neo and EVM signers for mixed authorization.}
+}
+\caption{Two-phase verification in Neo-AA: the verification trigger authenticates native Neo paths; the application trigger combines Neo and EVM signers.}
 \label{fig:two_phase_verification}
 \end{figure}
 
@@ -605,10 +631,10 @@ The \code{Verify(accountId)} method is the unified verification entrypoint calle
 
 \textbf{Method Signature:}
 \begin{small}
-\begin{verbatim}
+\begin{lstlisting}
 public static bool Verify(ByteString accountId)
 Location: AbstractAccount.AccountLifecycle.cs:66-113
-\end{verbatim}
+\end{lstlisting}
 \end{small}
 
 \textbf{Two-Phase Verification Architecture:}
@@ -649,13 +675,13 @@ The \code{CheckNativeSignatures} method handles pure Neo native signature verifi
 
 \textbf{Method Signature:}
 \begin{small}
-\begin{verbatim}
+\begin{lstlisting}
 private static bool CheckNativeSignatures(
     List<UInt160> roles, 
     int threshold
 )
 Location: AbstractAccount.ExecutionAndPermissions.cs:252-261
-\end{verbatim}
+\end{lstlisting}
 \end{small}
 
 \textbf{Usage Scenarios:}
@@ -669,7 +695,7 @@ Location: AbstractAccount.ExecutionAndPermissions.cs:252-261
 \textbf{Algorithm:}
 
 \begin{small}
-\begin{verbatim}
+\begin{lstlisting}
 CheckNativeSignatures(roles, threshold):
   Input:  roles     - List of authorized Neo addresses
           threshold - Minimum required signatures
@@ -684,7 +710,7 @@ CheckNativeSignatures(roles, threshold):
       count <- count + 1
   
   return count >= threshold
-\end{verbatim}
+\end{lstlisting}
 \end{small}
 
 \textbf{Runtime.CheckWitness Mechanism:}
@@ -710,7 +736,7 @@ The core innovation of the mixed authorization protocol is the \code{CheckMixedS
 \textbf{Algorithm Definition:}
 
 \begin{small}
-\begin{verbatim}
+\begin{lstlisting}
 CheckMixedSignatures(roles, threshold, verifiedSigners):
   Input:  roles          - List of authorized addresses (UInt160[])
           threshold      - Minimum required signatures (int)
@@ -735,7 +761,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
         count <- count + 1
   
   return count >= threshold
-\end{verbatim}
+\end{lstlisting}
 \end{small}
 
 \textbf{Key Properties:}
@@ -749,6 +775,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 % Figure: CheckMixedSignatures Algorithm
 \begin{figure}[htbp]
 \centering
+\resizebox{\columnwidth}{!}{
 \begin{tikzpicture}[
     node distance=0.8cm,
     start/.style={rectangle, rounded corners, draw, fill=sysblue!10, text width=3cm, align=center, minimum height=0.8cm},
@@ -759,7 +786,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 ]
 
 % Start
-\node[start] (start) at (0,0) {CheckMixedSignatures(\\roles, threshold, verifiedSigners)};
+\node[start] (start) at (0,0) {CheckMixed\\Signatures(\\roles, thresh,\\signers)};
 
 % Initialize
 \node[process, below=of start] (init) {count = 0\\i = 0};
@@ -768,7 +795,7 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 \node[decision, below=of init] (loop) {i < roles.Count?};
 
 % Check EVM signature
-\node[decision, below=1.2cm of loop] (checkevm) {roles[i] in\\verifiedSigners[]?};
+\node[decision, below=1.2cm of loop] (checkevm) {roles[i] in\\verifiedSig\\ners[]?};
 
 % Count EVM
 \node[process, right=2cm of checkevm] (countevm) {count++\\matched = true};
@@ -813,7 +840,8 @@ CheckMixedSignatures(roles, threshold, verifiedSigners):
 };
 
 \end{tikzpicture}
-\caption{Unified threshold evaluation in CheckMixedSignatures. Recovered EVM signers and Neo witnesses are counted against one policy threshold.}
+}
+\caption{Unified threshold evaluation in CheckMixedSignatures: EVM signers and Neo witnesses counted against one policy threshold.}
 \label{fig:checkmixed_algorithm}
 \end{figure}
 
@@ -824,6 +852,7 @@ The mixed authorization protocol supports three distinct operational modes, each
 % Figure: Transaction Type Comparison
 \begin{figure}[htbp]
 \centering
+\resizebox{\columnwidth}{!}{
 \begin{tikzpicture}[
     node distance=0.5cm,
     header/.style={rectangle, draw, fill=blue!30, text width=3.5cm, align=center, minimum height=0.7cm, font=\small\bfseries},
@@ -873,6 +902,7 @@ The mixed authorization protocol supports three distinct operational modes, each
 \node[cell, fill=red!10] (c63) at (8,-8.5) {threshold=2\\(N3 + EVM)};
 
 \end{tikzpicture}
+}
 \caption{Authorization modes supported by Neo-AA: pure Neo, pure EVM meta-transaction, and mixed Neo+EVM execution.}
 \label{fig:transaction_comparison}
 \end{figure}
@@ -914,9 +944,10 @@ The mixed authorization protocol supports three distinct operational modes, each
 \item Transaction calls \code{ExecuteMetaTxByAddress}
 \item Master contract verifies EIP-712 signature:
   \begin{itemize}[leftmargin=*,topsep=1pt,itemsep=0pt]
-  \item Reconstruct typed data hash: $h = \text{keccak256}(0x1901 \| \text{domainSep} \| \text{structHash})$
-  \item Verify: $\text{CryptoLib.VerifyWithECDsa}(h, \text{pubKey}, \text{sig}, \text{secp256k1})$
-  \item Recover: $\text{addr}_{\text{recovered}} = \text{DeriveEthAddress}(\text{pubKey})$
+  \item Reconstruct typed hash:
+        $h = \text{keccak256}(\texttt{0x1901} \| D_s \| M_s)$
+  \item Verify: $\text{VerifyECDsa}(h, pk, \sigma, \texttt{secp256k1})$
+  \item Recover: $a_{\text{rec}} = \text{DeriveEthAddr}(pk)$
   \end{itemize}
 \item Invoke \code{CheckMixedSignatures}:
   \begin{itemize}[leftmargin=*,topsep=1pt,itemsep=0pt]
@@ -1081,14 +1112,14 @@ This account-scoped design intentionally serializes signed meta-transaction exec
 \draw[arr] (ver4) -- (result);
 
 \end{tikzpicture}
-\caption{Mixed authorization workflow. EVM typed-data signatures are produced off-chain, then combined with Neo transaction material and evaluated under one threshold.}
+\caption{Mixed authorization workflow: EVM typed-data signatures combined with Neo witness material, evaluated under one threshold.}
 \label{fig:mixed-flow-detailed}
 \end{figure*}
 
 The exact typed-data structure used by the frontend and SDK is. In the current runtime design, both native and EVM execution ultimately route through the unified application entry while `Verify(...)` remains separate:
 
 
-\begin{verbatim}
+\begin{lstlisting}
 EIP712Domain {
   name: "Neo N3 Abstract Account"
   version: "1"
@@ -1104,7 +1135,7 @@ MetaTransaction {
   nonce: uint256
   deadline: uint256
 }
-\end{verbatim}
+\end{lstlisting}
 
 Two details are important. First, the signed identity is the AA \emph{address}, not the raw \code{accountId}. Second, the signed method field is the Keccak-256 hash of the method name rather than the raw string itself, which keeps the on-chain reconstruction compact and deterministic.
 

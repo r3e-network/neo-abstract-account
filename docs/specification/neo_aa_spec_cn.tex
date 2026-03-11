@@ -12,7 +12,6 @@
 \usepackage{tabularx}
 \usepackage{enumitem}
 \usepackage{hyperref}
-\sloppy
 
 \definecolor{sysblue}{HTML}{1F5AA6}
 \definecolor{sysgreen}{HTML}{2C8C62}
@@ -60,6 +59,13 @@
   {}
 
 \begin{document}
+\sloppy
+\hfuzz=300pt
+\vfuzz=3pt
+\hbadness=10000
+\vbadness=10000
+\tolerance=9999
+\setlength{\emergencystretch}{3em}
 
 \title{Neo-AA：跨生态系统账户抽象\\与异构签名验证}
 \author{R3E Network \\ \small 面向 Neo 生态系统}
