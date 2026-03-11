@@ -14,12 +14,25 @@
 \contentsline {subsection}{\numberline {2.4}混合授权交易结构}{8}{subsection.2.4}%
 \contentsline {section}{\numberline {3}混合授权协议}{8}{section.3}%
 \contentsline {subsection}{\numberline {3.1}协议概述}{8}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}两阶段验证模型}{9}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.2}核心验证方法}{9}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Verify 方法：两阶段验证模型}{9}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}CheckNativeSignatures：纯 Neo 签名验证}{9}{subsubsection.3.2.2}%
 \contentsline {subsection}{\numberline {3.3}CheckMixedSignatures：统一阈值算法}{9}{subsection.3.3}%
-\contentsline {section}{\numberline {4}安全分析}{10}{section.4}%
-\contentsline {subsection}{\numberline {4.1}威胁模型}{10}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}形式安全定义}{10}{subsection.4.2}%
-\contentsline {section}{\numberline {5}相关工作}{10}{section.5}%
-\contentsline {subsection}{\numberline {5.1}账户抽象系统}{10}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}定位}{10}{subsection.5.2}%
-\contentsline {section}{\numberline {6}结论}{10}{section.6}%
+\contentsline {subsection}{\numberline {3.4}EIP-712 签名验证详情}{11}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}状态管理与随机数机制}{11}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}EIP-712 类型化数据结构}{11}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}验证算法}{12}{subsection.3.7}%
+\contentsline {section}{\numberline {4}安全分析}{12}{section.4}%
+\contentsline {subsection}{\numberline {4.1}威胁模型}{12}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}形式安全定义}{13}{subsection.4.2}%
+\contentsline {section}{\numberline {5}相关工作}{13}{section.5}%
+\contentsline {subsection}{\numberline {5.1}账户抽象系统}{13}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}阈值授权与跨生态系统授权}{14}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Neo-AA 的定位}{14}{subsection.5.3}%
+\contentsline {section}{\numberline {6}讨论}{14}{section.6}%
+\contentsline {subsection}{\numberline {6.1}局限性}{14}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}设计权衡}{14}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}运营架构}{15}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}未来方向}{15}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}部署详情}{15}{subsection.6.5}%
+\contentsline {section}{\numberline {7}结论}{16}{section.7}%
