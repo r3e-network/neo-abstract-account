@@ -38,7 +38,7 @@ test('resolveAbstractAccountHash falls back for invalid values', () => {
 });
 
 test('default abstract account hash tracks the hardened verified deployment', () => {
-  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '5be915aea3ce85e4752d522632f0a9520e377aaf');
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '0466fa7e8fe548480d7978d2652625d4a22589a6');
 });
 
 test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
@@ -84,6 +84,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
 
   assert.deepEqual(config, {
     abstractAccountHash: '1111111111111111111111111111111111111111',
+    abstractAccountDomain: 'aa.morpheus.neo',
     rpcUrl: 'https://rpc.example.org',
     supabaseUrl: '',
     supabaseAnonKey: '',
@@ -94,7 +95,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
     matrixContractHash: DEFAULT_MATRIX_CONTRACT_HASH,
     n3IndexApiBaseUrl: DEFAULT_N3INDEX_API_BASE_URL,
-    n3IndexNetwork: 'testnet',
+    n3IndexNetwork: 'mainnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
     web3AuthClientId: '',
     web3AuthProjectName: DEFAULT_WEB3AUTH_PROJECT_NAME,
@@ -106,6 +107,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     web3AuthEmailLoginEnabled: true,
     web3AuthSmsLoginEnabled: true,
     neoDidProvider: DEFAULT_DID_PROVIDER,
+    neoDidDomain: 'neodid.morpheus.neo',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
     morpheusNeoDidEndpoint: '/api/morpheus-neodid',

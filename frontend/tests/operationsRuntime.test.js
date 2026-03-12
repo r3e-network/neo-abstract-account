@@ -17,6 +17,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
 
   assert.deepEqual(config, {
     abstractAccountHash: '1111111111111111111111111111111111111111',
+    abstractAccountDomain: 'aa.morpheus.neo',
     rpcUrl: 'https://rpc.example.org',
     supabaseUrl: 'https://example.supabase.co',
     supabaseAnonKey: 'public-anon-key',
@@ -24,10 +25,10 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     relayRpcUrl: 'https://rpc.example.org',
     relayMetaEnabled: false,
     relayRawEnabled: false,
-    explorerBaseUrl: 'https://testnet.ndoras.com/transaction',
+    explorerBaseUrl: 'https://neotube.io/tx/',
     matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
     n3IndexApiBaseUrl: 'https://api.n3index.dev',
-    n3IndexNetwork: 'testnet',
+    n3IndexNetwork: 'mainnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
     web3AuthClientId: '',
     web3AuthProjectName: 'DID.Morpheus',
@@ -39,6 +40,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     web3AuthEmailLoginEnabled: true,
     web3AuthSmsLoginEnabled: true,
     neoDidProvider: 'web3auth',
+    neoDidDomain: 'neodid.morpheus.neo',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
     morpheusNeoDidEndpoint: '/api/morpheus-neodid',

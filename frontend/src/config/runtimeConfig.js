@@ -2,13 +2,13 @@ import { sanitizeHex } from '../utils/hex.js';
 
 export { sanitizeHex };
 
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '5be915aea3ce85e4752d522632f0a9520e377aaf';
-export const DEFAULT_RPC_URL = 'https://testnet1.neo.coz.io:443';
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '0466fa7e8fe548480d7978d2652625d4a22589a6';
+export const DEFAULT_RPC_URL = 'https://mainnet1.neo.coz.io:443';
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
-export const DEFAULT_EXPLORER_BASE_URL = 'https://testnet.ndoras.com/transaction';
+export const DEFAULT_EXPLORER_BASE_URL = 'https://neotube.io/tx/';
 export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b60a75';
 export const DEFAULT_N3INDEX_API_BASE_URL = 'https://api.n3index.dev';
-export const DEFAULT_N3INDEX_NETWORK = 'testnet';
+export const DEFAULT_N3INDEX_NETWORK = 'mainnet';
 export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
 export const DEFAULT_WEB3AUTH_NETWORK = 'sapphire_devnet';
 export const DEFAULT_WEB3AUTH_CHAIN_NAMESPACE = 'eip155';
@@ -16,6 +16,8 @@ export const DEFAULT_WEB3AUTH_CHAIN_ID = '0x1';
 export const DEFAULT_WEB3AUTH_RPC_TARGET = 'https://rpc.ankr.com/eth';
 export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
 export const DEFAULT_DID_PROVIDER = 'web3auth';
+export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'aa.morpheus.neo';
+export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -57,6 +59,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     abstractAccountHash: resolveAbstractAccountHash(
       env.VITE_AA_HASH || env.VITE_ABSTRACT_ACCOUNT_HASH,
       DEFAULT_ABSTRACT_ACCOUNT_HASH
+    ),
+    abstractAccountDomain: resolveOptionalUrl(
+      env.VITE_AA_DOMAIN || env.VITE_ABSTRACT_ACCOUNT_DOMAIN,
+      DEFAULT_ABSTRACT_ACCOUNT_DOMAIN
     ),
     rpcUrl: resolveRpcUrl(
       env.VITE_AA_RPC_URL || env.VITE_NEO_RPC_URL,
@@ -141,6 +147,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     neoDidProvider: resolveOptionalUrl(
       env.VITE_NEODID_PROVIDER,
       DEFAULT_DID_PROVIDER
+    ),
+    neoDidDomain: resolveOptionalUrl(
+      env.VITE_NEODID_DOMAIN,
+      DEFAULT_NEODID_DOMAIN
     ),
     didVerificationEndpoint: resolveOptionalUrl(
       env.VITE_DID_VERIFICATION_ENDPOINT,

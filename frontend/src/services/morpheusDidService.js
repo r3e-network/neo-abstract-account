@@ -259,7 +259,7 @@ class MorpheusDidService {
       ...subjectPatch,
       disposable_account: `0x${normalizeScriptHash(executor)}`,
       action_id: trim(actionId),
-      callback_encoding: 'neo_n3_action_v1',
+      callback_encoding: 'neo_n3_action_v3',
     });
   }
 
@@ -273,7 +273,7 @@ class MorpheusDidService {
       toByteArrayParam(accountIdHex),
       toStringParam(provider),
       toHash160Param(normalizeScriptHash(newOwner)),
-      toIntegerParam(expiresAt),
+      toStringParam(String(expiresAt)),
       toStringParam(subjectPatch.encrypted_params),
     ];
     const result = await walletService.invoke({
