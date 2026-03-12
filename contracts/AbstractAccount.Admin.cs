@@ -485,6 +485,7 @@ namespace AbstractAccount
         private static void AssertUniqueAccounts(Neo.SmartContract.Framework.List<UInt160>? accounts)
         {
             if (accounts == null) return;
+            ExecutionEngine.Assert(accounts.Count <= 20, "Too many role accounts");
             for (int i = 0; i < accounts.Count; i++)
             {
                 UInt160 current = accounts[i];
