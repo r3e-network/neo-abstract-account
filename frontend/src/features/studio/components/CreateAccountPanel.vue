@@ -7,8 +7,14 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="space-y-2">
           <label class="block text-sm font-semibold text-slate-300">.matrix Domain (optional)</label>
-          <input v-model="createForm.matrixDomain" type="text" class="w-full rounded-lg border border-ata-border py-2.5 px-4 text-sm text-slate-300 focus:border-ata-green focus:ring-ata-green bg-ata-dark" placeholder="alice.matrix" />
-          <p class="mt-1 text-xs text-slate-400">Register a memorable .matrix name in the same transaction and later discover your Abstract Accounts through that domain.</p>
+          <div class="flex rounded-lg border border-ata-border overflow-hidden bg-ata-dark focus-within:border-ata-green focus-within:ring-1 focus-within:ring-ata-green transition-all">
+            <input v-model="createForm.matrixDomain" type="text" class="flex-1 bg-transparent py-2.5 px-4 text-sm text-slate-300 border-none focus:ring-0" placeholder="alice" />
+            <span class="flex items-center px-3 bg-ata-panel border-l border-ata-border text-slate-400 text-sm font-mono select-none">.matrix</span>
+            <button type="button" @click="checkMatrixDomain" class="bg-ata-blue/10 hover:bg-ata-blue/20 text-ata-blue px-4 text-xs font-bold uppercase tracking-wider transition-colors border-l border-ata-border" :disabled="!createForm.matrixDomain">Check</button>
+          </div>
+          <p class="mt-1 text-xs" :class="matrixCheckResult?.available ? 'text-ata-green' : (matrixCheckResult?.error ? 'text-rose-400' : 'text-slate-400')">
+            {{ matrixCheckResult?.message || 'Register a memorable name in the same transaction.' }}
+          </p>
         </div>
 
         <div class="space-y-2">
@@ -133,6 +139,8 @@ const {
   generateUUID,
   addRow,
   removeRow,
-  createAccount
+  createAccount,
+  checkMatrixDomain,
+  matrixCheckResult
 } = studio;
 </script>

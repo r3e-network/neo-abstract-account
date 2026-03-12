@@ -10,9 +10,13 @@
           <input
             v-model="permissionsForm.accountAddress"
             type="text"
+            list="loaded-permissions-accounts"
             class="input-field flex-1 font-mono text-sm py-2.5 px-4 bg-ata-dark"
             placeholder="N..."
           />
+          <datalist id="loaded-permissions-accounts">
+            <option v-for="addr in autoLoadedAccounts" :key="addr" :value="addr" />
+          </datalist>
         </div>
         <p class="mt-2 text-xs text-slate-400">Required for all actions below.</p>
       </div>
@@ -118,6 +122,7 @@ const {
   permissionsForm,
   permissionsBusy,
   canManagePermissions,
+  autoLoadedAccounts,
   setVerifierContractByAddress,
   setWhitelistModeByAddress,
   updateWhitelistByAddress,

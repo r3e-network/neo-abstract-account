@@ -125,7 +125,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(admins != null && admins.Count > 0, "Admins are mandatory");
             Neo.SmartContract.Framework.List<UInt160> validatedAdmins = admins!;
             AssertUniqueAccounts(validatedAdmins);
-            ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold > 0, "Invalid threshold");
+            ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold >= 0, "Invalid threshold");
 
             Neo.SmartContract.Framework.List<UInt160> oldAdmins = GetAdmins(accountId);
             for (int i = 0; i < oldAdmins.Count; i++)
