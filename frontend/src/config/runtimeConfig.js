@@ -10,6 +10,12 @@ export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b
 export const DEFAULT_N3INDEX_API_BASE_URL = 'https://api.n3index.dev';
 export const DEFAULT_N3INDEX_NETWORK = 'testnet';
 export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
+export const DEFAULT_WEB3AUTH_NETWORK = 'sapphire_devnet';
+export const DEFAULT_WEB3AUTH_CHAIN_NAMESPACE = 'eip155';
+export const DEFAULT_WEB3AUTH_CHAIN_ID = '0x1';
+export const DEFAULT_WEB3AUTH_RPC_TARGET = 'https://rpc.ankr.com/eth';
+export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
+export const DEFAULT_DID_PROVIDER = 'web3auth';
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -97,6 +103,68 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     neoNnsContractHash: resolveAbstractAccountHash(
       env.VITE_AA_NEO_NNS_CONTRACT_HASH || env.VITE_NEO_NNS_CONTRACT_HASH,
       DEFAULT_NEO_NNS_CONTRACT_HASH
+    ),
+    web3AuthClientId: resolveOptionalToken(
+      env.VITE_WEB3AUTH_CLIENT_ID
+    ),
+    web3AuthProjectName: resolveOptionalUrl(
+      env.VITE_WEB3AUTH_PROJECT_NAME,
+      DEFAULT_WEB3AUTH_PROJECT_NAME
+    ),
+    web3AuthNetwork: resolveOptionalUrl(
+      env.VITE_WEB3AUTH_NETWORK,
+      DEFAULT_WEB3AUTH_NETWORK
+    ),
+    web3AuthChainNamespace: resolveOptionalUrl(
+      env.VITE_WEB3AUTH_CHAIN_NAMESPACE,
+      DEFAULT_WEB3AUTH_CHAIN_NAMESPACE
+    ),
+    web3AuthChainId: resolveOptionalUrl(
+      env.VITE_WEB3AUTH_CHAIN_ID,
+      DEFAULT_WEB3AUTH_CHAIN_ID
+    ),
+    web3AuthRpcTarget: resolveOptionalUrl(
+      env.VITE_WEB3AUTH_RPC_TARGET,
+      DEFAULT_WEB3AUTH_RPC_TARGET
+    ),
+    web3AuthRedirectUrl: resolveOptionalUrl(
+      env.VITE_WEB3AUTH_REDIRECT_URL
+    ),
+    web3AuthEmailLoginEnabled: resolveOptionalBoolean(
+      env.VITE_WEB3AUTH_EMAIL_LOGIN_ENABLED,
+      true
+    ),
+    web3AuthSmsLoginEnabled: resolveOptionalBoolean(
+      env.VITE_WEB3AUTH_SMS_LOGIN_ENABLED,
+      true
+    ),
+    neoDidProvider: resolveOptionalUrl(
+      env.VITE_NEODID_PROVIDER,
+      DEFAULT_DID_PROVIDER
+    ),
+    didVerificationEndpoint: resolveOptionalUrl(
+      env.VITE_DID_VERIFICATION_ENDPOINT,
+      '/api/did-verify'
+    ),
+    didNotificationEndpoint: resolveOptionalUrl(
+      env.VITE_DID_NOTIFICATION_ENDPOINT,
+      '/api/did-notify'
+    ),
+    morpheusNeoDidEndpoint: resolveOptionalUrl(
+      env.VITE_MORPHEUS_NEODID_ENDPOINT,
+      '/api/morpheus-neodid'
+    ),
+    morpheusOracleKeyEndpoint: resolveOptionalUrl(
+      env.VITE_MORPHEUS_ORACLE_KEY_ENDPOINT,
+      '/api/morpheus-oracle-public-key'
+    ),
+    didNotificationEmailEnabled: resolveOptionalBoolean(
+      env.VITE_DID_NOTIFICATION_EMAIL_ENABLED,
+      true
+    ),
+    didNotificationSmsEnabled: resolveOptionalBoolean(
+      env.VITE_DID_NOTIFICATION_SMS_ENABLED,
+      true
     ),
   };
 }

@@ -37,12 +37,14 @@ const timestamp = computed(() => banner.value.timestamp);
 const toneClass = computed(() => {
   if (banner.value.tone === 'relay') return 'border-ata-green/30 bg-ata-green/10';
   if (banner.value.tone === 'client') return 'border-ata-blue/30 bg-ata-blue/10';
+  if (banner.value.tone === 'identity') return 'border-sky-500/30 bg-sky-500/10';
   return 'border-amber-500/30 bg-amber-500/10';
 });
 
 const titleToneClass = computed(() => {
   if (banner.value.tone === 'relay') return 'text-ata-green';
   if (banner.value.tone === 'client') return 'text-ata-blue';
+  if (banner.value.tone === 'identity') return 'text-sky-300';
   return 'text-amber-400';
 });
 </script>

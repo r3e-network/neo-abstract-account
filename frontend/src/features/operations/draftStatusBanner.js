@@ -1,5 +1,12 @@
 const EVENT_TO_TONE = {
   draft_created: 'draft',
+  did_bound: 'identity',
+  did_notice_sent: 'identity',
+  recovery_requested: 'identity',
+  recovery_finalized: 'identity',
+  recovery_cancelled: 'identity',
+  proxy_session_requested: 'identity',
+  proxy_session_revoked: 'identity',
   relay_preflight: 'relay',
   broadcast_client: 'client',
   broadcast_relay: 'relay',
@@ -7,6 +14,13 @@ const EVENT_TO_TONE = {
 
 const EVENT_TO_LABEL = {
   draft_created: 'Draft Created',
+  did_bound: 'DID Bound',
+  did_notice_sent: 'Recovery Notice Sent',
+  recovery_requested: 'Recovery Requested',
+  recovery_finalized: 'Recovery Finalized',
+  recovery_cancelled: 'Recovery Cancelled',
+  proxy_session_requested: 'Private Session Requested',
+  proxy_session_revoked: 'Private Session Revoked',
   relay_preflight: 'Relay Checked',
   broadcast_client: 'Client Broadcast',
   broadcast_relay: 'Relay Submitted',

@@ -18,10 +18,12 @@
   ],
   "scripts": {
     "test": "node --test tests/*.unit.test.js",
+    "testnet:check:readiness": "node tests/testnet_readiness.js",
     "testnet:validate": "bash ./run_testnet_validation_suite.sh",
     "testnet:validate:dry-run": "bash ./run_testnet_validation_suite.sh --dry-run",
     "testnet:validate:threshold2": "node tests/aa_testnet_threshold2_validate.js",
     "testnet:validate:custom-verifier": "node tests/aa_testnet_custom_verifier_validate.js",
+    "testnet:validate:morpheus-verifier": "node tests/aa_testnet_morpheus_verifier_validate.js",
     "testnet:validate:dome-oracle": "node tests/aa_testnet_dome_oracle_validate.js",
     "testnet:validate:concurrency": "node tests/aa_testnet_concurrency_validate.js",
     "testnet:validate:approve-allowance": "node tests/aa_testnet_approve_allowance_validate.js",

@@ -8,6 +8,9 @@
           <h1 class="text-3xl font-extrabold tracking-tight text-white font-outfit">Load, compose, sign, and broadcast</h1>
         </div>
         <div class="flex flex-wrap gap-3">
+          <button v-if="didConnection.isConfigured.value" class="btn-secondary" @click="connectDidAction">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm8 0c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm-8 8c0 1.657-1.79 3-4 3S4 20.657 4 19m8 0c0 1.657 1.79 3 4 3s4-1.343 4-3"></path></svg> Connect DID
+          </button>
           <button class="btn-secondary" @click="connectNeoWallet">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Connect Neo Wallet
           </button>
@@ -33,7 +36,11 @@
 
       <DraftStatusBanner v-if="workspace.operationBody.value || workspace.share.value.draftId || activityItems.length > 0" class="mb-8 rounded-xl border-slate-700/50 shadow-lg" :status="workspace.share.value.status" :activity="activityItems" />
 
-      <div class="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div class="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
+          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">DID</p>
+          <p class="text-sm text-white font-semibold truncate">{{ didLabel }}</p>
+        </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
           <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Neo Wallet</p>
           <p class="text-sm text-white font-semibold truncate">{{ neoWalletLabel }}</p>
@@ -57,6 +64,15 @@
           </div>
         </div>
       </div>
+
+      <DidIdentityPanel
+        class="mb-8"
+        :aa-contract-hash="getAbstractAccountHash()"
+        :account-address-script-hash="accountAddressScriptHash"
+        :neo-wallet-address="walletService.address"
+        @status="handleDidStatus"
+        @activity="handleDidActivity"
+      />
 
       <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="space-y-6">
@@ -168,6 +184,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/i18n';
 import { useWalletConnection } from '@/composables/useWalletConnection.js';
+import { useDidConnection } from '@/composables/useDidConnection.js';
 import { OPERATIONS_RUNTIME } from '@/config/operationsRuntime.js';
 import { createDraftRecord, createDraftStore } from '@/features/operations/drafts.js';
 import { buildDraftApprovalTypedData, buildDraftExportBundle, buildRelayPayloadOptions, buildStagedTransactionBody, executeBroadcast, resolveRelayPayloadMode } from '@/features/operations/execution.js';
@@ -193,6 +210,7 @@ import ActivitySidebar from './ActivitySidebar.vue';
 import BroadcastOptionsPanel from './BroadcastOptionsPanel.vue';
 import DraftStatusBanner from './DraftStatusBanner.vue';
 import DraftSummaryStrip from './DraftSummaryStrip.vue';
+import DidIdentityPanel from './DidIdentityPanel.vue';
 import LoadAccountPanel from './LoadAccountPanel.vue';
 import OperationComposerPanel from './OperationComposerPanel.vue';
 import RelayPreflightPanel from './RelayPreflightPanel.vue';
@@ -203,6 +221,7 @@ const { t } = useI18n();
 const workspace = createOperationsWorkspace();
 const draftStore = createDraftStore();
 const walletConnection = useWalletConnection();
+const didConnection = useDidConnection();
 const preferences = createOperationsPreferences();
 const presetOptions = OPERATION_PRESETS;
 
@@ -278,6 +297,7 @@ const draftCandidate = computed(() => buildOperationFromPreset({
 
 const composerSummary = computed(() => buildPresetSummary(draftCandidate.value));
 const signerProgress = computed(() => summarizeSignerProgress(workspace.signerRequirements.value, workspace.signatures.value));
+const didLabel = computed(() => didConnection.isConnected.value ? didConnection.shortDid.value : (didConnection.isConfigured.value ? 'available' : 'not configured'));
 const neoWalletLabel = computed(() => walletConnection.isConnected.value ? walletService.address : 'not connected');
 const evmWalletLabel = computed(() => evmAddress.value || 'not connected');
 const shareUrl = computed(() => {
@@ -489,6 +509,15 @@ async function appendActivity(event) {
   } catch (_) {}
 }
 
+function handleDidStatus(message) {
+  statusMessage.value = String(message || '').trim();
+}
+
+async function handleDidActivity(event) {
+  if (!event) return;
+  await appendActivity(createActivityEvent(event));
+}
+
 function syncSignerRequirements() {
   if (!workspace.account.value.accountAddressScriptHash && !walletService.address && !evmAddress.value) {
     workspace.setSignerRequirements([]);
@@ -507,6 +536,15 @@ async function connectNeoWallet() {
     statusMessage.value = `Neo wallet connected: ${walletService.address}`;
   } catch {
     statusMessage.value = 'Neo wallet connection failed.';
+  }
+}
+
+async function connectDidAction() {
+  try {
+    const profile = await didConnection.connectDid();
+    statusMessage.value = `DID connected: ${profile.did}`;
+  } catch {
+    statusMessage.value = 'DID connection failed.';
   }
 }
 

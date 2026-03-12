@@ -31,3 +31,5 @@ mkdir -p "$OUT_DIR"
 compile_one ArgentRecoveryVerifier ArgentRecoveryVerifier.Fixed.cs
 compile_one SafeRecoveryVerifier SafeRecoveryVerifier.Fixed.cs
 compile_one LoopringRecoveryVerifier LoopringRecoveryVerifier.Fixed.cs
+compile_one MorpheusSocialRecoveryVerifier MorpheusSocialRecoveryVerifier.Fixed.cs
+compile_one MorpheusProxySessionVerifier MorpheusProxySessionVerifier.Fixed.cs

@@ -40,3 +40,5 @@
 - `docs/WORKFLOWS.zh-CN.md`
 - `docs/DATA_FLOW.zh-CN.md`
 - `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md`
+- `docs/MORPHEUS_SOCIAL_RECOVERY.md`
+- `docs/MORPHEUS_PRIVATE_ACTIONS.md`

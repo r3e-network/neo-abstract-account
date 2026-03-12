@@ -19,3 +19,18 @@ The current validated recovery verifier deployments are recorded in:
 - `contracts/recovery/README.md`
 - `contracts/recovery/DEPLOYMENT.md`
 - `contracts/recovery/PRE_DEPLOYMENT_CHECKLIST.md`
+- `docs/MORPHEUS_SOCIAL_RECOVERY.md`
+- `docs/MORPHEUS_PRIVATE_ACTIONS.md`
+
+## Morpheus verifier validation
+
+For the unified Morpheus verifier path, use:
+
+```bash
+cd sdk/js
+export TEST_WIF="<your-testnet-wif>"
+export AA_HASH_TESTNET="<your-aa-testnet-hash>"
+export MORPHEUS_ORACLE_HASH_TESTNET="<your-morpheus-oracle-hash>"
+export MORPHEUS_VERIFIER_PUBKEY_TESTNET="<your-morpheus-verifier-pubkey>"
+npm run testnet:validate:morpheus-verifier
+```

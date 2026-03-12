@@ -101,6 +101,7 @@ function emitActivityAction(item, action) {
 }
 
 function toneClass(tone) {
+  if (tone === 'identity') return 'bg-sky-500/10 text-sky-300 border border-sky-500/30';
   if (tone === 'signature') return 'bg-ata-blue/10 text-ata-blue border border-ata-blue/30';
   if (tone === 'relay') return 'bg-ata-green/10 text-ata-green border border-ata-green/30';
   if (tone === 'broadcast') return 'bg-rose-500/10 text-rose-400 border border-rose-500/30';

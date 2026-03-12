@@ -226,12 +226,11 @@ async function main() {
     [{ account: owner.scriptHash, scopes: tx.WitnessScope.CalledByEntry }]
   );
   summary.simulations.push({
-    name: 'owner-only direct admin mutation after owner removed',
+    name: 'owner direct admin mutation via custom verifier',
     state: ownerOnlyMutation.state,
     exception: ownerOnlyMutation.exception || null,
   });
-  check('owner-only direct admin mutation faults after owner removed', ownerOnlyMutation.state === 'FAULT', ownerOnlyMutation.exception || 'expected FAULT');
-  check('owner-only direct admin mutation is unauthorized admin', String(ownerOnlyMutation.exception || '').includes('Unauthorized admin'), ownerOnlyMutation.exception || '');
+  check('custom verifier authorizes direct admin mutation after native owner removal', ownerOnlyMutation.state === 'HALT', ownerOnlyMutation.exception || 'expected HALT');
 
   const allowedCustomVerifierExec = await simulate(
     aaHash,

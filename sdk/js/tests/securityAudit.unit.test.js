@@ -22,6 +22,8 @@ test('recovery verifier artifacts expose both verify and verifyMetaTx for AA int
     'contracts/recovery/compiled/ArgentRecoveryVerifier.manifest.json',
     'contracts/recovery/compiled/SafeRecoveryVerifier.manifest.json',
     'contracts/recovery/compiled/LoopringRecoveryVerifier.manifest.json',
+    'contracts/recovery/compiled/MorpheusSocialRecoveryVerifier.manifest.json',
+    'contracts/recovery/compiled/MorpheusProxySessionVerifier.manifest.json',
   ];
 
   for (const manifest of manifests) {
@@ -36,6 +38,7 @@ test('recovery verifier source uses ByteString account ids at the wallet verifie
     'contracts/recovery/ArgentRecoveryVerifier.Fixed.cs',
     'contracts/recovery/SafeRecoveryVerifier.Fixed.cs',
     'contracts/recovery/LoopringRecoveryVerifier.Fixed.cs',
+    'contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs',
   ];
 
   for (const file of files) {
@@ -50,6 +53,7 @@ test('recovery setup paths require owner authorization and reject blind reinitia
     ['contracts/recovery/ArgentRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
     ['contracts/recovery/SafeRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
     ['contracts/recovery/LoopringRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
+    ['contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
   ];
 
   for (const [file, ownerGate, reinitGuard] of checks) {
@@ -62,6 +66,13 @@ test('recovery setup paths require owner authorization and reject blind reinitia
 test('wallet deduplicates recovered meta-tx signers before custom verifier handoff', () => {
   const source = read('contracts/AbstractAccount.MetaTx.cs');
   assert.match(source, /Deduplicate.*signer/i, 'MetaTx path should deduplicate signer hashes');
+});
+
+test('admin mutation path delegates to custom verifier when configured', () => {
+  const source = read('contracts/AbstractAccount.Admin.cs');
+  assert.match(source, /GetVerifierContract\(accountId\)/);
+  assert.match(source, /CallCustomVerifierNative\(customVerifier, accountId\)/);
+  assert.match(source, /CallCustomVerifierMetaTx\(customVerifier, accountId, verifierMetaSigners\)/);
 });
 
 test('dome unlock helper no longer treats missing oracle configuration as implicitly unlocked', () => {

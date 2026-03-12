@@ -19,6 +19,28 @@ namespace AbstractAccount
             AssertAccountExists(accountId);
             AssertNoExternalMutationDuringExecution(accountId);
 
+            UInt160 customVerifier = GetVerifierContract(accountId);
+            if (customVerifier != null && customVerifier != UInt160.Zero)
+            {
+                if (CallCustomVerifierNative(customVerifier, accountId))
+                {
+                    UpdateLastActiveTimestamp(accountId);
+                    return;
+                }
+
+                UInt160[] verifierMetaSigners = GetMetaTxContextSigners(accountId);
+                if (verifierMetaSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
+                {
+                    if (CallCustomVerifierMetaTx(customVerifier, accountId, verifierMetaSigners))
+                    {
+                        UpdateLastActiveTimestamp(accountId);
+                        return;
+                    }
+                }
+
+                ExecutionEngine.Assert(false, "Unauthorized by custom verifier");
+            }
+
             // For Neo native signers
             if (CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId)))
             {

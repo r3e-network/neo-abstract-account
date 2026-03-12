@@ -5,10 +5,16 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_ABSTRACT_ACCOUNT_HASH,
+  DEFAULT_DID_PROVIDER,
   DEFAULT_EXPLORER_BASE_URL,
   DEFAULT_MATRIX_CONTRACT_HASH,
   DEFAULT_N3INDEX_API_BASE_URL,
   DEFAULT_RPC_URL,
+  DEFAULT_WEB3AUTH_CHAIN_ID,
+  DEFAULT_WEB3AUTH_CHAIN_NAMESPACE,
+  DEFAULT_WEB3AUTH_NETWORK,
+  DEFAULT_WEB3AUTH_PROJECT_NAME,
+  DEFAULT_WEB3AUTH_RPC_TARGET,
   getRuntimeConfig,
   resolveAbstractAccountHash,
   resolveRpcUrl,
@@ -51,11 +57,22 @@ test('frontend ships a runtime env example for browser and server routes', () =>
   assert.match(example, /VITE_AA_RELAY_URL=/);
   assert.match(example, /VITE_AA_RELAY_META_ENABLED=/);
   assert.match(example, /VITE_AA_MATRIX_CONTRACT_HASH=/);
+  assert.match(example, /VITE_WEB3AUTH_CLIENT_ID=/);
+  assert.match(example, /VITE_WEB3AUTH_PROJECT_NAME=/);
+  assert.match(example, /VITE_WEB3AUTH_NETWORK=/);
+  assert.match(example, /VITE_NEODID_PROVIDER=/);
+  assert.match(example, /VITE_DID_VERIFICATION_ENDPOINT=/);
+  assert.match(example, /VITE_DID_NOTIFICATION_ENDPOINT=/);
+  assert.match(example, /VITE_MORPHEUS_NEODID_ENDPOINT=/);
+  assert.match(example, /VITE_MORPHEUS_ORACLE_KEY_ENDPOINT=/);
   assert.match(example, /AA_RELAY_RPC_URL=/);
   assert.match(example, /AA_RELAY_WIF=/);
   assert.match(example, /AA_RELAY_ALLOWED_HASH=/);
   assert.match(example, /AA_RELAY_ALLOW_RAW_FORWARD=/);
   assert.match(example, /SUPABASE_SERVICE_ROLE_KEY=/);
+  assert.match(example, /DID_EMAIL_WEBHOOK_URL=/);
+  assert.match(example, /DID_SMS_WEBHOOK_URL=/);
+  assert.match(example, /MORPHEUS_API_BASE_URL=/);
   assert.match(example, /server-only/i);
 });
 
@@ -79,6 +96,22 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     n3IndexApiBaseUrl: DEFAULT_N3INDEX_API_BASE_URL,
     n3IndexNetwork: 'testnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
+    web3AuthClientId: '',
+    web3AuthProjectName: DEFAULT_WEB3AUTH_PROJECT_NAME,
+    web3AuthNetwork: DEFAULT_WEB3AUTH_NETWORK,
+    web3AuthChainNamespace: DEFAULT_WEB3AUTH_CHAIN_NAMESPACE,
+    web3AuthChainId: DEFAULT_WEB3AUTH_CHAIN_ID,
+    web3AuthRpcTarget: DEFAULT_WEB3AUTH_RPC_TARGET,
+    web3AuthRedirectUrl: '',
+    web3AuthEmailLoginEnabled: true,
+    web3AuthSmsLoginEnabled: true,
+    neoDidProvider: DEFAULT_DID_PROVIDER,
+    didVerificationEndpoint: '/api/did-verify',
+    didNotificationEndpoint: '/api/did-notify',
+    morpheusNeoDidEndpoint: '/api/morpheus-neodid',
+    morpheusOracleKeyEndpoint: '/api/morpheus-oracle-public-key',
+    didNotificationEmailEnabled: true,
+    didNotificationSmsEnabled: true,
   });
 });
 

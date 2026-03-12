@@ -192,7 +192,9 @@ The contract supports several ways to authorize an action, but they all converge
 - **EVM EIP-712 signatures** for the canonical unified runtime entry (`executeUnified` / `executeUnifiedByAddress`)
 - **Dome recovery actors** once inactivity and optional oracle conditions are satisfied
 
-Custom verifiers extend authorization, but they do **not** bypass whitelist, blacklist, method policy, or max-transfer enforcement.
+Custom verifiers extend authorization for both runtime execution and admin mutation flows. That means a recovered verifier owner can reconfigure admins, managers, policy gates, and even replace the verifier contract itself.
+
+Custom verifiers still do **not** bypass whitelist, blacklist, method policy, or max-transfer enforcement.
 
 ## 7. Recovery and Extensibility
 
@@ -202,6 +204,12 @@ The architecture also includes optional recovery and extension surfaces:
 - **Oracle gating** for extra real-world unlock conditions
 - **Custom verifiers** for bespoke authorization logic
 - **Relay-ready meta flows** for EVM-first user experiences
+
+The Morpheus integration uses this custom-verifier surface to consume NeoDID / privacy-oracle recovery tickets.
+See `docs/MORPHEUS_SOCIAL_RECOVERY.md`.
+
+The same surface can also power temporary private action sessions through Morpheus NeoDID action tickets.
+See `docs/MORPHEUS_PRIVATE_ACTIONS.md`.
 
 ## 8. Security Invariants
 

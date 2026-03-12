@@ -28,6 +28,8 @@ This index keeps the root documentation set visible and easy to browse.
 - `contracts/recovery/PRE_DEPLOYMENT_CHECKLIST.md`
 - `contracts/recovery/TEST_STATUS.md`
 - `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md`
+- `docs/MORPHEUS_SOCIAL_RECOVERY.md`
+- `docs/MORPHEUS_PRIVATE_ACTIONS.md`
 
 ## Security Notes
 

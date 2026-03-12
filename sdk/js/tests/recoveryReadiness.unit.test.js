@@ -13,11 +13,15 @@ test('recovery verifier projects compile only the fixed contract source per proj
   const argent = read('contracts/recovery/ArgentRecoveryVerifier.csproj');
   const safe = read('contracts/recovery/SafeRecoveryVerifier.csproj');
   const loopring = read('contracts/recovery/LoopringRecoveryVerifier.csproj');
+  const morpheus = read('contracts/recovery/MorpheusSocialRecoveryVerifier.csproj');
+  const morpheusProxy = read('contracts/recovery/MorpheusProxySessionVerifier.csproj');
 
   for (const [name, source, expectedFile] of [
     ['Argent', argent, 'ArgentRecoveryVerifier.Fixed.cs'],
     ['Safe', safe, 'SafeRecoveryVerifier.Fixed.cs'],
     ['Loopring', loopring, 'LoopringRecoveryVerifier.Fixed.cs'],
+    ['Morpheus', morpheus, 'MorpheusSocialRecoveryVerifier.Fixed.cs'],
+    ['MorpheusProxy', morpheusProxy, 'MorpheusProxySessionVerifier.Fixed.cs'],
   ]) {
     assert.match(source, /EnableDefaultCompileItems>false<\/EnableDefaultCompileItems>/, `${name} project should disable default compile globbing`);
     assert.match(source, new RegExp(`<Compile Include="${expectedFile.replace('.', '\\.')}" ?\/>`), `${name} project should compile only ${expectedFile}`);
@@ -28,10 +32,12 @@ test('recovery setup methods are not marked safe in source docs/manifests', () =
   const argent = read('contracts/recovery/ArgentRecoveryVerifier.Fixed.cs');
   const safe = read('contracts/recovery/SafeRecoveryVerifier.Fixed.cs');
   const loopring = read('contracts/recovery/LoopringRecoveryVerifier.Fixed.cs');
+  const morpheus = read('contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs');
 
   assert.doesNotMatch(argent, /\[Safe\]\s*public static void SetupRecovery/);
   assert.doesNotMatch(safe, /\[Safe\]\s*public static void SetupRecovery/);
   assert.doesNotMatch(loopring, /\[Safe\]\s*public static void SetupRecovery/);
+  assert.doesNotMatch(morpheus, /\[Safe\]\s*public static void SetupRecovery/);
 });
 
 test('official recovery testnet validator uses hash160 account ids for Argent flow', () => {

@@ -17,6 +17,8 @@ See `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md` for the exact deployme
 1. **ArgentRecoveryVerifier** - Argent-style social recovery with guardian management
 2. **SafeRecoveryVerifier** - Safe-style modular recovery with configurable timelock
 3. **LoopringRecoveryVerifier** - Loopring-style off-chain recovery with guardian hash
+4. **MorpheusSocialRecoveryVerifier** - Morpheus NeoDID + privacy-oracle recovery tickets for privacy-preserving social recovery
+5. **MorpheusProxySessionVerifier** - Morpheus NeoDID action tickets for private proxy / anonymous action sessions
 
 ## Verified Testnet Deployments
 
@@ -31,6 +33,9 @@ See `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md` for the exact deployme
 - Recovery project files compile only the corresponding `*.Fixed.cs` source
 - Plaintext WIF values were removed from checked-in docs and scripts
 - Official SDK package scripts now cover all three verifier variants
+- The AA admin path now delegates to the configured custom verifier, so a recovered verifier owner can actually rotate native admin policy after recovery
+- A new Morpheus-oriented recovery verifier is included for NeoDID / TEE-signed recovery-ticket flows
+- A Morpheus proxy-session verifier is included for short-lived anonymous execution sessions backed by NeoDID action tickets
 
 ## Build and Validation Workflow
 
@@ -68,11 +73,38 @@ npm run testnet:validate:recovery:loopring
 - `compile_recovery_contracts.sh` - isolated artifact regeneration script
 - `PRE_DEPLOYMENT_CHECKLIST.md` - deployment gate checklist
 - `TESTNET_VALIDATION_2026-03-09.md` - exact deployment txids and validation results
+- `MorpheusSocialRecoveryVerifier.Fixed.cs` - Morpheus NeoDID / privacy-oracle recovery verifier source
+- `MorpheusProxySessionVerifier.Fixed.cs` - Morpheus NeoDID action-ticket verifier for private action sessions
+
+## Morpheus Integration Notes
+
+`MorpheusSocialRecoveryVerifier` is designed for the Morpheus stack:
+
+- Morpheus Oracle request types:
+  - `neodid_bind`
+  - `neodid_action_ticket`
+  - `neodid_recovery_ticket`
+- TEE-signed recovery approvals bound to:
+  - network
+  - AA contract hash
+  - verifier contract hash
+  - AA account address
+  - logical `accountId` text
+  - `newOwner`
+  - `recoveryNonce`
+  - `expiresAt`
+- per-factor privacy via `master_nullifier`
+- one-time replay protection via `action_nullifier`
+
+This verifier is included in-source and in the isolated recovery compile pipeline, but unlike Argent / Safe / Loopring it is not yet recorded in the historical `TESTNET_VALIDATION_2026-03-09.md` deployment ledger.
+
+`MorpheusProxySessionVerifier` uses the same Morpheus Oracle request pipeline but consumes `neodid_action_ticket` results with compact callback encoding. It can authorize a temporary executor address through the AA custom-verifier surface, while AA policy gates still control the target contracts and methods that executor may call.
 
 ## npm Commands
 
 ```bash
 npm run test:recovery:logic
+npm run testnet:validate:morpheus-verifier
 npm run testnet:validate:recovery
 npm run testnet:validate:recovery:safe
 npm run testnet:validate:recovery:loopring

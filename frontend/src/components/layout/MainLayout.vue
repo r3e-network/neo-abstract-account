@@ -33,6 +33,13 @@
                 {{ item.code === 'en' ? 'English' : '中文' }}
               </button>
             </div>
+            <div v-if="didConnected" class="flex items-center gap-3 bg-ata-panel border border-ata-border rounded px-3 py-1.5 shadow-sm">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                <span class="w-1.5 h-1.5 mr-2 bg-sky-400 rounded-full animate-pulse"></span>
+                DID {{ didShort }}
+              </span>
+              <button @click="disconnectDid" class="text-xs text-slate-400 hover:text-rose-400 font-medium px-1 transition-colors duration-200 uppercase tracking-wider">Disconnect DID</button>
+            </div>
             <div v-if="isConnected" class="flex items-center gap-3 bg-ata-panel border border-ata-border rounded px-3 py-1.5 shadow-sm">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-ata-green/10 text-ata-green border border-ata-green/20">
                 <span class="w-1.5 h-1.5 mr-2 bg-ata-green rounded-full animate-pulse"></span>
@@ -40,7 +47,8 @@
               </span>
               <button @click="disconnect" class="text-xs text-slate-400 hover:text-rose-400 font-medium px-1 transition-colors duration-200 uppercase tracking-wider">{{ t('nav.disconnect', 'Disconnect') }}</button>
             </div>
-            <div v-else class="animate-fade-in">
+            <div v-else class="animate-fade-in flex items-center gap-2">
+              <button v-if="didAvailable && !didConnected" @click="connectDid" class="btn-secondary text-xs py-1.5 px-4 uppercase tracking-wider font-bold">Connect DID</button>
               <button @click="connect" class="btn-primary text-xs py-1.5 px-4 uppercase tracking-wider font-bold">{{ t('nav.connect', 'Connect') }}</button>
             </div>
           </div>
@@ -72,9 +80,11 @@
 <script setup>
 import { computed } from 'vue';
 import { useWalletConnection } from '@/composables/useWalletConnection';
+import { useDidConnection } from '@/composables/useDidConnection';
 import { useI18n } from '@/i18n';
 
 const { isConnected, truncatedAddress, connect, disconnect } = useWalletConnection();
+const { isConfigured: didAvailable, isConnected: didConnected, shortDid: didShort, connectDid, disconnectDid } = useDidConnection();
 const { locale, locales, setLocale, t } = useI18n();
 const activeLocale = computed(() => locale.value);
 </script>

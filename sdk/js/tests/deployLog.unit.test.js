@@ -31,7 +31,7 @@ test('extractDeployedContractHash reads the deployed hash from management Deploy
 
   assert.equal(
     extractDeployedContractHash(sampleAppLog),
-    '0x5be915aea3ce85e4752d522632f0a9520e377aaf'
+    '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423'
   );
 });
 
@@ -57,6 +57,6 @@ test('extractDeployedContractHash falls back to the management deploy return sta
 
   assert.equal(
     extractDeployedContractHash(sampleAppLog),
-    '0x5be915aea3ce85e4752d522632f0a9520e377aaf'
+    '0x711c1899a3b7fa0e055ae0d17c9acfcd1bef6423'
   );
 });

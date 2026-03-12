@@ -29,6 +29,22 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     n3IndexApiBaseUrl: 'https://api.n3index.dev',
     n3IndexNetwork: 'testnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
+    web3AuthClientId: '',
+    web3AuthProjectName: 'DID.Morpheus',
+    web3AuthNetwork: 'sapphire_devnet',
+    web3AuthChainNamespace: 'eip155',
+    web3AuthChainId: '0x1',
+    web3AuthRpcTarget: 'https://rpc.ankr.com/eth',
+    web3AuthRedirectUrl: '',
+    web3AuthEmailLoginEnabled: true,
+    web3AuthSmsLoginEnabled: true,
+    neoDidProvider: 'web3auth',
+    didVerificationEndpoint: '/api/did-verify',
+    didNotificationEndpoint: '/api/did-notify',
+    morpheusNeoDidEndpoint: '/api/morpheus-neodid',
+    morpheusOracleKeyEndpoint: '/api/morpheus-oracle-public-key',
+    didNotificationEmailEnabled: true,
+    didNotificationSmsEnabled: true,
   });
 });
 

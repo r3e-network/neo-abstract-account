@@ -14,6 +14,7 @@ readonly SCRIPTS=(
   "tests/aa_testnet_direct_proxy_spend_validate.js"
   "tests/aa_testnet_threshold2_validate.js"
   "tests/aa_testnet_custom_verifier_validate.js"
+  "tests/aa_testnet_morpheus_verifier_validate.js"
   "tests/aa_testnet_dome_oracle_validate.js"
   "tests/aa_testnet_concurrency_validate.js"
   "tests/aa_testnet_full_validate.js"
@@ -35,6 +36,8 @@ Required env for live runs:
 
 Optional env:
   EXPECT_PROXY_SPEND_BLOCKED (defaults to 1)
+  MORPHEUS_ORACLE_HASH_TESTNET
+  MORPHEUS_VERIFIER_PUBKEY_TESTNET
 EOF
 }
 
@@ -61,7 +64,9 @@ if [[ "$dry_run" -eq 1 ]]; then
   echo "  TEST_WIF"
   echo "  AA_HASH_TESTNET or VITE_AA_HASH_TESTNET"
   echo "  EXPECT_PROXY_SPEND_BLOCKED defaults to 1"
+  echo "  MORPHEUS_ORACLE_HASH_TESTNET and MORPHEUS_VERIFIER_PUBKEY_TESTNET are recommended for the Morpheus verifier validator"
   echo
+  echo "node tests/testnet_readiness.js"
   for script in "${SCRIPTS[@]}"; do
     echo "node $script"
   done
@@ -88,6 +93,12 @@ export EXPECT_PROXY_SPEND_BLOCKED
 
 echo "Running testnet validation suite from $ROOT_DIR"
 echo "EXPECT_PROXY_SPEND_BLOCKED=$EXPECT_PROXY_SPEND_BLOCKED"
+
+if [[ "${SKIP_TESTNET_READINESS_CHECK:-0}" != "1" ]]; then
+  echo
+  echo "==> node tests/testnet_readiness.js"
+  node tests/testnet_readiness.js
+fi
 
 for script in "${SCRIPTS[@]}"; do
   echo

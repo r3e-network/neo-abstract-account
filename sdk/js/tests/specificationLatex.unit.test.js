@@ -17,7 +17,7 @@ test('formal latex specification exists and covers core sections', () => {
   assert.match(source, /\\section\{Discussion\}/);
   assert.match(source, /\\section\{Conclusion\}/);
   assert.match(source, /\\begin\{tikzpicture\}/);
-  assert.match(source, /\\begin\{table\}/);
+  assert.match(source, /Recovery Verifier Architecture/);
 });
 
 

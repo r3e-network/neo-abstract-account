@@ -23,6 +23,7 @@ test('testnet validation runner dry-run prints the scripts in safe order', () =>
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const stdout = result.stdout;
   const expected = [
+    'node tests/testnet_readiness.js',
     'node tests/test-evm-meta-tx.js',
     'node tests/aa_testnet_integration_check.js',
     'node tests/aa_testnet_negative_meta_validate.js',
@@ -31,6 +32,7 @@ test('testnet validation runner dry-run prints the scripts in safe order', () =>
     'node tests/aa_testnet_direct_proxy_spend_validate.js',
     'node tests/aa_testnet_threshold2_validate.js',
     'node tests/aa_testnet_custom_verifier_validate.js',
+    'node tests/aa_testnet_morpheus_verifier_validate.js',
     'node tests/aa_testnet_dome_oracle_validate.js',
     'node tests/aa_testnet_concurrency_validate.js',
     'node tests/aa_testnet_full_validate.js',
