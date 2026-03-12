@@ -10,7 +10,7 @@ export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b
 export const DEFAULT_N3INDEX_API_BASE_URL = 'https://api.n3index.dev';
 export const DEFAULT_N3INDEX_NETWORK = 'mainnet';
 export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
-export const DEFAULT_WEB3AUTH_NETWORK = 'sapphire_devnet';
+export const DEFAULT_WEB3AUTH_NETWORK = 'sapphire_mainnet';
 export const DEFAULT_WEB3AUTH_CHAIN_NAMESPACE = 'eip155';
 export const DEFAULT_WEB3AUTH_CHAIN_ID = '0x1';
 export const DEFAULT_WEB3AUTH_RPC_TARGET = 'https://rpc.ankr.com/eth';
@@ -18,6 +18,8 @@ export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
 export const DEFAULT_DID_PROVIDER = 'web3auth';
 export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'aa.morpheus.neo';
 export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
+export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://neo-morpheus-oracle-web.vercel.app';
+export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -152,6 +154,14 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
       env.VITE_NEODID_DOMAIN,
       DEFAULT_NEODID_DOMAIN
     ),
+    morpheusApiBaseUrl: resolveOptionalUrl(
+      env.VITE_MORPHEUS_API_BASE_URL,
+      DEFAULT_MORPHEUS_API_BASE_URL
+    ),
+    morpheusNeoDidServiceDid: resolveOptionalUrl(
+      env.VITE_MORPHEUS_NEODID_SERVICE_DID,
+      DEFAULT_MORPHEUS_NEODID_SERVICE_DID
+    ),
     didVerificationEndpoint: resolveOptionalUrl(
       env.VITE_DID_VERIFICATION_ENDPOINT,
       '/api/did-verify'
@@ -163,6 +173,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     morpheusNeoDidEndpoint: resolveOptionalUrl(
       env.VITE_MORPHEUS_NEODID_ENDPOINT,
       '/api/morpheus-neodid'
+    ),
+    morpheusNeoDidResolveEndpoint: resolveOptionalUrl(
+      env.VITE_MORPHEUS_NEODID_RESOLVE_ENDPOINT,
+      '/api/morpheus-neodid?action=resolve'
     ),
     morpheusOracleKeyEndpoint: resolveOptionalUrl(
       env.VITE_MORPHEUS_ORACLE_KEY_ENDPOINT,

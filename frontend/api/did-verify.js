@@ -1,5 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
+const DEFAULT_MORPHEUS_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
+
 function trim(value) {
   return String(value || '').trim();
 }
@@ -26,11 +28,13 @@ function buildStableDidKey(claims = {}) {
 }
 
 function buildVerifiedProfile(claims = {}) {
-  const did = buildStableDidKey(claims);
+  const identityRoot = buildStableDidKey(claims);
   return {
     provider: 'web3auth',
-    providerUid: did,
-    did,
+    providerUid: identityRoot,
+    identityRoot,
+    did: identityRoot,
+    serviceDid: trim(process.env.MORPHEUS_NEODID_SERVICE_DID || process.env.VITE_MORPHEUS_NEODID_SERVICE_DID || DEFAULT_MORPHEUS_SERVICE_DID),
     email: trim(claims.email || ''),
     phone: trim(claims.phone_number || claims.phone || ''),
     name: trim(claims.name || ''),
@@ -62,11 +66,14 @@ export default async function handler(req, res) {
 
   const jwksUrl = trim(process.env.WEB3AUTH_JWKS_URL || 'https://api-auth.web3auth.io/.well-known/jwks.json');
   const clientId = trim(process.env.VITE_WEB3AUTH_CLIENT_ID || process.env.WEB3AUTH_CLIENT_ID || '');
+  if (!clientId) {
+    return res.status(500).json({ error: 'WEB3AUTH_CLIENT_ID is not configured' });
+  }
 
   try {
     const JWKS = createRemoteJWKSet(new URL(jwksUrl));
     const { payload } = await jwtVerify(idToken, JWKS, {
-      audience: clientId || undefined,
+      audience: clientId,
     });
     const claims = Object.fromEntries(Object.entries(payload || {}).map(([key, value]) => [key, value]));
     const profile = buildVerifiedProfile(claims);

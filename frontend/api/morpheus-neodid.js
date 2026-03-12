@@ -6,6 +6,7 @@ function resolvePath(action) {
   const normalized = trim(action).toLowerCase();
   if (normalized === 'providers') return { path: '/api/neodid/providers', method: 'GET' };
   if (normalized === 'runtime') return { path: '/api/neodid/runtime', method: 'GET' };
+  if (normalized === 'resolve') return { path: '/api/neodid/resolve', method: 'GET' };
   if (normalized === 'bind') return { path: '/api/neodid/bind', method: 'POST' };
   if (normalized === 'action-ticket') return { path: '/api/neodid/action-ticket', method: 'POST' };
   if (normalized === 'recovery-ticket') return { path: '/api/neodid/recovery-ticket', method: 'POST' };
@@ -19,8 +20,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Unsupported Morpheus NeoDID action' });
   }
 
-  const baseUrl = trim(process.env.MORPHEUS_API_BASE_URL || 'https://www.morpheus-matrix.dev');
-  const url = `${baseUrl.replace(/\/$/, '')}${route.path}`;
+  const baseUrl = trim(process.env.MORPHEUS_API_BASE_URL || 'https://neo-morpheus-oracle-web.vercel.app');
+  const query = route.method === 'GET'
+    ? new URLSearchParams(
+        Object.entries(req.query || {}).filter(([key, value]) => key !== 'action' && value != null && value !== '')
+      ).toString()
+    : '';
+  const url = `${baseUrl.replace(/\/$/, '')}${route.path}${query ? `?${query}` : ''}`;
   const options = {
     method: route.method,
     headers: { accept: 'application/json' },

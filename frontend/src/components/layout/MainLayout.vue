@@ -38,7 +38,7 @@
                 <span class="w-1.5 h-1.5 mr-2 bg-sky-400 rounded-full animate-pulse"></span>
                 DID {{ didShort }}
               </span>
-              <button @click="disconnectDid" class="text-xs text-slate-400 hover:text-rose-400 font-medium px-1 transition-colors duration-200 uppercase tracking-wider">Disconnect DID</button>
+              <button @click="disconnectDid" class="text-xs text-slate-400 hover:text-rose-400 font-medium px-1 transition-colors duration-200 uppercase tracking-wider">{{ t('nav.disconnectDid', 'Disconnect Web3Auth') }}</button>
             </div>
             <div v-if="isConnected" class="flex items-center gap-3 bg-ata-panel border border-ata-border rounded px-3 py-1.5 shadow-sm">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-ata-green/10 text-ata-green border border-ata-green/20">
@@ -48,7 +48,7 @@
               <button @click="disconnect" class="text-xs text-slate-400 hover:text-rose-400 font-medium px-1 transition-colors duration-200 uppercase tracking-wider">{{ t('nav.disconnect', 'Disconnect') }}</button>
             </div>
             <div v-else class="animate-fade-in flex items-center gap-2">
-              <button v-if="didAvailable && !didConnected" @click="connectDid" class="btn-secondary text-xs py-1.5 px-4 uppercase tracking-wider font-bold">Connect DID</button>
+              <button v-if="didAvailable && !didConnected" @click="connectDid" class="btn-secondary text-xs py-1.5 px-4 uppercase tracking-wider font-bold">{{ t('nav.connectDid', 'Connect Web3Auth') }}</button>
               <button @click="connect" class="btn-primary text-xs py-1.5 px-4 uppercase tracking-wider font-bold">{{ t('nav.connect', 'Connect') }}</button>
             </div>
           </div>
@@ -67,7 +67,7 @@
     <footer class="bg-ata-dark border-t border-ata-border mt-auto">
       <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-2 text-slate-400 font-mono text-xs uppercase tracking-wider">
-          <span class="font-medium">NEO N3 NETWORK</span>
+          <span class="font-medium">{{ t('nav.network', 'Neo N3 Network') }}</span>
         </div>
         <p class="text-center text-xs text-slate-400 font-mono uppercase tracking-wider">
           &copy; {{ new Date().getFullYear() }} {{ t('footer.builtWith', 'NEO ABSTRACT ACCOUNT') }}

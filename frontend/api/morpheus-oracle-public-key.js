@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const baseUrl = trim(process.env.MORPHEUS_API_BASE_URL || 'https://www.morpheus-matrix.dev');
+  const baseUrl = trim(process.env.MORPHEUS_API_BASE_URL || 'https://neo-morpheus-oracle-web.vercel.app');
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/oracle/public-key`, {
     method: 'GET',
     headers: { accept: 'application/json' },

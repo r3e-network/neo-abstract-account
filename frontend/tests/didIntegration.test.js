@@ -15,6 +15,17 @@ test('did service integrates Web3Auth as the NeoDID identity root', () => {
   assert.match(source, /web3auth:/);
   assert.match(source, /buildNeoDidSubject/);
   assert.match(source, /didVerificationEndpoint/);
+  assert.match(source, /serviceDid/);
+  assert.match(source, /identityRoot/);
+});
+
+test('docs registry exposes Chinese Morpheus recovery and private action guides', () => {
+  const source = read('src/features/docs/registry.js');
+
+  assert.match(source, /MORPHEUS_SOCIAL_RECOVERY\.zh-CN\.md/);
+  assert.match(source, /MORPHEUS_PRIVATE_ACTIONS\.zh-CN\.md/);
+  assert.match(source, /morpheusRecovery/);
+  assert.match(source, /morpheusActions/);
 });
 
 test('morpheus did service can bind DIDs and invoke AA verifier requests', () => {
@@ -23,6 +34,7 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   const keyProxy = read('api/morpheus-oracle-public-key.js');
 
   assert.match(source, /bindDid/);
+  assert.match(source, /resolveDid/);
   assert.match(source, /previewRecoveryTicket/);
   assert.match(source, /previewActionTicket/);
   assert.match(source, /invokeRecoveryRequest/);
@@ -35,6 +47,7 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   assert.match(source, /requestRecoveryTicket/);
   assert.match(source, /requestActionSession/);
   assert.match(proxy, /Unsupported Morpheus NeoDID action/);
+  assert.match(proxy, /normalized === 'resolve'/);
   assert.match(keyProxy, /api\/oracle\/public-key/);
 });
 
@@ -64,10 +77,13 @@ test('main layout and home workspace expose a DID connection path', () => {
   const workspace = read('src/features/operations/components/HomeOperationsWorkspace.vue');
   const panel = read('src/features/operations/components/DidIdentityPanel.vue');
 
-  assert.match(layout, /Connect DID/);
+  assert.match(layout, /Connect Web3Auth/);
   assert.match(layout, /useDidConnection/);
   assert.match(workspace, /connectDidAction/);
-  assert.match(workspace, /DID/);
+  assert.match(workspace, /Connect Web3Auth/);
+  assert.match(panel, /Google/);
+  assert.match(panel, /Email/);
+  assert.match(panel, /SMS/);
   assert.match(panel, /Send Email Notice/);
   assert.match(panel, /Send SMS Notice/);
   assert.match(panel, /Finalize Recovery/);

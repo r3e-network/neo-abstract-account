@@ -56,7 +56,7 @@ function decodeJwtClaims(token) {
 }
 
 function buildDidProfile(userInfo = {}, tokenClaims = {}, options = {}) {
-  const stableDid = buildStableDidKey(userInfo, tokenClaims);
+  const identityRoot = buildStableDidKey(userInfo, tokenClaims);
   const linkedAccounts = dedupe([
     ...toArray(userInfo.typeOfLogin),
     ...toArray(userInfo.loginType),
@@ -67,8 +67,10 @@ function buildDidProfile(userInfo = {}, tokenClaims = {}, options = {}) {
 
   return {
     provider: RUNTIME_CONFIG.neoDidProvider || 'web3auth',
-    providerUid: stableDid,
-    did: stableDid,
+    providerUid: identityRoot,
+    identityRoot,
+    did: identityRoot,
+    serviceDid: RUNTIME_CONFIG.morpheusNeoDidServiceDid,
     email: trim(userInfo.email || tokenClaims.email || ''),
     phone: trim(userInfo.phone || tokenClaims.phone_number || ''),
     name: trim(userInfo.name || tokenClaims.name || ''),
@@ -246,10 +248,11 @@ class DidService {
 
   buildNeoDidSubject() {
     const profile = this.profile;
-    if (!profile?.providerUid) return null;
+    if (!profile?.provider || !profile?.idToken) return null;
     return {
       provider: profile.provider,
-      provider_uid: profile.providerUid,
+      provider_uid: profile.providerUid || '',
+      id_token: profile.idToken,
       metadata: {
         email: profile.email || undefined,
         phone: profile.phone || undefined,

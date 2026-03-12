@@ -19,6 +19,15 @@ For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VIT
 If you deploy the bundled server routes, keep `SUPABASE_SERVICE_ROLE_KEY` and `AA_RELAY_WIF` on the server, prefer `AA_RELAY_RPC_URL` for the relay backend, pin `AA_RELAY_ALLOWED_HASH` to the intended AA contract, and leave `AA_RELAY_ALLOW_RAW_FORWARD=0` unless you explicitly want raw passthrough in `frontend/api/relay-transaction.js`.
 For local setup, start from `frontend/.env.example` and copy the values you need into `frontend/.env.local` or your hosting provider's environment-variable dashboard.
 
+For Morpheus / NeoDID production integration, also set:
+
+- `VITE_WEB3AUTH_CLIENT_ID`
+- `VITE_WEB3AUTH_NETWORK=sapphire_mainnet`
+- `VITE_MORPHEUS_API_BASE_URL=https://neo-morpheus-oracle-web.vercel.app`
+- `VITE_MORPHEUS_NEODID_SERVICE_DID=did:morpheus:neo_n3:service:neodid`
+- server-only `WEB3AUTH_CLIENT_SECRET`
+- server-only `MORPHEUS_API_BASE_URL`
+
 Shared draft metadata is intentionally bounded: the frontend keeps the latest 100 activity entries and the latest 12 submission receipts per draft so long-lived collaboration records do not grow without limit.
 
 ### Deployment Checklist
@@ -51,6 +60,7 @@ If you want the clearest end-to-end explanation, read these docs in order:
 - **Data Flow & Storage** — what lives in the browser, Supabase, relay, and on-chain boundaries
 - **SDK Integration** — runtime variables, relay behavior, and deployment setup
 - **Mixed Multi-Sig (N3 + EVM)** — how combined native + EVM signing works in practice
+- **Morpheus Social Recovery** — NeoDID / Web3Auth recovery and private action integration in `docs/MORPHEUS_SOCIAL_RECOVERY.md`
 
 ## Quickstart
 

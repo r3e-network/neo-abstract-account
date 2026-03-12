@@ -2,6 +2,12 @@
 
 Date: 2026-03-12
 
+Historical status note:
+
+- This audit captured the gap state before the current Morpheus runtime moved Web3Auth JWT verification into the TEE worker.
+- In the current production Morpheus runtime, JWT verification and stable provider-root derivation are performed inside the NeoDID worker.
+- The remaining AA-side concern from this report is the authorization-scope design of action sessions versus admin-grade verifier paths.
+
 ## Scope
 
 This audit compares the current implementation against the intended design:

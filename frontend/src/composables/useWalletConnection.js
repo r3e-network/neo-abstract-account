@@ -2,9 +2,11 @@ import { computed } from 'vue';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService } from '@/services/walletService';
+import { createI18nController } from '@/i18n';
 
 export function useWalletConnection() {
   const toast = useToast();
+  const { t } = createI18nController();
 
   const isConnected = computed(() => !!connectedAccount.value);
   const truncatedAddress = computed(() => {
@@ -18,26 +20,26 @@ export function useWalletConnection() {
   async function connect() {
     try {
       const { address } = await walletService.connect();
-      toast.success(`Connected: ${address}`);
+      toast.success(`${t('nav.connect', 'Connect Wallet')}: ${address}`);
     } catch (err) {
       console.error(err);
-      toast.error(`Connect failed: ${err?.message || err}`);
+      toast.error(`${t('nav.connect', 'Connect Wallet')} failed: ${err?.message || err}`);
     }
   }
 
   function disconnect() {
     walletService.disconnect();
-    toast.info('Wallet disconnected.');
+    toast.info(`${t('nav.disconnect', 'Disconnect')}.`);
   }
 
   async function connectEvm() {
     try {
       const { address } = await walletService.connectEvm();
-      toast.success(`EVM wallet connected: ${address}`);
+      toast.success(`${t('operations.connectEvmWallet', 'Connect EVM Wallet')}: ${address}`);
       return { address };
     } catch (err) {
       console.error(err);
-      toast.error(`EVM connect failed: ${err?.message || err}`);
+      toast.error(`${t('operations.connectEvmWallet', 'Connect EVM Wallet')} failed: ${err?.message || err}`);
       throw err;
     }
   }

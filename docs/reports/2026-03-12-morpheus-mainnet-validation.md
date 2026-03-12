@@ -11,6 +11,8 @@ Validated on 2026-03-12:
 - production Datafeed: `0x03013f49c42a14546c8bbe58f9d434c3517fccab` (`pricefeed.morpheus.neo`)
 - mainnet AA: `0x0466fa7e8fe548480d7978d2652625d4a22589a6`
 - mainnet MorpheusSocialRecoveryVerifier: `0x975483c2d0928c1ed6da568190b5137463431422`
+- public NeoDID service DID: `did:morpheus:neo_n3:service:neodid`
+- public resolver route: `/api/neodid/resolve?did=did:morpheus:neo_n3:service:neodid`
 
 ## Deployment State
 

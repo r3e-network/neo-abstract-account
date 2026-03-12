@@ -21,6 +21,8 @@ This index keeps the root documentation set visible and easy to browse.
 - `docs/DATA_FLOW.zh-CN.md`
 - `docs/architecture.zh-CN.md`
 - `docs/QUICK_REFERENCE.zh-CN.md`
+- `docs/MORPHEUS_SOCIAL_RECOVERY.zh-CN.md`
+- `docs/MORPHEUS_PRIVATE_ACTIONS.zh-CN.md`
 
 ## Recovery Verifier
 
@@ -30,6 +32,8 @@ This index keeps the root documentation set visible and easy to browse.
 - `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md`
 - `docs/MORPHEUS_SOCIAL_RECOVERY.md`
 - `docs/MORPHEUS_PRIVATE_ACTIONS.md`
+- `docs/MORPHEUS_SOCIAL_RECOVERY.zh-CN.md`
+- `docs/MORPHEUS_PRIVATE_ACTIONS.zh-CN.md`
 
 ## Security Notes
 

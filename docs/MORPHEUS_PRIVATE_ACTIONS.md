@@ -34,7 +34,7 @@ The dedicated `MorpheusProxySessionVerifier` remains available as a narrower ver
 The proxy account visible on-chain is only the temporary executor.
 The underlying social / exchange identity remains hidden behind:
 
-- `provider_uid` inside encrypted Morpheus payloads
+- encrypted Web3Auth `id_token` or other confidential provider evidence inside Morpheus payloads
 - TEE verification
 - `action_nullifier`
 - Morpheus signature evidence
@@ -45,8 +45,10 @@ Recommended identity source:
 
 - use Web3Auth as the DID root
 - link Google / Apple / email / SMS / other login methods in Web3Auth
-- pass the stable Web3Auth user id into NeoDID as `provider_uid`
+- pass the live Web3Auth `id_token` into NeoDID as encrypted input so the TEE can derive the stable provider root
+- treat any caller-supplied `provider_uid` only as an optional consistency hint
 - request NeoDID action tickets with `provider = "web3auth"`
+- use `did:morpheus:neo_n3:service:neodid` as the public metadata anchor for resolver-based integrations
 
 ## Security Boundaries
 

@@ -13,13 +13,17 @@ Instead of modifying the AA core execution model, Morpheus provides:
 - signed recovery approvals tied to a specific AA recovery round
 - replay protection through `action_nullifier`
 - privacy-preserving factor registration through `master_nullifier`
+- a metadata-only W3C DID layer for service discovery and verifier publication
 
 For the cleanest UX, treat Web3Auth as the DID root:
 
 - Web3Auth aggregates Google / Apple / Email / SMS / other social logins
 - NeoDID stores `provider = "web3auth"`
-- NeoDID stores `provider_uid = <stable Web3Auth user id>`
+- NeoDID verifies the live Web3Auth `id_token` inside the TEE and derives the stable provider root there
+- caller-supplied `provider_uid` is only an optional consistency hint, not the trusted root of identity
 - AA verifiers consume only NeoDID tickets, not raw Web3Auth or social-provider details
+- the public service DID is `did:morpheus:neo_n3:service:neodid`
+- the public resolver route is `/api/neodid/resolve?did=did:morpheus:neo_n3:service:neodid`
 
 ## Recommended Architecture
 
@@ -166,9 +170,12 @@ The verifier now includes an on-chain callback path and can call Morpheus Oracle
 That means the recommended flow is now:
 
 1. configure the verifier with the Morpheus Oracle hash and Morpheus verifier key
-2. call `RequestRecoveryTicket(...)`
-3. wait for the Morpheus callback into `OnOracleResult(...)`
-4. let the verifier activate recovery state on-chain without exposing provider details to the AA core contract
+2. seal the current Web3Auth `id_token` with the Morpheus Oracle public key
+3. call `RequestRecoveryTicket(...)`
+4. let Morpheus route `neodid_recovery_ticket` through the Oracle callback path
+5. optionally resolve `did:morpheus:neo_n3:aa:<account-id>` or the service DID for public metadata
+6. wait for the Morpheus callback into `OnOracleResult(...)`
+7. let the verifier activate recovery state on-chain without exposing provider details to the AA core contract
 
 ## Future Extension Ideas
 

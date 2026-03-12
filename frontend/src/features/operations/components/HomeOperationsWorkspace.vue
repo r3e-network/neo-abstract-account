@@ -4,30 +4,31 @@
     <div class="relative z-10">
       <div class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="mb-2 text-xs font-bold uppercase tracking-widest text-neo-400">Abstract Account Workspace</p>
-          <h1 class="text-3xl font-extrabold tracking-tight text-white font-outfit">Load, compose, sign, and broadcast</h1>
+          <p class="mb-2 text-xs font-bold uppercase tracking-widest text-neo-400">{{ t('operations.workspaceTitle', 'Abstract Account Workspace') }}</p>
+          <h1 class="text-3xl font-extrabold tracking-tight text-white font-outfit">{{ t('operations.workspaceHero', 'Load, compose, sign, share, and broadcast') }}</h1>
+          <p class="mt-3 text-sm text-slate-400 max-w-2xl">{{ t('operations.quickFlow', 'Connect Web3Auth, load an AA, bind NeoDID, then request recovery or private sessions.') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
           <button v-if="didConnection.isConfigured.value" class="btn-secondary" @click="connectDidAction">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm8 0c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm-8 8c0 1.657-1.79 3-4 3S4 20.657 4 19m8 0c0 1.657 1.79 3 4 3s4-1.343 4-3"></path></svg> Connect DID
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm8 0c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm-8 8c0 1.657-1.79 3-4 3S4 20.657 4 19m8 0c0 1.657 1.79 3 4 3s4-1.343 4-3"></path></svg> {{ t('operations.connectDid', 'Connect Web3Auth') }}
           </button>
           <button class="btn-secondary" @click="connectNeoWallet">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Connect Neo Wallet
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> {{ t('operations.connectNeoWallet', 'Connect Neo Wallet') }}
           </button>
           <button class="btn-secondary" @click="connectEvmWalletAction">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg> Connect EVM Wallet
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg> {{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}
           </button>
           <div class="relative">
             <button class="btn-primary" @click="showActionsMenu = !showActionsMenu">Actions <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
             <transition name="fade-in-up">
               <div v-if="showActionsMenu" class="absolute right-0 mt-3 w-64 rounded-xl bg-slate-800 shadow-2xl border border-slate-700 py-2 z-50 overflow-hidden backdrop-blur-lg">
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!shareUrl" @click="copyShareLink">Copy Share Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorLink">Copy Collaborator Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorLink">Copy Operator Link</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!shareUrl" @click="copyShareLink">{{ t('operations.copyShareLink', 'Copy Share Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorLink">{{ t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorLink">{{ t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
                 <div class="border-t border-slate-700 my-1"></div>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl || isSubmissionPending" @click="rotateCollaboratorLink">Rotate Collaborator Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl || isSubmissionPending" @click="rotateOperatorLink">Rotate Operator Link</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!workspace.transactionBody.value" @click="exportDraftJson">Export Draft JSON</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!workspace.transactionBody.value" @click="exportDraftJson">{{ t('operations.exportDraftJson', 'Export Draft JSON') }}</button>
               </div>
             </transition>
           </div>
@@ -38,7 +39,7 @@
 
       <div class="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-5">
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">DID</p>
+          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('operations.didCardLabel', 'Web3Auth') }}</p>
           <p class="text-sm text-white font-semibold truncate">{{ didLabel }}</p>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
@@ -50,17 +51,17 @@
           <p class="text-sm text-white font-semibold truncate">{{ evmWalletLabel }}</p>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Signatures</p>
+          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('operations.signaturesCardLabel', 'Signatures') }}</p>
           <div class="flex items-center gap-2 mt-1">
             <div class="w-full bg-slate-700 rounded-full h-1.5"><div class="bg-neo-500 h-1.5 rounded-full" :style="{ width: (signerProgress.requiredCount ? Math.min(100, (signerProgress.signatureCount / signerProgress.requiredCount) * 100) : 0) + '%' }"></div></div>
             <p class="text-sm text-white font-semibold tabular-nums">{{ signerProgress.signatureCount }} / {{ signerProgress.requiredCount || 0 }}</p>
           </div>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Collaboration</p>
+          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('operations.collaborationCardLabel', 'Collaboration') }}</p>
           <div class="flex items-center mt-1">
             <span class="w-2 h-2 rounded-full mr-2" :class="runtime.collaborationEnabled ? 'bg-neo-500 animate-pulse' : 'bg-slate-500'"></span>
-            <p class="text-sm text-white font-semibold">{{ runtime.collaborationEnabled ? 'Ready' : 'Local' }}</p>
+            <p class="text-sm text-white font-semibold">{{ runtime.collaborationEnabled ? t('operations.collaborationReadyLabel', 'Ready') : t('operations.collaborationLocalLabel', 'Local') }}</p>
           </div>
         </div>
       </div>
@@ -80,7 +81,7 @@
             <button @click="step1Expanded = !step1Expanded" class="w-full bg-slate-800/40 px-6 py-5 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/40 transition-colors">
               <div class="flex items-center gap-4">
                 <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">1</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Load Account</h2>
+                <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepLoadTitle', 'Load Account') }}</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
             </button>
@@ -93,7 +94,7 @@
             <button @click="step2Expanded = !step2Expanded" class="w-full bg-slate-800/40 px-6 py-5 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/40 transition-colors">
               <div class="flex items-center gap-4">
                 <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">2</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Compose Operation</h2>
+                <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepComposeTitle', 'Compose Operation') }}</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step2Expanded ? 'rotate-180' : ''">▼</span>
             </button>
@@ -106,13 +107,13 @@
             <button @click="step3Expanded = !step3Expanded" class="w-full bg-slate-800/40 px-6 py-5 border-b border-slate-700/50 flex items-center justify-between hover:bg-slate-700/40 transition-colors">
               <div class="flex items-center gap-4">
                 <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">3</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Collect Signatures</h2>
+                <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepSignTitle', 'Collect Signatures') }}</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step3Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step3Expanded" class="p-6 md:p-8 animate-fade-in space-y-6">
               <div class="flex gap-4">
-                <button class="btn-secondary flex-1 border-neo-500/30 text-neo-300 hover:bg-neo-500/10 hover:border-neo-500/60 hover:text-white" :disabled="!workspace.transactionBody.value || isSubmissionPending" @click="signWithEvmWallet">Sign with EVM</button>
+                <button class="btn-secondary flex-1 border-neo-500/30 text-neo-300 hover:bg-neo-500/10 hover:border-neo-500/60 hover:text-white" :disabled="!workspace.transactionBody.value || isSubmissionPending" @click="signWithEvmWallet">{{ t('operations.signWithEvm', 'Sign with EVM') }}</button>
               </div>
               <SignatureWorkflowPanel class="dark-panel-override" :signer-id="signerId" :signer-kind="signerKind" :signature-hex="signatureHex" :required-signer-count="signerProgress.requiredCount" :signature-count="signerProgress.signatureCount" @update:signer-id="signerId = $event" @update:signer-kind="signerKind = $event" @update:signature-hex="signatureHex = $event" @append-signature="appendManualSignature" />
             </div>
@@ -125,15 +126,15 @@
             <button @click="step4Expanded = !step4Expanded" class="relative w-full bg-slate-800/40 px-6 py-5 border-b border-neo-500/20 flex items-center justify-between hover:bg-slate-700/60 transition-colors">
               <div class="flex items-center gap-4">
                 <div class="w-8 h-8 rounded-full bg-neo-500 text-slate-900 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(34,197,94,0.4)]">4</div>
-                <h2 class="text-lg font-bold text-white font-outfit">Broadcast</h2>
+                <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepBroadcastTitle', 'Broadcast') }}</h2>
               </div>
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step4Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step4Expanded" class="relative p-6 md:p-8 animate-fade-in space-y-6">
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <button class="btn-primary" :disabled="!canClientBroadcast || isSubmissionPending" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? 'Broadcasting…' : 'Broadcast with Neo Wallet' }}</button>
-                <button class="btn-secondary" :disabled="relayPayloadOptions.length === 0 || isSubmissionPending" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? 'Checking Relay…' : 'Check Relay' }}</button>
-                <button class="btn-primary bg-neo-600 hover:bg-neo-500 focus:ring-neo-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] border-transparent" :disabled="!canRelayBroadcast || isSubmissionPending" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? 'Submitting…' : 'Submit via Relay' }}</button>
+                <button class="btn-primary" :disabled="!canClientBroadcast || isSubmissionPending" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? t('sharedDraft.broadcasting', 'Broadcasting…') : t('sharedDraft.broadcastWithNeoWallet', 'Broadcast with Neo Wallet') }}</button>
+                <button class="btn-secondary" :disabled="relayPayloadOptions.length === 0 || isSubmissionPending" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? t('sharedDraft.checkingRelay', 'Checking Relay…') : t('sharedDraft.checkRelay', 'Check Relay') }}</button>
+                <button class="btn-primary bg-neo-600 hover:bg-neo-500 focus:ring-neo-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] border-transparent" :disabled="!canRelayBroadcast || isSubmissionPending" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? t('sharedDraft.submitting', 'Submitting…') : t('sharedDraft.submitViaRelay', 'Submit via Relay') }}</button>
               </div>
               <BroadcastOptionsPanel class="dark-panel-override" :active-mode="workspace.broadcast.value.mode" :modes="runtime.broadcastModes" :active-relay-payload-mode="relayPayloadMode" :relay-payload-options="relayPayloadOptions" :relay-endpoint="runtime.relayEndpoint" @set-mode="workspace.setBroadcastMode($event)" @set-relay-payload-mode="relayPayloadMode = $event" @persist-draft="persistDraft" />
               <RelayPreflightPanel class="mt-6 dark-panel-override border-slate-700" v-if="relayCheck.level !== 'idle'" :level="relayCheck.level" :status-label="relayCheck.label" :detail="relayCheck.detail" :payload-mode="relayCheck.payloadMode" :vm-state="relayCheck.vmState" :gas-consumed="relayCheck.gasConsumed" :operation="relayCheck.operation" :exception="relayCheck.exception" :stack="relayCheck.stack" :can-copy-payload="Boolean(relayCheckRequest)" :can-copy-stack="relayCheck.stack.length > 0" :can-export-json="Boolean(relayCheckRequest) || relayCheck.stack.length > 0" @copy-payload="copyRelayPayload" @copy-stack="copyRelayStack" @export-json="exportRelayPreflight" />
@@ -142,7 +143,7 @@
                 <div v-if="activeSubmissionReceipt" class="mt-6 rounded-xl border border-white/5 bg-slate-800/80 backdrop-blur-md px-6 py-5 shadow-xl" :class="activeSubmissionReceipt.tone === 'success' ? 'border-neo-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : activeSubmissionReceipt.tone === 'error' ? 'border-rose-500/30' : 'border-amber-500/30'">
                   <div class="flex items-center gap-2 mb-3">
                     <span class="w-2.5 h-2.5 rounded-full" :class="activeSubmissionReceipt.tone === 'success' ? 'bg-neo-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : activeSubmissionReceipt.tone === 'error' ? 'bg-rose-500' : 'bg-amber-500'"></span>
-                    <p class="text-xs font-bold uppercase tracking-widest text-white">Submission Receipt</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-white">{{ t('operations.receiptTitle', 'Submission Receipt') }}</p>
                   </div>
                   <p class="mt-1 text-sm text-slate-300 leading-relaxed">{{ activeSubmissionReceipt.detail }}</p>
                   <code v-if="activeSubmissionReceipt.txid" class="mt-4 block break-all rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-neo-300 font-mono shadow-inner">{{ activeSubmissionReceipt.txid }}</code>
@@ -151,7 +152,7 @@
                   </a>
                   
                   <div v-if="submissionReceiptHistoryItems && submissionReceiptHistoryItems.length > 0" class="mt-6 border-t border-slate-700/50 pt-5">
-                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Receipt History</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">{{ t('operations.receiptHistoryTitle', 'Receipt History') }}</p>
                     <div class="space-y-3">
                       <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-3 hover:bg-slate-700/60 transition-colors">
                         <div class="flex items-center justify-between gap-3 mb-1">
@@ -297,9 +298,9 @@ const draftCandidate = computed(() => buildOperationFromPreset({
 
 const composerSummary = computed(() => buildPresetSummary(draftCandidate.value));
 const signerProgress = computed(() => summarizeSignerProgress(workspace.signerRequirements.value, workspace.signatures.value));
-const didLabel = computed(() => didConnection.isConnected.value ? didConnection.shortDid.value : (didConnection.isConfigured.value ? 'available' : 'not configured'));
-const neoWalletLabel = computed(() => walletConnection.isConnected.value ? walletService.address : 'not connected');
-const evmWalletLabel = computed(() => evmAddress.value || 'not connected');
+const didLabel = computed(() => didConnection.isConnected.value ? didConnection.shortDid.value : (didConnection.isConfigured.value ? t('operations.available', 'available') : t('operations.notConfigured', 'not configured')));
+const neoWalletLabel = computed(() => walletConnection.isConnected.value ? walletService.address : t('didPanel.notConnected', 'not connected'));
+const evmWalletLabel = computed(() => evmAddress.value || t('didPanel.notConnected', 'not connected'));
 const shareUrl = computed(() => {
   const slug = workspace.share.value.shareSlug;
   if (!slug) return '';

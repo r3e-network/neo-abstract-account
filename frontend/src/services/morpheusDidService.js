@@ -183,11 +183,20 @@ async function fetchOraclePublicKey() {
 }
 
 async function callNeoDid(action, payload = {}) {
-  const response = await fetch(RUNTIME_CONFIG.morpheusNeoDidEndpoint, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ action, ...payload }),
-  });
+  const normalizedAction = trim(action).toLowerCase();
+  const method = normalizedAction === 'resolve' ? 'GET' : 'POST';
+  const url = method === 'GET'
+    ? `${RUNTIME_CONFIG.morpheusNeoDidEndpoint}?${new URLSearchParams(
+        Object.entries({ action: normalizedAction, ...payload }).filter(([, value]) => value != null && value !== '')
+      ).toString()}`
+    : RUNTIME_CONFIG.morpheusNeoDidEndpoint;
+  const response = await fetch(url, method === 'GET'
+    ? { method, headers: { accept: 'application/json' } }
+    : {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: normalizedAction, ...payload }),
+      });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.error) {
     throw new Error(body?.error || body?.message || `NeoDID ${action} failed`);
@@ -197,39 +206,55 @@ async function callNeoDid(action, payload = {}) {
 
 async function buildEncryptedSubjectPatch(extra = {}) {
   const subject = didService.buildNeoDidSubject();
-  if (!subject?.provider || !subject?.provider_uid) {
-    throw new Error('A connected DID subject is required.');
+  if (!subject?.provider || !subject?.id_token) {
+    throw new Error('A connected Web3Auth identity with id_token is required.');
   }
   const oracleKey = await fetchOraclePublicKey();
+  const confidentialPatch = {
+    id_token: subject.id_token,
+    provider_uid: subject.provider_uid || undefined,
+    ...extra,
+  };
   const encrypted_params = await encryptJsonWithMorpheusOracleKey(
     oracleKey.public_key,
-    JSON.stringify({
-      provider_uid: subject.provider_uid,
-      ...extra,
-    }),
+    JSON.stringify(confidentialPatch),
   );
   return {
     provider: subject.provider,
     encrypted_params,
+    provider_uid: subject.provider_uid || undefined,
   };
 }
 
 class MorpheusDidService {
   async bindDid({ vaultAccount, claimType = 'Web3Auth_PrimaryIdentity', claimValue = 'verified', metadata = {} } = {}) {
-    const subject = didService.buildNeoDidSubject();
-    if (!subject?.provider || !subject?.provider_uid) {
+    const subjectPatch = await buildEncryptedSubjectPatch({
+      linked_accounts: didService.profile?.linkedAccounts || [],
+      email: didService.profile?.email || undefined,
+      phone: didService.profile?.phone || undefined,
+    });
+    if (!subjectPatch?.provider || !subjectPatch?.encrypted_params) {
       throw new Error('Connect DID first.');
     }
     return callNeoDid('bind', {
       vault_account: `0x${normalizeScriptHash(vaultAccount)}`,
-      provider: subject.provider,
-      provider_uid: subject.provider_uid,
+      provider: subjectPatch.provider,
       claim_type: claimType,
       claim_value: claimValue,
+      encrypted_params: subjectPatch.encrypted_params,
       metadata: {
-        ...subject.metadata,
+        provider_uid_hint: subjectPatch.provider_uid || undefined,
+        identity_root: didService.profile?.identityRoot || didService.profile?.providerUid || undefined,
+        service_did: didService.profile?.serviceDid || RUNTIME_CONFIG.morpheusNeoDidServiceDid,
         ...metadata,
       },
+    });
+  }
+
+  async resolveDid({ did = RUNTIME_CONFIG.morpheusNeoDidServiceDid, format = '' } = {}) {
+    return callNeoDid('resolve', {
+      did,
+      format: trim(format),
     });
   }
 
