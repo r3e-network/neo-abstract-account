@@ -54,21 +54,17 @@ namespace AbstractAccount
 
         private static void AssertCanRequestDomeActivation(ByteString accountId)
         {
-            bool nativeAuthorized = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId))
-                || CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId))
-                || CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
-            if (nativeAuthorized) return;
-
-            UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
-            if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
+            UInt160[] explicitSigners = new UInt160[0];
+            if (Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                bool metaAuthorized = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)
-                    || CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)
-                    || CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
-                if (metaAuthorized) return;
+                explicitSigners = GetMetaTxContextSigners(accountId);
             }
 
-            ExecutionEngine.Assert(false, "Unauthorized");
+            bool isAuthorized = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)
+                || CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)
+                || CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
+            
+            ExecutionEngine.Assert(isAuthorized, "Unauthorized");
         }
 
         private static int FindDomeOracleFilterSeparator(string value)

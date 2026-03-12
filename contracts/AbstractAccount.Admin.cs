@@ -52,7 +52,10 @@ namespace AbstractAccount
             }
 
             // For Neo native signers
-            if (CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId)))
+            int adminThreshold = GetAdminThreshold(accountId);
+            ExecutionEngine.Assert(adminThreshold > 0, "Admin threshold must be > 0 to modify configurations");
+
+            if (CheckNativeSignatures(GetAdmins(accountId), adminThreshold))
             {
                 UpdateLastActiveTimestamp(accountId);
                 return;
@@ -78,7 +81,7 @@ namespace AbstractAccount
             UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
             if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                if (CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners))
+                if (CheckMixedSignatures(GetAdmins(accountId), adminThreshold, explicitSigners))
                 {
                     UpdateLastActiveTimestamp(accountId);
                     return;

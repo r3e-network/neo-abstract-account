@@ -53,6 +53,7 @@ namespace AbstractAccount
             AssertAccountExists(accountId);
 
             bool isAdmin = false;
+            bool bypassOperationalLimits = false;
 
             // Authorization order is: custom execution verifier (if configured), then native admin/manager quorum, then
             // dome signers subject to timeout + oracle unlock. Only after authorization do we evaluate target restrictions.
@@ -69,11 +70,18 @@ namespace AbstractAccount
             }
             else
             {
-                isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
+                int adminThreshold = GetAdminThreshold(accountId);
+                isAdmin = CheckNativeSignatures(GetAdmins(accountId), adminThreshold);
                 bool isManager = false;
                 if (!isAdmin)
                 {
                     isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
+                }
+                
+                // Only grant operational bypass if they are an admin WITH a threshold > 0 (meaning signatures were verified)
+                if (isAdmin && adminThreshold > 0)
+                {
+                    bypassOperationalLimits = true;
                 }
 
                 if (isAdmin || isManager)
@@ -94,7 +102,7 @@ namespace AbstractAccount
                     UpdateLastActiveTimestamp(accountId);
                 }
             }
-            EnforceRestrictions(accountId, targetContract, method, args, isAdmin);
+            EnforceRestrictions(accountId, targetContract, method, args, bypassOperationalLimits);
         }
 
         private static void CheckPermissionsAndExecute(ByteString accountId, UInt160[] verifiedSigners, UInt160 targetContract, string method, object[] args)
@@ -102,6 +110,7 @@ namespace AbstractAccount
             AssertAccountExists(accountId);
 
             bool isAdmin = false;
+            bool bypassOperationalLimits = false;
 
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
@@ -117,11 +126,17 @@ namespace AbstractAccount
             }
             else
             {
-                isAdmin = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
+                int adminThreshold = GetAdminThreshold(accountId);
+                isAdmin = CheckMixedSignatures(GetAdmins(accountId), adminThreshold, verifiedSigners);
                 bool isManager = false;
                 if (!isAdmin)
                 {
                     isManager = CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
+                }
+                
+                if (isAdmin && adminThreshold > 0)
+                {
+                    bypassOperationalLimits = true;
                 }
 
                 if (isAdmin || isManager)
@@ -142,7 +157,7 @@ namespace AbstractAccount
                     UpdateLastActiveTimestamp(accountId);
                 }
             }
-            EnforceRestrictions(accountId, targetContract, method, args, isAdmin);
+            EnforceRestrictions(accountId, targetContract, method, args, bypassOperationalLimits);
         }
 
         // Policy enforcement is intentionally centralized so every execution path—native and meta-tx—runs through the
