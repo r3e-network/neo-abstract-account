@@ -148,25 +148,25 @@ async function main() {
     })),
   });
 
-  const adminsAById = await invokeRead(aaHash, 'getAdmins', [cpByteArrayRaw(accountIdA)]);
-  const adminsAByAddr = await invokeRead(aaHash, 'getAdminsByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const adminThresholdAById = await invokeRead(aaHash, 'getAdminThreshold', [cpByteArrayRaw(accountIdA)]);
-  const adminThresholdAByAddr = await invokeRead(aaHash, 'getAdminThresholdByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const managersAById = await invokeRead(aaHash, 'getManagers', [cpByteArrayRaw(accountIdA)]);
-  const managersAByAddr = await invokeRead(aaHash, 'getManagersByAddress', [cpHash160(accountA.addressScriptHash)]);
-  const managerThresholdAById = await invokeRead(aaHash, 'getManagerThreshold', [cpByteArrayRaw(accountIdA)]);
-  const managerThresholdAByAddr = await invokeRead(aaHash, 'getManagerThresholdByAddress', [cpHash160(accountA.addressScriptHash)]);
+  const signersAById = await invokeRead(aaHash, 'getSigners', [cpByteArrayRaw(accountIdA)]);
+  const signersAByAddr = await invokeRead(aaHash, 'getSignersByAddress', [cpHash160(accountA.addressScriptHash)]);
+  const thresholdAById = await invokeRead(aaHash, 'getThreshold', [cpByteArrayRaw(accountIdA)]);
+  const thresholdAByAddr = await invokeRead(aaHash, 'getThresholdByAddress', [cpHash160(accountA.addressScriptHash)]);
+  const signersAById = await invokeRead(aaHash, 'getSigners', [cpByteArrayRaw(accountIdA)]);
+  const signersAByAddr = await invokeRead(aaHash, 'getSignersByAddress', [cpHash160(accountA.addressScriptHash)]);
+  const thresholdAById = await invokeRead(aaHash, 'getThreshold', [cpByteArrayRaw(accountIdA)]);
+  const thresholdAByAddr = await invokeRead(aaHash, 'getThresholdByAddress', [cpHash160(accountA.addressScriptHash)]);
   const idByAddressA = await invokeRead(aaHash, 'getAccountIdByAddress', [cpHash160(accountA.addressScriptHash)]);
   const addressByIdA = await invokeRead(aaHash, 'getAccountAddress', [cpByteArrayRaw(accountIdA)]);
 
-  check('A admins by id count == 1', (adminsAById.stack?.[0]?.value || []).length === 1);
-  check('A admins by address count == 1', (adminsAByAddr.stack?.[0]?.value || []).length === 1);
-  check('A admin threshold by id == 1', String(adminThresholdAById.stack?.[0]?.value) === '1');
-  check('A admin threshold by address == 1', String(adminThresholdAByAddr.stack?.[0]?.value) === '1');
-  check('A managers by id count == 1', (managersAById.stack?.[0]?.value || []).length === 1);
-  check('A managers by address count == 1', (managersAByAddr.stack?.[0]?.value || []).length === 1);
-  check('A manager threshold by id == 1', String(managerThresholdAById.stack?.[0]?.value) === '1');
-  check('A manager threshold by address == 1', String(managerThresholdAByAddr.stack?.[0]?.value) === '1');
+  check('A signers by id count == 1', (signersAById.stack?.[0]?.value || []).length === 1);
+  check('A signers by address count == 1', (signersAByAddr.stack?.[0]?.value || []).length === 1);
+  check('A admin threshold by id == 1', String(thresholdAById.stack?.[0]?.value) === '1');
+  check('A admin threshold by address == 1', String(thresholdAByAddr.stack?.[0]?.value) === '1');
+  check('A signers by id count == 1', (signersAById.stack?.[0]?.value || []).length === 1);
+  check('A signers by address count == 1', (signersAByAddr.stack?.[0]?.value || []).length === 1);
+  check('A manager threshold by id == 1', String(thresholdAById.stack?.[0]?.value) === '1');
+  check('A manager threshold by address == 1', String(thresholdAByAddr.stack?.[0]?.value) === '1');
 
   const idAReadRaw = decodeByteStringToHex(idByAddressA.stack?.[0]);
   const idAReadNormalized = sanitizeHex(idAReadRaw);
@@ -186,27 +186,27 @@ async function main() {
   const argsHashSample = await computeArgsHash(aaHash, [sc.ContractParam.string('aa-validate')]);
   check('computeArgsHash returns 32-byte hash', /^[0-9a-f]{64}$/.test(argsHashSample), argsHashSample);
 
-  summary.txs.push({ step: 'setAdminsByAddress(A)', ...(await sendInvocation({
+  summary.txs.push({ step: 'setSignersByAddress(A)', ...(await sendInvocation({
     account: owner,
     magic,
     aaHash,
-    operation: 'setAdminsByAddress',
+    operation: 'setSignersByAddress',
     args: [cpHash160(accountA.addressScriptHash), cpArray([cpHash160(ownerScriptHash)]), sc.ContractParam.integer(1)],
   }))});
 
-  summary.txs.push({ step: 'setManagers(A)', ...(await sendInvocation({
+  summary.txs.push({ step: 'setSigners(A)', ...(await sendInvocation({
     account: owner,
     magic,
     aaHash,
-    operation: 'setManagers',
+    operation: 'setSigners',
     args: [cpByteArrayRaw(accountIdA), cpArray([cpHash160(ownerScriptHash)]), sc.ContractParam.integer(1)],
   }))});
 
-  summary.txs.push({ step: 'setManagersByAddress(A)', ...(await sendInvocation({
+  summary.txs.push({ step: 'setSignersByAddress(A)', ...(await sendInvocation({
     account: owner,
     magic,
     aaHash,
-    operation: 'setManagersByAddress',
+    operation: 'setSignersByAddress',
     args: [cpHash160(accountA.addressScriptHash), cpArray([cpHash160(ownerScriptHash)]), sc.ContractParam.integer(1)],
   }))});
 

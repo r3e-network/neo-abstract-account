@@ -47,8 +47,8 @@ test('AA execution and admin paths delegate to separate custom verifier entrypoi
   const executionSource = read('contracts/AbstractAccount.ExecutionAndPermissions.cs');
 
   assert.match(source, /UInt160 customVerifier = GetVerifierContract\(accountId\);/);
-  assert.match(source, /"verifyAdmin"/);
-  assert.match(source, /"verifyAdminMetaTx"/);
+  assert.match(source, /"verifySigner"/);
+  assert.match(source, /"verifySignerMetaTx"/);
   assert.match(source, /Unauthorized by custom verifier/);
   assert.match(executionSource, /"verifyExecution"/);
   assert.match(executionSource, /"verifyExecutionMetaTx"/);
@@ -63,7 +63,7 @@ test('Morpheus verifier testnet validator exists and is exposed through sdk scri
   assert.match(source, /deploy MorpheusSocialRecoveryVerifier/);
   assert.match(source, /setupRecovery/);
   assert.match(source, /setVerifierContractByAddress/);
-  assert.match(source, /setAdminsByAddress/);
+  assert.match(source, /setSignersByAddress/);
   assert.match(source, /getMorpheusOracle/);
   assert.equal(packageJson.scripts['testnet:validate:morpheus-verifier'], 'node tests/aa_testnet_morpheus_verifier_validate.js');
 });

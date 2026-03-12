@@ -33,10 +33,8 @@ namespace AbstractAccount
         "setBlacklist",
         "setMaxTransferByAddress",
         "setMaxTransfer",
-        "setAdminsByAddress",
-        "setAdmins",
-        "setManagersByAddress",
-        "setManagers",
+        "setSignersByAddress",
+        "setSigners",
         "bindAccountAddress",
         "setDomeAccountsByAddress",
         "setDomeAccounts",
@@ -48,8 +46,8 @@ namespace AbstractAccount
         "verifyMetaTx",
         "verifyExecution",
         "verifyExecutionMetaTx",
-        "verifyAdmin",
-        "verifyAdminMetaTx",
+        "verifySigner",
+        "verifySignerMetaTx",
         "requestDomeActivationByAddress",
         "requestDomeActivation",
         "domeActivationCallback")]
@@ -70,10 +68,8 @@ namespace AbstractAccount
         // Each prefix isolates one slice of per-account state. Prefixes are always combined with the canonical
         // storage key produced by GetStorageKey(accountId), which lets new deployments use stable key formats while
         // still resolving legacy accounts created before the canonical-key migration.
-        private static readonly byte[] AdminsPrefix = new byte[] { 0x01 };
-        private static readonly byte[] AdminThresholdPrefix = new byte[] { 0x02 };
-        private static readonly byte[] ManagersPrefix = new byte[] { 0x03 };
-        private static readonly byte[] ManagerThresholdPrefix = new byte[] { 0x04 };
+        private static readonly byte[] SignersPrefix = new byte[] { 0x01 };
+        private static readonly byte[] ThresholdPrefix = new byte[] { 0x02 };
         private static readonly byte[] WhitelistEnabledPrefix = new byte[] { 0x05 };
         private static readonly byte[] WhitelistPrefix = new byte[] { 0x06 };
         private static readonly byte[] BlacklistPrefix = new byte[] { 0x07 };
@@ -89,8 +85,7 @@ namespace AbstractAccount
         private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
         private static readonly byte[] VerifierContractPrefix = new byte[] { 0x12 };
         private static readonly byte[] ContractHashKey = new byte[] { 0x13 };
-        private static readonly byte[] AdminIndexPrefix = new byte[] { 0x20 };
-        private static readonly byte[] ManagerIndexPrefix = new byte[] { 0x21 };
+        private static readonly byte[] SignerIndexPrefix = new byte[] { 0x20 };
         private static readonly byte[] GlobalExecutionLockKey = new byte[] { 0x14 };
         private static readonly byte[] MetaTxContextPrefix = new byte[] { 0xFF };
 

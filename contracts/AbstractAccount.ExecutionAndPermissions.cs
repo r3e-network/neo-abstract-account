@@ -52,10 +52,10 @@ namespace AbstractAccount
         {
             AssertAccountExists(accountId);
 
-            bool isAdmin = false;
+            bool isSigner = false;
             bool bypassOperationalLimits = false;
 
-            // Authorization order is: custom execution verifier (if configured), then native admin/manager quorum, then
+            // Authorization order is: custom execution verifier (if configured), then native signer quorum, then
             // dome signers subject to timeout + oracle unlock. Only after authorization do we evaluate target restrictions.
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
@@ -70,21 +70,15 @@ namespace AbstractAccount
             }
             else
             {
-                int adminThreshold = GetAdminThreshold(accountId);
-                isAdmin = CheckNativeSignatures(GetAdmins(accountId), adminThreshold);
-                bool isManager = false;
-                if (!isAdmin)
-                {
-                    isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
-                }
+                int threshold = GetThreshold(accountId);
+                isSigner = CheckNativeSignatures(GetSigners(accountId), threshold);
                 
-                // Only grant operational bypass if they are an admin WITH a threshold > 0 (meaning signatures were verified)
-                if (isAdmin && adminThreshold > 0)
+                if (isSigner && threshold > 0)
                 {
                     bypassOperationalLimits = true;
                 }
 
-                if (isAdmin || isManager)
+                if (isSigner)
                 {
                     UpdateLastActiveTimestamp(accountId);
                 }
@@ -109,7 +103,7 @@ namespace AbstractAccount
         {
             AssertAccountExists(accountId);
 
-            bool isAdmin = false;
+            bool isSigner = false;
             bool bypassOperationalLimits = false;
 
             UInt160 customVerifier = GetVerifierContract(accountId);
@@ -126,20 +120,15 @@ namespace AbstractAccount
             }
             else
             {
-                int adminThreshold = GetAdminThreshold(accountId);
-                isAdmin = CheckMixedSignatures(GetAdmins(accountId), adminThreshold, verifiedSigners);
-                bool isManager = false;
-                if (!isAdmin)
-                {
-                    isManager = CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
-                }
+                int threshold = GetThreshold(accountId);
+                isSigner = CheckMixedSignatures(GetSigners(accountId), threshold, verifiedSigners);
                 
-                if (isAdmin && adminThreshold > 0)
+                if (isSigner && threshold > 0)
                 {
                     bypassOperationalLimits = true;
                 }
 
-                if (isAdmin || isManager)
+                if (isSigner)
                 {
                     UpdateLastActiveTimestamp(accountId);
                 }
@@ -166,7 +155,7 @@ namespace AbstractAccount
         {
             AssertMethodAllowedByPolicy(targetContract, method);
 
-            // Admins bypass operational restrictions like whitelist/blacklist/transfer-limits.
+            // Signers bypass operational restrictions like whitelist/blacklist/transfer-limits.
             if (bypassOperationalLimits) return;
 
             StorageMap blacklistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(BlacklistPrefix, GetStorageKey(accountId)));
@@ -268,10 +257,8 @@ namespace AbstractAccount
                 method == "setBlacklist" ||
                 method == "setMaxTransferByAddress" ||
                 method == "setMaxTransfer" ||
-                method == "setAdminsByAddress" ||
-                method == "setAdmins" ||
-                method == "setManagersByAddress" ||
-                method == "setManagers" ||
+                method == "setSignersByAddress" ||
+                method == "setSigners" ||
                 method == "bindAccountAddress" ||
                 method == "setDomeAccountsByAddress" ||
                 method == "setDomeAccounts" ||

@@ -94,19 +94,19 @@ async function main() {
   const normalizedResolvedAccountId = sanitizeHex(resolvedAccountId);
   const normalizedResolvedAccountAddressHash = normalizeReadByteString(resolvedAccountAddressHash);
 
-  const adminsAfterRes = await invokeRead(
+  const signersAfterRes = await invokeRead(
     aaHash,
-    'getAdminsByAddress',
+    'getSignersByAddress',
     [sc.ContractParam.hash160(accountInfo.addressScriptHash)]
   );
-  const adminThresholdRes = await invokeRead(
+  const thresholdRes = await invokeRead(
     aaHash,
-    'getAdminThresholdByAddress',
+    'getThresholdByAddress',
     [sc.ContractParam.hash160(accountInfo.addressScriptHash)]
   );
 
-  const adminsAfter = adminsAfterRes?.stack?.[0]?.value || [];
-  const adminThreshold = adminThresholdRes?.stack?.[0]?.value;
+  const signersAfter = signersAfterRes?.stack?.[0]?.value || [];
+  const threshold = thresholdRes?.stack?.[0]?.value;
 
   const result = {
     rpcUrl,
@@ -122,8 +122,8 @@ async function main() {
     tx: create,
     checks: {
       accountIdBeforeHex: accountIdBefore || null,
-      adminsAfterCount: Array.isArray(adminsAfter) ? adminsAfter.length : null,
-      adminThreshold,
+      signersAfterCount: Array.isArray(signersAfter) ? signersAfter.length : null,
+      threshold,
       accountIdReadRawHex: resolvedAccountId || null,
       accountAddressReadRawHex: resolvedAccountAddressHash || null,
       accountIdBindingMatches: normalizedResolvedAccountId === accountId,

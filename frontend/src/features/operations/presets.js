@@ -115,10 +115,8 @@ export function buildOperationFromPreset({
       method: 'createAccountBatch',
       args: [
         toArrayArg(accountIds, 'String'),
-        toArrayArg(admins.map(h => `0x${h}`), 'Hash160'),
-        toIntegerArg(batch.adminThreshold || 1),
-        toArrayArg(managers.map(h => `0x${h}`), 'Hash160'),
-        toIntegerArg(batch.managerThreshold || 0),
+        toArrayArg(signers.map(h => `0x${h}`), 'Hash160'),
+        toIntegerArg(batch.threshold || 1),
       ],
       metadata: {
         accountCount: accountIds.length,

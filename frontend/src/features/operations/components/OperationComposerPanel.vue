@@ -72,7 +72,7 @@
           <svg class="w-5 h-5 text-ata-green flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           <div class="text-sm text-ata-green">
             <p class="font-medium mb-1">Batch Account Creation</p>
-            <p class="text-ata-green">Create multiple accounts with shared governance in a single transaction. All accounts will have the same admin and manager configuration.</p>
+            <p class="text-ata-green">Create multiple accounts with shared governance in a single transaction. All accounts will have the same signer configuration.</p>
           </div>
         </div>
       </div>
@@ -90,38 +90,18 @@
       <div class="border-t border-ata-border pt-4">
         <h3 class="text-sm font-mono font-semibold text-white uppercase tracking-wider mb-3 flex items-center gap-2 tracking-widest">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-          Admin Configuration
+          Signer Configuration
         </h3>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="space-y-1.5 text-sm md:col-span-2">
-            <span class="font-medium text-slate-300">Admin Addresses</span>
-            <textarea :value="batchAdmins" rows="2" class="w-full rounded-lg border border-ata-border px-3 py-2.5 font-mono text-xs focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all resize-none bg-ata-dark" placeholder='["NXXXaddress1", "0xhash2"]' @input="$emit('update:batchAdmins', $event.target.value)" />
+            <span class="font-medium text-slate-300">Signer Addresses</span>
+            <textarea :value="batchSigners" rows="2" class="w-full rounded-lg border border-ata-border px-3 py-2.5 font-mono text-xs focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all resize-none bg-ata-dark" placeholder='["NXXXaddress1", "0xhash2"]' @input="$emit('update:batchSigners', $event.target.value)" />
             <p class="text-xs text-slate-400">JSON array of Neo addresses or script hashes</p>
           </label>
           <label class="space-y-1.5 text-sm">
-            <span class="font-medium text-slate-300">Admin Threshold</span>
-            <input :value="batchAdminThreshold" type="number" min="1" class="w-full rounded-lg border border-ata-border px-3 py-2.5 focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all bg-ata-dark text-white" @input="$emit('update:batchAdminThreshold', $event.target.value)" />
+            <span class="font-medium text-slate-300">Signer Threshold</span>
+            <input :value="batchThreshold" type="number" min="1" class="w-full rounded-lg border border-ata-border px-3 py-2.5 focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all bg-ata-dark text-white" @input="$emit('update:batchThreshold', $event.target.value)" />
             <p class="text-xs text-slate-400">Minimum signatures required</p>
-          </label>
-        </div>
-      </div>
-
-      <div class="border-t border-ata-border pt-4">
-        <h3 class="text-sm font-mono font-semibold text-white uppercase tracking-wider mb-3 flex items-center gap-2 tracking-widest">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-          Manager Configuration
-          <span class="text-xs text-slate-400 font-normal">(Optional)</span>
-        </h3>
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="space-y-1.5 text-sm md:col-span-2">
-            <span class="font-medium text-slate-300">Manager Addresses</span>
-            <textarea :value="batchManagers" rows="2" class="w-full rounded-lg border border-ata-border px-3 py-2.5 font-mono text-xs focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all resize-none bg-ata-dark" placeholder='[] (optional)' @input="$emit('update:batchManagers', $event.target.value)" />
-            <p class="text-xs text-slate-400">Leave empty if no managers needed</p>
-          </label>
-          <label class="space-y-1.5 text-sm">
-            <span class="font-medium text-slate-300">Manager Threshold</span>
-            <input :value="batchManagerThreshold" type="number" min="0" class="w-full rounded-lg border border-ata-border px-3 py-2.5 focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all bg-ata-dark text-white" @input="$emit('update:batchManagerThreshold', $event.target.value)" />
-            <p class="text-xs text-slate-400">Set to 0 if no managers</p>
           </label>
         </div>
       </div>
@@ -211,10 +191,8 @@ defineProps({
   multisigTitle: { type: String, default: '' },
   multisigDescription: { type: String, default: '' },
   batchAccountIds: { type: String, default: '[]' },
-  batchAdmins: { type: String, default: '[]' },
-  batchAdminThreshold: { type: String, default: '1' },
-  batchManagers: { type: String, default: '[]' },
-  batchManagerThreshold: { type: String, default: '0' },
+  batchSigners: { type: String, default: '[]' },
+  batchThreshold: { type: String, default: '1' },
   summaryTitle: { type: String, default: '' },
   summaryDetail: { type: String, default: '' },
   contractLookupStatus: { type: String, default: '' },
@@ -238,10 +216,8 @@ defineEmits([
   'update:multisigTitle',
   'update:multisigDescription',
   'update:batchAccountIds',
-  'update:batchAdmins',
-  'update:batchAdminThreshold',
-  'update:batchManagers',
-  'update:batchManagerThreshold',
+  'update:batchSigners',
+  'update:batchThreshold',
   'select-contract-suggestion',
   'update:parameterValue',
 ]);

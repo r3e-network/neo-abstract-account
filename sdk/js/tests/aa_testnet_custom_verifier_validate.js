@@ -200,12 +200,12 @@ async function main() {
   check('verifier contract binding matches deployed hash', verifierReadNormalized === sanitizeHex(deployResult.deployedHash), verifierReadHex);
 
   summary.txs.push({
-    step: 'setAdminsByAddress(proxy-only)',
+    step: 'setSignersByAddress(proxy-only)',
     ...(await sendInvocation({
       account: owner,
       magic,
       aaHash,
-      operation: 'setAdminsByAddress',
+      operation: 'setSignersByAddress',
       args: [
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(accountInfo.addressScriptHash)]),
@@ -214,10 +214,10 @@ async function main() {
     })),
   });
 
-  const adminThreshold = await invokeRead(aaHash, 'getAdminThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
-  const adminsRead = await invokeRead(aaHash, 'getAdminsByAddress', [cpHash160(accountInfo.addressScriptHash)]);
-  check('proxy-only admin threshold == 1', String(adminThreshold.stack?.[0]?.value || '') === '1');
-  check('proxy-only admin list count == 1', (adminsRead.stack?.[0]?.value || []).length === 1);
+  const threshold = await invokeRead(aaHash, 'getThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
+  const signersRead = await invokeRead(aaHash, 'getSignersByAddress', [cpHash160(accountInfo.addressScriptHash)]);
+  check('proxy-only admin threshold == 1', String(threshold.stack?.[0]?.value || '') === '1');
+  check('proxy-only admin list count == 1', (signersRead.stack?.[0]?.value || []).length === 1);
 
   const ownerOnlyMutation = await simulate(
     aaHash,

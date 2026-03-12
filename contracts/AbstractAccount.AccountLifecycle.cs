@@ -15,9 +15,9 @@ namespace AbstractAccount
         /// Creates a logical account record keyed by <paramref name="accountId"/> and seeds its admin/manager quorums.
         /// At this stage the account may still be unbound from its deterministic proxy address.
         /// </summary>
-        public static void CreateAccount(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> admins, int adminThreshold, Neo.SmartContract.Framework.List<UInt160> managers, int managerThreshold)
+        public static void CreateAccount(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> signers, int threshold)
         {
-            CreateAccountInternal(accountId, admins, adminThreshold, managers, managerThreshold);
+            CreateAccountInternal(accountId, signers, threshold);
         }
 
         /// <summary>
@@ -27,12 +27,10 @@ namespace AbstractAccount
         public static void CreateAccountWithAddress(
             ByteString accountId,
             UInt160 accountAddress,
-            Neo.SmartContract.Framework.List<UInt160> admins,
-            int adminThreshold,
-            Neo.SmartContract.Framework.List<UInt160> managers,
-            int managerThreshold)
+            Neo.SmartContract.Framework.List<UInt160> signers,
+            int threshold)
         {
-            CreateAccountInternal(accountId, admins, adminThreshold, managers, managerThreshold);
+            CreateAccountInternal(accountId, signers, threshold);
             BindAccountAddressInternal(accountId, accountAddress);
         }
 
@@ -42,15 +40,13 @@ namespace AbstractAccount
         /// </summary>
         public static void CreateAccountBatch(
             Neo.SmartContract.Framework.List<ByteString> accountIds,
-            Neo.SmartContract.Framework.List<UInt160>? admins,
-            int adminThreshold,
-            Neo.SmartContract.Framework.List<UInt160>? managers,
-            int managerThreshold)
+            Neo.SmartContract.Framework.List<UInt160>? signers,
+            int threshold)
         {
             ExecutionEngine.Assert(accountIds != null && accountIds.Count > 0, "Account IDs required");
             for (int i = 0; i < accountIds!.Count; i++)
             {
-                CreateAccountInternal(accountIds[i], admins, adminThreshold, managers, managerThreshold);
+                CreateAccountInternal(accountIds[i], signers, threshold);
             }
         }
 
@@ -153,13 +149,8 @@ namespace AbstractAccount
                 
                 // Check Admin signatures (N3 only)
                 // 检查 Admin 签名（仅 N3）
-                bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
-                if (isAdmin) return true;
-
-                // Check Manager signatures (N3 only)
-                // 检查 Manager 签名（仅 N3）
-                bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
-                if (isManager) return true;
+                bool isSigner = CheckNativeSignatures(GetSigners(accountId), GetThreshold(accountId));
+                if (isSigner) return true;
 
                 // Check Dome signatures (N3 only)
                 // 检查 Dome 签名（仅 N3）

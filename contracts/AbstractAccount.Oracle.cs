@@ -60,8 +60,7 @@ namespace AbstractAccount
                 explicitSigners = GetMetaTxContextSigners(accountId);
             }
 
-            bool isAuthorized = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)
-                || CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)
+            bool isAuthorized = CheckMixedSignatures(GetSigners(accountId), GetThreshold(accountId), explicitSigners)
                 || CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners);
             
             ExecutionEngine.Assert(isAuthorized, "Unauthorized");
@@ -100,7 +99,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetDomeOracle(ByteString accountId, string url)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             StorageMap urlMap = new StorageMap(Storage.CurrentContext, DomeOracleUrlPrefix);
             ByteString key = GetStorageKey(accountId);
             if (url == null || url == "")

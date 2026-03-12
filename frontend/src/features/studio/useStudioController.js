@@ -68,36 +68,20 @@ export function useStudioController() {
   const isEvmWallet = computed(() => walletService.provider === walletService.PROVIDERS.EVM_WALLET);
   const walletConnected = computed(() => !!connectedAccount.value);
 
-  const validCreateAdmins = computed(() => sanitizeList(createForm.value.admins));
-  const validCreateManagers = computed(() => sanitizeList(createForm.value.managers));
-  const validManageAdmins = computed(() => sanitizeList(manageForm.value.admins));
-  const validManageManagers = computed(() => sanitizeList(manageForm.value.managers));
+  const validCreateSigners = computed(() => sanitizeList(createForm.value.signers));
+  const validManageSigners = computed(() => sanitizeList(manageForm.value.signers));
   const validDomeAccounts = computed(() => sanitizeList(manageForm.value.domeAccounts));
 
   const canCreate = computed(() => {
     if (!walletConnected.value) return false;
     if (!createForm.value.accountId || !computedAddress.value) return false;
     
-    const adminCount = validCreateAdmins.value.length;
-    const managerCount = validCreateManagers.value.length;
+    const signerCount = validCreateSigners.value.length;
     
-    if (adminCount === 0 && managerCount === 0) return false; // Must have some role
+    if (signerCount === 0) return false; // Must have some role
     
-    if (adminCount > 0) {
-      if (createForm.value.adminThreshold < 0 || createForm.value.adminThreshold > adminCount) return false;
-    } else {
-      if (createForm.value.adminThreshold !== 0) return false;
-    }
+    if (createForm.value.threshold < 1 || createForm.value.threshold > signerCount) return false;
 
-    if (managerCount > 0) {
-      if (createForm.value.managerThreshold < 1 || createForm.value.managerThreshold > managerCount) return false;
-    } else {
-      if (createForm.value.managerThreshold !== 0) return false;
-    }
-
-    // Must have at least one valid threshold setup
-    if (createForm.value.adminThreshold === 0 && createForm.value.managerThreshold === 0) return false;
-    
     return true;
   });
 
@@ -115,16 +99,16 @@ export function useStudioController() {
       createForm.value.accountId = createGeneratedAccountId();
     }
     
-    // Auto-set creator as first admin
-    if (walletConnected.value && createForm.value.admins.length === 1 && !createForm.value.admins[0].value) {
-      createForm.value.admins[0].value = isEvmWallet.value ? walletService.address : connectedAccount.value;
+    // Auto-set creator as first signer
+    if (walletConnected.value && createForm.value.signers.length === 1 && !createForm.value.signers[0].value) {
+      createForm.value.signers[0].value = isEvmWallet.value ? walletService.address : connectedAccount.value;
     }
 
     // Auto-load managed account if not set
     if (walletConnected.value) {
       try {
         const address = isEvmWallet.value ? walletService.address : connectedAccount.value;
-        const res = await invokeReadOperation('getAccountAddressesByAdmin', [{ type: 'Hash160', value: hash160Param(address) }]);
+        const res = await invokeReadOperation('getAccountAddressesBySigner', [{ type: 'Hash160', value: hash160Param(address) }]);
         const addresses = decodeStackHashArray(res.stack?.[0]);
         autoLoadedAccounts.value = addresses;
         
@@ -140,41 +124,25 @@ export function useStudioController() {
   }, { immediate: true });
 
   watch(() => createForm.value.accountId, computeAA);
-  watch(validCreateAdmins, (admins) => {
-    if (admins.length === 0) {
-      createForm.value.adminThreshold = 0;
+  watch(validCreateSigners, (signers) => {
+    if (signers.length === 0) {
+      createForm.value.threshold = 1;
       return;
     }
-    if (createForm.value.adminThreshold < 0) createForm.value.adminThreshold = 0;
-    if (createForm.value.adminThreshold > admins.length) {
-      createForm.value.adminThreshold = admins.length;
+    if (createForm.value.threshold < 1) createForm.value.threshold = 1;
+    if (createForm.value.threshold > signers.length) {
+      createForm.value.threshold = signers.length;
     }
   });
-  watch(validCreateManagers, (managers) => {
-    if (managers.length === 0) {
-      createForm.value.managerThreshold = 0;
+  watch(validManageSigners, (signers) => {
+    if (signers.length === 0) {
+      manageForm.value.threshold = 1;
       return;
     }
-    if (createForm.value.managerThreshold < 1) createForm.value.managerThreshold = 1;
-    if (createForm.value.managerThreshold > managers.length) createForm.value.managerThreshold = managers.length;
-  });
-  watch(validManageAdmins, (admins) => {
-    if (admins.length === 0) {
-      manageForm.value.adminThreshold = 0;
-      return;
+    if (manageForm.value.threshold < 1) manageForm.value.threshold = 1;
+    if (manageForm.value.threshold > signers.length) {
+      manageForm.value.threshold = signers.length;
     }
-    if (manageForm.value.adminThreshold < 0) manageForm.value.adminThreshold = 0;
-    if (manageForm.value.adminThreshold > admins.length) {
-      manageForm.value.adminThreshold = admins.length;
-    }
-  });
-  watch(validManageManagers, (managers) => {
-    if (managers.length === 0) {
-      manageForm.value.managerThreshold = 0;
-      return;
-    }
-    if (manageForm.value.managerThreshold < 1) manageForm.value.managerThreshold = 1;
-    if (manageForm.value.managerThreshold > managers.length) manageForm.value.managerThreshold = managers.length;
   });
   watch(validDomeAccounts, (domeAccounts) => {
     if (domeAccounts.length === 0) {
@@ -321,20 +289,16 @@ export function useStudioController() {
       const accountHash = hash160Param(manageForm.value.accountAddress);
 
       const [
-        adminsRes,
-        adminThresholdRes,
-        managersRes,
-        managerThresholdRes,
+        signersRes,
+        thresholdRes,
         domeAccountsRes,
         domeThresholdRes,
         domeTimeoutRes,
         lastActiveRes,
         domeUnlockRes
       ] = await Promise.all([
-        invokeReadOperation('getAdminsByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getAdminThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getManagersByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getManagerThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('getSignersByAddress', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('getThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getDomeAccountsByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getDomeThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getDomeTimeoutByAddress', [{ type: 'Hash160', value: accountHash }]),
@@ -342,23 +306,18 @@ export function useStudioController() {
         invokeReadOperation('isDomeOracleUnlockedByAddress', [{ type: 'Hash160', value: accountHash }])
       ]);
 
-      const admins = decodeStackHashArray(adminsRes?.stack?.[0]);
-      const managers = decodeStackHashArray(managersRes?.stack?.[0]);
+      const signers = decodeStackHashArray(signersRes?.stack?.[0]);
       const domeAccounts = decodeStackHashArray(domeAccountsRes?.stack?.[0]);
 
-      const adminThreshold = decodeStackInteger(adminThresholdRes?.stack?.[0]);
-      const managerThreshold = decodeStackInteger(managerThresholdRes?.stack?.[0]);
+      const threshold = decodeStackInteger(thresholdRes?.stack?.[0]);
       const domeThreshold = decodeStackInteger(domeThresholdRes?.stack?.[0]);
       const domeTimeoutSeconds = decodeStackInteger(domeTimeoutRes?.stack?.[0]);
       const lastActiveMs = decodeStackInteger(lastActiveRes?.stack?.[0]);
 
-      manageForm.value.admins = admins.length > 0 ? admins.map((value) => `0x${value}`) : [''];
-      manageForm.value.adminThreshold = normalizeThreshold(adminThreshold, admins.length, 1);
-
-      manageForm.value.managers = managers.length > 0 ? managers.map((value) => `0x${value}`) : [];
-      manageForm.value.managerThreshold = managers.length > 0
-        ? normalizeThreshold(managerThreshold, managers.length, 0)
-        : 0;
+      manageForm.value.signers = signers.length > 0 ? signers.map((value) => `0x${value}`) : [''];
+      manageForm.value.threshold = signers.length > 0
+        ? normalizeThreshold(threshold, signers.length, 1)
+        : 1;
 
       manageForm.value.domeAccounts = domeAccounts.length > 0 ? domeAccounts.map((value) => `0x${value}`) : [];
       manageForm.value.domeThreshold = domeAccounts.length > 0
@@ -402,10 +361,8 @@ export function useStudioController() {
         args: [
           { type: 'ByteArray', value: accountIdHex },
           { type: 'Hash160', value: accountScriptHash },
-          { type: 'Array', value: toHashArray(validCreateAdmins.value) },
-          { type: 'Integer', value: createForm.value.adminThreshold },
-          { type: 'Array', value: toHashArray(validCreateManagers.value) },
-          { type: 'Integer', value: createForm.value.managerThreshold }
+          { type: 'Array', value: toHashArray(validCreateSigners.value) },
+          { type: 'Integer', value: createForm.value.threshold }
         ]
       };
 
@@ -439,43 +396,25 @@ export function useStudioController() {
     }
   }
 
-  async function setAdminsByAddress() {
+  async function setSignersByAddress() {
     if (!requireWallet() || !canManageTarget.value) return;
-    if (validManageAdmins.value.length === 0) {
-      toast.error('Provide at least one admin address.');
+    if (validManageSigners.value.length === 0) {
+      toast.error('Provide at least one signer address.');
       return;
     }
 
-    manageBusy.value.admins = true;
+    manageBusy.value.signers = true;
     try {
-      await invokeOperation('Set admins', 'setAdminsByAddress', [
+      await invokeOperation('Set signers', 'setSignersByAddress', [
         { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
-        { type: 'Array', value: toHashArray(validManageAdmins.value) },
-        { type: 'Integer', value: manageForm.value.adminThreshold }
+        { type: 'Array', value: toHashArray(validManageSigners.value) },
+        { type: 'Integer', value: manageForm.value.threshold }
       ]);
     } catch (err) {
       console.error(err);
-      toast.error(`Admin update failed: ${formatErrorMessage(err)}`);
+      toast.error(`Signers update failed: ${formatErrorMessage(err)}`);
     } finally {
-      manageBusy.value.admins = false;
-    }
-  }
-
-  async function setManagersByAddress() {
-    if (!requireWallet() || !canManageTarget.value) return;
-
-    manageBusy.value.managers = true;
-    try {
-      await invokeOperation('Set managers', 'setManagersByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
-        { type: 'Array', value: toHashArray(validManageManagers.value) },
-        { type: 'Integer', value: manageForm.value.managerThreshold }
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error(`Manager update failed: ${formatErrorMessage(err)}`);
-    } finally {
-      manageBusy.value.managers = false;
+      manageBusy.value.signers = false;
     }
   }
 
@@ -682,10 +621,8 @@ export function useStudioController() {
     contractFiles,
     isEvmWallet,
     walletConnected,
-    validCreateAdmins,
-    validCreateManagers,
-    validManageAdmins,
-    validManageManagers,
+    validCreateSigners,
+    validManageSigners,
     validDomeAccounts,
     autoLoadedAccounts,
     canCreate,
@@ -699,8 +636,7 @@ export function useStudioController() {
     createAccount,
     checkMatrixDomain,
     matrixCheckResult,
-    setAdminsByAddress,
-    setManagersByAddress,
+    setSignersByAddress,
     setDomeAccountsByAddress,
     setDomeOracleByAddress,
     requestDomeActivationByAddress,

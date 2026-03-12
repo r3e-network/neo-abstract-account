@@ -99,7 +99,7 @@
               <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step2Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step2Expanded" class="p-6 md:p-8 animate-fade-in">
-              <OperationComposerPanel class="dark-panel-override" :preset="preset" :preset-options="presetOptions" :target-contract="targetContract" :resolved-contract-hash="resolvedContractHash" :resolved-contract-name="resolvedContractName" :contract-suggestions="contractSuggestions" :contract-lookup-status="contractLookupStatus" :method-options="methodOptions" :parameter-fields="parameterFields" :method="method" :args-text="argsText" :transfer-token-script-hash="transferTokenScriptHash" :transfer-recipient="transferRecipient" :transfer-amount="transferAmount" :transfer-data="transferData" :multisig-title="multisigTitle" :multisig-description="multisigDescription" :summary-title="composerSummary.title" :summary-detail="composerSummary.detail" :batch-account-ids="batchAccountIds" :batch-admins="batchAdmins" :batch-admin-threshold="batchAdminThreshold" :batch-managers="batchManagers" :batch-manager-threshold="batchManagerThreshold" @update:preset="preset = $event" @update:target-contract="targetContract = $event" @update:method="method = $event" @select-contract-suggestion="selectContractSuggestion" @update:parameter-value="updateParameterValue" @update:args-text="argsText = $event" @update:transfer-token-script-hash="transferTokenScriptHash = $event" @update:transfer-recipient="transferRecipient = $event" @update:transfer-amount="transferAmount = $event" @update:transfer-data="transferData = $event" @update:multisig-title="multisigTitle = $event" @update:multisig-description="multisigDescription = $event" @update:batch-account-ids="batchAccountIds = $event" @update:batch-admins="batchAdmins = $event" @update:batch-admin-threshold="batchAdminThreshold = $event" @update:batch-managers="batchManagers = $event" @update:batch-manager-threshold="batchManagerThreshold = $event" @stage="stageOperation" />
+              <OperationComposerPanel class="dark-panel-override" :preset="preset" :preset-options="presetOptions" :target-contract="targetContract" :resolved-contract-hash="resolvedContractHash" :resolved-contract-name="resolvedContractName" :contract-suggestions="contractSuggestions" :contract-lookup-status="contractLookupStatus" :method-options="methodOptions" :parameter-fields="parameterFields" :method="method" :args-text="argsText" :transfer-token-script-hash="transferTokenScriptHash" :transfer-recipient="transferRecipient" :transfer-amount="transferAmount" :transfer-data="transferData" :multisig-title="multisigTitle" :multisig-description="multisigDescription" :summary-title="composerSummary.title" :summary-detail="composerSummary.detail" :batch-account-ids="batchAccountIds" :batch-signers="batchSigners" :batch-threshold="batchThreshold" @update:preset="preset = $event" @update:target-contract="targetContract = $event" @update:method="method = $event" @select-contract-suggestion="selectContractSuggestion" @update:parameter-value="updateParameterValue" @update:args-text="argsText = $event" @update:transfer-token-script-hash="transferTokenScriptHash = $event" @update:transfer-recipient="transferRecipient = $event" @update:transfer-amount="transferAmount = $event" @update:transfer-data="transferData = $event" @update:multisig-title="multisigTitle = $event" @update:multisig-description="multisigDescription = $event" @update:batch-account-ids="batchAccountIds = $event" @update:batch-signers="batchSigners = $event" @update:batch-threshold="batchThreshold = $event" @stage="stageOperation" />
             </div>
           </div>
 
@@ -246,10 +246,8 @@ const transferData = ref('');
 const multisigTitle = ref('');
 const multisigDescription = ref('');
 const batchAccountIds = ref('[]');
-const batchAdmins = ref('[]');
-const batchAdminThreshold = ref('1');
-const batchManagers = ref('[]');
-const batchManagerThreshold = ref('0');
+const batchSigners = ref('[]');
+const batchThreshold = ref('1');
 const rawTransaction = ref('');
 const notes = ref('');
 const signerId = ref('');
@@ -293,7 +291,7 @@ const draftCandidate = computed(() => buildOperationFromPreset({
   invoke: { targetContract: invokeTargetContract.value, method: method.value, argsText: argsText.value },
   transfer: { tokenScriptHash: transferTokenScriptHash.value, recipient: transferRecipient.value, amount: transferAmount.value, data: transferData.value },
   multisig: { title: multisigTitle.value, description: multisigDescription.value },
-  batch: { accountIds: batchAccountIds.value, admins: batchAdmins.value, adminThreshold: batchAdminThreshold.value, managers: batchManagers.value, managerThreshold: batchManagerThreshold.value },
+  batch: { accountIds: batchAccountIds.value, signers: batchSigners.value, threshold: batchThreshold.value },
 }));
 
 const composerSummary = computed(() => buildPresetSummary(draftCandidate.value));

@@ -42,16 +42,16 @@
       </transition>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Update Admins -->
+        <!-- Update Signers -->
         <div class="border border-ata-border rounded-lg p-5 hover:border-ata-border transition-colors">
           <div class="flex justify-between items-center mb-5">
-            <h3 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Admin Set</h3>
-            <button type="button" class="text-xs text-ata-green hover:text-ata-green font-bold bg-ata-green px-2 py-1 rounded" @click="addRow(manageForm.admins)">+ Add</button>
+            <h3 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Signer Set</h3>
+            <button type="button" class="text-xs text-ata-green hover:text-ata-green font-bold bg-ata-green px-2 py-1 rounded" @click="addRow(manageForm.signers)">+ Add</button>
           </div>
           <div class="space-y-3 mb-6">
-            <div v-for="(admin, index) in manageForm.admins" :key="`manage-admin-${index}`" class="flex gap-2">
-              <input v-model="manageForm.admins[index]" type="text" class="input-field font-mono text-xs py-2 px-3 bg-ata-dark" placeholder="N... or 0x..." />
-              <button type="button" class="inline-flex items-center p-2 border border-ata-border rounded-lg bg-ata-panel text-slate-400 hover:bg-rose-500/10 hover:text-rose-400" @click="removeRow(manageForm.admins, index)">
+            <div v-for="(signer, index) in manageForm.signers" :key="`manage-signer-${index}`" class="flex gap-2">
+              <input v-model="manageForm.signers[index]" type="text" class="input-field font-mono text-xs py-2 px-3 bg-ata-dark" placeholder="N... or 0x..." />
+              <button type="button" class="inline-flex items-center p-2 border border-ata-border rounded-lg bg-ata-panel text-slate-400 hover:bg-rose-500/10 hover:text-rose-400" @click="removeRow(manageForm.signers, index)">
                 <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               </button>
             </div>
@@ -59,35 +59,10 @@
           <div class="flex items-center justify-between border-t border-ata-border pt-5">
             <div>
               <label class="block text-xs font-semibold text-slate-400 mb-1">Threshold</label>
-              <input v-model.number="manageForm.adminThreshold" type="number" min="1" :max="Math.max(1, validManageAdmins.length)" class="input-field w-16 text-center py-1.5 text-sm font-bold bg-ata-dark" />
+              <input v-model.number="manageForm.threshold" type="number" min="1" :max="Math.max(1, validManageSigners.length)" class="input-field w-16 text-center py-1.5 text-sm font-bold bg-ata-dark" />
             </div>
-            <button type="button" class="btn-secondary text-sm px-4" :disabled="manageBusy.admins || !canManageTarget || validManageAdmins.length === 0" @click="setAdminsByAddress">
-              Update Admins
-            </button>
-          </div>
-        </div>
-
-        <!-- Update Managers -->
-        <div class="border border-ata-border rounded-lg p-5 hover:border-ata-border transition-colors">
-          <div class="flex justify-between items-center mb-5">
-            <h3 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Manager Set</h3>
-            <button type="button" class="text-xs text-ata-blue hover:text-white font-bold bg-ata-blue/10 px-2 py-1 rounded" @click="addRow(manageForm.managers)">+ Add</button>
-          </div>
-          <div class="space-y-3 mb-6">
-            <div v-for="(manager, index) in manageForm.managers" :key="`manage-manager-${index}`" class="flex gap-2">
-              <input v-model="manageForm.managers[index]" type="text" class="input-field font-mono text-xs py-2 px-3 bg-ata-dark" placeholder="N... or 0x..." />
-              <button type="button" class="inline-flex items-center p-2 border border-ata-border rounded-lg bg-ata-panel text-slate-400 hover:bg-rose-500/10 hover:text-rose-400" @click="removeRow(manageForm.managers, index)">
-                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-              </button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between border-t border-ata-border pt-5">
-            <div>
-              <label class="block text-xs font-semibold text-slate-400 mb-1">Threshold</label>
-              <input v-model.number="manageForm.managerThreshold" type="number" min="0" :max="Math.max(0, validManageManagers.length)" class="input-field w-16 text-center py-1.5 text-sm font-bold bg-ata-dark" />
-            </div>
-            <button type="button" class="btn-secondary text-sm px-4" :disabled="manageBusy.managers || !canManageTarget" @click="setManagersByAddress">
-              Update Managers
+            <button type="button" class="btn-secondary text-sm px-4" :disabled="manageBusy.signers || !canManageTarget || validManageSigners.length === 0" @click="setSignersByAddress">
+              Update Signers
             </button>
           </div>
         </div>
@@ -158,16 +133,14 @@ const {
   manageForm,
   manageBusy,
   manageSnapshot,
-  validManageAdmins,
-  validManageManagers,
+  validManageSigners,
   validDomeAccounts,
   canManageTarget,
   autoLoadedAccounts,
   loadAccountConfiguration,
   addRow,
   removeRow,
-  setAdminsByAddress,
-  setManagersByAddress,
+  setSignersByAddress,
   setDomeAccountsByAddress,
   setDomeOracleByAddress,
   requestDomeActivationByAddress

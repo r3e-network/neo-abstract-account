@@ -19,7 +19,7 @@ test('threshold-2 validator uses shared helpers and proves mixed Neo + EVM execu
   assert.match(source, /require\('\.\/invoke'\)/);
   assert.match(source, /require\('\.\/meta'\)/);
   assert.match(source, /require\('\.\/metaSearch'\)/);
-  assert.match(source, /setAdminsByAddress/);
+  assert.match(source, /setSignersByAddress/);
   assert.match(source, /ContractParam\.integer\(2\)/);
   assert.match(source, /executeMetaTxByAddress/);
   assert.match(source, /executeByAddress/);

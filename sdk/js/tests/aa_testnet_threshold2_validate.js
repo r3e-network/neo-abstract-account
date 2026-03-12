@@ -210,18 +210,18 @@ async function main() {
     })),
   });
 
-  const initialThreshold = await invokeRead(aaHash, 'getAdminThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
-  const initialAdmins = await invokeRead(aaHash, 'getAdminsByAddress', [cpHash160(accountInfo.addressScriptHash)]);
+  const initialThreshold = await invokeRead(aaHash, 'getThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
+  const initialAdmins = await invokeRead(aaHash, 'getSignersByAddress', [cpHash160(accountInfo.addressScriptHash)]);
   check('threshold-2 account starts with admin threshold 1', String(initialThreshold.stack?.[0]?.value || '') === '1');
-  check('threshold-2 account starts with two admins', (initialAdmins.stack?.[0]?.value || []).length === 2);
+  check('threshold-2 account starts with two signers', (initialAdmins.stack?.[0]?.value || []).length === 2);
 
   summary.txs.push({
-    step: 'setAdminsByAddress(threshold2, owner+evm, 2)',
+    step: 'setSignersByAddress(threshold2, owner+evm, 2)',
     ...(await sendInvocation({
       account: owner,
       magic,
       aaHash,
-      operation: 'setAdminsByAddress',
+      operation: 'setSignersByAddress',
       args: [
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(ownerScriptHash), cpHash160(evmSignerHex)]),
@@ -230,7 +230,7 @@ async function main() {
     })),
   });
 
-  const raisedThreshold = await invokeRead(aaHash, 'getAdminThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
+  const raisedThreshold = await invokeRead(aaHash, 'getThresholdByAddress', [cpHash160(accountInfo.addressScriptHash)]);
   check('threshold-2 account raises admin threshold to 2', String(raisedThreshold.stack?.[0]?.value || '') === '2');
 
   const ownerOnlyExecute = await simulate(

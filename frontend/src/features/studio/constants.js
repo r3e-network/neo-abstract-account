@@ -13,20 +13,16 @@ export function createCreateFormState() {
   return {
     accountId: '',
     matrixDomain: '',
-    admins: [''],
-    adminThreshold: 1,
-    managers: [],
-    managerThreshold: 0
+    signers: [''],
+    threshold: 1
   };
 }
 
 export function createManageFormState() {
   return {
     accountAddress: '',
-    admins: [''],
-    adminThreshold: 1,
-    managers: [],
-    managerThreshold: 0,
+    signers: [''],
+    threshold: 1,
     domeAccounts: [],
     domeThreshold: 0,
     domeTimeoutHours: 0,
@@ -49,8 +45,7 @@ export function createPermissionsFormState() {
 export function createManageBusyState() {
   return {
     load: false,
-    admins: false,
-    managers: false,
+    signers: false,
     domeAccounts: false,
     domeOracle: false,
     domeActivation: false

@@ -139,7 +139,7 @@ export async function assertAccountAddressBound({
   const result = await invokeRead({
     rpcUrl,
     scriptHash: sanitizeHex(aaContractHash),
-    operation: 'getAdminThresholdByAddress',
+    operation: 'getThresholdByAddress',
     args: [
       { type: 'Hash160', value: `0x${normalizedAddress}` }
     ],
@@ -147,7 +147,7 @@ export async function assertAccountAddressBound({
   });
 
   if (result?.state === 'FAULT') {
-    throw new Error(`getAdminThresholdByAddress fault: ${result.exception || 'VM fault'}`);
+    throw new Error(`getThresholdByAddress fault: ${result.exception || 'VM fault'}`);
   }
 
   return normalizedAddress;

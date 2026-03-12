@@ -234,12 +234,12 @@ async function main() {
   });
 
   summary.txs.push({
-    step: 'setAdminsByAddress(proxy-only)',
+    step: 'setSignersByAddress(proxy-only)',
     ...(await sendInvocation({
       account: owner,
       magic,
       aaHash,
-      operation: 'setAdminsByAddress',
+      operation: 'setSignersByAddress',
       args: [
         cpHash160(accountInfo.addressScriptHash),
         cpArray([cpHash160(accountInfo.addressScriptHash)]),

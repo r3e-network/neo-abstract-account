@@ -8,13 +8,13 @@ using Neo.SmartContract.Framework.Services;
 namespace AbstractAccount
 {
     // Admin helpers mutate the durable account configuration: signer sets, thresholds, target policies, verifier
-    // hooks, and deterministic address binding. All of these methods eventually funnel through AssertIsAdmin so the
+    // hooks, and deterministic address binding. All of these methods eventually funnel through AssertIsSigner so the
     // same authorization rules apply to native, dome, and meta-transaction initiated configuration changes.
     public partial class UnifiedSmartWallet
     {
         // An "admin-capable" caller can be: (1) a native admin quorum, (2) a dome signer after timeout + oracle
         // unlock, or (3) a recovered meta-tx signer set carried through the temporary execution context.
-        private static void AssertIsAdmin(ByteString accountId)
+        private static void AssertIsSigner(ByteString accountId)
         {
             AssertAccountExists(accountId);
             AssertNoExternalMutationDuringExecution(accountId);
@@ -24,7 +24,7 @@ namespace AbstractAccount
             {
                 bool isAuthorized = (bool)Contract.Call(
                     customVerifier,
-                    "verifyAdmin",
+                    "verifySigner",
                     CallFlags.ReadOnly,
                     new object[] { accountId });
                 if (isAuthorized)
@@ -38,7 +38,7 @@ namespace AbstractAccount
                 {
                     isAuthorized = (bool)Contract.Call(
                         customVerifier,
-                        "verifyAdminMetaTx",
+                        "verifySignerMetaTx",
                         CallFlags.ReadOnly,
                         new object[] { accountId, verifierMetaSigners });
                     if (isAuthorized)
@@ -52,10 +52,10 @@ namespace AbstractAccount
             }
 
             // For Neo native signers
-            int adminThreshold = GetAdminThreshold(accountId);
-            ExecutionEngine.Assert(adminThreshold > 0, "Admin threshold must be > 0 to modify configurations");
+            int threshold = GetThreshold(accountId);
+            ExecutionEngine.Assert(threshold > 0, "Admin threshold must be > 0 to modify configurations");
 
-            if (CheckNativeSignatures(GetAdmins(accountId), adminThreshold))
+            if (CheckNativeSignatures(GetSigners(accountId), threshold))
             {
                 UpdateLastActiveTimestamp(accountId);
                 return;
@@ -81,7 +81,7 @@ namespace AbstractAccount
             UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
             if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                if (CheckMixedSignatures(GetAdmins(accountId), adminThreshold, explicitSigners))
+                if (CheckMixedSignatures(GetSigners(accountId), threshold, explicitSigners))
                 {
                     UpdateLastActiveTimestamp(accountId);
                     return;
@@ -111,160 +111,79 @@ namespace AbstractAccount
         /// Replaces the admin signer set and threshold for the account. Admins are the highest-privilege group and can
         /// reconfigure every other policy surface on the wallet.
         /// </summary>
-        public static void SetAdmins(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> admins, int threshold)
+        public static void SetSigners(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> signers, int threshold)
         {
-            AssertIsAdmin(accountId);
-            SetAdminsInternal(accountId, admins, threshold);
+            AssertIsSigner(accountId);
+            SetSignersInternal(accountId, signers, threshold);
         }
 
-        public static void SetAdminsByAddress(UInt160 accountAddress, Neo.SmartContract.Framework.List<UInt160> admins, int threshold)
+        public static void SetSignersByAddress(UInt160 accountAddress, Neo.SmartContract.Framework.List<UInt160> signers, int threshold)
         {
             ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetAdmins(accountId, admins, threshold);
+            SetSigners(accountId, signers, threshold);
         }
 
-        private static void SetAdminsInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> admins, int threshold)
+        private static void SetSignersInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> signers, int threshold)
         {
-            ExecutionEngine.Assert(admins != null && admins.Count > 0, "Admins are mandatory");
-            Neo.SmartContract.Framework.List<UInt160> validatedAdmins = admins!;
-            AssertUniqueAccounts(validatedAdmins);
-            ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold >= 0, "Invalid threshold");
+            ExecutionEngine.Assert(signers != null && signers.Count > 0, "Admins are mandatory");
+            Neo.SmartContract.Framework.List<UInt160> validatedSigners = signers!;
+            AssertUniqueAccounts(validatedSigners);
+            ExecutionEngine.Assert(threshold <= validatedSigners.Count && threshold >= 0, "Invalid threshold");
 
-            Neo.SmartContract.Framework.List<UInt160> oldAdmins = GetAdmins(accountId);
-            for (int i = 0; i < oldAdmins.Count; i++)
+            Neo.SmartContract.Framework.List<UInt160> oldSigners = GetSigners(accountId);
+            for (int i = 0; i < oldSigners.Count; i++)
             {
-                RemoveFromAdminIndex(oldAdmins[i], accountId);
+                RemoveFromSignerIndex(oldSigners[i], accountId);
             }
 
-            for (int i = 0; i < validatedAdmins.Count; i++)
+            for (int i = 0; i < validatedSigners.Count; i++)
             {
-                AddToAdminIndex(validatedAdmins[i], accountId);
+                AddToSignerIndex(validatedSigners[i], accountId);
             }
 
-            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
-            StorageMap tMap = new StorageMap(Storage.CurrentContext, AdminThresholdPrefix);
-            adminsMap.Put(GetStorageKey(accountId), StdLib.Serialize(validatedAdmins));
+            StorageMap signersMap = new StorageMap(Storage.CurrentContext, SignersPrefix);
+            StorageMap tMap = new StorageMap(Storage.CurrentContext, ThresholdPrefix);
+            signersMap.Put(GetStorageKey(accountId), StdLib.Serialize(validatedSigners));
             tMap.Put(GetStorageKey(accountId), threshold);
-            OnRoleUpdated(accountId, "Admins", validatedAdmins, threshold);
+            OnRoleUpdated(accountId, "Signers", validatedSigners, threshold);
         }
 
         /// <summary>
         /// Returns the current admin signer set for the account.
         /// </summary>
         [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetAdmins(ByteString accountId)
+        public static Neo.SmartContract.Framework.List<UInt160> GetSigners(ByteString accountId)
         {
-            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
-            ByteString? data = adminsMap.Get(GetStorageKey(accountId));
+            StorageMap signersMap = new StorageMap(Storage.CurrentContext, SignersPrefix);
+            ByteString? data = signersMap.Get(GetStorageKey(accountId));
             if (data == null) return new Neo.SmartContract.Framework.List<UInt160>();
             return (Neo.SmartContract.Framework.List<UInt160>)StdLib.Deserialize(data);
         }
 
         [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetAdminsByAddress(UInt160 accountAddress)
+        public static Neo.SmartContract.Framework.List<UInt160> GetSignersByAddress(UInt160 accountAddress)
         {
             ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetAdmins(accountId);
+            return GetSigners(accountId);
         }
 
         [Safe]
-        public static int GetAdminThreshold(ByteString accountId)
+        public static int GetThreshold(ByteString accountId)
         {
-            StorageMap tMap = new StorageMap(Storage.CurrentContext, AdminThresholdPrefix);
+            StorageMap tMap = new StorageMap(Storage.CurrentContext, ThresholdPrefix);
             ByteString? data = tMap.Get(GetStorageKey(accountId));
             if (data == null) return 1;
             return (int)(BigInteger)data;
         }
 
         [Safe]
-        public static int GetAdminThresholdByAddress(UInt160 accountAddress)
+        public static int GetThresholdByAddress(UInt160 accountAddress)
         {
             ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetAdminThreshold(accountId);
+            return GetThreshold(accountId);
         }
 
-        /// <summary>
-        /// Replaces the manager signer set and threshold. Managers can authorize execution but are still distinct from
-        /// the admin configuration surface.
-        /// </summary>
-        public static void SetManagers(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> managers, int threshold)
-        {
-            AssertIsAdmin(accountId);
-            SetManagersInternal(accountId, managers, threshold);
-        }
-
-        public static void SetManagersByAddress(UInt160 accountAddress, Neo.SmartContract.Framework.List<UInt160> managers, int threshold)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetManagers(accountId, managers, threshold);
-        }
-
-        private static void SetManagersInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160>? managers, int threshold)
-        {
-            if (managers == null)
-            {
-                managers = new Neo.SmartContract.Framework.List<UInt160>();
-            }
-            Neo.SmartContract.Framework.List<UInt160> validatedManagers = managers;
-            AssertUniqueAccounts(validatedManagers);
-            if (validatedManagers.Count == 0)
-            {
-                ExecutionEngine.Assert(threshold == 0, "Invalid threshold");
-            }
-            else
-            {
-                ExecutionEngine.Assert(threshold <= validatedManagers.Count && threshold > 0, "Invalid threshold");
-            }
-
-            Neo.SmartContract.Framework.List<UInt160> oldManagers = GetManagers(accountId);
-            for (int i = 0; i < oldManagers.Count; i++)
-            {
-                RemoveFromManagerIndex(oldManagers[i], accountId);
-            }
-
-            for (int i = 0; i < validatedManagers.Count; i++)
-            {
-                AddToManagerIndex(validatedManagers[i], accountId);
-            }
-
-            StorageMap mMap = new StorageMap(Storage.CurrentContext, ManagersPrefix);
-            StorageMap tMap = new StorageMap(Storage.CurrentContext, ManagerThresholdPrefix);
-            mMap.Put(GetStorageKey(accountId), StdLib.Serialize(validatedManagers));
-            tMap.Put(GetStorageKey(accountId), threshold);
-            OnRoleUpdated(accountId, "Managers", validatedManagers, threshold);
-        }
-
-        [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetManagers(ByteString accountId)
-        {
-            StorageMap mMap = new StorageMap(Storage.CurrentContext, ManagersPrefix);
-            ByteString? data = mMap.Get(GetStorageKey(accountId));
-            if (data == null) return new Neo.SmartContract.Framework.List<UInt160>();
-            return (Neo.SmartContract.Framework.List<UInt160>)StdLib.Deserialize(data);
-        }
-
-        [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetManagersByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetManagers(accountId);
-        }
-
-        [Safe]
-        public static int GetManagerThreshold(ByteString accountId)
-        {
-            StorageMap tMap = new StorageMap(Storage.CurrentContext, ManagerThresholdPrefix);
-            ByteString? data = tMap.Get(GetStorageKey(accountId));
-            if (data == null) return 1;
-            return (int)(BigInteger)data;
-        }
-
-        [Safe]
-        public static int GetManagerThresholdByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetManagerThreshold(accountId);
-        }
+        
 
         /// <summary>
         /// Configures the optional dome signer set used for inactivity recovery. Dome signers only become valid after the
@@ -272,7 +191,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetDomeAccounts(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             SetDomeAccountsInternal(accountId, domes, threshold, timeoutPeriod);
         }
 
@@ -365,7 +284,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetBlacklist(ByteString accountId, UInt160 target, bool isBlacklisted)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             StorageMap map = new StorageMap(Storage.CurrentContext, Helper.Concat(BlacklistPrefix, GetStorageKey(accountId)));
             if (isBlacklisted) map.Put(target, (ByteString)new byte[] { 1 });
             else map.Delete(target);
@@ -384,7 +303,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetWhitelistMode(ByteString accountId, bool enabled)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             StorageMap map = new StorageMap(Storage.CurrentContext, WhitelistEnabledPrefix);
             if (enabled) map.Put(GetStorageKey(accountId), (ByteString)new byte[] { 1 });
             else map.Delete(GetStorageKey(accountId));
@@ -403,7 +322,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetWhitelist(ByteString accountId, UInt160 target, bool isWhitelisted)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             StorageMap map = new StorageMap(Storage.CurrentContext, Helper.Concat(WhitelistPrefix, GetStorageKey(accountId)));
             if (isWhitelisted) map.Put(target, (ByteString)new byte[] { 1 });
             else map.Delete(target);
@@ -422,7 +341,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetMaxTransfer(ByteString accountId, UInt160 token, BigInteger maxAmount)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             StorageMap map = new StorageMap(Storage.CurrentContext, Helper.Concat(MaxTransferPrefix, GetStorageKey(accountId)));
             if (maxAmount > 0) map.Put(token, (ByteString)maxAmount);
             else map.Delete(token);
@@ -441,7 +360,7 @@ namespace AbstractAccount
         /// </summary>
         public static void BindAccountAddress(ByteString accountId, UInt160 accountAddress)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             BindAccountAddressInternal(accountId, accountAddress);
         }
 
@@ -451,7 +370,7 @@ namespace AbstractAccount
         /// </summary>
         public static void SetVerifierContract(ByteString accountId, UInt160 verifierContract)
         {
-            AssertIsAdmin(accountId);
+            AssertIsSigner(accountId);
             SetVerifierContractInternal(accountId, verifierContract);
         }
 

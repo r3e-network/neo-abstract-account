@@ -57,7 +57,7 @@ namespace AbstractAccount
 
         private static bool HasAccountAtStorageKey(ByteString storageKey)
         {
-            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
+            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, SignersPrefix);
             return adminsMap.Get(storageKey) != null;
         }
 
@@ -70,7 +70,7 @@ namespace AbstractAccount
         private static void AssertAccountExists(ByteString accountId)
         {
             AssertValidAccountId(accountId);
-            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
+            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, SignersPrefix);
             ExecutionEngine.Assert(adminsMap.Get(GetStorageKey(accountId)) != null, "Account does not exist");
         }
 
@@ -86,36 +86,33 @@ namespace AbstractAccount
 
         private static void CreateAccountInternal(
             ByteString accountId,
-            Neo.SmartContract.Framework.List<UInt160>? admins,
-            int adminThreshold,
-            Neo.SmartContract.Framework.List<UInt160>? managers,
-            int managerThreshold)
+            Neo.SmartContract.Framework.List<UInt160>? signers,
+            int threshold)
         {
             AssertValidAccountId(accountId);
-            AssertBootstrapAuthorization(admins, adminThreshold, managers, managerThreshold);
+            AssertBootstrapAuthorization(signers, threshold);
 
-            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, AdminsPrefix);
+            StorageMap adminsMap = new StorageMap(Storage.CurrentContext, SignersPrefix);
             ByteString? existing = adminsMap.Get(GetStorageKey(accountId));
             ExecutionEngine.Assert(existing == null, "Account already exists");
 
             var tx = (Transaction)Runtime.Transaction;
             UInt160 creator = tx.Sender;
 
-            Neo.SmartContract.Framework.List<UInt160> finalAdmins;
-            if (admins == null || admins.Count == 0)
+            Neo.SmartContract.Framework.List<UInt160> finalSigners;
+            if (signers == null || signers.Count == 0)
             {
-                finalAdmins = new Neo.SmartContract.Framework.List<UInt160>();
-                finalAdmins.Add(creator);
+                finalSigners = new Neo.SmartContract.Framework.List<UInt160>();
+                finalSigners.Add(creator);
             }
             else
             {
-                finalAdmins = admins;
+                finalSigners = signers;
             }
 
-            int finalAdminThreshold = (adminThreshold > 0 && adminThreshold <= finalAdmins.Count) ? adminThreshold : 1;
+            int finalThreshold = (threshold > 0 && threshold <= finalSigners.Count) ? threshold : 1;
 
-            SetAdminsInternal(accountId, finalAdmins, finalAdminThreshold);
-            SetManagersInternal(accountId, managers, managerThreshold);
+            SetSignersInternal(accountId, finalSigners, finalThreshold);
             UpdateLastActiveTimestamp(accountId);
 
             OnAccountCreated(accountId, creator);
@@ -189,21 +186,13 @@ namespace AbstractAccount
         }
 
         private static void AssertBootstrapAuthorization(
-            Neo.SmartContract.Framework.List<UInt160>? admins,
-            int adminThreshold,
-            Neo.SmartContract.Framework.List<UInt160>? managers,
-            int managerThreshold)
+            Neo.SmartContract.Framework.List<UInt160>? signers,
+            int threshold)
         {
-            if (admins != null && admins.Count > 0)
+            if (signers != null && signers.Count > 0)
             {
-                bool adminAuthorized = CheckNativeSignatures(admins, adminThreshold);
-                ExecutionEngine.Assert(adminAuthorized, "Unauthorized account initialization");
-            }
-
-            if (managers != null && managers.Count > 0)
-            {
-                bool managerAuthorized = CheckNativeSignatures(managers, managerThreshold);
-                ExecutionEngine.Assert(managerAuthorized, "Unauthorized manager initialization");
+                bool authorized = CheckNativeSignatures(signers, threshold);
+                ExecutionEngine.Assert(authorized, "Unauthorized account initialization");
             }
         }
 
@@ -557,9 +546,9 @@ namespace AbstractAccount
 
 
         // Reverse index maintenance for role-based account discovery
-        private static void AddToAdminIndex(UInt160 address, ByteString accountId)
+        private static void AddToSignerIndex(UInt160 address, ByteString accountId)
         {
-            StorageMap map = new StorageMap(Storage.CurrentContext, AdminIndexPrefix);
+            StorageMap map = new StorageMap(Storage.CurrentContext, SignerIndexPrefix);
             ByteString? existing = map.Get(address);
             Neo.SmartContract.Framework.List<ByteString> accounts = existing == null ? new Neo.SmartContract.Framework.List<ByteString>() : (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(existing);
             bool exists = false;
@@ -568,35 +557,9 @@ namespace AbstractAccount
             map.Put(address, StdLib.Serialize(accounts));
         }
 
-        private static void RemoveFromAdminIndex(UInt160 address, ByteString accountId)
+        private static void RemoveFromSignerIndex(UInt160 address, ByteString accountId)
         {
-            StorageMap map = new StorageMap(Storage.CurrentContext, AdminIndexPrefix);
-            ByteString? existing = map.Get(address);
-            if (existing == null) return;
-            Neo.SmartContract.Framework.List<ByteString> oldAccounts = (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(existing);
-            Neo.SmartContract.Framework.List<ByteString> newAccounts = new Neo.SmartContract.Framework.List<ByteString>();
-            for (int i = 0; i < oldAccounts.Count; i++)
-            {
-                if (oldAccounts[i] != accountId) newAccounts.Add(oldAccounts[i]);
-            }
-            if (newAccounts.Count == 0) map.Delete(address);
-            else map.Put(address, StdLib.Serialize(newAccounts));
-        }
-
-        private static void AddToManagerIndex(UInt160 address, ByteString accountId)
-        {
-            StorageMap map = new StorageMap(Storage.CurrentContext, ManagerIndexPrefix);
-            ByteString? existing = map.Get(address);
-            Neo.SmartContract.Framework.List<ByteString> accounts = existing == null ? new Neo.SmartContract.Framework.List<ByteString>() : (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(existing);
-            bool exists = false;
-            for (int i = 0; i < accounts.Count; i++) { if (accounts[i] == accountId) { exists = true; break; } }
-            if (!exists) accounts.Add(accountId);
-            map.Put(address, StdLib.Serialize(accounts));
-        }
-
-        private static void RemoveFromManagerIndex(UInt160 address, ByteString accountId)
-        {
-            StorageMap map = new StorageMap(Storage.CurrentContext, ManagerIndexPrefix);
+            StorageMap map = new StorageMap(Storage.CurrentContext, SignerIndexPrefix);
             ByteString? existing = map.Get(address);
             if (existing == null) return;
             Neo.SmartContract.Framework.List<ByteString> oldAccounts = (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(existing);
@@ -610,55 +573,24 @@ namespace AbstractAccount
         }
 
         /// <summary>
-        /// Returns all account IDs where the given address is an admin.
+        /// Returns all account IDs where the given address is a signer.
         /// </summary>
         [Safe]
-        public static Neo.SmartContract.Framework.List<ByteString> GetAccountsByAdmin(UInt160 address)
+        public static Neo.SmartContract.Framework.List<ByteString> GetAccountsBySigner(UInt160 address)
         {
-            StorageMap map = new StorageMap(Storage.CurrentContext, AdminIndexPrefix);
+            StorageMap map = new StorageMap(Storage.CurrentContext, SignerIndexPrefix);
             ByteString? data = map.Get(address);
             if (data == null) return new Neo.SmartContract.Framework.List<ByteString>();
             return (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(data);
         }
 
         /// <summary>
-        /// Returns all account IDs where the given address is a manager.
+        /// Returns all currently bound abstract-account addresses where the given address is a signer.
         /// </summary>
         [Safe]
-        public static Neo.SmartContract.Framework.List<ByteString> GetAccountsByManager(UInt160 address)
+        public static Neo.SmartContract.Framework.List<UInt160> GetAccountAddressesBySigner(UInt160 address)
         {
-            StorageMap map = new StorageMap(Storage.CurrentContext, ManagerIndexPrefix);
-            ByteString? data = map.Get(address);
-            if (data == null) return new Neo.SmartContract.Framework.List<ByteString>();
-            return (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(data);
-        }
-
-        /// <summary>
-        /// Returns all currently bound abstract-account addresses where the given address is an admin.
-        /// </summary>
-        [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetAccountAddressesByAdmin(UInt160 address)
-        {
-            Neo.SmartContract.Framework.List<ByteString> accountIds = GetAccountsByAdmin(address);
-            Neo.SmartContract.Framework.List<UInt160> addresses = new Neo.SmartContract.Framework.List<UInt160>();
-            for (int i = 0; i < accountIds.Count; i++)
-            {
-                UInt160 accountAddress = GetAccountAddress(accountIds[i]);
-                if (accountAddress != null && accountAddress != UInt160.Zero)
-                {
-                    addresses.Add(accountAddress);
-                }
-            }
-            return addresses;
-        }
-
-        /// <summary>
-        /// Returns all currently bound abstract-account addresses where the given address is a manager.
-        /// </summary>
-        [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetAccountAddressesByManager(UInt160 address)
-        {
-            Neo.SmartContract.Framework.List<ByteString> accountIds = GetAccountsByManager(address);
+            Neo.SmartContract.Framework.List<ByteString> accountIds = GetAccountsBySigner(address);
             Neo.SmartContract.Framework.List<UInt160> addresses = new Neo.SmartContract.Framework.List<UInt160>();
             for (int i = 0; i < accountIds.Count; i++)
             {
