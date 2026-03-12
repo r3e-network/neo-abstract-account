@@ -555,7 +555,7 @@ namespace Neo.SmartContract.Examples
             OnActionSessionRevoked(accountId, session.Executor, session.ActionId);
         }
 
-        public static bool Verify(ByteString accountId)
+        public static bool VerifyExecution(ByteString accountId)
         {
             ValidateAccountId(accountId, "accountId");
             UInt160 owner = GetOwner(accountId);
@@ -566,7 +566,7 @@ namespace Neo.SmartContract.Examples
             return session.Executor != UInt160.Zero && Runtime.CheckWitness(session.Executor);
         }
 
-        public static bool VerifyMetaTx(ByteString accountId, UInt160[] signerHashes)
+        public static bool VerifyExecutionMetaTx(ByteString accountId, UInt160[] signerHashes)
         {
             ValidateAccountId(accountId, "accountId");
             if (signerHashes == null || signerHashes.Length == 0) return false;
@@ -584,6 +584,36 @@ namespace Neo.SmartContract.Examples
                 if (signerHashes[i] == session.Executor) return true;
             }
             return false;
+        }
+
+        public static bool VerifyAdmin(ByteString accountId)
+        {
+            ValidateAccountId(accountId, "accountId");
+            UInt160 owner = GetOwner(accountId);
+            return owner != UInt160.Zero && Runtime.CheckWitness(owner);
+        }
+
+        public static bool VerifyAdminMetaTx(ByteString accountId, UInt160[] signerHashes)
+        {
+            ValidateAccountId(accountId, "accountId");
+            if (signerHashes == null || signerHashes.Length == 0) return false;
+
+            UInt160 owner = GetOwner(accountId);
+            for (int i = 0; i < signerHashes.Length; i++)
+            {
+                if (owner != UInt160.Zero && signerHashes[i] == owner) return true;
+            }
+            return false;
+        }
+
+        public static bool Verify(ByteString accountId)
+        {
+            return VerifyExecution(accountId);
+        }
+
+        public static bool VerifyMetaTx(ByteString accountId, UInt160[] signerHashes)
+        {
+            return VerifyExecutionMetaTx(accountId, signerHashes);
         }
 
         [Safe]

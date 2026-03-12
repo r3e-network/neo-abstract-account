@@ -22,7 +22,12 @@ namespace AbstractAccount
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
             {
-                if (CallCustomVerifierNative(customVerifier, accountId))
+                bool isAuthorized = (bool)Contract.Call(
+                    customVerifier,
+                    "verifyAdmin",
+                    CallFlags.ReadOnly,
+                    new object[] { accountId });
+                if (isAuthorized)
                 {
                     UpdateLastActiveTimestamp(accountId);
                     return;
@@ -31,7 +36,12 @@ namespace AbstractAccount
                 UInt160[] verifierMetaSigners = GetMetaTxContextSigners(accountId);
                 if (verifierMetaSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
                 {
-                    if (CallCustomVerifierMetaTx(customVerifier, accountId, verifierMetaSigners))
+                    isAuthorized = (bool)Contract.Call(
+                        customVerifier,
+                        "verifyAdminMetaTx",
+                        CallFlags.ReadOnly,
+                        new object[] { accountId, verifierMetaSigners });
+                    if (isAuthorized)
                     {
                         UpdateLastActiveTimestamp(accountId);
                         return;

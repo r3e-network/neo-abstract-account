@@ -46,6 +46,10 @@ namespace AbstractAccount
         "setVerifierContract",
         "verify",
         "verifyMetaTx",
+        "verifyExecution",
+        "verifyExecutionMetaTx",
+        "verifyAdmin",
+        "verifyAdminMetaTx",
         "requestDomeActivationByAddress",
         "requestDomeActivation",
         "domeActivationCallback")]

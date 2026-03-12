@@ -71,8 +71,8 @@ test('wallet deduplicates recovered meta-tx signers before custom verifier hando
 test('admin mutation path delegates to custom verifier when configured', () => {
   const source = read('contracts/AbstractAccount.Admin.cs');
   assert.match(source, /GetVerifierContract\(accountId\)/);
-  assert.match(source, /CallCustomVerifierNative\(customVerifier, accountId\)/);
-  assert.match(source, /CallCustomVerifierMetaTx\(customVerifier, accountId, verifierMetaSigners\)/);
+  assert.match(source, /"verifyAdmin"/);
+  assert.match(source, /"verifyAdminMetaTx"/);
 });
 
 test('dome unlock helper no longer treats missing oracle configuration as implicitly unlocked', () => {

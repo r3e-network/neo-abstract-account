@@ -198,9 +198,22 @@ public class ContractTests : TestBase<UnifiedSmartWalletV2>
     {
         var executionSource = ReadRepoFile("contracts/AbstractAccount.ExecutionAndPermissions.cs");
 
-        StringAssert.Contains(executionSource, "CallCustomVerifierNative");
-        StringAssert.Contains(executionSource, "CallCustomVerifierMetaTx");
-        StringAssert.Contains(executionSource, "\"verifyMetaTx\"");
+        StringAssert.Contains(executionSource, "\"verifyExecution\"");
+        StringAssert.Contains(executionSource, "\"verifyExecutionMetaTx\"");
+    }
+
+    [TestMethod]
+    public void MorpheusVerifierSeparatesExecutionAndAdminAuthorization()
+    {
+        var verifierSource = ReadRepoFile("contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs");
+        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
+
+        StringAssert.Contains(verifierSource, "public static bool VerifyExecution(ByteString accountId)");
+        StringAssert.Contains(verifierSource, "public static bool VerifyAdmin(ByteString accountId)");
+        StringAssert.Contains(verifierSource, "if (owner != UInt160.Zero && Runtime.CheckWitness(owner)) return true;");
+        StringAssert.Contains(verifierSource, "if (signerHashes[i] == session.Executor) return true;");
+        StringAssert.Contains(adminSource, "\"verifyAdmin\"");
+        StringAssert.Contains(adminSource, "\"verifyAdminMetaTx\"");
     }
 
     [TestMethod]

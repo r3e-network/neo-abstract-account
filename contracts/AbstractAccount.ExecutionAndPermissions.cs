@@ -48,27 +48,20 @@ namespace AbstractAccount
             return Execute(accountId, targetContract, method, args);
         }
 
-        private static bool CallCustomVerifierNative(UInt160 customVerifier, ByteString accountId)
-        {
-            return (bool)Contract.Call(customVerifier, "verify", CallFlags.ReadOnly, new object[] { accountId });
-        }
-
-        private static bool CallCustomVerifierMetaTx(UInt160 customVerifier, ByteString accountId, UInt160[] verifiedSigners)
-        {
-            ExecutionEngine.Assert(verifiedSigners != null && verifiedSigners.Length > 0, "Missing verified signers");
-            return (bool)Contract.Call(customVerifier, "verifyMetaTx", CallFlags.ReadOnly, new object[] { accountId, verifiedSigners! });
-        }
-
         private static void CheckPermissionsAndExecuteNative(ByteString accountId, UInt160 targetContract, string method, object[] args)
         {
             AssertAccountExists(accountId);
 
-            // Authorization order is: custom verifier (if configured), then native admin/manager quorum, then dome
-            // signers subject to timeout + oracle unlock. Only after authorization do we evaluate target restrictions.
+            // Authorization order is: custom execution verifier (if configured), then native admin/manager quorum, then
+            // dome signers subject to timeout + oracle unlock. Only after authorization do we evaluate target restrictions.
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
             {
-                bool isAuthorized = CallCustomVerifierNative(customVerifier, accountId);
+                bool isAuthorized = (bool)Contract.Call(
+                    customVerifier,
+                    "verifyExecution",
+                    CallFlags.ReadOnly,
+                    new object[] { accountId });
                 ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
             }
@@ -104,7 +97,12 @@ namespace AbstractAccount
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
             {
-                bool isAuthorized = CallCustomVerifierMetaTx(customVerifier, accountId, verifiedSigners);
+                ExecutionEngine.Assert(verifiedSigners != null && verifiedSigners.Length > 0, "Missing verified signers");
+                bool isAuthorized = (bool)Contract.Call(
+                    customVerifier,
+                    "verifyExecutionMetaTx",
+                    CallFlags.ReadOnly,
+                    new object[] { accountId, verifiedSigners! });
                 ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
             }

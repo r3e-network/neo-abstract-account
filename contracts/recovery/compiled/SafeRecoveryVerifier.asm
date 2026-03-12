@@ -897,7 +897,7 @@
 000008ff: RET
 
 
-// Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyExecution(Neo.SmartContract.Framework.ByteString)
 
 00000900: INITSLOT 3, 1
 00000903: LDARG 0
@@ -940,7 +940,7 @@
 0000094c: RET
 
 
-// Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyExecutionMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
 
 0000094d: INITSLOT 4, 2
 00000950: LDARG 0
@@ -1030,40 +1030,74 @@
 000009ef: RET
 
 
-// Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyAdmin(Neo.SmartContract.Framework.ByteString)
 
 000009f0: INITSLOT 0, 1
 000009f3: LDARG 0
-000009f4: PUSH 1
-000009f5: CALL <000002ae>
-000009fa: SYSCALL System.Storage.GetContext
-000009ff: SYSCALL System.Storage.Get
-00000a04: DUP
-00000a05: ISNULL
-00000a06: JMPIF <00000a0f>
-00000a08: DUP
-00000a09: SIZE
-00000a0a: PUSH 20
-00000a0c: JMPEQ <00000a0f>
-00000a0e: THROW
-00000a0f: RET
+000009f4: CALL <00000900>
+000009f9: RET
+
+
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyAdminMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+
+000009fa: INITSLOT 0, 2
+000009fd: LDARG 1
+000009fe: LDARG 0
+000009ff: CALL <0000094d>
+00000a04: RET
+
+
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+
+00000a05: INITSLOT 0, 1
+00000a08: LDARG 0
+00000a09: CALL <00000900>
+00000a0e: RET
+
+
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+
+00000a0f: INITSLOT 0, 2
+00000a12: LDARG 1
+00000a13: LDARG 0
+00000a14: CALL <0000094d>
+00000a19: RET
+
+
+// Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+
+00000a1a: INITSLOT 0, 1
+00000a1d: LDARG 0
+00000a1e: PUSH 1
+00000a1f: CALL <000002ae>
+00000a24: SYSCALL System.Storage.GetContext
+00000a29: SYSCALL System.Storage.Get
+00000a2e: DUP
+00000a2f: ISNULL
+00000a30: JMPIF <00000a39>
+00000a32: DUP
+00000a33: SIZE
+00000a34: PUSH 20
+00000a36: JMPEQ <00000a39>
+00000a38: THROW
+00000a39: RET
 
 
 // Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
 
-00000a10: INITSLOT 0, 1
-00000a13: LDARG 0
-00000a14: PUSH 4
-00000a15: CALL <000002ae>
-00000a1a: SYSCALL System.Storage.GetContext
-00000a1f: SYSCALL System.Storage.Get
-00000a24: DUP
-00000a25: ISNULL
-00000a26: JMPIFNOT <00000a2c>
-00000a28: DROP
-00000a29: PUSH 0
-00000a2a: JMP <00000a2e>
-00000a2c: CONVERT <Integer>
-00000a2e: RET
+00000a3a: INITSLOT 0, 1
+00000a3d: LDARG 0
+00000a3e: PUSH 4
+00000a3f: CALL <000002ae>
+00000a44: SYSCALL System.Storage.GetContext
+00000a49: SYSCALL System.Storage.Get
+00000a4e: DUP
+00000a4f: ISNULL
+00000a50: JMPIFNOT <00000a56>
+00000a52: DROP
+00000a53: PUSH 0
+00000a54: JMP <00000a58>
+00000a56: CONVERT <Integer>
+00000a58: RET
 
 

@@ -970,7 +970,7 @@
 000009ee: RET
 
 
-// Neo.SmartContract.Examples.ArgentRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.VerifyExecution(Neo.SmartContract.Framework.ByteString)
 
 000009ef: INITSLOT 3, 1
 000009f2: LDARG 0
@@ -1013,7 +1013,7 @@
 00000a3b: RET
 
 
-// Neo.SmartContract.Examples.ArgentRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.VerifyExecutionMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
 
 00000a3c: INITSLOT 4, 2
 00000a3f: LDARG 0
@@ -1103,69 +1103,103 @@
 00000ade: RET
 
 
-// Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.VerifyAdmin(Neo.SmartContract.Framework.ByteString)
 
 00000adf: INITSLOT 0, 1
 00000ae2: LDARG 0
-00000ae3: PUSH 4
-00000ae4: CALL <000002d4>
-00000ae9: SYSCALL System.Storage.GetContext
-00000aee: SYSCALL System.Storage.Get
-00000af3: DUP
-00000af4: ISNULL
-00000af5: JMPIF <00000afe>
-00000af7: DUP
-00000af8: SIZE
-00000af9: PUSH 20
-00000afb: JMPEQ <00000afe>
-00000afd: THROW
-00000afe: RET
+00000ae3: CALL <000009ef>
+00000ae8: RET
+
+
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.VerifyAdminMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+
+00000ae9: INITSLOT 0, 2
+00000aec: LDARG 1
+00000aed: LDARG 0
+00000aee: CALL <00000a3c>
+00000af3: RET
+
+
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+
+00000af4: INITSLOT 0, 1
+00000af7: LDARG 0
+00000af8: CALL <000009ef>
+00000afd: RET
+
+
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+
+00000afe: INITSLOT 0, 2
+00000b01: LDARG 1
+00000b02: LDARG 0
+00000b03: CALL <00000a3c>
+00000b08: RET
+
+
+// Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+
+00000b09: INITSLOT 0, 1
+00000b0c: LDARG 0
+00000b0d: PUSH 4
+00000b0e: CALL <000002d4>
+00000b13: SYSCALL System.Storage.GetContext
+00000b18: SYSCALL System.Storage.Get
+00000b1d: DUP
+00000b1e: ISNULL
+00000b1f: JMPIF <00000b28>
+00000b21: DUP
+00000b22: SIZE
+00000b23: PUSH 20
+00000b25: JMPEQ <00000b28>
+00000b27: THROW
+00000b28: RET
 
 
 // Neo.SmartContract.Examples.ArgentRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
 
-00000aff: INITSLOT 0, 1
-00000b02: LDARG 0
-00000b03: PUSH 5
-00000b04: CALL <000002d4>
-00000b09: SYSCALL System.Storage.GetContext
-00000b0e: SYSCALL System.Storage.Get
-00000b13: DUP
-00000b14: ISNULL
-00000b15: JMPIFNOT <00000b1b>
-00000b17: DROP
-00000b18: PUSH 0
-00000b19: JMP <00000b1d>
-00000b1b: CONVERT <Integer>
-00000b1d: RET
+00000b29: INITSLOT 0, 1
+00000b2c: LDARG 0
+00000b2d: PUSH 5
+00000b2e: CALL <000002d4>
+00000b33: SYSCALL System.Storage.GetContext
+00000b38: SYSCALL System.Storage.Get
+00000b3d: DUP
+00000b3e: ISNULL
+00000b3f: JMPIFNOT <00000b45>
+00000b41: DROP
+00000b42: PUSH 0
+00000b43: JMP <00000b47>
+00000b45: CONVERT <Integer>
+00000b47: RET
 
 
 // Neo.SmartContract.Examples.ArgentRecoveryVerifier.IsFrozen(Neo.SmartContract.Framework.ByteString)
 
-00000b1e: INITSLOT 0, 1
-00000b21: LDARG 0
-00000b22: PUSH 7
-00000b23: CALL <000002d4>
-00000b28: SYSCALL System.Storage.GetContext
-00000b2d: SYSCALL System.Storage.Get
-00000b32: PUSH <null>
-00000b33: NOTEQUAL
-00000b34: RET
+00000b48: INITSLOT 0, 1
+00000b4b: LDARG 0
+00000b4c: PUSH 7
+00000b4d: CALL <000002d4>
+00000b52: SYSCALL System.Storage.GetContext
+00000b57: SYSCALL System.Storage.Get
+00000b5c: PUSH <null>
+00000b5d: NOTEQUAL
+00000b5e: RET
 
 
 // Neo.SmartContract.Examples.ArgentRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160)
 
-00000b35: INITSLOT 0, 3
-00000b38: PUSH 1
-00000b39: NEWBUFFER
-00000b3a: DUP
-00000b3b: PUSH 0
-00000b3c: LDARG 0
-00000b3d: SETITEM
-00000b3e: LDARG 1
-00000b3f: CAT
-00000b40: LDARG 2
-00000b41: CAT
-00000b42: RET
+00000b5f: INITSLOT 0, 3
+00000b62: PUSH 1
+00000b63: NEWBUFFER
+00000b64: DUP
+00000b65: PUSH 0
+00000b66: LDARG 0
+00000b67: SETITEM
+00000b68: LDARG 1
+00000b69: CAT
+00000b6a: LDARG 2
+00000b6b: CAT
+00000b6c: RET
 
 

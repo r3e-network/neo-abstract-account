@@ -22,8 +22,12 @@ test('Morpheus social recovery verifier source exposes the expected AA integrati
   assert.match(source, /public static void RevokeActionSession\(/);
   assert.match(source, /public static void FinalizeRecovery\(/);
   assert.match(source, /public static void CancelRecovery\(/);
-  assert.match(source, /public static bool Verify\(ByteString accountId\)/);
-  assert.match(source, /public static bool VerifyMetaTx\(ByteString accountId, UInt160\[\] signerHashes\)/);
+  assert.match(source, /public static bool VerifyExecution\(ByteString accountId\)/);
+  assert.match(source, /public static bool VerifyExecutionMetaTx\(ByteString accountId, UInt160\[\] signerHashes\)/);
+  assert.match(source, /public static bool VerifyAdmin\(ByteString accountId\)/);
+  assert.match(source, /public static bool VerifyAdminMetaTx\(ByteString accountId, UInt160\[\] signerHashes\)/);
+  assert.match(source, /return VerifyExecution\(accountId\);/);
+  assert.match(source, /return VerifyExecutionMetaTx\(accountId, signerHashes\);/);
   assert.match(source, /neodid-recovery-v1/);
   assert.match(source, /Invalid Morpheus recovery signature/);
   assert.match(source, /Action nullifier already used/);
@@ -38,13 +42,16 @@ test('Morpheus social recovery verifier build script includes isolated compilati
   assert.match(project, /<Compile Include="MorpheusSocialRecoveryVerifier\.Fixed\.cs"/);
 });
 
-test('AA admin path delegates to custom verifier when one is configured', () => {
+test('AA execution and admin paths delegate to separate custom verifier entrypoints', () => {
   const source = read('contracts/AbstractAccount.Admin.cs');
+  const executionSource = read('contracts/AbstractAccount.ExecutionAndPermissions.cs');
 
   assert.match(source, /UInt160 customVerifier = GetVerifierContract\(accountId\);/);
-  assert.match(source, /CallCustomVerifierNative\(customVerifier, accountId\)/);
-  assert.match(source, /CallCustomVerifierMetaTx\(customVerifier, accountId, verifierMetaSigners\)/);
+  assert.match(source, /"verifyAdmin"/);
+  assert.match(source, /"verifyAdminMetaTx"/);
   assert.match(source, /Unauthorized by custom verifier/);
+  assert.match(executionSource, /"verifyExecution"/);
+  assert.match(executionSource, /"verifyExecutionMetaTx"/);
 });
 
 test('Morpheus verifier testnet validator exists and is exposed through sdk scripts', () => {

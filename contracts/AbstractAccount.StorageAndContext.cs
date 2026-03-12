@@ -534,9 +534,10 @@ namespace AbstractAccount
         }
 
         /// <summary>
-        /// Returns the optional custom verifier contract configured for the account. When present, native role checks are
-        /// bypassed in favor of the verifier's own <c>verify(accountId)</c> decision for native execution or
-        /// <c>verifyMetaTx(accountId, signers)</c> decision for meta-transaction execution.
+        /// Returns the optional custom verifier contract configured for the account. When present, AA execution and AA
+        /// administration are delegated to different verifier entrypoints:
+        /// <c>verifyExecution(accountId)</c> / <c>verifyExecutionMetaTx(accountId, signers)</c> for runtime execution,
+        /// and <c>verifyAdmin(accountId)</c> / <c>verifyAdminMetaTx(accountId, signers)</c> for durable policy mutation.
         /// </summary>
         [Safe]
         public static UInt160 GetVerifierContract(ByteString accountId)

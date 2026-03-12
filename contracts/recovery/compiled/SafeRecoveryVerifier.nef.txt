@@ -362,94 +362,94 @@
 0583 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAccountId(Neo.SmartContract.Framework.ByteString, string)
 0584 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 271: "name"
+# Code SafeRecoveryVerifier.cs line 279: "name"
 0587 LDARG1
-# Code SafeRecoveryVerifier.cs line 271: "" is null""
+# Code SafeRecoveryVerifier.cs line 279: "" is null""
 0588 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
-# Code SafeRecoveryVerifier.cs line 271: "name + " is null""
+# Code SafeRecoveryVerifier.cs line 279: "name + " is null""
 0598 CAT
-# Code SafeRecoveryVerifier.cs line 271: "name + " is null""
+# Code SafeRecoveryVerifier.cs line 279: "name + " is null""
 0599 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 271: "accountId"
+# Code SafeRecoveryVerifier.cs line 279: "accountId"
 0601 LDARG0
-# Code SafeRecoveryVerifier.cs line 271: "null"
+# Code SafeRecoveryVerifier.cs line 279: "null"
 0602 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 271: "accountId != null"
+# Code SafeRecoveryVerifier.cs line 279: "accountId != null"
 0603 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 271: "accountId != null && accountId.Length > 0"
+# Code SafeRecoveryVerifier.cs line 279: "accountId != null && accountId.Length > 0"
 0604 JMPIF 05 # pos: 609 (offset: 5)
-# Code SafeRecoveryVerifier.cs line 271: "accountId != null && accountId.Length > 0"
+# Code SafeRecoveryVerifier.cs line 279: "accountId != null && accountId.Length > 0"
 0606 PUSHF
-# Code SafeRecoveryVerifier.cs line 271: "accountId != null && accountId.Length > 0"
+# Code SafeRecoveryVerifier.cs line 279: "accountId != null && accountId.Length > 0"
 0607 JMP 06 # pos: 613 (offset: 6)
-# Code SafeRecoveryVerifier.cs line 271: "accountId"
+# Code SafeRecoveryVerifier.cs line 279: "accountId"
 0609 LDARG0
 # Code ByteString.cs line 32: "OpCode(OpCode.SIZE)"
 0610 SIZE
-# Code SafeRecoveryVerifier.cs line 271: "0"
+# Code SafeRecoveryVerifier.cs line 279: "0"
 0611 PUSH0
-# Code SafeRecoveryVerifier.cs line 271: "accountId.Length > 0"
+# Code SafeRecoveryVerifier.cs line 279: "accountId.Length > 0"
 0612 GT
-# Code SafeRecoveryVerifier.cs line 271: "Assert(accountId != null && accountId.Length > 0, name + " is null")"
+# Code SafeRecoveryVerifier.cs line 279: "Assert(accountId != null && accountId.Length > 0, name + " is null")"
 0613 CALL 03 # pos: 616 (offset: 3)
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAccountId(Neo.SmartContract.Framework.ByteString, string)
-# Code SafeRecoveryVerifier.cs line 272: "}"
+# Code SafeRecoveryVerifier.cs line 280: "}"
 0615 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Assert(bool, string)
 0616 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 294: "condition"
+# Code SafeRecoveryVerifier.cs line 302: "condition"
 0619 LDARG0
-# Code SafeRecoveryVerifier.cs line 294: "!condition"
+# Code SafeRecoveryVerifier.cs line 302: "!condition"
 0620 NOT
-# Code SafeRecoveryVerifier.cs line 294: "if (!condition) throw new Exception(message);"
+# Code SafeRecoveryVerifier.cs line 302: "if (!condition) throw new Exception(message);"
 0621 JMPIFNOT 04 # pos: 625 (offset: 4)
-# Code SafeRecoveryVerifier.cs line 294: "message"
+# Code SafeRecoveryVerifier.cs line 302: "message"
 0623 LDARG1
-# Code SafeRecoveryVerifier.cs line 294: "throw new Exception(message);"
+# Code SafeRecoveryVerifier.cs line 302: "throw new Exception(message);"
 0624 THROW
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Assert(bool, string)
-# Code SafeRecoveryVerifier.cs line 295: "}"
+# Code SafeRecoveryVerifier.cs line 303: "}"
 0625 RET
 0626 SIZE
 0627 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
 0628 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 276: "name"
+# Code SafeRecoveryVerifier.cs line 284: "name"
 0631 LDARG1
-# Code SafeRecoveryVerifier.cs line 276: "" is null""
+# Code SafeRecoveryVerifier.cs line 284: "" is null""
 0632 PUSHDATA1 20-69-73-20-6E-75-6C-6C # as text: " is null"
-# Code SafeRecoveryVerifier.cs line 276: "name + " is null""
+# Code SafeRecoveryVerifier.cs line 284: "name + " is null""
 0642 CAT
-# Code SafeRecoveryVerifier.cs line 276: "name + " is null""
+# Code SafeRecoveryVerifier.cs line 284: "name + " is null""
 0643 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 276: "address"
+# Code SafeRecoveryVerifier.cs line 284: "address"
 0645 LDARG0
-# Code SafeRecoveryVerifier.cs line 276: "null"
+# Code SafeRecoveryVerifier.cs line 284: "null"
 0646 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 276: "address != null"
+# Code SafeRecoveryVerifier.cs line 284: "address != null"
 0647 NOTEQUAL
-# Code SafeRecoveryVerifier.cs line 276: "Assert(address != null, name + " is null")"
+# Code SafeRecoveryVerifier.cs line 284: "Assert(address != null, name + " is null")"
 0648 CALL E0 # pos: 616 (offset: -32)
-# Code SafeRecoveryVerifier.cs line 277: "name"
+# Code SafeRecoveryVerifier.cs line 285: "name"
 0650 LDARG1
-# Code SafeRecoveryVerifier.cs line 277: "" is zero""
+# Code SafeRecoveryVerifier.cs line 285: "" is zero""
 0651 PUSHDATA1 20-69-73-20-7A-65-72-6F # as text: " is zero"
-# Code SafeRecoveryVerifier.cs line 277: "name + " is zero""
+# Code SafeRecoveryVerifier.cs line 285: "name + " is zero""
 0661 CAT
-# Code SafeRecoveryVerifier.cs line 277: "name + " is zero""
+# Code SafeRecoveryVerifier.cs line 285: "name + " is zero""
 0662 CONVERT 28 # ByteString type
-# Code SafeRecoveryVerifier.cs line 277: "address"
+# Code SafeRecoveryVerifier.cs line 285: "address"
 0664 LDARG0
 # Code UInt160.cs line 28: "OpCode(OpCode.PUSH0)"
 0665 PUSH0
 # Code UInt160.cs line 29: "OpCode(OpCode.NUMEQUAL)"
 0666 NUMEQUAL
-# Code SafeRecoveryVerifier.cs line 277: "!address.IsZero"
+# Code SafeRecoveryVerifier.cs line 285: "!address.IsZero"
 0667 NOT
-# Code SafeRecoveryVerifier.cs line 277: "Assert(!address.IsZero, name + " is zero")"
+# Code SafeRecoveryVerifier.cs line 285: "Assert(!address.IsZero, name + " is zero")"
 0668 CALL CC # pos: 616 (offset: -52)
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.ValidateAddress(Neo.SmartContract.Framework.UInt160, string)
-# Code SafeRecoveryVerifier.cs line 278: "}"
+# Code SafeRecoveryVerifier.cs line 286: "}"
 0670 RET
 0671 PUSH0
 0672 NUMEQUAL
@@ -460,19 +460,19 @@
 0685 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Key(byte, Neo.SmartContract.Framework.ByteString)
 0686 INITSLOT 00-02 # 0 local variables, 2 arguments
-# Code SafeRecoveryVerifier.cs line 267: "new byte[] { prefix }"
+# Code SafeRecoveryVerifier.cs line 275: "new byte[] { prefix }"
 0689 PUSH1
-# Code SafeRecoveryVerifier.cs line 267: "new byte[] { prefix }"
+# Code SafeRecoveryVerifier.cs line 275: "new byte[] { prefix }"
 0690 NEWBUFFER
-# Code SafeRecoveryVerifier.cs line 267: "new byte[] { prefix }"
+# Code SafeRecoveryVerifier.cs line 275: "new byte[] { prefix }"
 0691 DUP
-# Code SafeRecoveryVerifier.cs line 267: "new byte[] { prefix }"
+# Code SafeRecoveryVerifier.cs line 275: "new byte[] { prefix }"
 0692 PUSH0
-# Code SafeRecoveryVerifier.cs line 267: "prefix"
+# Code SafeRecoveryVerifier.cs line 275: "prefix"
 0693 LDARG0
-# Code SafeRecoveryVerifier.cs line 267: "new byte[] { prefix }"
+# Code SafeRecoveryVerifier.cs line 275: "new byte[] { prefix }"
 0694 SETITEM
-# Code SafeRecoveryVerifier.cs line 267: "accountId"
+# Code SafeRecoveryVerifier.cs line 275: "accountId"
 0695 LDARG1
 # Code Helper.cs line 200: "OpCode(OpCode.CAT)"
 0696 CAT
@@ -818,71 +818,71 @@
 1198 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.ByteString)
 1199 INITSLOT 01-01 # 1 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 282: "accountId"
+# Code SafeRecoveryVerifier.cs line 290: "accountId"
 1202 LDARG0
-# Code SafeRecoveryVerifier.cs line 282: "PREFIX_OWNER"
+# Code SafeRecoveryVerifier.cs line 290: "PREFIX_OWNER"
 1203 PUSH1
-# Code SafeRecoveryVerifier.cs line 282: "Key(PREFIX_OWNER, accountId)"
+# Code SafeRecoveryVerifier.cs line 290: "Key(PREFIX_OWNER, accountId)"
 1204 CALL_L FA-FD-FF-FF # pos: 686 (offset: -518)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
 1209 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
 1214 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1219 DUP
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1220 ISNULL
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1221 JMPIF 09 # pos: 1230 (offset: 9)
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1223 DUP
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1224 SIZE
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1225 PUSHINT8 14 # 20
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1227 JMPEQ 03 # pos: 1230 (offset: 3)
-# Code SafeRecoveryVerifier.cs line 282: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1229 THROW
-# Code SafeRecoveryVerifier.cs line 282: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+# Code SafeRecoveryVerifier.cs line 290: "owner = (UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
 1230 STLOC0
-# Code SafeRecoveryVerifier.cs line 283: ""Not owner""
+# Code SafeRecoveryVerifier.cs line 291: ""Not owner""
 1231 PUSHDATA1 4E-6F-74-20-6F-77-6E-65-72 # as text: "Not owner"
-# Code SafeRecoveryVerifier.cs line 283: "owner"
+# Code SafeRecoveryVerifier.cs line 291: "owner"
 1242 LDLOC0
 # Code Runtime.cs line 136: "Syscall("System.Runtime.CheckWitness")"
 1243 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
-# Code SafeRecoveryVerifier.cs line 283: "Assert(Runtime.CheckWitness(owner), "Not owner")"
+# Code SafeRecoveryVerifier.cs line 291: "Assert(Runtime.CheckWitness(owner), "Not owner")"
 1248 CALL_L 88-FD-FF-FF # pos: 616 (offset: -632)
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireOwner(Neo.SmartContract.Framework.ByteString)
-# Code SafeRecoveryVerifier.cs line 284: "}"
+# Code SafeRecoveryVerifier.cs line 292: "}"
 1253 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.ByteString)
 1254 INITSLOT 01-01 # 1 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 288: "accountId"
+# Code SafeRecoveryVerifier.cs line 296: "accountId"
 1257 LDARG0
-# Code SafeRecoveryVerifier.cs line 288: "PREFIX_FROZEN"
+# Code SafeRecoveryVerifier.cs line 296: "PREFIX_FROZEN"
 1258 PUSH3
-# Code SafeRecoveryVerifier.cs line 288: "Key(PREFIX_FROZEN, accountId)"
+# Code SafeRecoveryVerifier.cs line 296: "Key(PREFIX_FROZEN, accountId)"
 1259 CALL_L C3-FD-FF-FF # pos: 686 (offset: -573)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
 1264 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
 1269 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 288: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
+# Code SafeRecoveryVerifier.cs line 296: "frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId))"
 1274 STLOC0
-# Code SafeRecoveryVerifier.cs line 289: ""Account frozen""
+# Code SafeRecoveryVerifier.cs line 297: ""Account frozen""
 1275 PUSHDATA1 41-63-63-6F-75-6E-74-20-66-72-6F-7A-65-6E # as text: "Account frozen"
-# Code SafeRecoveryVerifier.cs line 289: "frozen"
+# Code SafeRecoveryVerifier.cs line 297: "frozen"
 1291 LDLOC0
-# Code SafeRecoveryVerifier.cs line 289: "null"
+# Code SafeRecoveryVerifier.cs line 297: "null"
 1292 PUSHNULL
-# Code SafeRecoveryVerifier.cs line 289: "frozen == null"
+# Code SafeRecoveryVerifier.cs line 297: "frozen == null"
 1293 EQUAL
-# Code SafeRecoveryVerifier.cs line 289: "Assert(frozen == null, "Account frozen")"
+# Code SafeRecoveryVerifier.cs line 297: "Assert(frozen == null, "Account frozen")"
 1294 CALL_L 5A-FD-FF-FF # pos: 616 (offset: -678)
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.RequireNotFrozen(Neo.SmartContract.Framework.ByteString)
-# Code SafeRecoveryVerifier.cs line 290: "}"
+# Code SafeRecoveryVerifier.cs line 298: "}"
 1299 RET
 # Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.ExecuteRecovery(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160, byte[][], System.Numerics.BigInteger)
 1300 INITSLOT 07-04 # 7 local variables, 4 arguments
@@ -1588,7 +1588,7 @@
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Unfreeze(Neo.SmartContract.Framework.ByteString)
 # Code SafeRecoveryVerifier.cs line 226: "}"
 2303 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyExecution(Neo.SmartContract.Framework.ByteString)
 2304 INITSLOT 03-01 # 3 local variables, 1 arguments
 # Code SafeRecoveryVerifier.cs line 231: "accountId"
 2307 LDARG0
@@ -1664,10 +1664,10 @@
 2373 SYSCALL F8-27-EC-8C # System.Runtime.CheckWitness SysCall
 # Code SafeRecoveryVerifier.cs line 237: "return Runtime.CheckWitness(owner);"
 2378 JMP 02 # pos: 2380 (offset: 2)
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyExecution(Neo.SmartContract.Framework.ByteString)
 # Code SafeRecoveryVerifier.cs line 238: "}"
 2380 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyExecutionMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
 2381 INITSLOT 04-02 # 4 local variables, 2 arguments
 # Code SafeRecoveryVerifier.cs line 242: "accountId"
 2384 LDARG0
@@ -1835,65 +1835,101 @@
 2540 PUSHF
 # Code SafeRecoveryVerifier.cs line 253: "return false;"
 2541 JMP 02 # pos: 2543 (offset: 2)
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyExecutionMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
 # Code SafeRecoveryVerifier.cs line 254: "}"
 2543 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyAdmin(Neo.SmartContract.Framework.ByteString)
 2544 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 259: "accountId"
+# Code SafeRecoveryVerifier.cs line 256: "accountId"
 2547 LDARG0
-# Code SafeRecoveryVerifier.cs line 259: "PREFIX_OWNER"
-2548 PUSH1
-# Code SafeRecoveryVerifier.cs line 259: "Key(PREFIX_OWNER, accountId)"
-2549 CALL_L B9-F8-FF-FF # pos: 686 (offset: -1863)
-# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-2554 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
-# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-2559 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2564 DUP
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2565 ISNULL
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2566 JMPIF 09 # pos: 2575 (offset: 9)
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2568 DUP
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2569 SIZE
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2570 PUSHINT8 14 # 20
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2572 JMPEQ 03 # pos: 2575 (offset: 3)
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2574 THROW
-# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
-# Code SafeRecoveryVerifier.cs line 259: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
-2575 RET
-# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
-2576 INITSLOT 00-01 # 0 local variables, 1 arguments
-# Code SafeRecoveryVerifier.cs line 263: "accountId"
+# Code SafeRecoveryVerifier.cs line 256: "VerifyExecution(accountId)"
+2548 CALL_L 0C-FF-FF-FF # pos: 2304 (offset: -244)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyAdmin(Neo.SmartContract.Framework.ByteString)
+2553 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyAdminMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+2554 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 258: "signerHashes"
+2557 LDARG1
+# Code SafeRecoveryVerifier.cs line 258: "accountId"
+2558 LDARG0
+# Code SafeRecoveryVerifier.cs line 258: "VerifyExecutionMetaTx(accountId, signerHashes)"
+2559 CALL_L 4E-FF-FF-FF # pos: 2381 (offset: -178)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyAdminMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+2564 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+2565 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 260: "accountId"
+2568 LDARG0
+# Code SafeRecoveryVerifier.cs line 260: "VerifyExecution(accountId)"
+2569 CALL_L F7-FE-FF-FF # pos: 2304 (offset: -265)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.Verify(Neo.SmartContract.Framework.ByteString)
+2574 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+2575 INITSLOT 00-02 # 0 local variables, 2 arguments
+# Code SafeRecoveryVerifier.cs line 262: "signerHashes"
+2578 LDARG1
+# Code SafeRecoveryVerifier.cs line 262: "accountId"
 2579 LDARG0
-# Code SafeRecoveryVerifier.cs line 263: "PREFIX_NONCE"
-2580 PUSH4
-# Code SafeRecoveryVerifier.cs line 263: "Key(PREFIX_NONCE, accountId)"
-2581 CALL_L 99-F8-FF-FF # pos: 686 (offset: -1895)
+# Code SafeRecoveryVerifier.cs line 262: "VerifyExecutionMetaTx(accountId, signerHashes)"
+2580 CALL_L 39-FF-FF-FF # pos: 2381 (offset: -199)
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.VerifyMetaTx(Neo.SmartContract.Framework.ByteString, Neo.SmartContract.Framework.UInt160[])
+2585 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+2586 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 267: "accountId"
+2589 LDARG0
+# Code SafeRecoveryVerifier.cs line 267: "PREFIX_OWNER"
+2590 PUSH1
+# Code SafeRecoveryVerifier.cs line 267: "Key(PREFIX_OWNER, accountId)"
+2591 CALL_L 8F-F8-FF-FF # pos: 686 (offset: -1905)
 # Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
-2586 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+2596 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
 # Code Storage.cs line 48: "Syscall("System.Storage.Get")"
-2591 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+2601 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2606 DUP
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2607 ISNULL
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2608 JMPIF 09 # pos: 2617 (offset: 9)
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2610 DUP
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2611 SIZE
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2612 PUSHINT8 14 # 20
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2614 JMPEQ 03 # pos: 2617 (offset: 3)
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2616 THROW
+# Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetOwner(Neo.SmartContract.Framework.ByteString)
+# Code SafeRecoveryVerifier.cs line 267: "(UInt160)Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId))"
+2617 RET
+# Method Start Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
+2618 INITSLOT 00-01 # 0 local variables, 1 arguments
+# Code SafeRecoveryVerifier.cs line 271: "accountId"
+2621 LDARG0
+# Code SafeRecoveryVerifier.cs line 271: "PREFIX_NONCE"
+2622 PUSH4
+# Code SafeRecoveryVerifier.cs line 271: "Key(PREFIX_NONCE, accountId)"
+2623 CALL_L 6F-F8-FF-FF # pos: 686 (offset: -1937)
+# Code Storage.cs line 24: "Syscall("System.Storage.GetContext")"
+2628 SYSCALL 9B-F6-67-CE # System.Storage.GetContext SysCall
+# Code Storage.cs line 48: "Syscall("System.Storage.Get")"
+2633 SYSCALL 92-5D-E8-31 # System.Storage.Get SysCall
 # Code ByteString.cs line 58: "OpCode(OpCode.DUP)"
-2596 DUP
+2638 DUP
 # Code ByteString.cs line 59: "OpCode(OpCode.ISNULL)"
-2597 ISNULL
+2639 ISNULL
 # Code ByteString.cs line 60: "OpCode(OpCode.JMPIFNOT, "0x06")"
-2598 JMPIFNOT 06 # pos: 2604 (offset: 6)
+2640 JMPIFNOT 06 # pos: 2646 (offset: 6)
 # Code ByteString.cs line 61: "OpCode(OpCode.DROP)"
-2600 DROP
+2642 DROP
 # Code ByteString.cs line 62: "OpCode(OpCode.PUSH0)"
-2601 PUSH0
+2643 PUSH0
 # Code ByteString.cs line 63: "OpCode(OpCode.JMP, "0x04")"
-2602 JMP 04 # pos: 2606 (offset: 4)
+2644 JMP 04 # pos: 2648 (offset: 4)
 # Code ByteString.cs line 64: "OpCode(OpCode.CONVERT, StackItemType.Integer)"
-2604 CONVERT 21 # Integer type
+2646 CONVERT 21 # Integer type
 # Method End Neo.SmartContract.Examples.SafeRecoveryVerifier.GetNonce(Neo.SmartContract.Framework.ByteString)
-2606 RET
+2648 RET

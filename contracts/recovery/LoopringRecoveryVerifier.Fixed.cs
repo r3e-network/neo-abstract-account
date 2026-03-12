@@ -193,8 +193,8 @@ namespace Neo.SmartContract.Examples
             OnUnfreeze(accountId);
         }
 
-        // Standard verify interface
-        public static bool Verify(ByteString accountId)
+        // Standard verifier split: execution and admin use the same owner-only logic on recovery-only verifiers.
+        public static bool VerifyExecution(ByteString accountId)
         {
             var frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId));
             if (frozen != null) return false;
@@ -205,7 +205,7 @@ namespace Neo.SmartContract.Examples
             return Runtime.CheckWitness(owner);
         }
 
-        public static bool VerifyMetaTx(ByteString accountId, UInt160[] signerHashes)
+        public static bool VerifyExecutionMetaTx(ByteString accountId, UInt160[] signerHashes)
         {
             var frozen = Storage.Get(Storage.CurrentContext, Key(PREFIX_FROZEN, accountId));
             if (frozen != null) return false;
@@ -220,6 +220,14 @@ namespace Neo.SmartContract.Examples
             }
             return false;
         }
+
+        public static bool VerifyAdmin(ByteString accountId) => VerifyExecution(accountId);
+
+        public static bool VerifyAdminMetaTx(ByteString accountId, UInt160[] signerHashes) => VerifyExecutionMetaTx(accountId, signerHashes);
+
+        public static bool Verify(ByteString accountId) => VerifyExecution(accountId);
+
+        public static bool VerifyMetaTx(ByteString accountId, UInt160[] signerHashes) => VerifyExecutionMetaTx(accountId, signerHashes);
 
         // Query methods
         [Safe]

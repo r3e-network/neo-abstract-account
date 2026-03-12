@@ -16,11 +16,15 @@ test('custom verifier project exists and declares Neo smart contract dependencie
   assert.match(source, /Neo\.SmartContract\.Framework/);
 });
 
-test('custom verifier source exports verify(ByteString accountId) and verifyMetaTx(ByteString accountId, UInt160[] signerHashes)', () => {
+test('custom verifier source exports separated execution/admin verifier methods', () => {
   assert.equal(fs.existsSync(verifierSourcePath), true, 'expected standalone verifier source to exist');
   const source = fs.readFileSync(verifierSourcePath, 'utf8');
 
   assert.match(source, /class\s+AllowAllVerifier\s*:\s*SmartContract/);
+  assert.match(source, /public\s+static\s+bool\s+VerifyExecution\s*\(\s*ByteString\s+accountId\s*\)/);
+  assert.match(source, /public\s+static\s+bool\s+VerifyExecutionMetaTx\s*\(\s*ByteString\s+accountId\s*,\s*UInt160\[\]\s+signerHashes\s*\)/);
+  assert.match(source, /public\s+static\s+bool\s+VerifyAdmin\s*\(\s*ByteString\s+accountId\s*\)/);
+  assert.match(source, /public\s+static\s+bool\s+VerifyAdminMetaTx\s*\(\s*ByteString\s+accountId\s*,\s*UInt160\[\]\s+signerHashes\s*\)/);
   assert.match(source, /public\s+static\s+bool\s+Verify\s*\(\s*ByteString\s+accountId\s*\)/);
   assert.match(source, /public\s+static\s+bool\s+VerifyMetaTx\s*\(\s*ByteString\s+accountId\s*,\s*UInt160\[\]\s+signerHashes\s*\)/);
 });
