@@ -52,7 +52,10 @@ namespace AbstractAccount
             }
 
             // For Neo native signers
-            if (CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId)))
+            int adminThreshold = GetAdminThreshold(accountId);
+            ExecutionEngine.Assert(adminThreshold > 0, "Admin threshold must be > 0 to modify configurations");
+
+            if (CheckNativeSignatures(GetAdmins(accountId), adminThreshold))
             {
                 UpdateLastActiveTimestamp(accountId);
                 return;
@@ -78,7 +81,7 @@ namespace AbstractAccount
             UInt160[] explicitSigners = GetMetaTxContextSigners(accountId);
             if (explicitSigners.Length > 0 && Runtime.CallingScriptHash == Runtime.ExecutingScriptHash)
             {
-                if (CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners))
+                if (CheckMixedSignatures(GetAdmins(accountId), adminThreshold, explicitSigners))
                 {
                     UpdateLastActiveTimestamp(accountId);
                     return;
@@ -125,7 +128,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(admins != null && admins.Count > 0, "Admins are mandatory");
             Neo.SmartContract.Framework.List<UInt160> validatedAdmins = admins!;
             AssertUniqueAccounts(validatedAdmins);
-            ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold > 0, "Invalid threshold");
+            ExecutionEngine.Assert(threshold <= validatedAdmins.Count && threshold >= 0, "Invalid threshold");
 
             Neo.SmartContract.Framework.List<UInt160> oldAdmins = GetAdmins(accountId);
             for (int i = 0; i < oldAdmins.Count; i++)
@@ -485,6 +488,7 @@ namespace AbstractAccount
         private static void AssertUniqueAccounts(Neo.SmartContract.Framework.List<UInt160>? accounts)
         {
             if (accounts == null) return;
+            ExecutionEngine.Assert(accounts.Count <= 20, "Too many role accounts");
             for (int i = 0; i < accounts.Count; i++)
             {
                 UInt160 current = accounts[i];

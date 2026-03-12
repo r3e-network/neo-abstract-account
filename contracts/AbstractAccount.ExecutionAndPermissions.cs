@@ -52,6 +52,9 @@ namespace AbstractAccount
         {
             AssertAccountExists(accountId);
 
+            bool isAdmin = false;
+            bool bypassOperationalLimits = false;
+
             // Authorization order is: custom execution verifier (if configured), then native admin/manager quorum, then
             // dome signers subject to timeout + oracle unlock. Only after authorization do we evaluate target restrictions.
             UInt160 customVerifier = GetVerifierContract(accountId);
@@ -67,8 +70,20 @@ namespace AbstractAccount
             }
             else
             {
-                bool isAdmin = CheckNativeSignatures(GetAdmins(accountId), GetAdminThreshold(accountId));
-                bool isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
+                int adminThreshold = GetAdminThreshold(accountId);
+                isAdmin = CheckNativeSignatures(GetAdmins(accountId), adminThreshold);
+                bool isManager = false;
+                if (!isAdmin)
+                {
+                    isManager = CheckNativeSignatures(GetManagers(accountId), GetManagerThreshold(accountId));
+                }
+                
+                // Only grant operational bypass if they are an admin WITH a threshold > 0 (meaning signatures were verified)
+                if (isAdmin && adminThreshold > 0)
+                {
+                    bypassOperationalLimits = true;
+                }
+
                 if (isAdmin || isManager)
                 {
                     UpdateLastActiveTimestamp(accountId);
@@ -87,12 +102,15 @@ namespace AbstractAccount
                     UpdateLastActiveTimestamp(accountId);
                 }
             }
-            EnforceRestrictions(accountId, targetContract, method, args);
+            EnforceRestrictions(accountId, targetContract, method, args, bypassOperationalLimits);
         }
 
         private static void CheckPermissionsAndExecute(ByteString accountId, UInt160[] verifiedSigners, UInt160 targetContract, string method, object[] args)
         {
             AssertAccountExists(accountId);
+
+            bool isAdmin = false;
+            bool bypassOperationalLimits = false;
 
             UInt160 customVerifier = GetVerifierContract(accountId);
             if (customVerifier != null && customVerifier != UInt160.Zero)
@@ -108,8 +126,19 @@ namespace AbstractAccount
             }
             else
             {
-                bool isAdmin = CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), verifiedSigners);
-                bool isManager = CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
+                int adminThreshold = GetAdminThreshold(accountId);
+                isAdmin = CheckMixedSignatures(GetAdmins(accountId), adminThreshold, verifiedSigners);
+                bool isManager = false;
+                if (!isAdmin)
+                {
+                    isManager = CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), verifiedSigners);
+                }
+                
+                if (isAdmin && adminThreshold > 0)
+                {
+                    bypassOperationalLimits = true;
+                }
+
                 if (isAdmin || isManager)
                 {
                     UpdateLastActiveTimestamp(accountId);
@@ -128,14 +157,17 @@ namespace AbstractAccount
                     UpdateLastActiveTimestamp(accountId);
                 }
             }
-            EnforceRestrictions(accountId, targetContract, method, args);
+            EnforceRestrictions(accountId, targetContract, method, args, bypassOperationalLimits);
         }
 
         // Policy enforcement is intentionally centralized so every execution path—native and meta-tx—runs through the
         // same whitelist, blacklist, method-allowlist, and max-transfer rules.
-        private static void EnforceRestrictions(ByteString accountId, UInt160 targetContract, string method, object[] args)
+        private static void EnforceRestrictions(ByteString accountId, UInt160 targetContract, string method, object[] args, bool bypassOperationalLimits)
         {
             AssertMethodAllowedByPolicy(targetContract, method);
+
+            // Admins bypass operational restrictions like whitelist/blacklist/transfer-limits.
+            if (bypassOperationalLimits) return;
 
             StorageMap blacklistMap = new StorageMap(Storage.CurrentContext, Helper.Concat(BlacklistPrefix, GetStorageKey(accountId)));
             ByteString? isBlacklisted = blacklistMap.Get(targetContract);
@@ -280,7 +312,8 @@ namespace AbstractAccount
         /// </remarks>
         private static bool CheckNativeSignatures(Neo.SmartContract.Framework.List<UInt160> roles, int threshold)
         {
-            if (threshold <= 0 || roles == null || roles.Count == 0) return false;
+            if (roles == null || roles.Count == 0) return false;
+            if (threshold <= 0) return true;
             int count = 0;
             for (int i = 0; i < roles.Count; i++)
             {
@@ -345,7 +378,8 @@ namespace AbstractAccount
         /// </remarks>
         private static bool CheckMixedSignatures(Neo.SmartContract.Framework.List<UInt160> roles, int threshold, UInt160[] verifiedSigners)
         {
-            if (threshold <= 0 || roles == null || roles.Count == 0) return false;
+            if (roles == null || roles.Count == 0) return false;
+            if (threshold <= 0) return true;
             int count = 0;
             for (int i = 0; i < roles.Count; i++)
             {

@@ -47,6 +47,8 @@ export function useStudioController() {
 
   const recentTransactions = ref([]);
 
+  const matrixCheckResult = ref(null);
+
   const createForm = ref(createCreateFormState());
   const manageForm = ref(createManageFormState());
   const permissionsForm = ref(createPermissionsFormState());
@@ -54,6 +56,8 @@ export function useStudioController() {
   const manageBusy = ref(createManageBusyState());
   const permissionsBusy = ref(createPermissionsBusyState());
   const manageSnapshot = ref(createManageSnapshotState());
+
+  const autoLoadedAccounts = ref([]);
 
   const computedScriptHex = ref('');
   const computedAddress = ref('');
@@ -73,18 +77,34 @@ export function useStudioController() {
   const canCreate = computed(() => {
     if (!walletConnected.value) return false;
     if (!createForm.value.accountId || !computedAddress.value) return false;
-    if (validCreateAdmins.value.length === 0) return false;
-    if (createForm.value.adminThreshold < 1 || createForm.value.adminThreshold > validCreateAdmins.value.length) return false;
-    if (validCreateManagers.value.length === 0) {
-      return createForm.value.managerThreshold === 0;
+    
+    const adminCount = validCreateAdmins.value.length;
+    const managerCount = validCreateManagers.value.length;
+    
+    if (adminCount === 0 && managerCount === 0) return false; // Must have some role
+    
+    if (adminCount > 0) {
+      if (createForm.value.adminThreshold < 0 || createForm.value.adminThreshold > adminCount) return false;
+    } else {
+      if (createForm.value.adminThreshold !== 0) return false;
     }
-    return createForm.value.managerThreshold > 0 && createForm.value.managerThreshold <= validCreateManagers.value.length;
+
+    if (managerCount > 0) {
+      if (createForm.value.managerThreshold < 1 || createForm.value.managerThreshold > managerCount) return false;
+    } else {
+      if (createForm.value.managerThreshold !== 0) return false;
+    }
+
+    // Must have at least one valid threshold setup
+    if (createForm.value.adminThreshold === 0 && createForm.value.managerThreshold === 0) return false;
+    
+    return true;
   });
 
   const canManageTarget = computed(() => !!manageForm.value.accountAddress && walletConnected.value);
   const canManagePermissions = computed(() => !!permissionsForm.value.accountAddress && walletConnected.value);
 
-  watch(connectedAccount, () => {
+  watch(connectedAccount, async () => {
     if (isEvmWallet.value && walletService.account?.pubKey) {
       createForm.value.accountId = walletService.account.pubKey;
     } else if (isEvmWallet.value) {
@@ -94,13 +114,40 @@ export function useStudioController() {
     } else if (!createForm.value.accountId || createForm.value.accountId.length === 130) {
       createForm.value.accountId = createGeneratedAccountId();
     }
+    
+    // Auto-set creator as first admin
+    if (walletConnected.value && createForm.value.admins.length === 1 && !createForm.value.admins[0].value) {
+      createForm.value.admins[0].value = isEvmWallet.value ? walletService.address : connectedAccount.value;
+    }
+
+    // Auto-load managed account if not set
+    if (walletConnected.value) {
+      try {
+        const address = isEvmWallet.value ? walletService.address : connectedAccount.value;
+        const res = await invokeReadOperation('getAccountAddressesByAdmin', [{ type: 'Hash160', value: hash160Param(address) }]);
+        const addresses = decodeStackHashArray(res.stack?.[0]);
+        autoLoadedAccounts.value = addresses;
+        
+        if (addresses.length > 0 && !manageForm.value.accountAddress) {
+          manageForm.value.accountAddress = addresses[0];
+          permissionsForm.value.accountAddress = addresses[0];
+          await loadAccountConfiguration();
+        }
+      } catch (e) {
+        console.warn('Failed to auto-discover managed accounts', e);
+      }
+    }
   }, { immediate: true });
 
   watch(() => createForm.value.accountId, computeAA);
   watch(validCreateAdmins, (admins) => {
-    if (admins.length === 0) createForm.value.adminThreshold = 1;
-    if (createForm.value.adminThreshold > Math.max(1, admins.length)) {
-      createForm.value.adminThreshold = Math.max(1, admins.length);
+    if (admins.length === 0) {
+      createForm.value.adminThreshold = 0;
+      return;
+    }
+    if (createForm.value.adminThreshold < 0) createForm.value.adminThreshold = 0;
+    if (createForm.value.adminThreshold > admins.length) {
+      createForm.value.adminThreshold = admins.length;
     }
   });
   watch(validCreateManagers, (managers) => {
@@ -112,9 +159,13 @@ export function useStudioController() {
     if (createForm.value.managerThreshold > managers.length) createForm.value.managerThreshold = managers.length;
   });
   watch(validManageAdmins, (admins) => {
-    if (admins.length === 0) manageForm.value.adminThreshold = 1;
-    if (manageForm.value.adminThreshold > Math.max(1, admins.length)) {
-      manageForm.value.adminThreshold = Math.max(1, admins.length);
+    if (admins.length === 0) {
+      manageForm.value.adminThreshold = 0;
+      return;
+    }
+    if (manageForm.value.adminThreshold < 0) manageForm.value.adminThreshold = 0;
+    if (manageForm.value.adminThreshold > admins.length) {
+      manageForm.value.adminThreshold = admins.length;
     }
   });
   watch(validManageManagers, (managers) => {
@@ -219,6 +270,25 @@ export function useStudioController() {
       return false;
     }
     return true;
+  }
+
+  async function checkMatrixDomain() {
+    if (!createForm.value.matrixDomain) return;
+    try {
+      const fullDomain = `${createForm.value.matrixDomain.replace(/\.matrix$/, '')}.matrix`;
+      const owner = await invokeReadFunction(walletService.matrixContractHash, 'ownerOf', [
+        { type: 'String', value: fullDomain }
+      ]);
+      const ownerHash = decodeStackByteStringHex(owner.stack?.[0]);
+      if (ownerHash) {
+        matrixCheckResult.value = { available: false, error: true, message: `Domain is already taken.` };
+      } else {
+        matrixCheckResult.value = { available: true, error: false, message: `Domain is available!` };
+      }
+    } catch (e) {
+      console.warn('Matrix check error', e);
+      matrixCheckResult.value = { available: true, error: false, message: `Domain appears available.` };
+    }
   }
 
   async function invokeOperation(label, operation, args) {
@@ -339,7 +409,8 @@ export function useStudioController() {
         ]
       };
 
-      const matrixDomain = normalizeMatrixDomain(createForm.value.matrixDomain);
+      const baseDomain = createForm.value.matrixDomain.replace(/\.matrix$/, '');
+      const matrixDomain = baseDomain ? `${baseDomain}.matrix` : '';
       if (matrixDomain) {
         if (!isMatrixDomain(matrixDomain)) {
           throw new Error('Matrix domain must end with .matrix');
@@ -616,6 +687,7 @@ export function useStudioController() {
     validManageAdmins,
     validManageManagers,
     validDomeAccounts,
+    autoLoadedAccounts,
     canCreate,
     canManageTarget,
     canManagePermissions,
@@ -625,6 +697,8 @@ export function useStudioController() {
     computeAA,
     loadAccountConfiguration,
     createAccount,
+    checkMatrixDomain,
+    matrixCheckResult,
     setAdminsByAddress,
     setManagersByAddress,
     setDomeAccountsByAddress,
