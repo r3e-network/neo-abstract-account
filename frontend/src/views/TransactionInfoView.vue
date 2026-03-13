@@ -1,5 +1,5 @@
 <template>
-  <div class="relative min-h-screen bg-slate-900 overflow-hidden font-sans text-slate-300">
+  <div class="relative min-h-screen bg-slate-900 overflow-hidden font-sans text-biconomy-text">
     <div class="absolute inset-0 z-0 pointer-events-none">
       <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-vibrant-glow rounded-full mix-blend-screen opacity-30 animate-pulse-slow"></div>
     </div>

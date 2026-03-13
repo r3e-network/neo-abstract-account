@@ -7,6 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        biconomy: {
+          orange: '#FF4400',
+          darkOrange: '#CC3600',
+          lightOrange: '#FF6A33',
+          dark: '#0A0A0A',
+          panel: '#141414',
+          border: '#292929',
+          text: '#FAFAFA',
+          muted: '#A3A3A3'
+        },
         ata: {
           blue: '#00A3FF',
           green: '#00FF66',

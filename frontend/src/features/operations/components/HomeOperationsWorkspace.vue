@@ -6,7 +6,7 @@
         <div>
           <p class="mb-2 text-xs font-bold uppercase tracking-widest text-neo-400">{{ t('operations.workspaceTitle', 'Abstract Account Workspace') }}</p>
           <h1 class="text-3xl font-extrabold tracking-tight text-white font-outfit">{{ t('operations.workspaceHero', 'Load, compose, sign, share, and broadcast') }}</h1>
-          <p class="mt-3 text-sm text-slate-400 max-w-2xl">{{ t('operations.quickFlow', 'Connect Web3Auth, load an AA, bind NeoDID, then request recovery or private sessions.') }}</p>
+          <p class="mt-3 text-sm text-biconomy-muted max-w-2xl">{{ t('operations.quickFlow', 'Connect Web3Auth, load an AA, bind NeoDID, then request recovery or private sessions.') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
           <button v-if="didConnection.isConfigured.value" class="btn-secondary" @click="connectDidAction">
@@ -22,13 +22,13 @@
             <button class="btn-primary" @click="showActionsMenu = !showActionsMenu">Actions <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
             <transition name="fade-in-up">
               <div v-if="showActionsMenu" class="absolute right-0 mt-3 w-64 rounded-xl bg-slate-800 shadow-2xl border border-slate-700 py-2 z-50 overflow-hidden backdrop-blur-lg">
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!shareUrl" @click="copyShareLink">{{ t('operations.copyShareLink', 'Copy Share Link') }}</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorLink">{{ t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorLink">{{ t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-biconomy-text hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!shareUrl" @click="copyShareLink">{{ t('operations.copyShareLink', 'Copy Share Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-biconomy-text hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorLink">{{ t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-biconomy-text hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorLink">{{ t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
                 <div class="border-t border-slate-700 my-1"></div>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
-                <button class="w-full px-5 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!workspace.transactionBody.value" @click="exportDraftJson">{{ t('operations.exportDraftJson', 'Export Draft JSON') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-biconomy-text hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!collaborationUrl || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-biconomy-text hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!operatorUrl || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
+                <button class="w-full px-5 py-2.5 text-left text-sm text-biconomy-text hover:bg-slate-700/50 hover:text-white transition-colors disabled:opacity-50" :disabled="!workspace.transactionBody.value" @click="exportDraftJson">{{ t('operations.exportDraftJson', 'Export Draft JSON') }}</button>
               </div>
             </transition>
           </div>
@@ -39,26 +39,26 @@
 
       <div class="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-5">
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('operations.didCardLabel', 'Web3Auth') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('operations.didCardLabel', 'Web3Auth') }}</p>
           <p class="text-sm text-white font-semibold truncate">{{ didLabel }}</p>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Neo Wallet</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">Neo Wallet</p>
           <p class="text-sm text-white font-semibold truncate">{{ neoWalletLabel }}</p>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">EVM Wallet</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">EVM Wallet</p>
           <p class="text-sm text-white font-semibold truncate">{{ evmWalletLabel }}</p>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('operations.signaturesCardLabel', 'Signatures') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('operations.signaturesCardLabel', 'Signatures') }}</p>
           <div class="flex items-center gap-2 mt-1">
             <div class="w-full bg-slate-700 rounded-full h-1.5"><div class="bg-neo-500 h-1.5 rounded-full" :style="{ width: (signerProgress.requiredCount ? Math.min(100, (signerProgress.signatureCount / signerProgress.requiredCount) * 100) : 0) + '%' }"></div></div>
             <p class="text-sm text-white font-semibold tabular-nums">{{ signerProgress.signatureCount }} / {{ signerProgress.requiredCount || 0 }}</p>
           </div>
         </div>
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('operations.collaborationCardLabel', 'Collaboration') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('operations.collaborationCardLabel', 'Collaboration') }}</p>
           <div class="flex items-center mt-1">
             <span class="w-2 h-2 rounded-full mr-2" :class="runtime.collaborationEnabled ? 'bg-neo-500 animate-pulse' : 'bg-slate-500'"></span>
             <p class="text-sm text-white font-semibold">{{ runtime.collaborationEnabled ? t('operations.collaborationReadyLabel', 'Ready') : t('operations.collaborationLocalLabel', 'Local') }}</p>
@@ -83,7 +83,7 @@
                 <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">1</div>
                 <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepLoadTitle', 'Load Account') }}</h2>
               </div>
-              <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
+              <span class="text-biconomy-muted text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step1Expanded" class="p-6 md:p-8 animate-fade-in">
               <LoadAccountPanel class="dark-panel-override" :account-address-script-hash="accountAddressScriptHash" :candidate-addresses="discoveredAccountAddresses" :resolved-owner-address="resolvedMatrixOwnerAddress" @update:account-address-script-hash="accountAddressScriptHash = $event" @select-address="selectDiscoveredAccount" @load="loadAccount" />
@@ -96,7 +96,7 @@
                 <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">2</div>
                 <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepComposeTitle', 'Compose Operation') }}</h2>
               </div>
-              <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step2Expanded ? 'rotate-180' : ''">▼</span>
+              <span class="text-biconomy-muted text-sm font-mono transform transition-transform" :class="step2Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step2Expanded" class="p-6 md:p-8 animate-fade-in">
               <OperationComposerPanel class="dark-panel-override" :preset="preset" :preset-options="presetOptions" :target-contract="targetContract" :resolved-contract-hash="resolvedContractHash" :resolved-contract-name="resolvedContractName" :contract-suggestions="contractSuggestions" :contract-lookup-status="contractLookupStatus" :method-options="methodOptions" :parameter-fields="parameterFields" :method="method" :args-text="argsText" :transfer-token-script-hash="transferTokenScriptHash" :transfer-recipient="transferRecipient" :transfer-amount="transferAmount" :transfer-data="transferData" :multisig-title="multisigTitle" :multisig-description="multisigDescription" :summary-title="composerSummary.title" :summary-detail="composerSummary.detail" :batch-account-ids="batchAccountIds" :batch-signers="batchSigners" :batch-threshold="batchThreshold" @update:preset="preset = $event" @update:target-contract="targetContract = $event" @update:method="method = $event" @select-contract-suggestion="selectContractSuggestion" @update:parameter-value="updateParameterValue" @update:args-text="argsText = $event" @update:transfer-token-script-hash="transferTokenScriptHash = $event" @update:transfer-recipient="transferRecipient = $event" @update:transfer-amount="transferAmount = $event" @update:transfer-data="transferData = $event" @update:multisig-title="multisigTitle = $event" @update:multisig-description="multisigDescription = $event" @update:batch-account-ids="batchAccountIds = $event" @update:batch-signers="batchSigners = $event" @update:batch-threshold="batchThreshold = $event" @stage="stageOperation" />
@@ -109,7 +109,7 @@
                 <div class="w-8 h-8 rounded-full bg-neo-500/20 border border-neo-500/50 text-neo-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(34,197,94,0.2)]">3</div>
                 <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepSignTitle', 'Collect Signatures') }}</h2>
               </div>
-              <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step3Expanded ? 'rotate-180' : ''">▼</span>
+              <span class="text-biconomy-muted text-sm font-mono transform transition-transform" :class="step3Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step3Expanded" class="p-6 md:p-8 animate-fade-in space-y-6">
               <div class="flex gap-4">
@@ -128,7 +128,7 @@
                 <div class="w-8 h-8 rounded-full bg-neo-500 text-slate-900 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(34,197,94,0.4)]">4</div>
                 <h2 class="text-lg font-bold text-white font-outfit">{{ t('operations.stepBroadcastTitle', 'Broadcast') }}</h2>
               </div>
-              <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="step4Expanded ? 'rotate-180' : ''">▼</span>
+              <span class="text-biconomy-muted text-sm font-mono transform transition-transform" :class="step4Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step4Expanded" class="relative p-6 md:p-8 animate-fade-in space-y-6">
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -145,21 +145,21 @@
                     <span class="w-2.5 h-2.5 rounded-full" :class="activeSubmissionReceipt.tone === 'success' ? 'bg-neo-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : activeSubmissionReceipt.tone === 'error' ? 'bg-rose-500' : 'bg-amber-500'"></span>
                     <p class="text-xs font-bold uppercase tracking-widest text-white">{{ t('operations.receiptTitle', 'Submission Receipt') }}</p>
                   </div>
-                  <p class="mt-1 text-sm text-slate-300 leading-relaxed">{{ activeSubmissionReceipt.detail }}</p>
+                  <p class="mt-1 text-sm text-biconomy-text leading-relaxed">{{ activeSubmissionReceipt.detail }}</p>
                   <code v-if="activeSubmissionReceipt.txid" class="mt-4 block break-all rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-neo-300 font-mono shadow-inner">{{ activeSubmissionReceipt.txid }}</code>
                   <a v-if="activeSubmissionReceipt.explorerUrl" :href="activeSubmissionReceipt.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-semibold text-neo-400 hover:text-neo-300 transition-colors">
                     Open in Explorer <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                   </a>
                   
                   <div v-if="submissionReceiptHistoryItems && submissionReceiptHistoryItems.length > 0" class="mt-6 border-t border-slate-700/50 pt-5">
-                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">{{ t('operations.receiptHistoryTitle', 'Receipt History') }}</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-biconomy-muted mb-4">{{ t('operations.receiptHistoryTitle', 'Receipt History') }}</p>
                     <div class="space-y-3">
                       <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-lg border border-slate-700/50 bg-slate-800/40 px-4 py-3 hover:bg-slate-700/60 transition-colors">
                         <div class="flex items-center justify-between gap-3 mb-1">
                           <div class="text-sm font-semibold text-white">{{ item.title }}</div>
-                          <div class="text-xs text-slate-400">{{ item.createdLabel }}</div>
+                          <div class="text-xs text-biconomy-muted">{{ item.createdLabel }}</div>
                         </div>
-                        <div class="text-sm text-slate-300 leading-relaxed">{{ item.detail }}</div>
+                        <div class="text-sm text-biconomy-text leading-relaxed">{{ item.detail }}</div>
                       </div>
                     </div>
                   </div>

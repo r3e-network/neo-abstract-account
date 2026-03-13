@@ -5,14 +5,14 @@
         <div class="w-8 h-8 rounded-full bg-sky-500/20 border border-sky-500/50 text-sky-300 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.2)]">D</div>
         <h2 class="text-lg font-bold text-white font-outfit">{{ t('didPanel.title', 'NeoDID / Web3Auth') }}</h2>
       </div>
-      <span class="text-slate-400 text-sm font-mono transform transition-transform" :class="expanded ? 'rotate-180' : ''">▼</span>
+      <span class="text-biconomy-muted text-sm font-mono transform transition-transform" :class="expanded ? 'rotate-180' : ''">▼</span>
     </button>
     <div v-show="expanded" class="p-6 md:p-8 animate-fade-in space-y-6">
       <div class="rounded-xl border border-sky-500/20 bg-sky-500/5 p-5">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p class="text-xs uppercase tracking-wider text-sky-300 font-bold mb-2">{{ t('didPanel.connectTitle', 'Connect Web3Auth First') }}</p>
-            <p class="text-sm text-slate-300 leading-6">
+            <p class="text-sm text-biconomy-text leading-6">
               {{ didAvailable ? t('didPanel.connectSubtitle', 'NeoDID bind, recovery, and private sessions all start from a live Web3Auth identity. Choose a login method below.') : t('didPanel.connectUnavailable', 'Web3Auth is not configured in this deployment yet.') }}
             </p>
           </div>
@@ -38,54 +38,54 @@
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.identityRoot', 'Identity Root') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.identityRoot', 'Identity Root') }}</p>
           <p class="text-sm text-white font-semibold break-all">{{ didProfile?.identityRoot || didProfile?.providerUid || t('didPanel.notConnected', 'not connected') }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.provider', 'Provider') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.provider', 'Provider') }}</p>
           <p class="text-sm text-white font-semibold">{{ didProfile?.provider || 'web3auth' }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.serviceDid', 'NeoDID Service DID') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.serviceDid', 'NeoDID Service DID') }}</p>
           <p class="text-sm text-white font-semibold break-all">{{ serviceDid }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.resolvedAccountId', 'Resolved AccountId') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.resolvedAccountId', 'Resolved AccountId') }}</p>
           <p class="text-sm text-white font-semibold break-all">{{ resolvedAccountId || t('didPanel.unresolved', 'unresolved') }}</p>
         </div>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.linkedAccounts', 'Linked Accounts') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.linkedAccounts', 'Linked Accounts') }}</p>
           <p class="text-sm text-white font-semibold">{{ linkedAccountsLabel }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.emailNotice', 'Email Notice') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.emailNotice', 'Email Notice') }}</p>
           <p class="text-sm text-white font-semibold">{{ didProfile?.email || t('didPanel.unavailable', 'unavailable') }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.smsNotice', 'SMS Notice') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.smsNotice', 'SMS Notice') }}</p>
           <p class="text-sm text-white font-semibold">{{ didProfile?.phone || t('didPanel.unavailable', 'unavailable') }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.emailChannel', 'Email Channel') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.emailChannel', 'Email Channel') }}</p>
           <p class="text-sm text-white font-semibold">{{ canEmailNotice ? t('didPanel.enabled', 'enabled') : t('didPanel.disabled', 'disabled') }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.smsChannel', 'SMS Channel') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.smsChannel', 'SMS Channel') }}</p>
           <p class="text-sm text-white font-semibold">{{ canSmsNotice ? t('didPanel.enabled', 'enabled') : t('didPanel.disabled', 'disabled') }}</p>
         </div>
       </div>
 
       <div class="grid gap-4 xl:grid-cols-2">
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">{{ t('didPanel.resolver', 'Resolver') }}</p>
-          <p class="text-sm text-slate-300 break-all">{{ resolverUrl }}</p>
-          <p class="mt-2 text-xs text-slate-400">{{ t('didPanel.resolverHint', 'Public DID resolution is metadata-only. Private JWT claims and nullifiers never appear in resolver output.') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-2">{{ t('didPanel.resolver', 'Resolver') }}</p>
+          <p class="text-sm text-biconomy-text break-all">{{ resolverUrl }}</p>
+          <p class="mt-2 text-xs text-biconomy-muted">{{ t('didPanel.resolverHint', 'Public DID resolution is metadata-only. Private JWT claims and nullifiers never appear in resolver output.') }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">{{ t('didPanel.runtimeStatus', 'Runtime Status') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-2">{{ t('didPanel.runtimeStatus', 'Runtime Status') }}</p>
           <p class="text-sm text-white font-semibold break-all">{{ runtimeSummary }}</p>
           <div class="mt-3 flex flex-wrap gap-3">
             <button class="btn-secondary !py-1.5 !px-4 text-xs" :disabled="busy === 'resolveServiceDid'" @click="resolveServiceDidAction">
@@ -108,26 +108,26 @@
         <button class="btn-secondary !py-1.5 !px-4 text-xs" :disabled="busy === 'notifySms' || !canSmsNotice" @click="sendSmsNoticeAction">
           {{ busy === 'notifySms' ? t('didPanel.sendingSms', 'Sending SMS…') : t('didPanel.sendSmsNotice', 'Send SMS Notice') }}
         </button>
-        <span class="text-xs text-slate-400">{{ t('didPanel.flowHint', 'Recommended flow: Connect Web3Auth → Bind NeoDID → Start Recovery / Private Session → Finalize / Revoke.') }}</span>
+        <span class="text-xs text-biconomy-muted">{{ t('didPanel.flowHint', 'Recommended flow: Connect Web3Auth → Bind NeoDID → Start Recovery / Private Session → Finalize / Revoke.') }}</span>
       </div>
 
       <div v-if="verifierState" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.boundVerifier', 'Bound Verifier') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.boundVerifier', 'Bound Verifier') }}</p>
           <p class="text-sm text-white font-semibold break-all">{{ verifierState.verifierHash }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.verifierOwner', 'Verifier Owner') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.verifierOwner', 'Verifier Owner') }}</p>
           <p class="text-sm text-white font-semibold break-all">{{ verifierState.owner || t('didPanel.unset', 'unset') }}</p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.recovery', 'Recovery') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.recovery', 'Recovery') }}</p>
           <p class="text-sm text-white font-semibold">
             {{ verifierState.pendingRecovery?.active ? `${t('didPanel.statusPending', '(pending)').replace(/[()（）]/g, '').trim()} ${verifierState.pendingRecovery.approvedCount}/${verifierState.threshold}` : `${t('didPanel.nonce', 'nonce')} ${verifierState.recoveryNonce}` }}
           </p>
         </div>
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">{{ t('didPanel.privateSession', 'Private Session') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('didPanel.privateSession', 'Private Session') }}</p>
           <p class="text-sm text-white font-semibold">
             {{ verifierState.activeSession?.active ? t('didPanel.statusActive', '(active)').replace(/[()（）]/g, '').trim() : `${t('didPanel.nonce', 'nonce')} ${verifierState.sessionNonce}` }}
           </p>
@@ -138,8 +138,8 @@
         <div v-if="verifierState.pendingRecovery?.active" class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
           <p class="text-xs uppercase tracking-wider text-amber-300 font-bold mb-2">{{ t('didPanel.pendingRecovery', 'Pending Recovery') }}</p>
           <p class="text-sm text-slate-200 break-all">{{ t('didPanel.newOwner', 'new owner') }}: {{ verifierState.pendingRecovery.newOwner || t('didPanel.unset', 'unset') }}</p>
-          <p class="text-sm text-slate-300">{{ t('didPanel.approved', 'approved') }}: {{ verifierState.pendingRecovery.approvedCount }} / {{ verifierState.threshold }}</p>
-          <p class="text-sm text-slate-300">{{ t('didPanel.executableAt', 'executable at') }}: {{ verifierState.pendingRecovery.executableAt }}</p>
+          <p class="text-sm text-biconomy-text">{{ t('didPanel.approved', 'approved') }}: {{ verifierState.pendingRecovery.approvedCount }} / {{ verifierState.threshold }}</p>
+          <p class="text-sm text-biconomy-text">{{ t('didPanel.executableAt', 'executable at') }}: {{ verifierState.pendingRecovery.executableAt }}</p>
           <div class="mt-4 flex gap-3">
             <button class="btn-primary flex-1" :disabled="busy === 'finalizeRecovery'" @click="finalizeRecoveryAction">
               {{ busy === 'finalizeRecovery' ? t('didPanel.finalizingRecovery', 'Finalizing…') : t('didPanel.finalizeRecovery', 'Finalize Recovery') }}
@@ -152,8 +152,8 @@
         <div v-if="verifierState.activeSession?.active" class="rounded-xl border border-sky-500/30 bg-sky-500/5 p-4">
           <p class="text-xs uppercase tracking-wider text-sky-300 font-bold mb-2">{{ t('didPanel.activePrivateSession', 'Active Private Session') }}</p>
           <p class="text-sm text-slate-200 break-all">{{ t('didPanel.executor', 'executor') }}: {{ verifierState.activeSession.executor || t('didPanel.unset', 'unset') }}</p>
-          <p class="text-sm text-slate-300 break-all">{{ t('didPanel.action', 'action') }}: {{ verifierState.activeSession.actionId || t('didPanel.unset', 'unset') }}</p>
-          <p class="text-sm text-slate-300">{{ t('didPanel.expiresAt', 'expires at') }}: {{ verifierState.activeSession.expiresAt }}</p>
+          <p class="text-sm text-biconomy-text break-all">{{ t('didPanel.action', 'action') }}: {{ verifierState.activeSession.actionId || t('didPanel.unset', 'unset') }}</p>
+          <p class="text-sm text-biconomy-text">{{ t('didPanel.expiresAt', 'expires at') }}: {{ verifierState.activeSession.expiresAt }}</p>
           <button class="btn-secondary mt-4 w-full" :disabled="busy === 'revokeSession'" @click="revokeSessionAction">
             {{ busy === 'revokeSession' ? t('didPanel.revokingSession', 'Revoking…') : t('didPanel.revokeSession', 'Revoke Session') }}
           </button>
@@ -163,19 +163,19 @@
       <div class="grid gap-6 xl:grid-cols-3">
         <section class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-5 space-y-4">
           <div>
-            <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">{{ t('didPanel.stepBind', '1. Bind NeoDID') }} {{ bindStatusLabel }}</p>
-            <p class="mt-1 text-sm text-slate-300">{{ t('didPanel.stepBindHint', 'Seal the live Web3Auth id_token locally, then let the TEE derive the stable identity root inside Morpheus.') }}</p>
+            <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold">{{ t('didPanel.stepBind', '1. Bind NeoDID') }} {{ bindStatusLabel }}</p>
+            <p class="mt-1 text-sm text-biconomy-text">{{ t('didPanel.stepBindHint', 'Seal the live Web3Auth id_token locally, then let the TEE derive the stable identity root inside Morpheus.') }}</p>
           </div>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.vaultScriptHash', 'Vault Script Hash') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.vaultScriptHash', 'Vault Script Hash') }}</span>
             <input v-model="vaultAccount" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" placeholder="0x..." />
           </label>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.claimType', 'Claim Type') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.claimType', 'Claim Type') }}</span>
             <input v-model="claimType" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" />
           </label>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.claimValue', 'Claim Value') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.claimValue', 'Claim Value') }}</span>
             <input v-model="claimValue" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" />
           </label>
           <button class="btn-secondary w-full" :disabled="!didConnected || !vaultAccount || busy === 'bind'" @click="bindDidAction">
@@ -185,19 +185,19 @@
 
         <section class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-5 space-y-4">
           <div>
-            <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">{{ t('didPanel.stepRecovery', '2. Social Recovery') }} {{ recoveryStatusLabel }}</p>
-            <p class="mt-1 text-sm text-slate-300">{{ t('didPanel.stepRecoveryHint', 'Submit a Morpheus recovery request through the bound verifier for the currently connected Web3Auth identity.') }}</p>
+            <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold">{{ t('didPanel.stepRecovery', '2. Social Recovery') }} {{ recoveryStatusLabel }}</p>
+            <p class="mt-1 text-sm text-biconomy-text">{{ t('didPanel.stepRecoveryHint', 'Submit a Morpheus recovery request through the bound verifier for the currently connected Web3Auth identity.') }}</p>
           </div>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.recoveryVerifierHash', 'Recovery Verifier Hash') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.recoveryVerifierHash', 'Recovery Verifier Hash') }}</span>
             <input v-model="recoveryVerifierHash" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" placeholder="0x..." />
           </label>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.newOwnerAddress', 'New Owner Address / Script Hash') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.newOwnerAddress', 'New Owner Address / Script Hash') }}</span>
             <input v-model="recoveryNewOwner" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" placeholder="N... or 0x..." />
           </label>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.expiryMinutes', 'Expiry (minutes)') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.expiryMinutes', 'Expiry (minutes)') }}</span>
             <input v-model="recoveryExpiryMinutes" type="number" min="1" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" />
           </label>
           <div class="flex gap-3">
@@ -212,19 +212,19 @@
 
         <section class="rounded-xl border border-slate-700/50 bg-slate-900/40 p-5 space-y-4">
           <div>
-            <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">{{ t('didPanel.stepPrivateActions', '3. Private Actions') }} {{ sessionStatusLabel }}</p>
-            <p class="mt-1 text-sm text-slate-300">{{ t('didPanel.stepPrivateActionsHint', 'Create a short-lived private execution session without exposing the long-term identity root on-chain.') }}</p>
+            <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold">{{ t('didPanel.stepPrivateActions', '3. Private Actions') }} {{ sessionStatusLabel }}</p>
+            <p class="mt-1 text-sm text-biconomy-text">{{ t('didPanel.stepPrivateActionsHint', 'Create a short-lived private execution session without exposing the long-term identity root on-chain.') }}</p>
           </div>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.proxyVerifierHash', 'Proxy Verifier Hash') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.proxyVerifierHash', 'Proxy Verifier Hash') }}</span>
             <input v-model="proxyVerifierHash" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" placeholder="0x..." />
           </label>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.executorAddress', 'Executor Address / Script Hash') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.executorAddress', 'Executor Address / Script Hash') }}</span>
             <input v-model="proxyExecutor" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" placeholder="N... or 0x..." />
           </label>
           <label class="block text-sm">
-            <span class="text-slate-400">{{ t('didPanel.expiryMinutes', 'Expiry (minutes)') }}</span>
+            <span class="text-biconomy-muted">{{ t('didPanel.expiryMinutes', 'Expiry (minutes)') }}</span>
             <input v-model="proxyExpiryMinutes" type="number" min="1" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white" />
           </label>
           <div class="flex gap-3">
@@ -240,7 +240,7 @@
 
       <div v-if="resultJson" class="rounded-xl border border-slate-700/50 bg-slate-950/70 p-4">
         <div class="flex items-center justify-between mb-2">
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">{{ t('didPanel.latestResult', 'Latest Result') }}</p>
+          <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold">{{ t('didPanel.latestResult', 'Latest Result') }}</p>
           <button class="btn-secondary !py-1 !px-3 text-xs" @click="copyResult">{{ t('didPanel.copyJson', 'Copy JSON') }}</button>
         </div>
         <pre class="text-xs text-slate-200 whitespace-pre-wrap break-all">{{ resultJson }}</pre>

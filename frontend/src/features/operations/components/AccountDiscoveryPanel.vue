@@ -1,19 +1,19 @@
 <template>
-  <section class="rounded-lg border border-ata-border bg-ata-panel/80 p-6 shadow-sm backdrop-blur-sm">
+  <section class="rounded-lg border border-biconomy-border bg-biconomy-panel/80 p-6 shadow-sm backdrop-blur-sm">
     <div class="mb-4">
       <h2 class="text-lg font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2 tracking-widest">
-        <svg class="w-5 h-5 text-ata-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <svg class="w-5 h-5 text-biconomy-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         Discover Your Accounts
       </h2>
-      <p class="text-sm text-slate-400 mt-1">Find all accounts where you are a signer</p>
+      <p class="text-sm text-biconomy-muted mt-1">Find all accounts where you are a signer</p>
     </div>
 
     <div class="space-y-3">
       <label class="space-y-1.5 text-sm">
-        <span class="font-medium text-slate-300">Your Address</span>
+        <span class="font-medium text-biconomy-text">Your Address</span>
         <div class="flex gap-2">
-          <input v-model="searchAddress" class="flex-1 rounded-lg border border-ata-border px-3 py-2.5 focus:border-ata-green focus:ring-2 focus:ring-ata-green transition-all bg-ata-dark text-white" placeholder="N... or 0x..." />
-          <button class="rounded-lg bg-ata-green px-4 py-2.5 text-sm font-semibold text-white hover:bg-ata-green/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!searchAddress || loading" @click="discover">
+          <input v-model="searchAddress" class="flex-1 rounded-lg border border-biconomy-border px-3 py-2.5 focus:border-biconomy-orange focus:ring-2 focus:ring-biconomy-orange transition-all bg-biconomy-dark text-white" placeholder="N... or 0x..." />
+          <button class="rounded-lg bg-biconomy-orange px-4 py-2.5 text-sm font-semibold text-white hover:bg-biconomy-orange/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!searchAddress || loading" @click="discover">
             <span v-if="loading">Searching...</span>
             <span v-else>Search</span>
           </button>
@@ -26,16 +26,16 @@
       </div>
 
       <div v-if="results" class="space-y-3 mt-4">
-        <div v-if="results.signerAccounts.length > 0" class="rounded-lg border border-ata-border bg-ata-panel p-4">
+        <div v-if="results.signerAccounts.length > 0" class="rounded-lg border border-biconomy-border bg-biconomy-panel p-4">
           <h3 class="text-sm font-mono font-semibold text-white uppercase tracking-wider mb-3 flex items-center gap-2 tracking-widest">
-            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <svg class="w-4 h-4 text-biconomy-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
             Signer Accounts ({{ results.signerAccounts.length }})
           </h3>
           <div class="space-y-2">
-            <button v-for="(account, idx) in results.signerAccounts" :key="idx" class="w-full text-left rounded-lg border border-ata-border bg-ata-panel px-3 py-2.5 hover:border-ata-green hover:bg-ata-green/10 transition-all group" @click="$emit('select', account)">
+            <button v-for="(account, idx) in results.signerAccounts" :key="idx" class="w-full text-left rounded-lg border border-biconomy-border bg-biconomy-panel px-3 py-2.5 hover:border-biconomy-orange hover:bg-biconomy-orange/10 transition-all group" @click="$emit('select', account)">
               <div class="flex items-center justify-between">
-                <span class="font-mono text-sm text-white group-hover:text-ata-green">{{ account }}</span>
-                <svg class="w-4 h-4 text-slate-400 group-hover:text-ata-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <span class="font-mono text-sm text-white group-hover:text-biconomy-orange">{{ account }}</span>
+                <svg class="w-4 h-4 text-biconomy-muted group-hover:text-biconomy-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
               </div>
             </button>
           </div>
@@ -43,10 +43,10 @@
 
         
 
-        <div v-if="results.signerAccounts.length === 0" class="rounded-lg border border-ata-border bg-ata-panel p-6 text-center">
-          <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-          <p class="text-sm font-medium text-slate-400">No accounts found</p>
-          <p class="text-xs text-slate-400 mt-1">This address is not a signer of any accounts</p>
+        <div v-if="results.signerAccounts.length === 0" class="rounded-lg border border-biconomy-border bg-biconomy-panel p-6 text-center">
+          <svg class="w-12 h-12 text-biconomy-text mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+          <p class="text-sm font-medium text-biconomy-muted">No accounts found</p>
+          <p class="text-xs text-biconomy-muted mt-1">This address is not a signer of any accounts</p>
         </div>
       </div>
     </div>

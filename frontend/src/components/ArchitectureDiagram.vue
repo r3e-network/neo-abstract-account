@@ -1,5 +1,5 @@
 <template>
-  <div class="h-[600px] w-full rounded-lg border border-ata-border bg-ata-panel overflow-hidden shadow-inner">
+  <div class="h-[600px] w-full rounded-lg border border-biconomy-border bg-biconomy-panel overflow-hidden shadow-inner">
     <VueFlow :nodes="nodes" :edges="edges" :fit-view-on-init="true" class="vue-flow-custom-light">
       <Background pattern-color="#CBD5E1" :gap="24" />
       <Controls class="light-controls" />

@@ -1,24 +1,24 @@
 <template>
-  <section class="rounded-lg border border-ata-border bg-ata-panel/60 p-5 shadow-[0_0_15px_rgba(0,163,255,0.05)] backdrop-blur-xl">
+  <section class="rounded-lg border border-biconomy-border bg-biconomy-panel/60 p-5 shadow-[0_0_15px_rgba(0,163,255,0.05)] backdrop-blur-xl">
     <div class="mb-4 flex items-center justify-between gap-3">
       <div>
         <h2 class="text-lg font-bold text-white uppercase tracking-widest font-mono">{{ title }}</h2>
-        <p class="text-sm text-slate-400">Quick scan of the account, operation, signer progress, relay mode, and latest activity.</p>
+        <p class="text-sm text-biconomy-muted">Quick scan of the account, operation, signer progress, relay mode, and latest activity.</p>
       </div>
     </div>
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-      <div v-for="item in summaryItems" :key="item.label" class="rounded-lg border border-ata-border bg-ata-dark/40 p-4 shadow-inner hover:bg-ata-dark/60 transition-colors">
+      <div v-for="item in summaryItems" :key="item.label" class="rounded-lg border border-biconomy-border bg-biconomy-dark/40 p-4 shadow-inner hover:bg-biconomy-dark/60 transition-colors">
         <div class="mb-2 flex items-start justify-between gap-3">
-          <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-ata-green">{{ item.label }}</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-biconomy-orange">{{ item.label }}</p>
           <button
             v-if="summaryActions[item.label]"
-            class="rounded-lg border border-slate-600 bg-ata-panel hover:bg-ata-dark hover:text-white px-2.5 py-1 text-[11px] font-semibold text-slate-300 transition-colors"
+            class="rounded-lg border border-slate-600 bg-biconomy-panel hover:bg-biconomy-dark hover:text-white px-2.5 py-1 text-[11px] font-semibold text-biconomy-text transition-colors"
             @click="emitSummaryAction(item, summaryActions[item.label])"
           >
             {{ feedbackLabel(summaryActions[item.label], item.label) }}
           </button>
         </div>
-        <div class="text-sm font-semibold text-slate-300 break-all">{{ item.value }}</div>
+        <div class="text-sm font-semibold text-biconomy-text break-all">{{ item.value }}</div>
       </div>
     </div>
   </section>
