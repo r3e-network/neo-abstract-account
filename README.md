@@ -2,22 +2,37 @@
 
 This project contains the comprehensive standard, smart contract implementation, frontend tooling, and SDK for creating and utilizing Abstract Accounts on the Neo N3 blockchain.
 
+Current status note:
+
+- The latest `main` branch is migrating to `UnifiedSmartWalletV3`.
+- V3 removes the old role-heavy / dome-heavy core wallet model and replaces it with a minimalist account core plus verifier and hook plugins.
+- Older role / dome / `executeUnifiedByAddress` materials below are historical unless explicitly updated to mention V3.
+
 ## Features
-- **Deterministic Proxy Verification**: No deployment cost for new users; uses a global master contract.
-- **Hardened Policy-Gated Execution**: External interactions must flow through AA entrypoints where method policy, whitelist / blacklist, and transfer-limit controls are enforced.
-- **Cross-Chain EVM Compatibility**: Secp256k1 and Keccak256 native validation. Users can interact via MetaMask / EVM wallets using EIP-712 Meta-Transactions.
-- **Multi-Signature Access Control**: Isolated thresholds for Admins and Managers for modular security.
-- **Role-Based Account Discovery**: Query all accounts where an address is admin or manager via reverse indices. Creator automatically becomes default admin.
-- **Batch Account Creation**: Deploy multiple accounts with shared governance in a single transaction.
+- **Deterministic V3 Accounts**: Each account is keyed by a 20-byte `accountId` and derives a stable Neo virtual address without deploying per-user wallet logic.
+- **Verifier Plugin Authorization**: Bind Web3Auth, TEE, WebAuthn, session keys, multisig, or other verifier plugins per account.
+- **Hook Plugin Policy Enforcement**: Attach optional hook plugins for daily limits, token restrictions, credential gates, and post-execution controls.
+- **Backup-Owner Escape Hatch**: Every account can define a native Neo backup owner plus timelocked verifier rotation.
+- **Cross-Chain EVM Compatibility**: V3 supports secp256k1 / Keccak256 EIP-712 `UserOperation` signatures through the Web3Auth verifier path.
+- **Policy-Gated Execution**: New integrations should flow through `executeUserOp(accountId, op)` where nonce handling, verification, hooks, and target execution stay centralized.
 
 ## Home Workspace Deployment
 
-The frontend home page now exposes an app-first operations workspace for loading an Abstract Account, building an invocation, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, choosing either client-side or relay broadcast in v1, and resolving or registering `.matrix` domains so users do not need to rely on raw account IDs.
+The frontend home page now exposes an app-first V3 workspace for loading an account from its deterministic seed or `accountId` hash, building a `UserOperation`, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, and choosing either client-side or relay broadcast. Shared drafts retain the latest 100 activity entries and latest 12 submission receipts.
 
 For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, and `VITE_AA_RELAY_RPC_URL`, then apply the Supabase draft migrations in order. Start with `supabase/migrations/20260308_home_operations_workspace.sql`, then apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql`, `supabase/migrations/20260309_submission_receipts.sql`, `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql`, `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql`, `supabase/migrations/20260312_scoped_draft_access.sql`, `supabase/migrations/20260313_activity_scope_guards.sql`, and `supabase/migrations/20260314_signed_operator_mutations.sql`. That full chain keeps the public share link read-only, narrows collaborator links to signature-safe writes, and moves operator-only status/relay mutations behind the signed operator mutation server route in `frontend/api/draft-operator.js`.
 
 If you deploy the bundled server routes, keep `SUPABASE_SERVICE_ROLE_KEY` and `AA_RELAY_WIF` on the server, prefer `AA_RELAY_RPC_URL` for the relay backend, pin `AA_RELAY_ALLOWED_HASH` to the intended AA contract, and leave `AA_RELAY_ALLOW_RAW_FORWARD=0` unless you explicitly want raw passthrough in `frontend/api/relay-transaction.js`.
 For local setup, start from `frontend/.env.example` and copy the values you need into `frontend/.env.local` or your hosting provider's environment-variable dashboard.
+
+If you want relay submission to request Morpheus sponsorship before broadcasting, also configure the server-side paymaster bridge:
+
+- `MORPHEUS_PAYMASTER_TESTNET_ENDPOINT`
+- `MORPHEUS_PAYMASTER_TESTNET_API_TOKEN`
+- `MORPHEUS_PAYMASTER_MAINNET_ENDPOINT`
+- `MORPHEUS_PAYMASTER_MAINNET_API_TOKEN`
+
+The relay route now forwards optional paymaster metadata and can request Morpheus paymaster pre-authorization before broadcasting a relay-ready `executeUserOp` or `executeUnifiedByAddress` invocation.
 
 For Morpheus / NeoDID production integration, also set:
 
@@ -42,7 +57,6 @@ Shared draft metadata is intentionally bounded: the frontend keeps the latest 10
 - Apply `supabase/migrations/20260314_signed_operator_mutations.sql` so operator-only writes move behind the signed operator mutation flow and direct anon operator RPCs are revoked.
 - Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for browser-side anonymous draft persistence.
 - Share the normal draft URL for read-only review, the collaborator link for signature collection, and the operator link for relay checks, broadcast, and other operator-only actions. Signer links cannot append operator-class relay or broadcast activity entries.
-- Users can also register a `.matrix` domain during AA creation and later load associated AA addresses by resolving the domain back to the controlling wallet and on-chain admin/manager indexes.
 - Use the Rotate Collaborator Link action when a signer link leaks, and rotate the operator link if an operator-only URL should be invalidated without rebuilding the draft.
 - Set `VITE_AA_RELAY_URL`, `VITE_AA_RELAY_RPC_URL`, and server-side `AA_RELAY_WIF` before enabling relay submission flows.
 - Set server-only `SUPABASE_SERVICE_ROLE_KEY` so `frontend/api/draft-operator.js` can accept signed operator mutation requests for status changes, relay-preflight persistence, submission receipts, and link rotation.
@@ -108,6 +122,43 @@ cd frontend && npm run build
 ```
 
 ## Verified Testnet Status
+
+### V3 Plugin Matrix
+
+The current V3 verifier / hook matrix was revalidated on **Neo N3 testnet** on **March 13, 2026** with live deployments and adversarial negative cases.
+
+Canonical report:
+
+- `docs/reports/2026-03-13-v3-testnet-plugin-matrix.md`
+
+Verified on-chain in that matrix:
+
+- `Web3AuthVerifier`
+- `TEEVerifier`
+- `WebAuthnVerifier`
+- `SessionKeyVerifier`
+- `MultiSigVerifier`
+- `SubscriptionVerifier`
+- `WhitelistHook`
+- `DailyLimitHook`
+- `TokenRestrictedHook`
+- `MultiHook`
+- `NeoDIDCredentialHook`
+
+Security outcomes:
+
+- direct external plugin configuration attempts fault
+- typed-data tampering faults
+- nonce replay faults
+- session-key method overreach faults
+- subscription overcharge and replay faults
+- whitelist bypass attempts fault
+- restricted-target access faults
+- credential-missing / revoked-credential access faults
+
+Production note:
+
+- `ZKEmailVerifier` is intentionally disabled until a real proof-verification implementation is added. The previous placeholder behavior was not production-safe.
 
 Verified on **Neo N3 testnet** on **March 6, 2026** against hardened contract **`0x5be915aea3ce85e4752d522632f0a9520e377aaf`** (deployment tx **`0x635e75cc321fcb7b0906f6a9c39f9d1b227848e7e56d9648496d7d4df706a984`**) using:
 - `sdk/js/tests/aa_testnet_integration_check.js`

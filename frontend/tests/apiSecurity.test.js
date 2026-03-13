@@ -99,6 +99,15 @@ test('relay API contains paymaster authorization before relay submission', () =>
   assert.match(source, /MORPHEUS_PAYMASTER_/);
 });
 
+test('relay API binds paymaster requests to dapp and operation hashes', () => {
+  const source = fs.readFileSync(path.resolve('api/relay-transaction.js'), 'utf8');
+
+  assert.match(source, /dapp_id/);
+  assert.match(source, /operation_hash/);
+  assert.match(source, /sha256Hex\(metaInvocation\)/);
+  assert.match(source, /paymaster \? \{ \.\.\.result, paymaster \} : result/);
+});
+
 test('gitignore quarantines local testnet secret artifacts', () => {
   const source = fs.readFileSync(path.resolve('..', '.gitignore'), 'utf8');
 
