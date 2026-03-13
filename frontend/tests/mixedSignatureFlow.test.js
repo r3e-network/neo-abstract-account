@@ -114,6 +114,28 @@ test('buildStagedTransactionBody wraps client calls through executeUnifiedByAddr
   assert.deepEqual(body.clientInvocation.signers, [{ account: 'NdzSignerAddress', scopes: 1 }]);
 });
 
+test('buildStagedTransactionBody prefers executeUserOp when accountIdHash is present', () => {
+  const body = buildStagedTransactionBody({
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+    account: {
+      accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+      accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
+    },
+    operationBody: {
+      kind: 'invoke',
+      targetContract: 'd2a4cff31913016155e38e474a2c06d08be276cf',
+      method: 'balanceOf',
+      args: [{ type: 'Hash160', value: '0x13ef519c362973f9a34648a9eac5b71250b2a80a' }],
+    },
+    signerAddress: 'NdzSignerAddress',
+  });
+
+  assert.equal(body.clientInvocation.operation, 'executeUserOp');
+  assert.equal(body.v3Invocation.operation, 'executeUserOp');
+  assert.equal(body.legacyInvocation.operation, 'executeUnifiedByAddress');
+  assert.equal(body.accountIdHash, 'f951cd3eb5196dacde99b339c5dcca37ac38cc22');
+});
+
 test('buildDraftApprovalTypedData creates an EVM-friendly approval payload from an immutable draft', () => {
   const typedData = buildDraftApprovalTypedData({
     draftRecord: {
@@ -305,6 +327,47 @@ test('buildRelayBroadcastRequest honors explicit meta selection when raw and met
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
       operation: 'executeUnifiedByAddress',
       args: [{ type: 'String', value: 'ok' }],
+    },
+  });
+});
+
+test('buildRelayBroadcastRequest forwards paymaster metadata when present', () => {
+  const request = buildRelayBroadcastRequest({
+    relayEndpoint: '/api/relay-transaction',
+    relayPayloadMode: 'meta',
+    transactionBody: {
+      paymaster: {
+        account_id: 'aa-test',
+        zerc20Proof: {
+          public_inputs: { recipient: '0x' + '11'.repeat(20) },
+        },
+      },
+    },
+    signatures: [{
+      signerId: 'evm:bob',
+      kind: 'evm',
+      metadata: {
+        metaInvocation: {
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUserOp',
+          args: [{ type: 'String', value: 'ok' }],
+        },
+      },
+    }],
+  });
+
+  assert.deepEqual(request, {
+    relayEndpoint: '/api/relay-transaction',
+    metaInvocation: {
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUserOp',
+      args: [{ type: 'String', value: 'ok' }],
+    },
+    paymaster: {
+      account_id: 'aa-test',
+      zerc20Proof: {
+        public_inputs: { recipient: '0x' + '11'.repeat(20) },
+      },
     },
   });
 });

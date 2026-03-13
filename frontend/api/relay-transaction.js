@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 import { DEFAULT_ABSTRACT_ACCOUNT_HASH, resolveAbstractAccountHash, resolveOptionalBoolean } from '../src/config/runtimeConfig.js';
 import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvocationForRelay } from './relayHelpers.js';
 import { checkRateLimit, sanitizeError } from './rateLimiter.js';
@@ -27,6 +28,91 @@ function loadRelayInvocationContext({ rpcUrl, relayWif }) {
   const rpcClient = new rpc.RPCClient(rpcUrl);
   const account = new wallet.Account(relayWif);
   return { rpc, tx, wallet, sc, u, rpcClient, account };
+}
+
+function trimString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function sha256Hex(value) {
+  return createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
+}
+
+function resolvePaymasterNetwork() {
+  const normalized = trimString(
+    process.env.MORPHEUS_NETWORK
+      || process.env.NEXT_PUBLIC_MORPHEUS_NETWORK
+      || process.env.VITE_MORPHEUS_NETWORK
+      || 'mainnet'
+  ).toLowerCase();
+  return normalized === 'testnet' ? 'testnet' : 'mainnet';
+}
+
+function resolvePaymasterConfig() {
+  const network = resolvePaymasterNetwork();
+  const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
+  const endpoint = trimString(
+    process.env[`MORPHEUS_PAYMASTER_${upper}_ENDPOINT`]
+      || process.env.MORPHEUS_PAYMASTER_ENDPOINT
+      || process.env.AA_PAYMASTER_ENDPOINT
+      || ''
+  );
+  const apiToken = trimString(
+    process.env[`MORPHEUS_PAYMASTER_${upper}_API_TOKEN`]
+      || process.env.MORPHEUS_PAYMASTER_API_TOKEN
+      || process.env.AA_PAYMASTER_API_TOKEN
+      || ''
+  );
+  return { network, endpoint, apiToken, enabled: Boolean(endpoint) };
+}
+
+function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimatedGasUnits = 0, network }) {
+  const firstArg = Array.isArray(metaInvocation?.args) ? metaInvocation.args[0] : null;
+  const accountId = trimString(
+    paymaster.account_id
+      || paymaster.accountId
+      || firstArg?.value
+      || ''
+  );
+
+  return {
+    network,
+    target_chain: 'neo_n3',
+    account_id: accountId,
+    dapp_id: trimString(paymaster.dapp_id || paymaster.dappId || ''),
+    target_contract: `0x${sanitizeHex(metaInvocation?.scriptHash || '')}`,
+    method: trimString(metaInvocation?.operation || ''),
+    estimated_gas_units: Number(paymaster.estimated_gas_units || paymaster.estimatedGasUnits || estimatedGasUnits || 0),
+    operation_hash: trimString(paymaster.operation_hash || paymaster.operationHash || `0x${sha256Hex(metaInvocation)}`),
+  };
+}
+
+async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estimatedGasUnits = 0 }) {
+  const config = resolvePaymasterConfig();
+  if (!config.enabled) return null;
+
+  const requestBody = buildPaymasterRequest({
+    metaInvocation,
+    paymaster: paymaster && typeof paymaster === 'object' ? paymaster : {},
+    estimatedGasUnits,
+    network: config.network,
+  });
+
+  const headers = { 'content-type': 'application/json' };
+  if (config.apiToken) {
+    headers.authorization = `Bearer ${config.apiToken}`;
+  }
+
+  const response = await fetch(config.endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(requestBody),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.message || 'Paymaster authorization failed.');
+  }
+  return payload;
 }
 
 function buildInvocationScript({ invocation, sc, u }) {
@@ -137,6 +223,7 @@ export default async function handler(req, res) {
 
   const normalized = normalizeRelayPayload(req.body || {});
   const simulate = Boolean(req.body?.simulate);
+  const paymasterInput = req.body?.paymaster && typeof req.body.paymaster === 'object' ? req.body.paymaster : null;
   const allowRawRelayForwarding = resolveOptionalBoolean(
     process.env.AA_RELAY_ALLOW_RAW_FORWARD || process.env.VITE_AA_RELAY_RAW_ENABLED,
     false,
@@ -236,7 +323,49 @@ export default async function handler(req, res) {
         relayWif,
         invocation: sanitizedMetaInvocation,
       });
+      const paymaster = await maybeAuthorizePaymaster({
+        metaInvocation: sanitizedMetaInvocation,
+        paymaster: paymasterInput,
+        estimatedGasUnits: Number(result?.gasConsumed || 0),
+      });
+      if (paymaster && paymaster.approved === false) {
+        res.status(200).json({
+          ...result,
+          ok: false,
+          code: 'paymaster_denied',
+          exception: paymaster.reason || 'Paymaster denied sponsorship.',
+          paymaster,
+        });
+        return;
+      }
+      if (paymaster) {
+        res.status(200).json({ ...result, paymaster });
+        return;
+      }
       res.status(200).json(result);
+      return;
+    }
+
+    const preview = await simulateMetaInvocation({
+      rpcUrl,
+      relayWif,
+      invocation: sanitizedMetaInvocation,
+    });
+    if (!preview.ok) {
+      res.status(200).json(preview);
+      return;
+    }
+    const paymaster = await maybeAuthorizePaymaster({
+      metaInvocation: sanitizedMetaInvocation,
+      paymaster: paymasterInput,
+      estimatedGasUnits: Number(preview?.gasConsumed || 0),
+    });
+    if (paymaster && paymaster.approved === false) {
+      res.status(402).json({
+        error: 'paymaster_denied',
+        message: paymaster.reason || 'Paymaster denied sponsorship.',
+        paymaster,
+      });
       return;
     }
 
@@ -245,7 +374,7 @@ export default async function handler(req, res) {
       relayWif,
       invocation: sanitizedMetaInvocation,
     });
-    res.status(200).json(result);
+    res.status(200).json(paymaster ? { ...result, paymaster } : result);
   } catch (error) {
     res.status(502).json({
       error: simulate ? 'relay_simulation_error' : 'relay_meta_invocation_failed',

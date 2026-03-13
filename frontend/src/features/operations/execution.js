@@ -62,7 +62,54 @@ function buildExecuteUnifiedByAddressInvocation({ aaContractHash = '', account =
   };
 }
 
+function buildV3UserOperationParam({ operationBody = null, nonce = '0', deadline = '0', signatureHex = '0x' } = {}) {
+  const targetContract = sanitizeHex(operationBody?.targetContract || '');
+  const method = String(operationBody?.method || '').trim();
+  const args = Array.isArray(operationBody?.args) ? cloneImmutable(operationBody.args) : [];
+
+  if (!targetContract || !method) {
+    return null;
+  }
+
+  return {
+    type: 'Struct',
+    value: [
+      toHash160Param(targetContract),
+      { type: 'String', value: method },
+      toArrayParam(args),
+      { type: 'Integer', value: String(nonce) },
+      { type: 'Integer', value: String(deadline) },
+      { type: 'ByteArray', value: `0x${sanitizeHex(signatureHex || '')}` },
+    ],
+  };
+}
+
+function buildExecuteUserOpInvocation({ aaContractHash = '', account = {}, operationBody = null, signerAddress = '', nonce = '0', deadline = '' } = {}) {
+  const contractHash = sanitizeHex(aaContractHash || '');
+  const accountIdHash = sanitizeHex(account.accountIdHash || '');
+  const resolvedDeadline = String(deadline || Math.floor(Date.now() / 1000) + 3600);
+  const userOpParam = buildV3UserOperationParam({ operationBody, nonce, deadline: resolvedDeadline, signatureHex: '' });
+
+  if (!contractHash || !accountIdHash || !userOpParam) {
+    return null;
+  }
+
+  return {
+    scriptHash: contractHash,
+    operation: 'executeUserOp',
+    args: [
+      toHash160Param(accountIdHash),
+      userOpParam,
+    ],
+    signers: signerAddress ? [{ account: signerAddress, scopes: 1 }] : [],
+  };
+}
+
 function selectMetaInvocation(transactionBody = {}, signatures = []) {
+  const v3Signature = transactionBody?.v3Invocation?.args?.[1]?.value?.[5]?.value;
+  if (transactionBody?.v3Invocation && typeof v3Signature === 'string' && sanitizeHex(v3Signature).length > 0) {
+    return cloneImmutable(transactionBody.v3Invocation);
+  }
   if (transactionBody?.metaInvocation) {
     return cloneImmutable(transactionBody.metaInvocation);
   }
@@ -71,6 +118,15 @@ function selectMetaInvocation(transactionBody = {}, signatures = []) {
   }
   if (Array.isArray(transactionBody?.meta_invocations) && transactionBody.meta_invocations.length > 0) {
     return cloneImmutable(transactionBody.meta_invocations[0]);
+  }
+  const clientV3Signature = transactionBody?.clientInvocation?.args?.[1]?.value?.[5]?.value;
+  if (
+    transactionBody?.clientInvocation
+    && transactionBody?.clientInvocation?.operation === 'executeUserOp'
+    && typeof clientV3Signature === 'string'
+    && sanitizeHex(clientV3Signature).length > 0
+  ) {
+    return cloneImmutable(transactionBody.clientInvocation);
   }
 
   const entry = Array.isArray(signatures)
@@ -124,13 +180,22 @@ export function buildStagedTransactionBody({
     operationBody,
     signerAddress,
   });
+  const v3Invocation = buildExecuteUserOpInvocation({
+    aaContractHash,
+    account,
+    operationBody,
+    signerAddress,
+  });
 
   return cloneImmutable({
     version: 1,
     network: 'neo-n3-testnet',
     accountAddressScriptHash: account.accountAddressScriptHash || '',
+    accountIdHash: account.accountIdHash || '',
     kind: operationBody?.kind || 'invoke',
-    clientInvocation,
+    clientInvocation: v3Invocation || clientInvocation,
+    legacyInvocation: clientInvocation,
+    v3Invocation,
     rawTransaction: sanitizeHex(rawTransaction || ''),
     notes: String(notes || '').trim(),
     createdAt,
@@ -190,6 +255,11 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
   const rawTransaction = sanitizeHex(
     transactionBody?.rawTransaction || transactionBody?.raw_transaction || transactionBody?.txHex || ''
   );
+  const paymaster = transactionBody?.paymaster && typeof transactionBody.paymaster === 'object'
+    ? cloneImmutable(transactionBody.paymaster)
+    : transactionBody?.paymasterRequest && typeof transactionBody.paymasterRequest === 'object'
+      ? cloneImmutable(transactionBody.paymasterRequest)
+      : null;
   const metaInvocation = selectMetaInvocation(transactionBody, signatures);
   if (rawTransaction && !relayRawEnabled && !metaInvocation) {
     throw new Error('Raw relay forwarding is not enabled for this deployment.');
@@ -204,6 +274,7 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
     return {
       relayEndpoint,
       rawTransaction,
+      ...(paymaster ? { paymaster } : {}),
     };
   }
 
@@ -211,10 +282,11 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
     return {
       relayEndpoint,
       metaInvocation,
+      ...(paymaster ? { paymaster } : {}),
     };
   }
 
-  throw new Error('Transaction body does not include a signed raw transaction or relay-ready meta invocation.');
+  throw new Error('Transaction body does not include a signed raw transaction or relay-ready invocation.');
 }
 
 export async function executeBroadcast({

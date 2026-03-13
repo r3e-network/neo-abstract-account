@@ -91,6 +91,14 @@ test('draft operator mutations use operator_counter compare-and-set updates', ()
   assert.match(source, /operator_counter_mismatch/);
 });
 
+test('relay API contains paymaster authorization before relay submission', () => {
+  const source = fs.readFileSync(path.resolve('api/relay-transaction.js'), 'utf8');
+
+  assert.match(source, /maybeAuthorizePaymaster/);
+  assert.match(source, /paymaster_denied/);
+  assert.match(source, /MORPHEUS_PAYMASTER_/);
+});
+
 test('gitignore quarantines local testnet secret artifacts', () => {
   const source = fs.readFileSync(path.resolve('..', '.gitignore'), 'utf8');
 
