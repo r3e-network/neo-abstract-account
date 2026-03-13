@@ -119,7 +119,6 @@ const txid = await walletService.sendTransaction(payload);
 - `docs/WORKFLOWS.md`
 - `docs/DATA_FLOW.md`
 - `contracts/recovery/TESTNET_VALIDATION_2026-03-09.md`
-- `docs/MORPHEUS_SOCIAL_RECOVERY.md`
 - `docs/MORPHEUS_PRIVATE_ACTIONS.md`
 
 

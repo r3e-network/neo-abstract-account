@@ -14,9 +14,7 @@ import docMixed from '@/assets/docs/mixed-multisig.md?raw';
 import docSdk from '@/assets/docs/sdk-usage.md?raw';
 import docSecurityAudit from '@repo/docs/reports/2026-03-11-security-audit.md?raw';
 import docSecurityAuditZh from '@/assets/docs/security-audit.zh.md?raw';
-import docMorpheusRecovery from '@repo/docs/MORPHEUS_SOCIAL_RECOVERY.md?raw';
 import docMorpheusActions from '@repo/docs/MORPHEUS_PRIVATE_ACTIONS.md?raw';
-import docMorpheusRecoveryZh from '@repo/docs/MORPHEUS_SOCIAL_RECOVERY.zh-CN.md?raw';
 import docMorpheusActionsZh from '@repo/docs/MORPHEUS_PRIVATE_ACTIONS.zh-CN.md?raw';
 
 export const DEFAULT_DOC_KEY = 'guide';
@@ -58,17 +56,13 @@ export const DOCS = {
     title: { en: 'SDK Integration', 'zh-CN': 'SDK 集成' },
     content: { en: docSdk },
   },
-  morpheusRecovery: {
-    title: { en: 'Morpheus Social Recovery', 'zh-CN': 'Morpheus 社交恢复' },
-    content: { en: docMorpheusRecovery, 'zh-CN': docMorpheusRecoveryZh },
-  },
-  morpheusActions: {
-    title: { en: 'Morpheus Private Actions', 'zh-CN': 'Morpheus 私密执行' },
-    content: { en: docMorpheusActions, 'zh-CN': docMorpheusActionsZh },
-  },
   securityAudit: {
     title: { en: 'Security Audit', 'zh-CN': '安全审计' },
     content: { en: docSecurityAudit, 'zh-CN': docSecurityAuditZh },
+  },
+  morpheusActions: {
+    title: { en: 'Morpheus Private Actions', 'zh-CN': 'Morpheus 私密操作' },
+    content: { en: docMorpheusActions, 'zh-CN': docMorpheusActionsZh },
   },
 };
 

@@ -34,21 +34,54 @@
 * **意图引擎 (Intent & Batch)**：支持单次调用、数组批处理，乃至直接下发一段包含逻辑的 NeoVM 字节码。
 
 ### 4. 异构鉴权插件生态 (Verifier Plugins)
-解决“如何验证签名”的问题。它们是预部署的**无状态 (Stateless)** 纯计算单例合约。
-* **EIP-712 Verifier (Web3Auth/EVM 兼容)**：
+解决“如何验证签名”的问题。验证器决定了“谁有权动用金库”。它们是预部署的**无状态 (Stateless)** 纯计算单例合约。作为系统的基石，我们提供了以下 7 个核心 Verifier 供灵活组合：
+* **Web3Auth / EIP-712 Verifier (流量漏斗)**：
   * N3 上目前最杀手级的插件。
   * 直接接收以太坊标准的 EIP-712 Typed Data Hash 和 `v, r, s` 签名。
   * 内部使用 N3 底层的 `CryptoLib.VerifyWithECDsa`（针对 secp256k1 曲线）和自定义的 Keccak256，完美还原以太坊验签。使得 MetaMask 用户能无缝操控 N3 资产。
-* **TEE Verifier**：
+* **TEE / AI Agent Verifier (隐私与自动化中心)**：
   * 绑定特定的硬件公钥。只要 `UserOperation` 带有 TEE 节点的签名，即认为通过（因为复杂的商业逻辑已经在 TEE 内完成了预审）。
-* **Neo Native Verifier**：
-  * 原生降级方案，只检查 `Runtime.CheckWitness`，给传统的 N3 软硬件钱包留有后路。
+* **Session Key Verifier (高频交互利器)**：
+  * 为短暂、高频的交互（如全链游戏、高频交易）提供临时授权密钥，支持细粒度的权限范围与过期时间设定。
+* **WebAuthn / Passkey Verifier (原生生物识别)**：
+  * 利用 `secp256r1` 曲线验证硬件支持的生物识别签名（如 iOS FaceID、Android 指纹、YubiKey）。
+  * 实现标准移动设备上无密码、硬件级安全的登录体验。
+* **ZK-Email Verifier (零知识邮件证明)**：
+  * 验证基于标准 DKIM 邮件签名生成的零知识证明。
+  * 允许用户仅通过发送电子邮件来恢复账户、批准大额交易或执行操作，且不在链上暴露邮件内容。
+* **Multi-Sig / Threshold Verifier (异构多签阈值)**：
+  * 支持复杂的异构阈值签名方案（例如：2/3 多签，需要一个 EVM 签名、一个 Passkey 和一个 TEE 签名）。
+  * 非常适合 DAO 金库或高安全性的机构托管需求。
+* **Time-based / Subscription Verifier (自动订阅付费)**：
+  * 为定期付款和类似 SaaS 的订阅模型提供支持。
+  * 允许预授权的代理在预定时间间隔内提取特定金额的资金，无需用户在线。
+
+**内置冷钱包降级方案 (Built-in cold wallet fallback)**：
+* 原生降级方案现已作为网关内置功能。当未设置外部 Verifier 时（Verifier 为 `UInt160.Zero`），退化为仅检查 `Runtime.CheckWitness`。这给传统的 N3 软硬件冷钱包留有后路，确保底层资产的绝对控制权且节省 GAS（无需额外跨合约调用）。
 
 ### 5. 策略与风控插件生态 (Hook / Middleware Plugins)
-解决“能不能执行”的问题。执行操作前/后置的业务规则挂载点。
-* **DailyLimit Hook**：单日大额转账风控。
-* **NeoDID Credential Hook**：执行某些特定 DeFi 操作前，验证账户是否挂载了特定的 NeoDID KYC 凭证。
-* **Whitelist Hook**：锁定账户只能与受信任的智能合约交互。
+解决“能不能执行”的问题。Hook 决定了“这笔钱能怎么花”。执行操作前/后置的业务规则挂载点。包含 5 个核心 Hook：
+* **MultiHook**：允许组合多个 Hook，实现复杂的混合风控策略（如同时要求白名单和限额）。
+* **DailyLimitHook**：单日大额转账风控。
+* **WhitelistHook**：锁定账户只能与受信任的智能合约交互。
+* **TokenRestrictedHook**：限制账户只能操作特定种类的代币（如只能转账某种游戏币）。
+* **NeoDIDCredentialHook**：执行某些特定 DeFi 操作前，验证账户是否挂载了特定的 NeoDID KYC 凭证。
+
+### 6. 用户可组合的杀手级解决方案 ("Lego" 架构实践)
+通过 Verifier 与 Hook 的乐高式组合，V3 架构能够原生支持多种极具商业价值的账户模型：
+
+* **方案 A：Web2 傻瓜式无感账户（默认配置）**
+  * **组合**：Web3Auth Verifier + 空 Hook
+  * **场景**：降低 Web3 门槛，用户只需 Web2 社交方式登录即可生成账户，没有任何转账限制，享受极简体验。
+* **方案 B：“熊市囤币”定投金库（组合风控）**
+  * **组合**：内置冷钱包降级方案 + DailyLimitHook + WhitelistHook (通过 MultiHook 组合)
+  * **场景**：使用极致安全的硬件冷钱包作为控制权，同时限制每天只能转出少量资金，且只能与特定的定投或 DeFi 质押合约交互。
+* **方案 C：AI 托管量化基金（意图驱动）**
+  * **组合**：TEE / AI Agent Verifier + Max Drawdown Hook (或 NeoDIDCredentialHook / Custom Hook)
+  * **场景**：将资金委托给运行在 TEE 内的 AI 代理，AI 根据市场信号自动交易，但通过 Hook 严格限制最大回撤（Max Drawdown）或只能参与通过 KYC 的合规池。
+* **方案 D：全链游戏/电竞战队打金号**
+  * **组合**：Session Key Verifier + TokenRestrictedHook
+  * **场景**：游戏公会为代练玩家颁发 Session Key，限制其只能在游戏内高频操作并只能转移游戏内产生的打金代币，无法触碰金库的主力资产。
 
 ---
 

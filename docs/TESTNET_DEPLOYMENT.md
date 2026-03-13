@@ -19,7 +19,6 @@ The current validated recovery verifier deployments are recorded in:
 - `contracts/recovery/README.md`
 - `contracts/recovery/DEPLOYMENT.md`
 - `contracts/recovery/PRE_DEPLOYMENT_CHECKLIST.md`
-- `docs/MORPHEUS_SOCIAL_RECOVERY.md`
 - `docs/MORPHEUS_PRIVATE_ACTIONS.md`
 
 ## Morpheus verifier validation

@@ -19,14 +19,7 @@ test('did service integrates Web3Auth as the NeoDID identity root', () => {
   assert.match(source, /identityRoot/);
 });
 
-test('docs registry exposes Chinese Morpheus recovery and private action guides', () => {
-  const source = read('src/features/docs/registry.js');
 
-  assert.match(source, /MORPHEUS_SOCIAL_RECOVERY\.zh-CN\.md/);
-  assert.match(source, /MORPHEUS_PRIVATE_ACTIONS\.zh-CN\.md/);
-  assert.match(source, /morpheusRecovery/);
-  assert.match(source, /morpheusActions/);
-});
 
 test('morpheus did service can bind DIDs and invoke AA verifier requests', () => {
   const source = read('src/services/morpheusDidService.js');

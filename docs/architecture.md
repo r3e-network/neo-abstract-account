@@ -205,10 +205,7 @@ The architecture also includes optional recovery and extension surfaces:
 - **Custom verifiers** for bespoke authorization logic
 - **Relay-ready meta flows** for EVM-first user experiences
 
-The Morpheus integration uses this custom-verifier surface to consume NeoDID / privacy-oracle recovery tickets.
-See `docs/MORPHEUS_SOCIAL_RECOVERY.md`.
-
-The same surface can also power temporary private action sessions through Morpheus NeoDID action tickets.
+The Morpheus integration uses this custom-verifier surface to power temporary private action sessions through Morpheus NeoDID action tickets.
 See `docs/MORPHEUS_PRIVATE_ACTIONS.md`.
 
 ## 8. Security Invariants

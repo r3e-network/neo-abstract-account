@@ -25,6 +25,7 @@ namespace AbstractAccount
         {
             // 对应 ERC-4337 中的 Account 自身的权限验证器 (如 Web3Auth, TEE)
             public UInt160 Verifier;         
+            public UInt160 HookId;           // 策略与风控插件生态 (Hook / Middleware Plugins)
             
             // --- L1 Native 逃生舱 ---
             public UInt160 BackupOwner;      // 绑定的底层 N3 EOA 钱包 (必须是合法公钥的Hash)
@@ -46,7 +47,7 @@ namespace AbstractAccount
         // ========================================================================
         // 2. 账户初始化 (Factory 模式的雏形)
         // ========================================================================
-        public static void RegisterAccount(UInt160 accountId, UInt160 verifier, UInt160 backupOwner, uint escapeTimelock)
+        public static void RegisterAccount(UInt160 accountId, UInt160 verifier, ByteString verifierParams, UInt160 hookId, UInt160 backupOwner, uint escapeTimelock)
         {
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Account already exists");
@@ -54,10 +55,34 @@ namespace AbstractAccount
             AccountState state = new AccountState
             {
                 Verifier = verifier,
+                HookId = hookId,
                 BackupOwner = backupOwner,
                 EscapeTimelock = escapeTimelock,
                 EscapeTriggeredAt = 0
             };
+            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+            
+            if (verifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
+            {
+                SetVerifyContext(accountId, verifier);
+                try
+                {
+                    Contract.Call(verifier, "setPublicKey", CallFlags.All, new object[] { accountId, verifierParams });
+                }
+                finally
+                {
+                    ClearVerifyContext(accountId);
+                }
+            }
+        }
+
+        public static void UpdateHook(UInt160 accountId, UInt160 newHookId)
+        {
+            // Only Verifier or current script can update
+            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            AccountState state = GetAccountState(accountId);
+            state.HookId = newHookId;
+            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
         }
 
@@ -100,18 +125,45 @@ namespace AbstractAccount
                 Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
             }
 
+            // [Hook 阶段] pre-execution hook
+            if (state.HookId != UInt160.Zero)
+            {
+                Contract.Call(state.HookId, "preExecute", CallFlags.All, new object[] { accountId, op });
+            }
+
             // [Execution 阶段] 
             // 写入上下文锁，允许 TargetContract 进行反向 CheckWitness 验证
             SetVerifyContext(accountId, op.TargetContract);
             try
             {
                 // 动态调用目标合约
-                return Contract.Call(op.TargetContract, op.Method, CallFlags.All, op.Args);
+                object result = Contract.Call(op.TargetContract, op.Method, CallFlags.All, op.Args);
+                
+                // [Hook 阶段] post-execution hook
+                if (state.HookId != UInt160.Zero)
+                {
+                    Contract.Call(state.HookId, "postExecute", CallFlags.All, new object[] { accountId, op, result });
+                }
+                
+                return result;
             }
             finally
             {
                 ClearVerifyContext(accountId);
             }
+        }
+
+        // ========================================================================
+        // 3.1 意图引擎: 批量执行 (Intent & Batch)
+        // ========================================================================
+        public static object[] ExecuteUserOps(UInt160 accountId, UserOperation[] ops)
+        {
+            object[] results = new object[ops.Length];
+            for (int i = 0; i < ops.Length; i++)
+            {
+                results[i] = ExecuteUserOp(accountId, ops[i]);
+            }
+            return results;
         }
 
         // ========================================================================

@@ -1,84 +1,39 @@
-# Morpheus 私密执行
+# Morpheus 私密操作与 NeoDID 绑定（V3 架构）
 
-本文说明 Neo 抽象账户如何使用 Morpheus NeoDID action ticket 实现隐私保护的委托执行。
+在 V3 统一智能钱包架构下，沉重的链上组件（如预言机失能开关和社交恢复）已被移除，取而代之的是轻量级的 **L1 原生逃生舱 (Escape Hatch)**。然而，Neo 抽象账户系统仍然与 **Morpheus TEE 环境** 无缝集成，以启用私密操作 (Private Actions)、会话密钥 (Session Keys) 和 NeoDID 绑定。
 
-## 目标
+## 工作原理
 
-允许一个临时代理账户执行 AA 动作，而不把用户底层 Web2 身份或主钱包暴露到链上。
+Morpheus 提供了一个使用 Intel SGX / TDX 的**可信执行环境 (TEE)**，而不是在链上存储恢复状态。这个链下安全飞地充当共同签名者或策略执行者，而不会将逻辑暴露给公共链。
 
-## 模型
+该过程完全通过 `TEEVerifier` 和 `NeoDIDCredentialHook` 模块进行。
 
-推荐的链上组件是统一的 Morpheus verifier：
+### 1. 通过 Web3Auth 绑定 NeoDID
+用户可以将他们的 NeoDID 绑定到抽象账户。这允许用户通过 Web3Auth 通过他们的社交账户（Google、Discord 等）授权操作，Web3Auth 解析为 NeoDID 签名。
 
-- `contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs`
+- **前端:** 用户通过 Web3Auth 进行身份验证。
+- **飞地 (Enclave):** Morpheus 飞地验证 Web3Auth 令牌并签署授权有效负载。
+- **合约:** `NeoDIDCredentialHook` 验证飞地的签名是否正确映射到预期的 NeoDID。
 
-专用的 `MorpheusProxySessionVerifier` 仍然可用，但如果同一个 AA 既要支持恢复又要支持私密会话，统一 Morpheus verifier 是更合适的生产方案。
+### 2. 私密操作与隐私策略
+对于那些不应在链上公开可见的策略（例如，每日限额、白名单地址或条件逻辑）：
 
-## 流程
+1. 用户定义其策略并将其私密地存储在 Morpheus TEE 节点内。
+2. 当用户希望执行交易时，他们将意图发送到 TEE 节点。
+3. TEE 节点评估私密策略。
+4. 如果获得批准，TEE 节点将签署一个“盐随机数 (Salt Nonce)”或直接签署交易哈希。
+5. 在允许交易继续之前，N3 上的 `TEEVerifier` 合约会验证飞地的硬件级签名。
 
-1. 账户 owner 部署或配置 `MorpheusProxySessionVerifier`
-2. 通过 `setVerifierContract` 将 verifier 绑定到 AA 钱包
-3. 临时执行者钱包请求 Morpheus action ticket
-4. Morpheus Oracle 将请求路由到 `neodid_action_ticket`
-5. verifier 以紧凑二进制 callback 形式接收结果
-6. verifier 验证 Morpheus 签名并存储 active session：
-   - executor
-   - actionId
-   - actionNullifier
-   - expiry
-7. 在过期前，临时执行者可以通过 `verify` / `verifyMetaTx` 授权 AA 动作
-8. AA 仍然继续执行 whitelist、blacklist、method policy 与 transfer limit 检查
+### 3. 会话密钥 (Session Keys)
+会话密钥允许应用程序代表用户提交交易，而无需每次都提示输入签名，其受 TEE 执行的限制的约束。
 
-## 为什么这能保护隐私
+- 生成临时密钥对。
+- TEE 签署将临时密钥绑定到特定限制（例如，时间、代币数量）的证书。
+- `TEEVerifier` 检查证书，只要满足会话约束就处理交易。
 
-链上可见的代理账户只是临时 executor。
-底层社交 / 交易所身份被隐藏在以下边界之后：
+## 验证流程 (V3)
+1. **准备:** 客户端构建交易并收集标准 N3/EVM 签名。
+2. **TEE 签名:** 客户端请求 Morpheus 飞地评估隐私策略。飞地返回一个 `ActionTicket`。
+3. **执行:** 提交交易。统一智能钱包将验证委托给 `TEEVerifier`，后者成功对飞地的签名进行身份验证，从而验证了链下私密规则。
 
-- 加密的 Web3Auth `id_token` 或其他机密 provider 证据
-- TEE 验证
-- `action_nullifier`
-- Morpheus 签名证据
-
-无需把原始 Twitter handle、邮箱、交易所账户 ID 或 OAuth token 放到链上。
-
-推荐身份源：
-
-- 以 Web3Auth 作为 DID 根
-- 在 Web3Auth 中关联 Google / Apple / email / SMS / 其他登录方式
-- 把实时 Web3Auth `id_token` 作为加密输入提交给 NeoDID，让 TEE 内部导出稳定 provider root
-- 对调用方自带的 `provider_uid` 只当作可选一致性提示
-- 使用 `provider = "web3auth"` 请求 NeoDID action ticket
-- 把 `did:morpheus:neo_n3:service:neodid` 作为 resolver 集成时的公共元数据锚点
-
-## 安全边界
-
-Morpheus 私密执行路径是有意收窄的：
-
-- 不会绕过 AA 策略控制
-- 不会永久替换 owner
-- 每张 action ticket 都通过 `action_nullifier` 防重放
-- 每次委托会话都必须带明确 expiry
-
-## 推荐用例
-
-- 通过一次性钱包参与匿名治理
-- 保护隐私的 claim / 领取流程
-- 在不暴露主 owner 地址的情况下短期委托操作
-- 用热钱包实现隔离化执行
-
-## 推荐运维模式
-
-- 保持 AA whitelist mode 开启
-- 只把需要的目标合约加入 whitelist
-- 对代币转移目标配置 max-transfer 规则
-- 使用较短的 session expiry
-- 使用完毕后主动 revoke session
-
-## 与恢复的关系
-
-这不是账户恢复。
-
-- `MorpheusSocialRecoveryVerifier` 用于 ownership recovery
-- `MorpheusProxySessionVerifier` 用于临时私密执行授权
-
-两者都使用同一套 Morpheus Oracle + NeoDID 栈，但解决的是不同的授权问题。
+通过将策略逻辑保留在 TEE 内部并消除旧的链上预言机失能开关，V3 架构显著降低了 Gas 成本和部署复杂性，同时保留了强大的隐私和 NeoDID 支持。

@@ -8,16 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.7.5" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.8.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Web3AuthVerifier.cs" />
+    <Compile Include="SessionKeyVerifier.cs" />
   </ItemGroup>
 
   <Target Name="CompileSmartContract" AfterTargets="Build">
-    <Message Text="Compiling Neo smart contract: Web3AuthVerifier.cs" Importance="high" />
-    <Exec Command="nccs ./Web3AuthVerifier.csproj -o ../bin/verifiers" WorkingDirectory="$(ProjectDir)" />
+    <Message Text="Compiling Neo smart contract: SessionKeyVerifier.cs" Importance="high" />
+    <Exec Command="nccs ./SessionKeyVerifier.csproj -o ../bin/v3/verifiers" WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 </Project>

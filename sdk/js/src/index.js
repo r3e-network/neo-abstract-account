@@ -45,10 +45,20 @@ class AbstractAccountClient {
   }
 
   /**
-   * Creates the payload required to deploy a new Abstract Account.
+   * Creates the payload required to register a new V3 Abstract Account.
    */
-  createAccountPayload(accountIdHex, admins, adminThreshold, managers = [], managerThreshold = 0) {
+  createAccountPayload(options) {
+    const {
+      accountIdHex,
+      verifierContractHash,
+      verifierParamsHex = '',
+      hookContractHash = '',
+      backupOwnerAddress,
+      escapeTimelock = 30 * 24 * 60 * 60, // 30 days default
+    } = options;
+
     const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
       if (addr.startsWith('N') && addr.length === 34) {
         return wallet.getScriptHashFromAddress(addr);
       }
@@ -56,22 +66,16 @@ class AbstractAccountClient {
       return addr;
     };
 
-    const adminsParam = admins.map((addr) => ({ type: 'Hash160', value: normalizeAddress(addr) }));
-    const managersParam = managers.map((addr) => ({ type: 'Hash160', value: normalizeAddress(addr) }));
-
-    const verifyScript = this.buildVerifyScript(accountIdHex);
-    const computedAddressScriptHash = sanitizeHex(u.hash160(verifyScript));
-
     return {
       scriptHash: this.masterContractHash,
-      operation: 'createAccountWithAddress',
+      operation: 'registerAccount',
       args: [
         sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(accountIdHex), true)),
-        sc.ContractParam.hash160(computedAddressScriptHash),
-        sc.ContractParam.array(...adminsParam.map((p) => sc.ContractParam.hash160(p.value))),
-        sc.ContractParam.integer(adminThreshold),
-        sc.ContractParam.array(...managersParam.map((p) => sc.ContractParam.hash160(p.value))),
-        sc.ContractParam.integer(managerThreshold),
+        sc.ContractParam.hash160(normalizeAddress(verifierContractHash)),
+        sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(verifierParamsHex), true)),
+        sc.ContractParam.hash160(normalizeAddress(hookContractHash)),
+        sc.ContractParam.hash160(normalizeAddress(backupOwnerAddress)),
+        sc.ContractParam.integer(escapeTimelock)
       ],
     };
   }

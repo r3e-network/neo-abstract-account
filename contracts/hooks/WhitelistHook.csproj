@@ -12,12 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Web3AuthVerifier.cs" />
+    <Compile Include="WhitelistHook.cs" />
   </ItemGroup>
 
   <Target Name="CompileSmartContract" AfterTargets="Build">
-    <Message Text="Compiling Neo smart contract: Web3AuthVerifier.cs" Importance="high" />
-    <Exec Command="nccs ./Web3AuthVerifier.csproj -o ../bin/verifiers" WorkingDirectory="$(ProjectDir)" />
+    <Message Text="Compiling Neo smart contract: WhitelistHook.cs" Importance="high" />
+    <Exec Command="nccs ./WhitelistHook.csproj -o ../bin/hooks" WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 </Project>

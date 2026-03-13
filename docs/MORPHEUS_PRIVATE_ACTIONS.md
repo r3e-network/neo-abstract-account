@@ -1,84 +1,39 @@
-# Morpheus Private Actions
+# Morpheus Private Actions & NeoDID Binding (V3 Architecture)
 
-This document describes how Neo Abstract Account can use Morpheus NeoDID action tickets for privacy-preserving delegated execution.
+Under the V3 Unified Smart Wallet architecture, heavy on-chain components (like Oracle Dead-man switches and Social Recovery) have been removed in favor of the lightweight **L1 Native Escape Hatch**. However, the Neo Abstract Account system still seamlessly integrates with the **Morpheus TEE Environment** to enable Private Actions, Session Keys, and NeoDID bindings.
 
-## Goal
+## How It Works
 
-Allow a temporary proxy account to execute an AA action without revealing the user's underlying Web2 identity or master wallet on-chain.
+Instead of storing recovery state on-chain, Morpheus provides a **Trusted Execution Environment (TEE)** using Intel SGX / TDX. This off-chain, secure enclave acts as a co-signer or policy enforcer without exposing the logic to the public chain.
 
-## Model
+The process flows exclusively through the `TEEVerifier` and `NeoDIDCredentialHook` modules.
 
-The recommended on-chain component is the unified Morpheus verifier:
+### 1. NeoDID Binding via Web3Auth
+Users can bind their NeoDID to their Abstract Account. This allows a user to authorize actions via their social accounts (Google, Discord, etc.) through Web3Auth, which resolves to a NeoDID signature.
 
-- `contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs`
+- **Frontend:** User authenticates via Web3Auth.
+- **Enclave:** The Morpheus Enclave validates the Web3Auth token and signs an authorization payload.
+- **Contract:** The `NeoDIDCredentialHook` verifies that the enclave's signature maps correctly to the expected NeoDID.
 
-The dedicated `MorpheusProxySessionVerifier` remains available as a narrower verifier variant, but the unified Morpheus verifier is the preferred production path when the same AA should support both recovery and private action sessions.
+### 2. Private Actions & Privacy Policies
+For actions where the policy (e.g., daily limits, whitelisted addresses, or conditional logic) shouldn't be publicly visible on-chain:
 
-## Flow
+1. The user defines their policy and stores it privately within the Morpheus TEE node.
+2. When the user wishes to execute a transaction, they send the intent to the TEE node.
+3. The TEE node evaluates the private policy.
+4. If approved, the TEE node signs a "Salt Nonce" or a direct transaction hash.
+5. The `TEEVerifier` contract on N3 validates the enclave's hardware-level signature before allowing the transaction to proceed.
 
-1. The account owner deploys or configures `MorpheusProxySessionVerifier`.
-2. The verifier is bound into the AA wallet with `setVerifierContract`.
-3. A temporary executor wallet requests a Morpheus action ticket.
-4. Morpheus Oracle routes the request to NeoDID with `neodid_action_ticket`.
-5. The verifier receives the callback in compact binary form.
-6. The verifier validates the Morpheus signature and stores an active session:
-   - executor
-   - actionId
-   - actionNullifier
-   - expiry
-7. Until expiry, the temporary executor can authorize AA actions through `verify` / `verifyMetaTx`.
-8. AA still enforces whitelist, blacklist, method policy, and transfer limits.
+### 3. Session Keys
+Session Keys allow an application to submit transactions on behalf of the user without prompting for a signature every time, bounded by limits enforced by the TEE.
 
-## Why This Preserves Privacy
+- A temporary keypair is generated.
+- The TEE signs a certificate binding the temporary key to specific limits (e.g., time, token amounts).
+- The `TEEVerifier` checks the certificate and processes the transaction as long as the session constraints are met.
 
-The proxy account visible on-chain is only the temporary executor.
-The underlying social / exchange identity remains hidden behind:
+## Verification Flow (V3)
+1. **Prepare:** The client builds the transaction and gathers standard N3/EVM signatures.
+2. **TEE Signature:** The client requests the Morpheus Enclave to evaluate the private policy. The Enclave returns an `ActionTicket`.
+3. **Execute:** The transaction is submitted. The Unified Smart Wallet delegates validation to the `TEEVerifier`, which successfully authenticates the Enclave's signature, validating the off-chain private rules.
 
-- encrypted Web3Auth `id_token` or other confidential provider evidence inside Morpheus payloads
-- TEE verification
-- `action_nullifier`
-- Morpheus signature evidence
-
-No raw Twitter handle, email address, exchange account id, or OAuth token needs to appear on-chain.
-
-Recommended identity source:
-
-- use Web3Auth as the DID root
-- link Google / Apple / email / SMS / other login methods in Web3Auth
-- pass the live Web3Auth `id_token` into NeoDID as encrypted input so the TEE can derive the stable provider root
-- treat any caller-supplied `provider_uid` only as an optional consistency hint
-- request NeoDID action tickets with `provider = "web3auth"`
-- use `did:morpheus:neo_n3:service:neodid` as the public metadata anchor for resolver-based integrations
-
-## Security Boundaries
-
-The Morpheus private action path is intentionally narrow:
-
-- it does not bypass AA policy controls
-- it does not permanently replace the owner
-- it treats each action ticket as replay-protected through `action_nullifier`
-- it requires explicit expiry for each delegated session
-
-## Recommended Use Cases
-
-- anonymous governance participation through a disposable wallet
-- privacy-preserving claims or claims collection
-- temporary operational delegation without exposing the main owner address
-- compartmentalized execution from hot ephemeral wallets
-
-## Recommended Operational Pattern
-
-- keep AA whitelist mode enabled
-- keep only the intended target contracts whitelisted
-- keep token movement targets capped with max-transfer rules
-- use short session expiries
-- revoke the session after use
-
-## Relationship To Recovery
-
-This is not account recovery.
-
-- `MorpheusSocialRecoveryVerifier` is for ownership recovery
-- `MorpheusProxySessionVerifier` is for temporary private execution rights
-
-Both use the same Morpheus Oracle + NeoDID stack, but they solve different authorization problems.
+By keeping policy logic inside the TEE and eliminating the legacy on-chain Oracle Dead-man switch, the V3 architecture significantly reduces gas costs and deployment complexity while retaining robust privacy and NeoDID support.

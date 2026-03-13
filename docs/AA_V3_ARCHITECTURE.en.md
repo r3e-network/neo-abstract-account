@@ -35,21 +35,54 @@ The heart of the system and the only Neo N3 contract that stores state. It emplo
 * **Intent Engine (Intent & Batch)**: Supports single calls, array batching, and even the direct submission of NeoVM bytecode containing logic.
 
 ### 4. Heterogeneous Verifier Plugin Ecosystem
-Solves the "How to verify signatures?" problem. These are pre-deployed, **Stateless**, pure-computation singleton contracts.
-* **EIP-712 Verifier (Web3Auth/EVM Compatible)**:
+Solves the "How to verify signatures?" problem. Verifiers dictate "who has the right to use the vault." They are pre-deployed, **Stateless**, pure-computation singleton contracts. The following 7 core Verifiers form the foundation of the system:
+* **Web3Auth / EIP-712 Verifier (Traffic Funnel)**:
   * Currently the killer plugin on N3.
   * Directly receives Ethereum-standard EIP-712 Typed Data Hashes and `v, r, s` signatures.
   * Internally uses N3's underlying `CryptoLib.VerifyWithECDsa` (for the secp256k1 curve) and custom Keccak256 to perfectly replicate Ethereum signature verification. Allows MetaMask users to seamlessly control N3 assets.
-* **TEE Verifier**:
+* **TEE / AI Agent Verifier (Privacy & Automation Center)**:
   * Bound to a specific hardware public key. As long as the `UserOperation` carries the TEE node's signature, it is considered approved (because complex business logic has already been pre-screened within the TEE).
-* **Neo Native Verifier**:
-  * A native fallback solution that only checks `Runtime.CheckWitness`, providing a backdoor for traditional N3 software/hardware wallets.
+* **Session Key Verifier (High-frequency Interaction Tool)**:
+  * Provides temporary authorization keys for short-lived, high-frequency interactions (like fully on-chain games or high-frequency trading), supporting fine-grained permission scopes and expiration times.
+* **WebAuthn / Passkey Verifier (Native Biometrics)**:
+  * Leverages the `secp256r1` curve to verify hardware-backed biometrics (iOS FaceID, Android Fingerprint, YubiKey).
+  * Enables a passwordless, hardware-grade secure login experience directly from standard mobile devices.
+* **ZK-Email Verifier (Zero-Knowledge Email Proof)**:
+  * Verifies Zero-Knowledge proofs generated from standard DKIM email signatures.
+  * Allows users to recover accounts, approve large transactions, or execute operations simply by sending an email, without exposing their email content on-chain.
+* **Multi-Sig / Threshold Verifier (Heterogeneous Multi-sig)**:
+  * Supports complex, heterogeneous threshold signature schemes (e.g., 2-of-3 requiring an EVM signature, a Passkey, and a TEE signature).
+  * Ideal for DAO treasuries or high-security institutional vaults.
+* **Time-based / Subscription Verifier (Auto-subscriptions)**:
+  * Facilitates recurring payments and SaaS-like subscription models.
+  * Allows pre-authorized delegates to pull a specific amount of funds at predefined intervals without requiring the user to be online.
+
+**Built-in cold wallet fallback**:
+* The native N3 fallback solution is built directly into the gateway. If no external Verifier is configured (Verifier == `UInt160.Zero`), it falls back to solely checking `Runtime.CheckWitness`. This provides a secure backdoor for traditional N3 software/hardware cold wallets to ensure absolute control over underlying assets while saving GAS (no cross-contract call required).
 
 ### 5. Policy & Risk Control Plugin Ecosystem (Hooks / Middleware)
-Solves the "Can this be executed?" problem. These are business rule mounting points executed before/after operations.
-* **DailyLimit Hook**: Risk control for large daily transfers.
-* **NeoDID Credential Hook**: Verifies if the account holds specific NeoDID KYC credentials before executing certain DeFi operations.
-* **Whitelist Hook**: Restricts the account to interact only with trusted smart contracts.
+Solves the "Can this be executed?" problem. Hooks dictate "how the money can be spent." These are business rule mounting points executed before/after operations. It includes 5 core Hooks:
+* **MultiHook**: Allows combining multiple Hooks to implement complex hybrid risk control policies (e.g., requiring both a whitelist and a daily limit simultaneously).
+* **DailyLimitHook**: Risk control for large daily transfers.
+* **WhitelistHook**: Restricts the account to interact only with trusted smart contracts.
+* **TokenRestrictedHook**: Restricts the account to operate only on specific types of tokens (e.g., only transferring a certain game token).
+* **NeoDIDCredentialHook**: Verifies if the account holds specific NeoDID KYC credentials before executing certain DeFi operations.
+
+### 6. User-Composable Killer Solutions ("Lego" Architecture in Practice)
+Through the Lego-like composability of Verifiers and Hooks, the V3 architecture natively supports several highly commercially valuable account models:
+
+* **Solution A: Web2 Seamless Account (Default Configuration)**
+  * **Combination**: Web3Auth Verifier + Empty Hook
+  * **Scenario**: Lowers the barrier to entry for Web3. Users simply log in with Web2 social accounts to generate an account with no transfer restrictions, enjoying a frictionless experience.
+* **Solution B: "Bear Market DCA" Vault (Combined Risk Control)**
+  * **Combination**: Built-in cold wallet fallback + DailyLimitHook + WhitelistHook (via MultiHook)
+  * **Scenario**: Uses an extremely secure hardware cold wallet for control, while restricting daily outbound transfers to a small amount and only allowing interaction with specific DCA (Dollar Cost Averaging) or DeFi staking contracts.
+* **Solution C: AI-Managed Quant Fund (Intent-Driven)**
+  * **Combination**: TEE / AI Agent Verifier + Max Drawdown Hook (or NeoDIDCredentialHook / Custom Hook)
+  * **Scenario**: Funds are delegated to an AI agent running inside a TEE. The AI trades automatically based on market signals, but Hooks strictly enforce a maximum drawdown limit or restrict participation to KYC-compliant pools.
+* **Solution D: Fully On-chain Game / Esports Gold Farming Account**
+  * **Combination**: Session Key Verifier + TokenRestrictedHook
+  * **Scenario**: Gaming guilds issue Session Keys to power-levelers, restricting them to high-frequency in-game operations and the transfer of specific in-game reward tokens, preventing them from touching the vault's core assets.
 
 ---
 

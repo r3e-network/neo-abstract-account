@@ -19,20 +19,7 @@ cd frontend && npm run build
 cd sdk/js && npm test
 ```
 
-## Recovery verifier rebuild
 
-```bash
-bash contracts/recovery/compile_recovery_contracts.sh
-```
-
-## Recovery verifier testnet validation
-
-```bash
-cd sdk/js
-npm run testnet:validate:recovery
-npm run testnet:validate:recovery:safe
-npm run testnet:validate:recovery:loopring
-```
 
 ## SDK API Reference
 

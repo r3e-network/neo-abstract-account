@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -8,6 +9,10 @@
 
   <ItemGroup>
     <PackageReference Include="Neo.SmartContract.Framework" Version="3.7.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="DailyLimitHook.cs" />
   </ItemGroup>
 
   <Target Name="CompileSmartContract" AfterTargets="Build">

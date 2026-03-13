@@ -60,7 +60,7 @@ If you want the clearest end-to-end explanation, read these docs in order:
 - **Data Flow & Storage** — what lives in the browser, Supabase, relay, and on-chain boundaries
 - **SDK Integration** — runtime variables, relay behavior, and deployment setup
 - **Mixed Multi-Sig (N3 + EVM)** — how combined native + EVM signing works in practice
-- **Morpheus Social Recovery** — NeoDID / Web3Auth recovery and private action integration in `docs/MORPHEUS_SOCIAL_RECOVERY.md`
+- **Morpheus Private Actions** — NeoDID / Web3Auth integration, session keys, and TEE verifier private actions in `docs/MORPHEUS_PRIVATE_ACTIONS.md`
 
 ## Quickstart
 

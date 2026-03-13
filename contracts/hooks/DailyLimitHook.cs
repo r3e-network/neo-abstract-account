@@ -7,7 +7,7 @@ using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using System.ComponentModel;
 
-namespace AbstractAccount
+namespace AbstractAccount.Hooks
 {
     [DisplayName("DailyLimitHook")]
     [ManifestExtra("Description", "Daily Limit Policy Hook Plugin for Neo N3 AA")]
@@ -34,17 +34,22 @@ namespace AbstractAccount
             return data == null ? 0 : (BigInteger)data;
         }
 
-        // Standard ERC-6900 style Pre-Execution Hook Interface
-        public static bool BeforeExecution(UInt160 accountId, UInt160 targetContract, string method, object[] args)
+        public static void PreExecute(UInt160 accountId, object[] opParams)
         {
+            // Expected opParams layout: TargetContract, Method, Args, Nonce, Deadline, Signature
+            if (opParams.Length < 3) return;
+            UInt160 targetContract = (UInt160)opParams[0];
+            string method = (string)opParams[1];
+            object[] args = (object[])opParams[2];
+
             // Only care about NEP-17 transfers
-            if (method != "transfer" || args.Length < 3) return true;
+            if (method != "transfer" || args.Length < 3) return;
             
             // args[0] = from, args[1] = to, args[2] = amount
-            if (!(args[2] is BigInteger amount)) return true;
+            if (!(args[2] is BigInteger amount)) return;
 
             BigInteger limit = GetDailyLimit(accountId, targetContract);
-            if (limit == 0) return true; // No limit configured for this token
+            if (limit == 0) return; // No limit configured for this token
 
             byte[] spentKey = Helper.Concat(Helper.Concat(Prefix_SpentToday, (byte[])accountId), (byte[])targetContract);
             byte[] resetKey = Helper.Concat(Helper.Concat(Prefix_LastReset, (byte[])accountId), (byte[])targetContract);
@@ -71,7 +76,10 @@ namespace AbstractAccount
             ExecutionEngine.Assert(newTotal <= limit, "Daily limit exceeded");
             
             Storage.Put(Storage.CurrentContext, spentKey, newTotal);
-            return true;
+        }
+
+        public static void PostExecute(UInt160 accountId, object[] opParams, object result)
+        {
         }
     }
 }

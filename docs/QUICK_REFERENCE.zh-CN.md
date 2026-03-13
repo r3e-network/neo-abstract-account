@@ -19,20 +19,7 @@ cd frontend && npm run build
 cd sdk/js && npm test
 ```
 
-## Recovery verifier 重新编译
 
-```bash
-bash contracts/recovery/compile_recovery_contracts.sh
-```
-
-## Recovery verifier 测试网验证
-
-```bash
-cd sdk/js
-npm run testnet:validate:recovery
-npm run testnet:validate:recovery:safe
-npm run testnet:validate:recovery:loopring
-```
 
 ## 核心文档
 
