@@ -545,62 +545,6 @@ namespace AbstractAccount
         }
 
 
-        // Reverse index maintenance for role-based account discovery
-        private static void AddToSignerIndex(UInt160 address, ByteString accountId)
-        {
-            StorageMap map = new StorageMap(Storage.CurrentContext, SignerIndexPrefix);
-            ByteString? existing = map.Get(address);
-            Neo.SmartContract.Framework.List<ByteString> accounts = existing == null ? new Neo.SmartContract.Framework.List<ByteString>() : (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(existing);
-            bool exists = false;
-            for (int i = 0; i < accounts.Count; i++) { if (accounts[i] == accountId) { exists = true; break; } }
-            if (!exists) accounts.Add(accountId);
-            map.Put(address, StdLib.Serialize(accounts));
-        }
-
-        private static void RemoveFromSignerIndex(UInt160 address, ByteString accountId)
-        {
-            StorageMap map = new StorageMap(Storage.CurrentContext, SignerIndexPrefix);
-            ByteString? existing = map.Get(address);
-            if (existing == null) return;
-            Neo.SmartContract.Framework.List<ByteString> oldAccounts = (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(existing);
-            Neo.SmartContract.Framework.List<ByteString> newAccounts = new Neo.SmartContract.Framework.List<ByteString>();
-            for (int i = 0; i < oldAccounts.Count; i++)
-            {
-                if (oldAccounts[i] != accountId) newAccounts.Add(oldAccounts[i]);
-            }
-            if (newAccounts.Count == 0) map.Delete(address);
-            else map.Put(address, StdLib.Serialize(newAccounts));
-        }
-
-        /// <summary>
-        /// Returns all account IDs where the given address is a signer.
-        /// </summary>
-        [Safe]
-        public static Neo.SmartContract.Framework.List<ByteString> GetAccountsBySigner(UInt160 address)
-        {
-            StorageMap map = new StorageMap(Storage.CurrentContext, SignerIndexPrefix);
-            ByteString? data = map.Get(address);
-            if (data == null) return new Neo.SmartContract.Framework.List<ByteString>();
-            return (Neo.SmartContract.Framework.List<ByteString>)StdLib.Deserialize(data);
-        }
-
-        /// <summary>
-        /// Returns all currently bound abstract-account addresses where the given address is a signer.
-        /// </summary>
-        [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetAccountAddressesBySigner(UInt160 address)
-        {
-            Neo.SmartContract.Framework.List<ByteString> accountIds = GetAccountsBySigner(address);
-            Neo.SmartContract.Framework.List<UInt160> addresses = new Neo.SmartContract.Framework.List<UInt160>();
-            for (int i = 0; i < accountIds.Count; i++)
-            {
-                UInt160 accountAddress = GetAccountAddress(accountIds[i]);
-                if (accountAddress != null && accountAddress != UInt160.Zero)
-                {
-                    addresses.Add(accountAddress);
-                }
-            }
-            return addresses;
-        }
+        
     }
 }

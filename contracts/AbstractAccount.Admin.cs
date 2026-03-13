@@ -117,12 +117,6 @@ namespace AbstractAccount
             SetSignersInternal(accountId, signers, threshold);
         }
 
-        public static void SetSignersByAddress(UInt160 accountAddress, Neo.SmartContract.Framework.List<UInt160> signers, int threshold)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetSigners(accountId, signers, threshold);
-        }
-
         private static void SetSignersInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> signers, int threshold)
         {
             ExecutionEngine.Assert(signers != null && signers.Count > 0, "Admins are mandatory");
@@ -131,15 +125,6 @@ namespace AbstractAccount
             ExecutionEngine.Assert(threshold <= validatedSigners.Count && threshold >= 0, "Invalid threshold");
 
             Neo.SmartContract.Framework.List<UInt160> oldSigners = GetSigners(accountId);
-            for (int i = 0; i < oldSigners.Count; i++)
-            {
-                RemoveFromSignerIndex(oldSigners[i], accountId);
-            }
-
-            for (int i = 0; i < validatedSigners.Count; i++)
-            {
-                AddToSignerIndex(validatedSigners[i], accountId);
-            }
 
             StorageMap signersMap = new StorageMap(Storage.CurrentContext, SignersPrefix);
             StorageMap tMap = new StorageMap(Storage.CurrentContext, ThresholdPrefix);
@@ -161,26 +146,12 @@ namespace AbstractAccount
         }
 
         [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetSignersByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetSigners(accountId);
-        }
-
-        [Safe]
         public static int GetThreshold(ByteString accountId)
         {
             StorageMap tMap = new StorageMap(Storage.CurrentContext, ThresholdPrefix);
             ByteString? data = tMap.Get(GetStorageKey(accountId));
             if (data == null) return 1;
             return (int)(BigInteger)data;
-        }
-
-        [Safe]
-        public static int GetThresholdByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetThreshold(accountId);
         }
 
         
@@ -193,12 +164,6 @@ namespace AbstractAccount
         {
             AssertIsSigner(accountId);
             SetDomeAccountsInternal(accountId, domes, threshold, timeoutPeriod);
-        }
-
-        public static void SetDomeAccountsByAddress(UInt160 accountAddress, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetDomeAccounts(accountId, domes, threshold, timeoutPeriod);
         }
 
         private static void SetDomeAccountsInternal(ByteString accountId, Neo.SmartContract.Framework.List<UInt160> domes, int threshold, BigInteger timeoutPeriod)
@@ -240,13 +205,6 @@ namespace AbstractAccount
         }
 
         [Safe]
-        public static Neo.SmartContract.Framework.List<UInt160> GetDomeAccountsByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetDomeAccounts(accountId);
-        }
-
-        [Safe]
         public static int GetDomeThreshold(ByteString accountId)
         {
             StorageMap tMap = new StorageMap(Storage.CurrentContext, DomeThresholdPrefix);
@@ -256,26 +214,12 @@ namespace AbstractAccount
         }
 
         [Safe]
-        public static int GetDomeThresholdByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetDomeThreshold(accountId);
-        }
-
-        [Safe]
         public static BigInteger GetDomeTimeout(ByteString accountId)
         {
             StorageMap toMap = new StorageMap(Storage.CurrentContext, DomeTimeoutPrefix);
             ByteString? data = toMap.Get(GetStorageKey(accountId));
             if (data == null) return 0;
             return (BigInteger)data;
-        }
-
-        [Safe]
-        public static BigInteger GetDomeTimeoutByAddress(UInt160 accountAddress)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            return GetDomeTimeout(accountId);
         }
 
         /// <summary>
@@ -291,12 +235,6 @@ namespace AbstractAccount
             OnPolicyUpdated(accountId, "Blacklist", target, isBlacklisted ? (ByteString)new byte[] { 1 } : (ByteString)new byte[] { 0 });
         }
 
-        public static void SetBlacklistByAddress(UInt160 accountAddress, UInt160 target, bool isBlacklisted)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetBlacklist(accountId, target, isBlacklisted);
-        }
-
         /// <summary>
         /// Enables or disables whitelist-only mode. When enabled, targets must be explicitly whitelisted before they can
         /// be called through the wallet.
@@ -308,12 +246,6 @@ namespace AbstractAccount
             if (enabled) map.Put(GetStorageKey(accountId), (ByteString)new byte[] { 1 });
             else map.Delete(GetStorageKey(accountId));
             OnPolicyUpdated(accountId, "WhitelistMode", UInt160.Zero, enabled ? (ByteString)new byte[] { 1 } : (ByteString)new byte[] { 0 });
-        }
-
-        public static void SetWhitelistModeByAddress(UInt160 accountAddress, bool enabled)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetWhitelistMode(accountId, enabled);
         }
 
         /// <summary>
@@ -329,12 +261,6 @@ namespace AbstractAccount
             OnPolicyUpdated(accountId, "Whitelist", target, isWhitelisted ? (ByteString)new byte[] { 1 } : (ByteString)new byte[] { 0 });
         }
 
-        public static void SetWhitelistByAddress(UInt160 accountAddress, UInt160 target, bool isWhitelisted)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetWhitelist(accountId, target, isWhitelisted);
-        }
-
         /// <summary>
         /// Caps the amount that can move through token <c>transfer</c> or <c>approve</c> calls for this account. A non-
         /// positive limit means no cap is enforced for that token.
@@ -346,12 +272,6 @@ namespace AbstractAccount
             if (maxAmount > 0) map.Put(token, (ByteString)maxAmount);
             else map.Delete(token);
             OnPolicyUpdated(accountId, "MaxTransfer", token, (ByteString)maxAmount);
-        }
-
-        public static void SetMaxTransferByAddress(UInt160 accountAddress, UInt160 token, BigInteger maxAmount)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetMaxTransfer(accountId, token, maxAmount);
         }
 
         /// <summary>
@@ -372,12 +292,6 @@ namespace AbstractAccount
         {
             AssertIsSigner(accountId);
             SetVerifierContractInternal(accountId, verifierContract);
-        }
-
-        public static void SetVerifierContractByAddress(UInt160 accountAddress, UInt160 verifierContract)
-        {
-            ByteString accountId = ResolveAccountIdByAddress(accountAddress);
-            SetVerifierContract(accountId, verifierContract);
         }
 
         /// <summary>

@@ -67,6 +67,7 @@ namespace AbstractAccount
                     new object[] { accountId });
                 ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
+                return;
             }
             else
             {
@@ -117,6 +118,7 @@ namespace AbstractAccount
                     new object[] { accountId, verifiedSigners! });
                 ExecutionEngine.Assert(isAuthorized, "Unauthorized by custom verifier");
                 UpdateLastActiveTimestamp(accountId);
+                return;
             }
             else
             {
