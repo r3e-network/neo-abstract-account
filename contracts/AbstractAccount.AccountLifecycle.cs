@@ -102,8 +102,7 @@ namespace AbstractAccount
             // VERIFICATION PHASE: N3 NATIVE SIGNATURE VERIFICATION ONLY
             // ============================================================================
             // Verification-trigger execution happens on the outer transaction itself. The script must be the hardened
-            // one-self-call AA wrapper shape, and authorization is then checked against custom verifier, admin, manager,
-            // or dome rules.
+            // one-self-call AA wrapper shape, and authorization is then checked against custom verifier or admin rules.
             //
             // 【重要限制】此阶段只能验证 N3 原生签名，无法验证 EVM 签名
             // IMPORTANT: This phase can ONLY verify Neo native signatures, NOT EVM signatures
@@ -123,8 +122,8 @@ namespace AbstractAccount
             //   Neo native signatures (via Runtime.CheckWitness)
             // - 自定义验证器合约
             //   Custom verifier contracts
-            // - Admin/Manager/Dome 角色的 N3 签名
-            //   Admin/Manager/Dome roles with Neo signatures
+            // - Admin 角色的 N3 签名
+            //   Admin roles with Neo signatures
             // ============================================================================
             if (Runtime.Trigger == TriggerType.Verification)
             {
@@ -151,19 +150,6 @@ namespace AbstractAccount
                 // 检查 Admin 签名（仅 N3）
                 bool isSigner = CheckNativeSignatures(GetSigners(accountId), GetThreshold(accountId));
                 if (isSigner) return true;
-
-                // Check Dome signatures (N3 only)
-                // 检查 Dome 签名（仅 N3）
-                bool isDome = CheckNativeSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId));
-                if (isDome)
-                {
-                    BigInteger timeout = GetDomeTimeout(accountId);
-                    if (timeout > 0)
-                    {
-                        BigInteger lastActive = GetLastActiveTimestamp(accountId);
-                        if (Runtime.Time >= lastActive + timeout && IsDomeOracleUnlocked(accountId)) return true;
-                    }
-                }
                 
                 // ========================================================================
                 // EVM SIGNATURE VERIFICATION: NOT POSSIBLE HERE

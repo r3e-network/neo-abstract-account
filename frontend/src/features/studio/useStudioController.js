@@ -70,7 +70,6 @@ export function useStudioController() {
 
   const validCreateSigners = computed(() => sanitizeList(createForm.value.signers));
   const validManageSigners = computed(() => sanitizeList(manageForm.value.signers));
-  const validDomeAccounts = computed(() => sanitizeList(manageForm.value.domeAccounts));
 
   const canCreate = computed(() => {
     if (!walletConnected.value) return false;
@@ -143,14 +142,6 @@ export function useStudioController() {
     if (manageForm.value.threshold > signers.length) {
       manageForm.value.threshold = signers.length;
     }
-  });
-  watch(validDomeAccounts, (domeAccounts) => {
-    if (domeAccounts.length === 0) {
-      manageForm.value.domeThreshold = 0;
-      return;
-    }
-    if (manageForm.value.domeThreshold < 1) manageForm.value.domeThreshold = 1;
-    if (manageForm.value.domeThreshold > domeAccounts.length) manageForm.value.domeThreshold = domeAccounts.length;
   });
 
   onMounted(() => {
@@ -291,27 +282,15 @@ export function useStudioController() {
       const [
         signersRes,
         thresholdRes,
-        domeAccountsRes,
-        domeThresholdRes,
-        domeTimeoutRes,
-        lastActiveRes,
-        domeUnlockRes
+        lastActiveRes
       ] = await Promise.all([
         invokeReadOperation('getSignersByAddress', [{ type: 'Hash160', value: accountHash }]),
         invokeReadOperation('getThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getDomeAccountsByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getDomeThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getDomeTimeoutByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getLastActiveTimestampByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('isDomeOracleUnlockedByAddress', [{ type: 'Hash160', value: accountHash }])
+        invokeReadOperation('getLastActiveTimestampByAddress', [{ type: 'Hash160', value: accountHash }])
       ]);
 
       const signers = decodeStackHashArray(signersRes?.stack?.[0]);
-      const domeAccounts = decodeStackHashArray(domeAccountsRes?.stack?.[0]);
-
       const threshold = decodeStackInteger(thresholdRes?.stack?.[0]);
-      const domeThreshold = decodeStackInteger(domeThresholdRes?.stack?.[0]);
-      const domeTimeoutSeconds = decodeStackInteger(domeTimeoutRes?.stack?.[0]);
       const lastActiveMs = decodeStackInteger(lastActiveRes?.stack?.[0]);
 
       manageForm.value.signers = signers.length > 0 ? signers.map((value) => `0x${value}`) : [''];
@@ -319,20 +298,9 @@ export function useStudioController() {
         ? normalizeThreshold(threshold, signers.length, 1)
         : 1;
 
-      manageForm.value.domeAccounts = domeAccounts.length > 0 ? domeAccounts.map((value) => `0x${value}`) : [];
-      manageForm.value.domeThreshold = domeAccounts.length > 0
-        ? normalizeThreshold(domeThreshold, domeAccounts.length, 0)
-        : 0;
-      manageForm.value.domeTimeoutHours = domeTimeoutSeconds > 0
-        ? Number((domeTimeoutSeconds / 3600).toFixed(2))
-        : 0;
-
-      const domeUnlocked = decodeStackBoolean(domeUnlockRes?.stack?.[0]);
-
       manageSnapshot.value = {
         loadedAt: new Date().toLocaleString(),
-        lastActiveMs,
-        domeUnlocked
+        lastActiveMs
       };
 
       toast.success('Current account configuration loaded.');
@@ -415,70 +383,6 @@ export function useStudioController() {
       toast.error(`Signers update failed: ${formatErrorMessage(err)}`);
     } finally {
       manageBusy.value.signers = false;
-    }
-  }
-
-  async function setDomeAccountsByAddress() {
-    if (!requireWallet() || !canManageTarget.value) return;
-
-    const timeoutHours = Number(manageForm.value.domeTimeoutHours || 0);
-    const timeoutSeconds = Math.floor(timeoutHours * 3600);
-
-    if (validDomeAccounts.value.length > 0 && !isPositiveNumber(timeoutSeconds)) {
-      toast.error('Dome timeout must be greater than 0 when dome accounts are configured.');
-      return;
-    }
-    if (validDomeAccounts.value.length === 0 && (manageForm.value.domeThreshold !== 0 || timeoutSeconds !== 0)) {
-      toast.error('Dome threshold/timeout must be 0 when no dome accounts are configured.');
-      return;
-    }
-
-    manageBusy.value.domeAccounts = true;
-    try {
-      await invokeOperation('Set dome accounts', 'setDomeAccountsByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
-        { type: 'Array', value: toHashArray(validDomeAccounts.value) },
-        { type: 'Integer', value: manageForm.value.domeThreshold },
-        { type: 'Integer', value: timeoutSeconds }
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error(`Dome configuration failed: ${formatErrorMessage(err)}`);
-    } finally {
-      manageBusy.value.domeAccounts = false;
-    }
-  }
-
-  async function setDomeOracleByAddress() {
-    if (!requireWallet() || !canManageTarget.value) return;
-
-    manageBusy.value.domeOracle = true;
-    try {
-      await invokeOperation('Set dome oracle', 'setDomeOracleByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
-        { type: 'String', value: manageForm.value.domeOracleUrl.trim() }
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error(`Oracle update failed: ${formatErrorMessage(err)}`);
-    } finally {
-      manageBusy.value.domeOracle = false;
-    }
-  }
-
-  async function requestDomeActivationByAddress() {
-    if (!requireWallet() || !canManageTarget.value) return;
-
-    manageBusy.value.domeActivation = true;
-    try {
-      await invokeOperation('Request dome activation', 'requestDomeActivationByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) }
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error(`Activation request failed: ${formatErrorMessage(err)}`);
-    } finally {
-      manageBusy.value.domeActivation = false;
     }
   }
 
@@ -623,7 +527,6 @@ export function useStudioController() {
     walletConnected,
     validCreateSigners,
     validManageSigners,
-    validDomeAccounts,
     autoLoadedAccounts,
     canCreate,
     canManageTarget,
@@ -637,9 +540,6 @@ export function useStudioController() {
     checkMatrixDomain,
     matrixCheckResult,
     setSignersByAddress,
-    setDomeAccountsByAddress,
-    setDomeOracleByAddress,
-    requestDomeActivationByAddress,
     setVerifierContractByAddress,
     setWhitelistModeByAddress,
     updateWhitelistByAddress,

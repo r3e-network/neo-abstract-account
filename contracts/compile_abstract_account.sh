@@ -11,7 +11,6 @@ cp "$ROOT_DIR/contracts/AbstractAccount.AccountLifecycle.cs" "$TMP_DIR/AbstractA
 cp "$ROOT_DIR/contracts/AbstractAccount.Admin.cs" "$TMP_DIR/AbstractAccount.Admin.cs"
 cp "$ROOT_DIR/contracts/AbstractAccount.ExecutionAndPermissions.cs" "$TMP_DIR/AbstractAccount.ExecutionAndPermissions.cs"
 cp "$ROOT_DIR/contracts/AbstractAccount.MetaTx.cs" "$TMP_DIR/AbstractAccount.MetaTx.cs"
-cp "$ROOT_DIR/contracts/AbstractAccount.Oracle.cs" "$TMP_DIR/AbstractAccount.Oracle.cs"
 cp "$ROOT_DIR/contracts/AbstractAccount.StorageAndContext.cs" "$TMP_DIR/AbstractAccount.StorageAndContext.cs"
 cp "$ROOT_DIR/contracts/AbstractAccount.Upgrade.cs" "$TMP_DIR/AbstractAccount.Upgrade.cs"
 cp "$ROOT_DIR/contracts/InternalsVisibleTo.cs" "$TMP_DIR/InternalsVisibleTo.cs"

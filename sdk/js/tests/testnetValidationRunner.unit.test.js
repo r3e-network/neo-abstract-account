@@ -33,7 +33,6 @@ test('testnet validation runner dry-run prints the scripts in safe order', () =>
     'node tests/aa_testnet_threshold2_validate.js',
     'node tests/aa_testnet_custom_verifier_validate.js',
     'node tests/aa_testnet_morpheus_verifier_validate.js',
-    'node tests/aa_testnet_dome_oracle_validate.js',
     'node tests/aa_testnet_concurrency_validate.js',
     'node tests/aa_testnet_full_validate.js',
   ];

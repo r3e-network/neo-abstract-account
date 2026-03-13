@@ -7,7 +7,6 @@ const files = [
   'aa_testnet_integration_check.js',
   'aa_testnet_negative_meta_validate.js',
   'aa_testnet_threshold2_validate.js',
-  'aa_testnet_dome_oracle_validate.js',
   'aa_testnet_concurrency_validate.js',
   'aa_testnet_full_validate.js',
   'aa_testnet_max_transfer_validate.js',

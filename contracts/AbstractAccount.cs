@@ -36,10 +36,6 @@ namespace AbstractAccount
         "setSignersByAddress",
         "setSigners",
         "bindAccountAddress",
-        "setDomeAccountsByAddress",
-        "setDomeAccounts",
-        "setDomeOracleByAddress",
-        "setDomeOracle",
         "setVerifierContractByAddress",
         "setVerifierContract",
         "verify",
@@ -47,10 +43,7 @@ namespace AbstractAccount
         "verifyExecution",
         "verifyExecutionMetaTx",
         "verifySigner",
-        "verifySignerMetaTx",
-        "requestDomeActivationByAddress",
-        "requestDomeActivation",
-        "domeActivationCallback")]
+        "verifySignerMetaTx")]
     /// <summary>
     /// Global abstract-account gateway for Neo N3.
     /// </summary>
@@ -79,9 +72,6 @@ namespace AbstractAccount
         private static readonly byte[] AccountAddressToIdPrefix = new byte[] { 0x0B };
         private static readonly byte[] AccountIdToAddressPrefix = new byte[] { 0x0C };
         private static readonly byte[] ExecutionLockPrefix = new byte[] { 0x0D };
-        private static readonly byte[] DomePrefix = new byte[] { 0x0E };
-        private static readonly byte[] DomeThresholdPrefix = new byte[] { 0x0F };
-        private static readonly byte[] DomeTimeoutPrefix = new byte[] { 0x10 };
         private static readonly byte[] LastActivePrefix = new byte[] { 0x11 };
         private static readonly byte[] VerifierContractPrefix = new byte[] { 0x12 };
         private static readonly byte[] ContractHashKey = new byte[] { 0x13 };

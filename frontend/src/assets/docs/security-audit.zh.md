@@ -10,7 +10,6 @@
 
 - AA 核心执行路径是策略门控的，不能通过确定性代理地址直接绕过。
 - 自定义 verifier 现在同时适用于执行路径和管理路径，恢复后的 owner 可以真正接管账户治理配置。
-- Dome/oracle 恢复路径不会再因为缺少 URL 配置而被错误地视为默认解锁。
 - recovery verifier 统一对齐了 AA 需要的接口：
   - `verify(ByteString accountId)`
   - `verifyMetaTx(ByteString accountId, UInt160[] signerHashes)`

@@ -22,7 +22,6 @@ mindmap
       Custom Verifiers
       EVM EIP-712 MetaTx
     Recovery
-      Dome Social Network
       Oracle Gating
 ```
 
@@ -40,7 +39,6 @@ Use the sidebar to explore the technical depths of this protocol:
 * **Core Architecture**: Understand how deterministic proxies work.
 * **Workflow Lifecycle**: See the sequence of actions for deployment and Meta-Transactions.
 * **Data Flow & Storage**: Inspect how state is organized securely.
-* **Dome Recovery**: Learn how social recovery safely orchestrates a fallback.
 * **Custom Verifiers**: Explore how to write C# contracts that govern account verification.
 * **Ethereum / EVM Integration**: Instructions for cross-chain users.
 * **Mixed Multi-Sig (N3 + EVM)**: How to aggregate native Neo and MetaMask signatures simultaneously.

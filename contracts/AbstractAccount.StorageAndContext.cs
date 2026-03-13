@@ -457,25 +457,10 @@ namespace AbstractAccount
         {
             StorageMap map = new StorageMap(Storage.CurrentContext, LastActivePrefix);
             map.Put(GetStorageKey(accountId), Runtime.Time);
-            ResetDomeOracleState(accountId);
-        }
-
-        private static BigInteger GetLastActiveTimestampForAuth(ByteString accountId)
-        {
-            StorageMap map = new StorageMap(Storage.CurrentContext, LastActivePrefix);
-            ByteString key = GetStorageKey(accountId);
-            ByteString? data = map.Get(key);
-            if (data != null) return (BigInteger)data;
-
-            // Legacy accounts may not have an initialized timestamp; start inactivity window now.
-            BigInteger now = Runtime.Time;
-            map.Put(key, now);
-            return now;
         }
 
         /// <summary>
-        /// Returns the last time the account satisfied an authorization path successfully. Dome inactivity windows are
-        /// measured from this timestamp.
+        /// Returns the last time the account satisfied an authorization path successfully.
         /// </summary>
         [Safe]
         public static BigInteger GetLastActiveTimestamp(ByteString accountId)

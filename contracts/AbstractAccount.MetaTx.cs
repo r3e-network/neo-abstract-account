@@ -10,7 +10,7 @@ namespace AbstractAccount
 {
     // Meta-transaction helpers bridge Ethereum-style EIP-712 signatures into the same AA permission engine used by
     // native Neo witnesses. The recovered addresses are treated as signer identities, then checked against the stored
-    // admin / manager / dome quorums before the downstream contract call is dispatched.
+    // admin quorums before the downstream contract call is dispatched.
     public partial class UnifiedSmartWallet
     {
         private static byte[] GetNonceKey(ByteString accountId)

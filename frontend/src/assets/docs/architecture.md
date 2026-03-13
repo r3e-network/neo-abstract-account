@@ -13,7 +13,6 @@ flowchart LR
   Relay[Optional Relay + Signed Operator APIs]
   Master[UnifiedSmartWallet Master Contract]
   Target[Target Contract]
-  Oracle[Optional Dome Oracle]
 
   User --> Browser
   Browser --> Wallet
@@ -49,9 +48,6 @@ flowchart TD
   Entry[AA wrapper entrypoint] --> Load[Load account roles and policy state]
   Load --> RoleCheck{Threshold / verifier satisfied?}
   RoleCheck -- No --> RejectA[Abort unauthorized call]
-  RoleCheck -- Yes --> DomeCheck{Dome / oracle constraints satisfied?}
-  DomeCheck -- No --> RejectB[Abort recovery constraint failure]
-  DomeCheck -- Yes --> PolicyCheck{Whitelist / blacklist / method policy OK?}
   PolicyCheck -- No --> RejectC[Abort policy violation]
   PolicyCheck -- Yes --> LimitCheck{Transfer limit OK?}
   LimitCheck -- No --> RejectD[Abort amount violation]
@@ -69,7 +65,6 @@ flowchart TD
 | `contracts/AbstractAccount.ExecutionAndPermissions.cs` | Policy checks and target execution |
 | `contracts/AbstractAccount.MetaTx.cs` | EIP-712 verification and signer recovery |
 | `contracts/AbstractAccount.Admin.cs` | Role and threshold governance |
-| `contracts/AbstractAccount.Oracle.cs` | Dome oracle flow |
 | `contracts/AbstractAccount.Upgrade.cs` | Deployer-only update path |
 
 ## Matrix Naming Layer

@@ -22,11 +22,7 @@ export function createManageFormState() {
   return {
     accountAddress: '',
     signers: [''],
-    threshold: 1,
-    domeAccounts: [],
-    domeThreshold: 0,
-    domeTimeoutHours: 0,
-    domeOracleUrl: ''
+    threshold: 1
   };
 }
 
@@ -45,10 +41,7 @@ export function createPermissionsFormState() {
 export function createManageBusyState() {
   return {
     load: false,
-    signers: false,
-    domeAccounts: false,
-    domeOracle: false,
-    domeActivation: false
+    signers: false
   };
 }
 
@@ -64,8 +57,6 @@ export function createPermissionsBusyState() {
 
 export function createManageSnapshotState() {
   return {
-    loadedAt: '',
-    lastActiveMs: 0,
-    domeUnlocked: null
+    loadedAt: ''
   };
 }

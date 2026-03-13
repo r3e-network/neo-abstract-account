@@ -22,8 +22,6 @@ test('recovery verifier artifacts expose both verify and verifyMetaTx for AA int
     'contracts/recovery/compiled/ArgentRecoveryVerifier.manifest.json',
     'contracts/recovery/compiled/SafeRecoveryVerifier.manifest.json',
     'contracts/recovery/compiled/LoopringRecoveryVerifier.manifest.json',
-    'contracts/recovery/compiled/MorpheusSocialRecoveryVerifier.manifest.json',
-    'contracts/recovery/compiled/MorpheusProxySessionVerifier.manifest.json',
   ];
 
   for (const manifest of manifests) {
@@ -38,7 +36,6 @@ test('recovery verifier source uses ByteString account ids at the wallet verifie
     'contracts/recovery/ArgentRecoveryVerifier.Fixed.cs',
     'contracts/recovery/SafeRecoveryVerifier.Fixed.cs',
     'contracts/recovery/LoopringRecoveryVerifier.Fixed.cs',
-    'contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs',
   ];
 
   for (const file of files) {
@@ -53,7 +50,6 @@ test('recovery setup paths require owner authorization and reject blind reinitia
     ['contracts/recovery/ArgentRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
     ['contracts/recovery/SafeRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
     ['contracts/recovery/LoopringRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
-    ['contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs', /Runtime\.CheckWitness\(owner\)/, /Recovery already setup|Already setup|already initialized/i],
   ];
 
   for (const [file, ownerGate, reinitGuard] of checks) {
@@ -73,11 +69,6 @@ test('admin mutation path delegates to custom verifier when configured', () => {
   assert.match(source, /GetVerifierContract\(accountId\)/);
   assert.match(source, /"verifySigner"/);
   assert.match(source, /"verifySignerMetaTx"/);
-});
-
-test('dome unlock helper no longer treats missing oracle configuration as implicitly unlocked', () => {
-  const source = read('contracts/AbstractAccount.Oracle.cs');
-  assert.doesNotMatch(source, /if \(url == ""\) return true/, 'missing oracle URL should not auto-unlock dome recovery');
 });
 
 test('account creation does not silently inject tx sender into an explicitly provided admin set', () => {

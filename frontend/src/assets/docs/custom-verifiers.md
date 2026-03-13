@@ -1,6 +1,6 @@
 # Custom Verifiers (Pluggable Authorization)
 
-While the default Role and Dome structures cover 95% of use cases, the Neo Abstract Account protocol is designed to be infinitely extensible. 
+While the default Role structures cover 95% of use cases, the Neo Abstract Account protocol is designed to be infinitely extensible. 
 
 Users can bypass the standard `M-of-N` signature logic by assigning a **Custom Verifier Contract**. When assigned, the Master Entry Contract defers authorization checks directly to this custom logic, then continues through the same hardened policy-gated execution path. A custom verifier does not bypass method policy, whitelist / blacklist checks, or max-transfer enforcement.
 

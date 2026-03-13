@@ -8,7 +8,6 @@ import docWorkflow from '@/assets/docs/workflow.md?raw';
 import docWorkflowZh from '@/assets/docs/workflow.zh.md?raw';
 import docDataFlow from '@/assets/docs/data-flow.md?raw';
 import docDataFlowZh from '@/assets/docs/data-flow.zh.md?raw';
-import docDome from '@/assets/docs/dome-recovery.md?raw';
 import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
 import docEvm from '@/assets/docs/evm-integration.md?raw';
 import docMixed from '@/assets/docs/mixed-multisig.md?raw';
@@ -42,10 +41,6 @@ export const DOCS = {
   dataFlow: {
     title: { en: 'Data Flow & Storage', 'zh-CN': '数据流与存储' },
     content: { en: docDataFlow, 'zh-CN': docDataFlowZh },
-  },
-  dome: {
-    title: { en: 'Dome Recovery', 'zh-CN': 'Dome 恢复' },
-    content: { en: docDome },
   },
   verifiers: {
     title: { en: 'Custom Verifiers', 'zh-CN': '自定义验证器' },

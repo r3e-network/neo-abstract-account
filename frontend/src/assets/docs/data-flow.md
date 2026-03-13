@@ -67,7 +67,6 @@ The contract utilizes a unified internal storage mapping where keys are derived 
 flowchart TD
     A[Master Contract Storage] --> B(Admins Map)
     A --> C(Managers Map)
-    A --> D(Dome Configuration)
     A --> E(Limits & Restrictions)
 
     B --> B1[Prefix: 0x01 + sha256(accountId)]
