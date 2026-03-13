@@ -55,7 +55,7 @@ test('operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /Active Private Session/);
   assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /emit\('status'/);
   assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /emit\('activity'/);
-  assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load Abstract Account/);
+  assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load V3 Account/);
   assert.match(fs.readFileSync(composerPath, 'utf8'), /Compose Operation/);
   assert.match(fs.readFileSync(presetsPath, 'utf8'), /Generic Invoke/);
   assert.match(fs.readFileSync(presetsPath, 'utf8'), /NEP-17 Transfer/);
@@ -64,7 +64,9 @@ test('operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Broadcast Options/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Best Available/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Signed Raw Tx/);
-  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Meta Invocation/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Relay Invocation/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Paymaster/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /DApp ID/);
   assert.match(fs.readFileSync(workspacePath, 'utf8'), /Check Relay/);
   assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Relay Readiness/);
   assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Recent Activity/);

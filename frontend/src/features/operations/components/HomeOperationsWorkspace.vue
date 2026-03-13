@@ -69,7 +69,7 @@
       <DidIdentityPanel
         class="mb-8"
         :aa-contract-hash="getAbstractAccountHash()"
-        :account-address-script-hash="accountAddressScriptHash"
+        :account-address-script-hash="workspace.account.value.accountAddressScriptHash"
         :neo-wallet-address="walletService.address"
         @status="handleDidStatus"
         @activity="handleDidActivity"
@@ -86,7 +86,7 @@
               <span class="text-biconomy-muted text-sm font-mono transform transition-transform" :class="step1Expanded ? 'rotate-180' : ''">▼</span>
             </button>
             <div v-show="step1Expanded" class="p-6 md:p-8 animate-fade-in">
-              <LoadAccountPanel class="dark-panel-override" :account-address-script-hash="accountAddressScriptHash" :candidate-addresses="discoveredAccountAddresses" :resolved-owner-address="resolvedMatrixOwnerAddress" @update:account-address-script-hash="accountAddressScriptHash = $event" @select-address="selectDiscoveredAccount" @load="loadAccount" />
+              <LoadAccountPanel class="dark-panel-override" :account-address-script-hash="accountAddressScriptHash" @update:account-address-script-hash="accountAddressScriptHash = $event" @load="loadAccount" />
             </div>
           </div>
 
@@ -136,7 +136,7 @@
                 <button class="btn-secondary" :disabled="relayPayloadOptions.length === 0 || isSubmissionPending" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? t('sharedDraft.checkingRelay', 'Checking Relay…') : t('sharedDraft.checkRelay', 'Check Relay') }}</button>
                 <button class="btn-primary bg-neo-600 hover:bg-neo-500 focus:ring-neo-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] border-transparent" :disabled="!canRelayBroadcast || isSubmissionPending" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? t('sharedDraft.submitting', 'Submitting…') : t('sharedDraft.submitViaRelay', 'Submit via Relay') }}</button>
               </div>
-              <BroadcastOptionsPanel class="dark-panel-override" :active-mode="workspace.broadcast.value.mode" :modes="runtime.broadcastModes" :active-relay-payload-mode="relayPayloadMode" :relay-payload-options="relayPayloadOptions" :relay-endpoint="runtime.relayEndpoint" @set-mode="workspace.setBroadcastMode($event)" @set-relay-payload-mode="relayPayloadMode = $event" @persist-draft="persistDraft" />
+              <BroadcastOptionsPanel class="dark-panel-override" :active-mode="workspace.broadcast.value.mode" :modes="runtime.broadcastModes" :active-relay-payload-mode="relayPayloadMode" :relay-payload-options="relayPayloadOptions" :relay-endpoint="runtime.relayEndpoint" :paymaster-enabled="paymasterEnabled" :paymaster-dapp-id="paymasterDappId" @set-mode="workspace.setBroadcastMode($event)" @set-relay-payload-mode="relayPayloadMode = $event" @set-paymaster-enabled="(value) => { paymasterEnabled = value; workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value)); }" @set-paymaster-dapp-id="(value) => { paymasterDappId = value; workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value)); }" @persist-draft="persistDraft" />
               <RelayPreflightPanel class="mt-6 dark-panel-override border-slate-700" v-if="relayCheck.level !== 'idle'" :level="relayCheck.level" :status-label="relayCheck.label" :detail="relayCheck.detail" :payload-mode="relayCheck.payloadMode" :vm-state="relayCheck.vmState" :gas-consumed="relayCheck.gasConsumed" :operation="relayCheck.operation" :exception="relayCheck.exception" :stack="relayCheck.stack" :can-copy-payload="Boolean(relayCheckRequest)" :can-copy-stack="relayCheck.stack.length > 0" :can-export-json="Boolean(relayCheckRequest) || relayCheck.stack.length > 0" @copy-payload="copyRelayPayload" @copy-stack="copyRelayStack" @export-json="exportRelayPreflight" />
               
               <transition name="fade-in-up">
@@ -197,14 +197,14 @@ import { runRelayPreflight, buildRelayPreflightRequest } from '@/features/operat
 import { createDraftInteractionHandlers } from '@/features/operations/viewActions.js';
 import { summarizeSignerProgress } from '@/features/operations/signatures.js';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from '@/features/operations/shareLinks.js';
-import { assertAccountAddressBound, buildExecuteUnifiedByAddressInvocation, buildMetaTransactionTypedData, computeArgsHash, fetchNonceForAddress, recoverPublicKeyFromTypedDataSignature } from '@/features/operations/metaTx.js';
+import { assertV3AccountExists, buildExecuteUnifiedByAddressInvocation, buildExecuteUserOpInvocation, buildMetaTransactionTypedData, buildV3UserOperationTypedData, computeArgsHash, fetchNonceForAddress, fetchV3Nonce, fetchV3Verifier, recoverPublicKeyFromTypedDataSignature, toCompactEcdsaSignature } from '@/features/operations/metaTx.js';
 import { createOperationsWorkspace } from '@/features/operations/useOperationsWorkspace.js';
 import { buildSubmissionReceipt, getSubmissionButtonLabel, resolveLatestSubmissionReceipt } from '@/features/operations/submissionFeedback.js';
 import { appendSubmissionReceiptEntries, buildSubmissionReceiptHistoryItems, createSubmissionReceiptEntry } from '@/features/operations/submissionReceipts.js';
 import { getAbstractAccountHash, walletService } from '@/services/walletService.js';
-import { getScriptHashFromAddress } from '@/utils/neo.js';
+import { createVerifyScript, deriveAccountIdHash, getAddressFromScriptHash, getScriptHashFromAddress, hash160, reverseHex } from '@/utils/neo.js';
 import { sanitizeHex } from '@/utils/hex.js';
-import { discoverAccountsForMatrixDomain, isMatrixDomain } from '@/services/matrixDomainService.js';
+import { isMatrixDomain } from '@/services/matrixDomainService.js';
 import { isNeoDomain } from '@/services/domainResolverService.js';
 import { buildParameterFields, buildContractParamFromField, loadContractManifest, searchContractsByName } from '@/services/contractLookupService.js';
 import ActivitySidebar from './ActivitySidebar.vue';
@@ -227,8 +227,6 @@ const preferences = createOperationsPreferences();
 const presetOptions = OPERATION_PRESETS;
 
 const accountAddressScriptHash = ref('');
-const discoveredAccountAddresses = ref([]);
-const resolvedMatrixOwnerAddress = ref('');
 const preset = ref('invoke');
 const targetContract = ref('');
 const resolvedContractHash = ref('');
@@ -252,6 +250,8 @@ const rawTransaction = ref('');
 const notes = ref('');
 const signerId = ref('');
 const relayPayloadMode = ref(preferences.getRelayPayloadMode('home-workspace'));
+const paymasterEnabled = ref(false);
+const paymasterDappId = ref('demo-dapp');
 const signerKind = ref('neo');
 const signatureHex = ref('');
 const evmAddress = ref('');
@@ -490,6 +490,27 @@ function buildCurrentDraftRecord({ draftId, shareSlug } = {}) {
   });
 }
 
+function applyPaymasterConfig(transactionBody = null) {
+  if (!transactionBody || typeof transactionBody !== 'object') return transactionBody;
+  const next = {
+    ...transactionBody,
+  };
+  if (paymasterEnabled.value) {
+    next.paymaster = {
+      ...(next.paymaster || {}),
+      dapp_id: String(paymasterDappId.value || '').trim(),
+    };
+  } else {
+    delete next.paymaster;
+  }
+  return next;
+}
+
+function syncPaymasterStateFromRecord(record = null) {
+  paymasterEnabled.value = Boolean(record?.transaction_body?.paymaster);
+  paymasterDappId.value = record?.transaction_body?.paymaster?.dapp_id || 'demo-dapp';
+}
+
 async function persistSubmissionReceipt(entry) {
   submissionReceiptEntries.value = appendSubmissionReceiptEntries(submissionReceiptEntries.value, entry);
   if (!workspace.share.value.shareSlug) return;
@@ -561,65 +582,47 @@ async function connectEvmWalletAction() {
 async function loadAccount(overrideAddress = '') {
   const lookup = String(overrideAddress || accountAddressScriptHash.value || '').trim();
   if (!lookup) {
-    statusMessage.value = 'Enter an Abstract Account address or .matrix domain.';
+    statusMessage.value = 'Enter a V3 account seed or a 20-byte accountId hash.';
     return;
   }
 
-  let resolvedAddress = lookup;
-  let resolvedAddressScriptHash = lookup;
-  discoveredAccountAddresses.value = [];
-  resolvedMatrixOwnerAddress.value = '';
-
-  if (isMatrixDomain(lookup)) {
-    const discovery = await discoverAccountsForMatrixDomain(lookup, {
-      rpcUrl: walletService.rpcUrl,
-      aaContractHash: getAbstractAccountHash(),
-      matrixContractHash: runtime.matrixContractHash,
-    });
-    resolvedMatrixOwnerAddress.value = discovery.ownerAddress;
-
-    if (discovery.accountAddresses.length > 1) {
-      discoveredAccountAddresses.value = discovery.accountAddresses;
-      statusMessage.value = 'Domain resolved to multiple Abstract Accounts. Select one to continue.';
-      return;
-    }
-
-    if (discovery.accountAddresses.length === 1) {
-      resolvedAddress = discovery.accountAddresses[0];
-    } else if (discovery.ownerAddress) {
-      resolvedAddress = discovery.ownerAddress;
-    } else {
-      statusMessage.value = 'No address could be resolved from that .matrix domain.';
-      return;
-    }
+  if (lookup.startsWith('N') || isMatrixDomain(lookup)) {
+    statusMessage.value = 'V3 accounts cannot be discovered from a Neo address or .matrix domain. Load them from the original seed or the 20-byte accountId hash.';
+    return;
   }
 
-  resolvedAddressScriptHash = resolvedAddress.startsWith('N')
-    ? getScriptHashFromAddress(resolvedAddress)
-    : sanitizeHex(resolvedAddress);
+  let resolvedAccountIdHash = '';
+  try {
+    resolvedAccountIdHash = /^(0x)?[0-9a-fA-F]{40}$/.test(lookup)
+      ? sanitizeHex(lookup)
+      : deriveAccountIdHash(lookup);
+  } catch {
+    statusMessage.value = 'Invalid V3 account reference. Provide a deterministic seed, public key, or 20-byte accountId hash.';
+    return;
+  }
+
+  const verifyScript = createVerifyScript(getAbstractAccountHash(), resolvedAccountIdHash);
+  const resolvedAddressScriptHash = reverseHex(hash160(verifyScript));
+  const resolvedAddress = getAddressFromScriptHash(resolvedAddressScriptHash);
 
   try {
-    await assertAccountAddressBound({
+    await assertV3AccountExists({
       rpcUrl: walletService.rpcUrl,
       aaContractHash: getAbstractAccountHash(),
-      accountAddressScriptHash: resolvedAddressScriptHash,
+      accountIdHash: resolvedAccountIdHash,
     });
-    accountAddressScriptHash.value = resolvedAddressScriptHash;
+    accountAddressScriptHash.value = resolvedAccountIdHash;
   } catch (e) {
-    console.warn('Could not validate bound Abstract Account address.', e);
-    statusMessage.value = isMatrixDomain(lookup)
-      ? 'The .matrix domain resolved, but no bound Abstract Account was found for that controller address.'
-      : 'No bound Abstract Account mapping was found for that address.';
+    console.warn('Could not validate V3 Abstract Account identity.', e);
+    statusMessage.value = 'No registered V3 account was found for that accountId hash.';
     return;
   }
 
-  workspace.loadAbstractAccount({ accountAddressScriptHash: resolvedAddressScriptHash });
+  workspace.loadAbstractAccount({ accountAddressScriptHash: resolvedAddressScriptHash, accountIdHash: resolvedAccountIdHash });
   syncSignerRequirements();
   signerId.value = walletService.address || workspace.account.value.accountAddressScriptHash;
-  appendActivity(createActivityEvent({ type: 'account_loaded', actor: 'workspace', detail: 'Abstract account loaded' }));
-  statusMessage.value = isMatrixDomain(lookup)
-    ? `Abstract Account loaded via ${lookup}.`
-    : 'Abstract Account loaded into the home workspace.';
+  appendActivity(createActivityEvent({ type: 'account_loaded', actor: 'workspace', detail: 'V3 account loaded' }));
+  statusMessage.value = `V3 account loaded. Virtual address: ${resolvedAddress}`;
 }
 
 function stageOperation() {
@@ -645,6 +648,7 @@ function stageOperation() {
     notes: notes.value,
     createdAt: nextOperationBody.createdAt,
   }));
+  workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value));
   syncSignerRequirements();
   appendActivity(createActivityEvent({ type: 'operation_staged', actor: 'workspace', detail: buildPresetSummary(nextOperationBody).title }));
   statusMessage.value = `${buildPresetSummary(nextOperationBody).title} staged locally. Create a draft to freeze and share it.`;
@@ -661,6 +665,7 @@ async function persistDraft() {
     const record = await draftStore.createDraft(payload);
     workspace.hydrateDraft(record);
     rawTransaction.value = record.transaction_body?.rawTransaction || '';
+    syncPaymasterStateFromRecord(record);
     if (record.metadata?.relayPreflight) relayCheck.value = { ...relayCheck.value, ...record.metadata.relayPreflight };
     submissionReceiptEntries.value = record.metadata?.submissionReceipts || submissionReceiptEntries.value;
     activityItems.value = record.metadata?.activity || [];
@@ -687,12 +692,6 @@ function resolveSignerId(kindValue) {
   return walletService.address || workspace.account.value.accountAddressScriptHash || 'neo-wallet-pending';
 }
 
-function selectDiscoveredAccount(address) {
-  accountAddressScriptHash.value = address.startsWith('N') ? getScriptHashFromAddress(address) : sanitizeHex(address);
-  discoveredAccountAddresses.value = [];
-  void loadAccount(address);
-}
-
 async function appendManualSignature() {
   try {
     const nextSignature = { signerId: resolveSignerId(signerKind.value), kind: signerKind.value, signatureHex: signatureHex.value, createdAt: new Date().toISOString() };
@@ -717,16 +716,74 @@ async function signWithEvmWallet() {
     }
     const aaContractHash = getAbstractAccountHash();
     const rpcUrl = walletService.rpcUrl;
-    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const deadline = Date.now() + (60 * 60 * 1000);
     const argsHashHex = await computeArgsHash({ rpcUrl, aaContractHash, args: workspace.operationBody.value?.args || [] });
-    const nonce = await fetchNonceForAddress({ rpcUrl, aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmSignerAddress: evmAddress.value });
-    const typedData = buildMetaTransactionTypedData({ chainId: 894710606, verifyingContract: aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, argsHashHex, nonce, deadline });
+    let verifierHash = '';
+    let nonce;
+    let typedData;
+    let metaInvocation;
+
+    if (workspace.account.value.accountIdHash) {
+      verifierHash = await fetchV3Verifier({
+        rpcUrl,
+        aaContractHash,
+        accountIdHash: workspace.account.value.accountIdHash,
+      });
+      if (!verifierHash) {
+        throw new Error('No verifier plugin is configured for this V3 account.');
+      }
+      nonce = await fetchV3Nonce({
+        rpcUrl,
+        aaContractHash,
+        accountIdHash: workspace.account.value.accountIdHash,
+        channel: 0n,
+      });
+      typedData = buildV3UserOperationTypedData({
+        chainId: 894710606,
+        verifyingContract: verifierHash,
+        accountIdHash: workspace.account.value.accountIdHash,
+        targetContract: workspace.operationBody.value?.targetContract,
+        method: workspace.operationBody.value?.method,
+        argsHashHex,
+        nonce,
+        deadline,
+      });
+    } else {
+      nonce = await fetchNonceForAddress({ rpcUrl, aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmSignerAddress: evmAddress.value });
+      typedData = buildMetaTransactionTypedData({ chainId: 894710606, verifyingContract: aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, argsHashHex, nonce, deadline });
+    }
+
     const signature = await walletService.signTypedDataWithEvm(typedData);
+    const contractSignature = workspace.account.value.accountIdHash ? toCompactEcdsaSignature(signature) : signature;
     const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature });
-    const metaInvocation = buildExecuteUnifiedByAddressInvocation({ aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmPublicKeyHex: publicKey, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, methodArgs: workspace.operationBody.value?.args || [], argsHashHex, nonce, deadline, signatureHex: signature });
-    await appendSignatureRecordToWorkspace({ signerId: evmAddress.value, kind: 'evm', signatureHex: signature, publicKey, payloadDigest: argsHashHex, metadata: { typedData, argsHashHex, nonce: String(nonce), deadline: String(deadline), metaInvocation }, createdAt: new Date().toISOString() });
-    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: 'Contract-aligned meta signature collected' }));
-    statusMessage.value = 'Contract-aligned EVM meta signature collected and attached to the draft.';
+
+    if (workspace.account.value.accountIdHash) {
+      metaInvocation = buildExecuteUserOpInvocation({
+        aaContractHash,
+        accountIdHash: workspace.account.value.accountIdHash,
+        targetContract: workspace.operationBody.value?.targetContract,
+        method: workspace.operationBody.value?.method,
+        methodArgs: workspace.operationBody.value?.args || [],
+        nonce,
+        deadline,
+        signatureHex: contractSignature,
+      });
+      workspace.setTransactionBody({
+        ...workspace.transactionBody.value,
+        clientInvocation: metaInvocation,
+        v3Invocation: metaInvocation,
+      });
+      workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value));
+    } else {
+      metaInvocation = buildExecuteUnifiedByAddressInvocation({ aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmPublicKeyHex: publicKey, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, methodArgs: workspace.operationBody.value?.args || [], argsHashHex, nonce, deadline, signatureHex: contractSignature });
+      workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value));
+    }
+
+    await appendSignatureRecordToWorkspace({ signerId: evmAddress.value, kind: 'evm', signatureHex: contractSignature, publicKey, payloadDigest: argsHashHex, metadata: { typedData, verifierHash, argsHashHex, nonce: String(nonce), deadline: String(deadline), metaInvocation, signatureFullHex: signature }, createdAt: new Date().toISOString() });
+    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: workspace.account.value.accountIdHash ? 'UserOperation signature collected' : 'Legacy relay signature collected' }));
+    statusMessage.value = workspace.account.value.accountIdHash
+      ? 'Contract-aligned EVM UserOperation signature collected and attached to the draft.'
+      : 'Contract-aligned legacy relay signature collected and attached to the draft.';
   } catch (error) {
     statusMessage.value = error?.message || String(error);
   }
@@ -826,6 +883,7 @@ async function rotateCollaboratorLink() {
   try {
     const record = await draftStore.rotateCollaboratorLink(workspace.share.value.shareSlug, operatorMutationOptions());
     workspace.hydrateDraft(record);
+    syncPaymasterStateFromRecord(record);
     await appendActivity(createActivityEvent({ type: 'collaborator_link_rotated', actor: runtime.collaborationEnabled ? 'supabase' : 'local', detail: 'Collaborator link rotated' }));
     statusMessage.value = 'Collaborator link rotated. The previous signer link no longer works.';
     showActionsMenu.value = false;
@@ -839,6 +897,7 @@ async function rotateOperatorLink() {
   try {
     const record = await draftStore.rotateOperatorLink(workspace.share.value.shareSlug, operatorMutationOptions());
     workspace.hydrateDraft(record);
+    syncPaymasterStateFromRecord(record);
     await appendActivity(createActivityEvent({ type: 'operator_link_rotated', actor: runtime.collaborationEnabled ? 'supabase' : 'local', detail: 'Operator link rotated' }));
     statusMessage.value = 'Operator link rotated. The previous operator link no longer works.';
     showActionsMenu.value = false;

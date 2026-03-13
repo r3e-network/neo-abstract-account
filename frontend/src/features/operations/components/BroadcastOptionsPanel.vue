@@ -34,6 +34,32 @@
       </div>
     </div>
 
+    <div class="mt-5 rounded-lg border border-biconomy-border bg-biconomy-dark/40 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-biconomy-muted">{{ t('operations.paymasterTitle', 'Paymaster') }}</p>
+          <p class="mt-1 text-sm text-biconomy-muted">{{ t('operations.paymasterSubtitle', 'Request Morpheus sponsorship before relay submission.') }}</p>
+        </div>
+        <button
+          class="rounded-lg border px-3 py-2 text-sm font-semibold"
+          :class="paymasterEnabled ? 'border-biconomy-orange/30 bg-biconomy-orange/10 text-biconomy-orange' : 'border-biconomy-border text-biconomy-muted'"
+          @click="$emit('set-paymaster-enabled', !paymasterEnabled)"
+        >
+          {{ paymasterEnabled ? t('operations.paymasterOn', 'Enabled') : t('operations.paymasterOff', 'Disabled') }}
+        </button>
+      </div>
+      <div class="mt-3">
+        <label class="mb-1 block text-xs font-bold uppercase tracking-[0.18em] text-biconomy-muted">{{ t('operations.paymasterDappId', 'DApp ID') }}</label>
+        <input
+          :value="paymasterDappId"
+          type="text"
+          class="input-field w-full bg-biconomy-dark text-sm"
+          :placeholder="t('operations.paymasterDappPlaceholder', 'demo-dapp')"
+          @input="$emit('set-paymaster-dapp-id', $event.target.value)"
+        />
+      </div>
+    </div>
+
     <p class="mt-4 text-xs text-biconomy-muted">{{ t('operations.relayEndpointLabel', 'Relay endpoint:') }} {{ relayEndpoint || t('operations.notConfigured', 'not configured') }}</p>
   </section>
 </template>
@@ -47,7 +73,7 @@ const { t } = useI18n();
 const relayPayloadLabels = computed(() => ({
   best: t('operations.bestAvailable', 'Best Available'),
   raw: t('operations.signedRawTx', 'Signed Raw Tx'),
-  meta: t('operations.metaInvocation', 'Meta Invocation'),
+  meta: t('operations.metaInvocation', 'Relay Invocation'),
 }));
 
 const modeLabels = computed(() => ({
@@ -61,6 +87,8 @@ defineProps({
   modes: { type: Array, default: () => ['client', 'relay'] },
   relayPayloadOptions: { type: Array, default: () => [] },
   relayEndpoint: { type: String, default: '' },
+  paymasterEnabled: { type: Boolean, default: false },
+  paymasterDappId: { type: String, default: '' },
 });
-defineEmits(['persist-draft', 'set-mode', 'set-relay-payload-mode']);
+defineEmits(['persist-draft', 'set-mode', 'set-relay-payload-mode', 'set-paymaster-enabled', 'set-paymaster-dapp-id']);
 </script>
