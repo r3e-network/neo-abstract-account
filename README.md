@@ -109,12 +109,24 @@ To run the full local verification sequence in one command:
 ```bash
 cd sdk/js
 cp .env.example .env
-# fill in TEST_WIF and VITE_AA_HASH_TESTNET (or export AA_HASH_TESTNET)
+# fill in TEST_WIF
 npm run testnet:validate:dry-run
 npm run testnet:validate
 ```
 
-The runner executes the recommended safety order for the documented testnet validators, including the threshold-2, custom-verifier, dome-oracle, concurrency, approve/allowance, and full integration flows.
+The runner now executes the current V3 live testnet flow in order:
+
+- `v3_testnet_smoke.js`
+- `v3_testnet_plugin_matrix.js`
+- `v3_testnet_paymaster_relay.mjs` when `PHALA_API_TOKEN` is available
+
+You can also run the stages individually with:
+
+```bash
+npm run testnet:validate:smoke
+npm run testnet:validate:plugin-matrix
+npm run testnet:validate:paymaster
+```
 
 ### Build
 

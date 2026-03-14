@@ -1,14 +1,19 @@
 # Testnet Validation Runbook
 
-This runbook executes the affected SDK testnet validation scripts in the safest recommended order, stopping on the first failure.
+This runbook executes the current V3 SDK testnet validation scripts in the safest recommended order, stopping on the first failure.
 
 ## Required environment
 
 - `TEST_WIF` set to a dedicated funded Neo testnet account
-- `AA_HASH_TESTNET` or `VITE_AA_HASH_TESTNET` set to the target AA contract hash
-- `EXPECT_PROXY_SPEND_BLOCKED=1` unless you intentionally expect the direct proxy spend check to succeed
-- `MORPHEUS_ORACLE_HASH_TESTNET` recommended for the Morpheus verifier validator
-- `MORPHEUS_VERIFIER_PUBKEY_TESTNET` recommended for the Morpheus verifier validator
+
+## Optional environment
+
+- `TESTNET_RPC_URL` or `NEO_RPC_URL` to override the default Neo N3 testnet RPC
+- `PHALA_API_TOKEN` to enable the live Morpheus paymaster relay validator
+- `MORPHEUS_PAYMASTER_APP_ID` if the paymaster validator should target a non-default CVM app
+- `PAYMASTER_ACCOUNT_ID` if you want to replay against a fixed existing account instead of using a fresh one
+- `SKIP_PAYMASTER_ALLOWLIST_UPDATE=1` if you already manually allowlisted the account on the Morpheus worker
+- `PHALA_SSH_RETRIES` to tune CVM bridge retries for the paymaster validator
 
 ## Dry run
 
@@ -16,12 +21,6 @@ From `sdk/js`, print the planned commands without broadcasting anything:
 
 ```bash
 ./run_testnet_validation_suite.sh --dry-run
-```
-
-## Readiness check only
-
-```bash
-node tests/testnet_readiness.js
 ```
 
 ## Live execution
@@ -34,23 +33,23 @@ From `sdk/js`, run the full ordered suite:
 
 ## Ordered scripts
 
-1. `tests/test-evm-meta-tx.js`
-2. `tests/aa_testnet_integration_check.js`
-3. `tests/aa_testnet_negative_meta_validate.js`
-4. `tests/aa_testnet_max_transfer_validate.js`
-5. `tests/aa_testnet_approve_allowance_validate.js`
-6. `tests/aa_testnet_direct_proxy_spend_validate.js`
-7. `tests/aa_testnet_threshold2_validate.js`
-8. `tests/aa_testnet_custom_verifier_validate.js`
-9. `tests/aa_testnet_morpheus_verifier_validate.js`
-10. `tests/aa_testnet_dome_oracle_validate.js`
-11. `tests/aa_testnet_concurrency_validate.js`
-12. `tests/aa_testnet_full_validate.js`
+1. `tests/v3_testnet_smoke.js`
+2. `tests/v3_testnet_plugin_matrix.js`
+3. `tests/v3_testnet_paymaster_relay.mjs` when `PHALA_API_TOKEN` is present
+
+## Individual commands
+
+```bash
+npm run testnet:validate:smoke
+npm run testnet:validate:plugin-matrix
+npm run testnet:validate:paymaster
+```
 
 ## Safety notes
 
 - The runner stops on the first failure.
-- Several scripts broadcast real testnet transactions and mutate contract state.
-- The suite now performs a funding/readiness check first unless `SKIP_TESTNET_READINESS_CHECK=1`.
-- Prefer a disposable test key and a fresh or resettable testnet AA deployment before running the full suite.
-- Re-running the suite against the same live state can change outcomes because nonces, whitelist state, and balances move forward.
+- Several scripts deploy contracts or broadcast real testnet transactions and mutate live state.
+- The plugin matrix deploys fresh verifier and hook artifacts and records a JSON report under `sdk/docs/reports/`.
+- The paymaster validator can reuse a fixed allowlisted account or register a fresh account and update the worker allowlist live.
+- Prefer a disposable test key and a fresh or resettable testnet environment before running the full suite.
+- Re-running the suite against the same live state can change outcomes because nonces, verifier keys, allowlists, and balances move forward.
