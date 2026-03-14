@@ -63,6 +63,12 @@
         <p class="mt-1 text-xs leading-6 text-biconomy-muted">
           {{ t('operations.paymasterValidatedBody', 'Policy testnet-aa has passed full live validation for registerAccount, updateVerifier, paymaster authorization, and relay-backed executeUserOp submission. See the Paymaster Live Validation docs entry for txids and attestation hashes.') }}
         </p>
+        <router-link
+          class="mt-3 inline-flex items-center rounded-lg border border-biconomy-orange/30 bg-biconomy-orange/10 px-3 py-2 text-xs font-semibold text-biconomy-orange transition hover:border-biconomy-orange/60 hover:bg-biconomy-orange/15"
+          :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
+        >
+          {{ t('operations.paymasterValidationLink', 'Open Paymaster Live Validation') }}
+        </router-link>
       </div>
     </div>
 

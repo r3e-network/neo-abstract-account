@@ -32,6 +32,28 @@
             <span v-else-if="testnetStatus">Lag {{ testnetStatus.lag_blocks }}</span>
             <span v-else>Connecting to live network summary…</span>
           </div>
+          <div class="mx-auto mt-6 max-w-4xl rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-5 text-left shadow-[0_0_25px_rgba(16,185,129,0.12)] backdrop-blur-md">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-300">{{ t('home.paymasterValidationLabel', 'Live-Validated Paymaster Path') }}</p>
+                <h2 class="mt-2 text-lg font-bold text-white">{{ t('home.paymasterValidationTitle', 'AA + Morpheus paymaster is verified on Neo N3 testnet') }}</h2>
+                <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
+                  {{ t('home.paymasterValidationBody', 'The current workspace path has passed live validation for registerAccount, updateVerifier, remote allowlist update, paymaster authorization, relay submission, and on-chain executeUserOp execution.') }}
+                </p>
+                <p class="mt-2 text-xs font-medium text-slate-400">
+                  {{ t('home.paymasterValidationTx', 'Latest full-path relay tx: 0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4') }}
+                </p>
+              </div>
+              <div class="flex shrink-0 items-center gap-3">
+                <router-link
+                  class="inline-flex items-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:border-emerald-300/60 hover:bg-emerald-400/15"
+                  :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
+                >
+                  {{ t('home.paymasterValidationLink', 'Open Validation Ledger') }}
+                </router-link>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- Main Workspace -->
@@ -46,7 +68,7 @@
             <h2 class="text-2xl md:text-3xl font-bold text-white font-outfit">{{ t('home.architectureTitle', 'How Abstract Accounts Work on Neo N3') }}</h2>
             <div class="mt-4 h-1 w-20 bg-gradient-to-r from-neo-500 to-transparent mx-auto rounded-full"></div>
             <p class="text-biconomy-muted mt-6 text-base max-w-2xl mx-auto leading-relaxed">
-              {{ t('home.architectureSubtitle', 'The home workspace stages AA wrapper calls like executeUnifiedByAddress. Governance, policy checks, and deterministic verification stay enforced by the master contract pipeline.') }}
+              {{ t('home.architectureSubtitle', 'The home workspace stages V3 executeUserOp calls against the UnifiedSmartWallet core, while verifier plugins, hook plugins, backup-owner recovery, and deterministic verification stay enforced by the master contract pipeline.') }}
             </p>
           </div>
           <div class="relative z-10 bg-slate-900/50 rounded-xl p-4 md:p-8 border border-slate-700/50 shadow-inner">

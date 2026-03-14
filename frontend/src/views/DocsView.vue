@@ -42,6 +42,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import 'highlight.js/styles/github-dark.css';
 import { DEFAULT_DOC_KEY, getDocsForLocale } from '@/features/docs/registry';
 import { sanitizeRenderedHtml } from '@/features/docs/rendering';
@@ -114,11 +115,21 @@ async function getDocsRuntime() {
 }
 
 const { locale, t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const docs = computed(() => getDocsForLocale(locale.value));
-const activeDoc = ref(DEFAULT_DOC_KEY);
 const compiledMarkdown = ref('');
 const contentRoot = ref(null);
 const hasInitialMermaidRender = ref(false);
+
+function resolveDocKey(candidate, availableDocs = docs.value) {
+  if (typeof candidate === 'string' && Object.prototype.hasOwnProperty.call(availableDocs, candidate)) {
+    return candidate;
+  }
+  return DEFAULT_DOC_KEY;
+}
+
+const activeDoc = ref(resolveDocKey(route.query.doc));
 
 async function renderMermaidDiagrams() {
   const { mermaid } = await getDocsRuntime();
@@ -156,6 +167,27 @@ const renderMarkdown = async (key) => {
 watch(() => [activeDoc.value, locale.value], ([newKey]) => {
   void renderMarkdown(newKey);
 }, { immediate: true });
+
+watch(
+  () => [route.query.doc, locale.value],
+  ([docKey]) => {
+    const nextKey = resolveDocKey(docKey);
+    if (activeDoc.value !== nextKey) {
+      activeDoc.value = nextKey;
+    }
+  },
+  { immediate: true },
+);
+
+watch(activeDoc, (value) => {
+  if (route.query.doc === value) return;
+  void router.replace({
+    query: {
+      ...route.query,
+      doc: value,
+    },
+  });
+});
 </script>
 
 <style>

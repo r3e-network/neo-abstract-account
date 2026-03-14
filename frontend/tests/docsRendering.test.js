@@ -59,9 +59,9 @@ test('docs registry uses the repo README as the overview source of truth', () =>
   assert.match(registrySource, /@repo\/README\.md\?raw/);
 });
 
-test('workflow doc explains wrapper execution after proxy hardening', () => {
+test('workflow doc explains the V3 execution path after proxy hardening', () => {
   const workflowDoc = read('src/assets/docs/workflow.md');
-  assert.match(workflowDoc, /executeUnifiedByAddress/);
+  assert.match(workflowDoc, /executeUserOp/);
   assert.match(workflowDoc, /direct proxy-signed external/i);
 });
 
@@ -140,9 +140,9 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(workflowDoc, /home operations workspace/i);
   assert.match(workflowDoc, /client-side broadcast/i);
   assert.match(workflowDoc, /relay broadcast/i);
-  assert.match(workflowDoc, /\.matrix/i);
   assert.match(workflowDoc, /localStorage|local-only fallback/i);
   assert.match(workflowDoc, /NEP-17 transfer|Multisig Draft|Generic Invoke/i);
+  assert.match(workflowDoc, /accountId hash|UserOperation/i);
   assert.match(workflowDoc, /100 activity entries/i);
   assert.match(workflowDoc, /12 submission receipts/i);
   assert.match(readme, /100 activity entries/i);
@@ -163,7 +163,6 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(readme, /frontend\/\.env\.example/i);
   assert.match(readme, /SUPABASE_SERVICE_ROLE_KEY/i);
   assert.match(readme, /signed operator mutation/i);
-  assert.match(readme, /\.matrix/i);
   assert.match(readme, /draft-operator/i);
   assert.match(readme, /VITE_AA_EXPLORER_BASE_URL/i);
   assert.match(mixedMultisigDoc, /anonymous share/i);
@@ -175,12 +174,11 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(mixedMultisigDoc, /100 activity entries/i);
   assert.match(mixedMultisigDoc, /12 submission receipts/i);
   assert.match(sdkDoc, /VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY|relay/i);
-  assert.match(sdkDoc, /\.matrix/i);
   assert.match(sdkDoc, /Runtime Reference/i);
   assert.match(sdkDoc, /Relay Behavior Matrix/i);
   assert.match(sdkDoc, /preflight only/i);
   assert.match(sdkDoc, /signed raw relay/i);
-  assert.match(sdkDoc, /meta relay submission/i);
+  assert.match(sdkDoc, /meta relay submission|relay invocation/i);
   assert.match(sdkDoc, /Safe Defaults/i);
   assert.match(sdkDoc, /client-side broadcast is the default safe path/i);
   assert.match(sdkDoc, /optional knobs/i);
@@ -210,7 +208,7 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(sdkDoc, /production/i);
   assert.match(sdkDoc, /AA_RELAY_WIF/i);
   assert.match(sdkDoc, /VITE_AA_EXPLORER_BASE_URL/i);
-  assert.match(sdkDoc, /relay meta mode/i);
+  assert.match(sdkDoc, /relay meta mode|relay invocation mode/i);
   assert.match(sdkDoc, /Minimum Capability Matrix/i);
   assert.match(sdkDoc, /without Supabase/i);
   assert.match(sdkDoc, /without relay/i);
@@ -236,6 +234,15 @@ test('DocsView lazy-loads heavy markdown and diagram dependencies', () => {
   assert.match(docsViewSource, /await import\('mermaid'\)/);
   assert.doesNotMatch(docsViewSource, /await import\('highlight\.js'\)/);
   assert.doesNotMatch(docsViewSource, /import mermaid from 'mermaid';/);
+});
+
+test('DocsView supports deep-linking to a specific doc entry through the query string', () => {
+  const docsViewSource = read('src/views/DocsView.vue');
+
+  assert.match(docsViewSource, /useRoute, useRouter/);
+  assert.match(docsViewSource, /route\.query\.doc/);
+  assert.match(docsViewSource, /router\.replace/);
+  assert.match(docsViewSource, /resolveDocKey/);
 });
 
 test('vite config defines manual chunk groups for heavy frontend dependencies', () => {

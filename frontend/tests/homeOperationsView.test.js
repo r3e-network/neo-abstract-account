@@ -22,6 +22,9 @@ test('home view renders the operations workspace above explanatory content', () 
   const homeSource = fs.readFileSync(homePath, 'utf8');
   assert.match(homeSource, /HomeOperationsWorkspace/);
   assert.ok(homeSource.indexOf('HomeOperationsWorkspace') < homeSource.indexOf('ArchitectureDiagram'));
+  assert.match(homeSource, /Live-Validated Paymaster Path/);
+  assert.match(homeSource, /Open Validation Ledger/);
+  assert.match(homeSource, /paymasterValidation/);
 });
 
 test('operation composer supports live contract suggestions, method dropdowns, and generated parameter fields', () => {
@@ -67,6 +70,7 @@ test('operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Relay Invocation/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Paymaster/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /DApp ID/);
+  assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Open Paymaster Live Validation/);
   assert.match(fs.readFileSync(workspacePath, 'utf8'), /Check Relay/);
   assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Relay Readiness/);
   assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Recent Activity/);
