@@ -8,6 +8,7 @@ import process from "node:process";
 const ROOT_DIR = path.resolve(import.meta.dirname, "..");
 const SDK_REPORT_DIR = path.resolve(ROOT_DIR, "..", "docs", "reports");
 const REPO_REPORT_DIR = path.resolve(ROOT_DIR, "..", "..", "docs", "reports");
+const REPO_ROOT = path.resolve(ROOT_DIR, "..", "..");
 const DATE_PREFIX = "2026-03-14";
 
 const STAGES = [
@@ -126,11 +127,12 @@ function summarizeSmoke(stdout = "") {
 
 async function summarizePluginMatrix(stdout = "") {
   const summary = latestJsonObject(stdout) || {};
-  const reportPath = typeof summary.reportPath === "string" ? summary.reportPath : null;
+  const reportPathAbsolute = typeof summary.reportPath === "string" ? summary.reportPath : null;
+  const reportPath = reportPathAbsolute ? path.relative(REPO_ROOT, reportPathAbsolute) : null;
   let report = null;
-  if (reportPath) {
+  if (reportPathAbsolute) {
     try {
-      report = JSON.parse(await readFile(reportPath, "utf8"));
+      report = JSON.parse(await readFile(reportPathAbsolute, "utf8"));
     } catch {
       report = null;
     }
@@ -217,8 +219,6 @@ async function runStage(stage) {
     finishedAt: nowIso(),
     command: stage.command.join(" "),
     summary: await summarizeStage(stage.id, stdout),
-    stdout,
-    stderr,
   };
 }
 
@@ -235,8 +235,8 @@ function buildMarkdownReport(report) {
   const pluginMatrix = report.stages.find((stage) => stage.id === "plugin_matrix");
   const paymaster = report.stages.find((stage) => stage.id === "paymaster");
 
-  const smokeTxLines = Object.entries(smoke?.summary?.txids || {}).map(([key, value]) => `- ${key}: \`${value}\``);
-  const pluginScenarioLines = (pluginMatrix?.summary?.scenarios || []).map((name) => `- ${name}`);
+  const smokeTxLines = Object.entries(smoke?.summary?.txids || {}).map(([key, value]) => `${key}: \`${value}\``);
+  const pluginScenarioLines = (pluginMatrix?.summary?.scenarios || []).map((name) => `${name}`);
 
   const lines = [
     "# V3 Testnet Validation Suite Report",
