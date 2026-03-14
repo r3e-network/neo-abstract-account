@@ -25,6 +25,13 @@ const STAGES = [
     requiredEnv: ["TEST_WIF"],
   },
   {
+    id: "paymaster_policy",
+    title: "V3 Paymaster Policy",
+    command: ["node", "tests/v3_testnet_paymaster_policy.mjs"],
+    requiredEnv: ["PHALA_API_TOKEN"],
+    optional: true,
+  },
+  {
     id: "paymaster",
     title: "V3 Paymaster Relay",
     command: ["node", "tests/v3_testnet_paymaster_relay.mjs"],
@@ -150,6 +157,33 @@ async function summarizePluginMatrix(stdout = "") {
   };
 }
 
+async function summarizePaymasterPolicy(stdout = "") {
+  const summary = latestJsonObject(stdout) || {};
+  const reportPathAbsolute = typeof summary.reportPath === "string" ? summary.reportPath : null;
+  const reportPath = reportPathAbsolute ? path.relative(REPO_ROOT, reportPathAbsolute) : null;
+  let report = null;
+  if (reportPathAbsolute) {
+    try {
+      report = JSON.parse(await readFile(reportPathAbsolute, "utf8"));
+    } catch {
+      report = null;
+    }
+  }
+
+  return {
+    reportPath,
+    policyId: summary.policyId || report?.policyId || null,
+    accountId: summary.accountId || report?.accountId || null,
+    approvalDigest: summary.approvalDigest || report?.approved?.approvalDigest || null,
+    attestationHash: report?.approved?.attestationHash || null,
+    deniedCases: Array.isArray(summary.deniedCases)
+      ? summary.deniedCases
+      : report?.deniedCases
+        ? Object.keys(report.deniedCases)
+        : [],
+  };
+}
+
 function summarizePaymaster(stdout = "") {
   const summary = latestJsonObject(stdout) || {};
   return {
@@ -170,6 +204,8 @@ async function summarizeStage(stageId, stdout) {
       return summarizeSmoke(stdout);
     case "plugin_matrix":
       return summarizePluginMatrix(stdout);
+    case "paymaster_policy":
+      return summarizePaymasterPolicy(stdout);
     case "paymaster":
       return summarizePaymaster(stdout);
     default:
@@ -233,6 +269,7 @@ function markdownList(items = []) {
 function buildMarkdownReport(report) {
   const smoke = report.stages.find((stage) => stage.id === "smoke");
   const pluginMatrix = report.stages.find((stage) => stage.id === "plugin_matrix");
+  const paymasterPolicy = report.stages.find((stage) => stage.id === "paymaster_policy");
   const paymaster = report.stages.find((stage) => stage.id === "paymaster");
 
   const smokeTxLines = Object.entries(smoke?.summary?.txids || {}).map(([key, value]) => `${key}: \`${value}\``);
@@ -280,6 +317,25 @@ function buildMarkdownReport(report) {
     "",
     ...(pluginScenarioLines.length > 0 ? ["Scenarios:", "", markdownList(pluginScenarioLines), ""] : []),
   ];
+
+  if (paymasterPolicy) {
+    lines.push(
+      "## Paymaster Policy Summary",
+      "",
+      ...[
+        `- Report path: \`${paymasterPolicy.summary.reportPath || "n/a"}\``,
+        `- Policy ID: \`${paymasterPolicy.summary.policyId || "n/a"}\``,
+        `- Account ID: \`${paymasterPolicy.summary.accountId || "n/a"}\``,
+        `- Approval digest: \`${paymasterPolicy.summary.approvalDigest || "n/a"}\``,
+        `- Attestation hash: \`${paymasterPolicy.summary.attestationHash || "n/a"}\``,
+      ],
+      "",
+      "Denied cases:",
+      "",
+      ...((paymasterPolicy.summary.deniedCases || []).map((name) => `- ${name}`)),
+      "",
+    );
+  }
 
   if (paymaster) {
     lines.push(

@@ -40,13 +40,15 @@ The suite writes:
 
 1. `tests/v3_testnet_smoke.js`
 2. `tests/v3_testnet_plugin_matrix.js`
-3. `tests/v3_testnet_paymaster_relay.mjs` when `PHALA_API_TOKEN` is present
+3. `tests/v3_testnet_paymaster_policy.mjs` when `PHALA_API_TOKEN` is present
+4. `tests/v3_testnet_paymaster_relay.mjs` when `PHALA_API_TOKEN` is present
 
 ## Individual commands
 
 ```bash
 npm run testnet:validate:smoke
 npm run testnet:validate:plugin-matrix
+npm run testnet:validate:paymaster-policy
 npm run testnet:validate:paymaster
 npm run testnet:validate:report
 ```
@@ -56,6 +58,7 @@ npm run testnet:validate:report
 - The runner stops on the first failure.
 - Several scripts deploy contracts or broadcast real testnet transactions and mutate live state.
 - The plugin matrix deploys fresh verifier and hook artifacts and records a JSON report under `sdk/docs/reports/`.
+- The paymaster policy validator exercises explicit deny paths such as wrong `dapp_id`, wrong `account_id`, wrong `target_contract`, wrong `method`, missing `operation_hash`, and over-limit gas.
 - The paymaster validator can reuse a fixed allowlisted account or register a fresh account and update the worker allowlist live.
 - Prefer a disposable test key and a fresh or resettable testnet environment before running the full suite.
 - Re-running the suite against the same live state can change outcomes because nonces, verifier keys, allowlists, and balances move forward.
