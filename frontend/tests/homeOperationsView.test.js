@@ -24,6 +24,8 @@ test('home view renders the operations workspace above explanatory content', () 
   assert.ok(homeSource.indexOf('HomeOperationsWorkspace') < homeSource.indexOf('ArchitectureDiagram'));
   assert.match(homeSource, /Live-Validated Paymaster Path/);
   assert.match(homeSource, /Open Validation Ledger/);
+  assert.match(homeSource, /Open Explorer Tx/);
+  assert.match(homeSource, /buildTransactionExplorerUrl/);
   assert.match(homeSource, /paymasterValidation/);
 });
 
