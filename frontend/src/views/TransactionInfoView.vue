@@ -16,6 +16,38 @@
             :activity="activityEvents"
           />
 
+          <section class="mb-8 rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-5 shadow-[0_0_25px_rgba(16,185,129,0.12)] backdrop-blur-md">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-300">{{ t('sharedDraft.paymasterValidationLabel', 'Live-Validated Paymaster Path') }}</p>
+                <h2 class="mt-2 text-lg font-bold text-slate-900">{{ t('sharedDraft.paymasterValidationTitle', 'AA + Morpheus paymaster is verified on Neo N3 testnet') }}</h2>
+                <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
+                  {{ t('sharedDraft.paymasterValidationBody', 'This shared-draft flow uses the same validated path for paymaster authorization and relay-backed executeUserOp submission. The live testnet run already covered account registration, verifier update, allowlist update, paymaster approval, relay submission, and on-chain HALT.') }}
+                </p>
+                <code class="mt-3 block break-all rounded-xl border border-slate-700/70 bg-slate-950/80 px-4 py-3 text-xs font-medium text-emerald-300 shadow-inner">
+                  {{ t('sharedDraft.paymasterValidationTx', 'Latest full-path relay tx: 0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4') }}
+                </code>
+              </div>
+              <div class="flex shrink-0 flex-wrap items-center gap-3">
+                <router-link
+                  class="inline-flex items-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500/60 hover:bg-emerald-400/15"
+                  :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
+                >
+                  {{ t('sharedDraft.paymasterValidationLink', 'Open Validation Ledger') }}
+                </router-link>
+                <a
+                  v-if="latestPaymasterValidationExplorerUrl"
+                  class="inline-flex items-center rounded-xl border border-slate-300/80 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+                  :href="latestPaymasterValidationExplorerUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ t('sharedDraft.paymasterValidationExplorer', 'Open Explorer Tx') }}
+                </a>
+              </div>
+            </div>
+          </section>
+
           <div class="grid gap-4 mb-8 lg:grid-cols-4">
             <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
               <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Draft ID</p>
@@ -143,7 +175,7 @@
                   <select v-if="relayPayloadOptions.length > 1" v-model="relayPayloadMode" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
                     <option value="best">Best Available</option>
                     <option value="raw">Signed Raw Tx</option>
-                    <option value="meta">Meta Invocation</option>
+                    <option value="meta">Relay Invocation</option>
                   </select>
                 </div>
                 <p class="mt-4 text-xs text-slate-500">Selected relay payload: <span class="font-semibold text-slate-700">{{ selectedRelayPayloadLabel }}</span></p>
@@ -256,7 +288,7 @@ import { useWalletConnection } from '@/composables/useWalletConnection.js';
 import { OPERATIONS_RUNTIME } from '@/config/operationsRuntime.js';
 import { createDraftStore } from '@/features/operations/drafts.js';
 import { buildRelayPayloadOptions, executeBroadcast, resolveRelayPayloadMode } from '@/features/operations/execution.js';
-import { buildExecuteUnifiedByAddressInvocation, buildMetaTransactionTypedData, computeArgsHash, fetchNonceForAddress, recoverPublicKeyFromTypedDataSignature } from '@/features/operations/metaTx.js';
+import { buildExecuteUnifiedByAddressInvocation, buildExecuteUserOpInvocation, buildMetaTransactionTypedData, buildV3UserOperationTypedData, computeArgsHash, fetchNonceForAddress, fetchV3Nonce, fetchV3Verifier, recoverPublicKeyFromTypedDataSignature, toCompactEcdsaSignature } from '@/features/operations/metaTx.js';
 import { summarizeSignerProgress } from '@/features/operations/signatures.js';
 import { createActivityEvent } from '@/features/operations/activity.js';
 import { createOperationsPreferences } from '@/features/operations/preferences.js';
@@ -333,7 +365,7 @@ const isSubmissionPending = computed(() => Boolean(pendingSubmissionAction.value
 const selectedRelayPayloadLabel = computed(() => ({
   none: 'Unavailable',
   raw: 'Signed Raw Tx',
-  meta: 'Meta Invocation',
+  meta: 'Relay Invocation',
   best: 'Best Available',
 }[selectedRelayPayloadMode.value] || selectedRelayPayloadMode.value || 'Unavailable'));
 const activityEvents = computed(() => (draft.value && draft.value.metadata && draft.value.metadata.activity) || []);
@@ -341,6 +373,8 @@ const persistedSubmissionReceiptEntries = computed(() => (draft.value?.metadata?
 const latestBroadcastTxid = computed(() => extractLatestTransactionId(activityEvents.value));
 const latestBroadcastExplorerUrl = computed(() => buildTransactionExplorerUrl(runtime.explorerBaseUrl, latestBroadcastTxid.value));
 const submittedTxExplorerUrl = computed(() => buildTransactionExplorerUrl(runtime.explorerBaseUrl, props.txid));
+const latestPaymasterValidationTxid = '0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4';
+const latestPaymasterValidationExplorerUrl = computed(() => buildTransactionExplorerUrl(runtime.explorerBaseUrl, latestPaymasterValidationTxid));
 const submissionReceiptHistoryItems = computed(() => buildSubmissionReceiptHistoryItems(persistedSubmissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl, limit: 4 }));
 const activeSubmissionReceipt = computed(() => submissionReceipt.value || resolveLatestSubmissionReceipt(persistedSubmissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl }));
 const collaborationAccess = computed(() => String(route.query.access || '').trim());
@@ -492,63 +526,111 @@ async function signWithEvmWallet() {
       evmAddress.value = address.toLowerCase();
     }
 
-    const verifyingContract = getAbstractAccountHash();
+    const aaContractHash = getAbstractAccountHash();
     const rpcUrl = walletService.rpcUrl;
-    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const deadline = Date.now() + (60 * 60 * 1000);
     const argsHashHex = await computeArgsHash({
       rpcUrl,
-      aaContractHash: verifyingContract,
+      aaContractHash,
       args: draft.value.operation_body?.args || [],
     });
-    const nonce = await fetchNonceForAddress({
-      rpcUrl,
-      aaContractHash: verifyingContract,
-      accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
-      evmSignerAddress: evmAddress.value,
-    });
-    const typedData = buildMetaTransactionTypedData({
-      chainId: 894710606,
-      verifyingContract,
-      targetContract: draft.value.operation_body?.targetContract,
-      method: draft.value.operation_body?.method,
-      argsHashHex,
-      nonce,
-      deadline,
-    });
+    let verifierHash = '';
+    let nonce;
+    let typedData;
+
+    if (draft.value.account?.accountIdHash) {
+      verifierHash = await fetchV3Verifier({
+        rpcUrl,
+        aaContractHash,
+        accountIdHash: draft.value.account.accountIdHash,
+      });
+      if (!verifierHash) {
+        throw new Error('No verifier plugin is configured for this V3 account.');
+      }
+      nonce = await fetchV3Nonce({
+        rpcUrl,
+        aaContractHash,
+        accountIdHash: draft.value.account.accountIdHash,
+        channel: 0n,
+      });
+      typedData = buildV3UserOperationTypedData({
+        chainId: 894710606,
+        verifyingContract: verifierHash,
+        accountIdHash: draft.value.account.accountIdHash,
+        targetContract: draft.value.operation_body?.targetContract,
+        method: draft.value.operation_body?.method,
+        argsHashHex,
+        nonce,
+        deadline,
+      });
+    } else {
+      nonce = await fetchNonceForAddress({
+        rpcUrl,
+        aaContractHash,
+        accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
+        evmSignerAddress: evmAddress.value,
+      });
+      typedData = buildMetaTransactionTypedData({
+        chainId: 894710606,
+        verifyingContract: aaContractHash,
+        targetContract: draft.value.operation_body?.targetContract,
+        method: draft.value.operation_body?.method,
+        argsHashHex,
+        nonce,
+        deadline,
+      });
+    }
+
     const signature = await walletService.signTypedDataWithEvm(typedData);
+    const contractSignature = draft.value.account?.accountIdHash ? toCompactEcdsaSignature(signature) : signature;
     const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature });
-    const metaInvocation = buildExecuteUnifiedByAddressInvocation({
-      aaContractHash: verifyingContract,
-      accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
-      evmPublicKeyHex: publicKey,
-      targetContract: draft.value.operation_body?.targetContract,
-      method: draft.value.operation_body?.method,
-      methodArgs: draft.value.operation_body?.args || [],
-      argsHashHex,
-      nonce,
-      deadline,
-      signatureHex: signature,
-    });
+    const metaInvocation = draft.value.account?.accountIdHash
+      ? buildExecuteUserOpInvocation({
+          aaContractHash,
+          accountIdHash: draft.value.account.accountIdHash,
+          targetContract: draft.value.operation_body?.targetContract,
+          method: draft.value.operation_body?.method,
+          methodArgs: draft.value.operation_body?.args || [],
+          nonce,
+          deadline,
+          signatureHex: contractSignature,
+        })
+      : buildExecuteUnifiedByAddressInvocation({
+          aaContractHash,
+          accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
+          evmPublicKeyHex: publicKey,
+          targetContract: draft.value.operation_body?.targetContract,
+          method: draft.value.operation_body?.method,
+          methodArgs: draft.value.operation_body?.args || [],
+          argsHashHex,
+          nonce,
+          deadline,
+          signatureHex: contractSignature,
+        });
     assertSignatureAccess();
     draft.value = await draftStore.appendSignature(draft.value.share_slug, {
       signerId: evmAddress.value,
       kind: 'evm',
-      signatureHex: signature,
+      signatureHex: contractSignature,
       publicKey,
       payloadDigest: argsHashHex,
       metadata: {
         typedData,
+        verifierHash,
         argsHashHex,
         nonce: String(nonce),
         deadline: String(deadline),
         metaInvocation,
+        signatureFullHex: signature,
       },
       createdAt: new Date().toISOString(),
     }, accessMutationOptions());
     signerKind.value = 'evm';
     signerId.value = evmAddress.value;
-    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: 'Contract-aligned meta signature collected' }));
-    statusMessage.value = 'Contract-aligned EVM meta signature collected and attached to the shared draft.';
+    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: draft.value.account?.accountIdHash ? 'UserOperation signature collected' : 'Legacy relay signature collected' }));
+    statusMessage.value = draft.value.account?.accountIdHash
+      ? 'Contract-aligned EVM UserOperation signature collected and attached to the shared draft.'
+      : 'Contract-aligned legacy relay signature collected and attached to the shared draft.';
   } catch (error) {
     statusMessage.value = error?.message || String(error);
   }
