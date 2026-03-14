@@ -110,4 +110,7 @@ test('relay transaction function exists and guards missing relay env and invalid
   assert.doesNotMatch(source, /patch_aa_draft_metadata/);
   assert.match(source, /simulate|simulation_not_supported_for_raw|relay_simulation_fault/);
   assert.match(source, /sendrawtransaction/);
+  assert.match(source, /import \{ sanitizeHex \} from '\.\.\/src\/utils\/hex\.js';/);
+  assert.match(source, /paymaster_authorization_failed/);
+  assert.match(source, /phase: failurePhase/);
 });

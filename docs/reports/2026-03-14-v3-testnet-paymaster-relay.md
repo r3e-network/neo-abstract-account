@@ -1,0 +1,99 @@
+# V3 Testnet Paymaster Relay Validation
+
+Date: 2026-03-14
+Network: Neo N3 Testnet
+
+## Scope
+
+This report validates the end-to-end `AbstractAccount -> Morpheus paymaster pre-authorization -> AA relay -> Neo N3 execution` flow on testnet.
+
+Validated components:
+
+- V3 AA core contract: `0x9cbbfc969f94a5056fd6a658cab090bcb3604724`
+- Web3Auth verifier: `0xcd2e4589debfd80449ba9190548c5a7d539ce062`
+- Morpheus paymaster worker policy: `testnet-aa`
+- Relay signer address: `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
+- Reused allowlisted AA account id: `0x1111222233334444555566667777888899990000`
+
+## Root Cause Fixed
+
+The AA relay API constructed the paymaster request with:
+
+- `target_contract: \`0x${sanitizeHex(metaInvocation?.scriptHash || '')}\``
+
+But `sanitizeHex` was not imported in `frontend/api/relay-transaction.js`.
+
+Observed failure before the fix:
+
+- API error: `paymaster_authorization_failed`
+- phase: `paymaster`
+- raw message: `sanitizeHex is not defined`
+
+This made every paymaster-backed relay submission fail before the Morpheus endpoint was even called correctly.
+
+## Code Fixes
+
+- Imported `sanitizeHex` into `frontend/api/relay-transaction.js`.
+- Split relay failure reporting into explicit phases:
+  - `simulation`
+  - `preview`
+  - `paymaster`
+  - `relay`
+  - `response`
+- Added optional operator debug flag:
+  - `AA_RELAY_INCLUDE_RAW_ERRORS=1`
+- Made `sdk/js/tests/v3_testnet_paymaster_relay.mjs` rerunnable:
+  - skip `registerAccount` when the account already exists
+  - destroy proxy sockets on shutdown so the local paymaster proxy does not hang on keep-alive connections
+
+## Live Validation Result
+
+Validated live pieces after the fix:
+
+1. Direct Morpheus paymaster authorization against the live CVM worker succeeded.
+   - HTTP status: `200`
+   - approved: `true`
+   - policy id: `testnet-aa`
+
+2. Direct AA relay submission for the same V3 execution path succeeded on testnet.
+   - Relay txid: `0xa8492f393bff2f1835cd58aa0117f5ea6594ad5aae71a1effb024899c5ab0022`
+   - VM state: `HALT`
+   - Gas consumed: `1985658`
+   - Return stack: GAS native contract symbol
+
+3. Full live paymaster-backed relay script now succeeds after replacing the unstable stdin SSH bridge with:
+   - `phala cp` upload of a helper script to the CVM
+   - `phala ssh -- sh /tmp/helper.sh` execution on the CVM
+
+### Successful replay against an existing allowlisted account
+
+- account id: `0x1111222233334444555566667777888899990000`
+- relay txid: `0x1d79429b9e8af4115845d7858ddaefcc575dafff2b14a37a000caaea58a0f0bb`
+- paymaster approval digest: `bb40b23016f702b3e7e084a977bcba02e595a3054095053294618cf65d630a3c`
+- paymaster attestation hash: `e352300442435c80478e09f27328150cdd50dd97e052865f39a410b5cfc5133f`
+- execution vmstate: `HALT`
+- execution return stack: `GAS`
+
+### Successful full path with new account registration and remote allowlist update
+
+- account id: `0x531a5f4d3a916dffbba3ea372317623fdbbb853c`
+- register txid: `0xf79d6a1d3012e9edc64c1a7e40abc932253c7f737873698055ad8f3df8a1869e`
+- update verifier txid: `0xed9c97801a757fb0e3d72d641d75a6659c1242c084134234b5e7cd1a81e903d8`
+- relay txid: `0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4`
+- paymaster approval digest: `04111a96d6356231c45fdb033ddc91818856c1dc0ac0ce09677ecdb033cae92f`
+- paymaster attestation hash: `73849ae405db210d51c28ff63033bc4bb5f2f0886e1a7478c2557e1ac9c39886`
+- execution vmstate: `HALT`
+- execution return stack: `GAS`
+
+## Final Conclusion
+
+The live testnet path is now validated end-to-end:
+
+- `registerAccount`
+- `updateVerifier`
+- remote paymaster allowlist update
+- Morpheus paymaster authorization
+- AA relay submission
+- on-chain `executeUserOp` execution
+
+The original blocker was an AA relay API bug (`sanitizeHex` missing import), and the remaining intermittent workstation harness failure was resolved by switching the CVM bridge from stdin piping to uploaded helper scripts executed over `phala cp` + `phala ssh`.

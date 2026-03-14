@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { DEFAULT_ABSTRACT_ACCOUNT_HASH, resolveAbstractAccountHash, resolveOptionalBoolean } from '../src/config/runtimeConfig.js';
+import { sanitizeHex } from '../src/utils/hex.js';
 import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvocationForRelay } from './relayHelpers.js';
 import { checkRateLimit, sanitizeError } from './rateLimiter.js';
 
@@ -32,6 +33,14 @@ function loadRelayInvocationContext({ rpcUrl, relayWif }) {
 
 function trimString(value) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function shouldIncludeRawRelayErrors() {
+  return resolveOptionalBoolean(
+    process.env.AA_RELAY_INCLUDE_RAW_ERRORS
+      || process.env.VITE_AA_RELAY_INCLUDE_RAW_ERRORS,
+    false,
+  );
 }
 
 function sha256Hex(value) {
@@ -316,6 +325,7 @@ export default async function handler(req, res) {
     return;
   }
 
+  let failurePhase = simulate ? 'simulation' : 'preview';
   try {
     if (simulate) {
       const result = await simulateMetaInvocation({
@@ -355,6 +365,7 @@ export default async function handler(req, res) {
       res.status(200).json(preview);
       return;
     }
+    failurePhase = 'paymaster';
     const paymaster = await maybeAuthorizePaymaster({
       metaInvocation: sanitizedMetaInvocation,
       paymaster: paymasterInput,
@@ -369,16 +380,29 @@ export default async function handler(req, res) {
       return;
     }
 
+    failurePhase = 'relay';
     const result = await relayMetaInvocation({
       rpcUrl,
       relayWif,
       invocation: sanitizedMetaInvocation,
     });
+    failurePhase = 'response';
     res.status(200).json(paymaster ? { ...result, paymaster } : result);
   } catch (error) {
-    res.status(502).json({
-      error: simulate ? 'relay_simulation_error' : 'relay_meta_invocation_failed',
+    const rawMessage = String(error?.message || error || 'Unknown error');
+    const payload = {
+      error: simulate
+        ? 'relay_simulation_error'
+        : failurePhase === 'paymaster'
+          ? 'paymaster_authorization_failed'
+          : 'relay_meta_invocation_failed',
       message: sanitizeError(error),
-    });
+      phase: failurePhase,
+    };
+    if (shouldIncludeRawRelayErrors()) {
+      payload.rawMessage = rawMessage;
+      payload.stack = typeof error?.stack === 'string' ? error.stack : undefined;
+    }
+    res.status(502).json(payload);
   }
 }

@@ -105,6 +105,7 @@ AA_RELAY_RPC_URL=https://testnet1.neo.coz.io:443
 AA_RELAY_WIF=your-relay-wif
 AA_RELAY_ALLOWED_HASH=0x5be915aea3ce85e4752d522632f0a9520e377aaf
 AA_RELAY_ALLOW_RAW_FORWARD=0
+AA_RELAY_INCLUDE_RAW_ERRORS=0
 MORPHEUS_PAYMASTER_TESTNET_ENDPOINT=https://your-morpheus-worker/paymaster/authorize
 MORPHEUS_PAYMASTER_TESTNET_API_TOKEN=your-paymaster-token
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -112,6 +113,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 - `frontend/api/relay-transaction.js` uses `AA_RELAY_RPC_URL`, `AA_RELAY_WIF`, `AA_RELAY_ALLOWED_HASH`, and `AA_RELAY_ALLOW_RAW_FORWARD` to constrain relay behavior. Keep raw forwarding off unless you intentionally want the relay to pass through pre-signed raw Neo transactions.
 - `frontend/api/relay-transaction.js` can also request Morpheus paymaster pre-authorization before relay submission. Use `MORPHEUS_PAYMASTER_TESTNET_ENDPOINT` / `MORPHEUS_PAYMASTER_MAINNET_ENDPOINT` and the matching API token only on the server.
+- `AA_RELAY_INCLUDE_RAW_ERRORS=1` is an operator-only debug knob. Leave it disabled in normal deployments, and enable it temporarily when you need the raw paymaster / relay exception message in API responses.
 - `frontend/api/draft-operator.js` is the signed operator mutation endpoint. It uses `SUPABASE_SERVICE_ROLE_KEY` to persist operator-only status updates, relay-preflight snapshots, submission receipts, and collaborator/operator link rotation after the browser proves operator intent with a signature.
 - the browser-safe `VITE_*` values tell the UI what features to surface, while the server-only values above decide what the relay and signed operator mutation routes are actually allowed to do.
 
@@ -131,6 +133,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 | `AA_RELAY_WIF` | Server | Enables server-side submission of stored `executeUnifiedByAddress` invocations. |
 | `AA_RELAY_ALLOWED_HASH` | Server | Pins relayable meta invocations to the expected Abstract Account contract hash. |
 | `AA_RELAY_ALLOW_RAW_FORWARD` | Server | Explicit opt-in for relaying already-signed raw transactions; keep disabled by default. |
+| `AA_RELAY_INCLUDE_RAW_ERRORS` | Server | Optional operator debug switch that includes the unsanitized exception message and stack in relay API responses. |
 | `MORPHEUS_PAYMASTER_TESTNET_ENDPOINT` / `MORPHEUS_PAYMASTER_MAINNET_ENDPOINT` | Server | Optional Morpheus paymaster endpoint used before relay submission. |
 | `MORPHEUS_PAYMASTER_TESTNET_API_TOKEN` / `MORPHEUS_PAYMASTER_MAINNET_API_TOKEN` | Server | Optional bearer token for the corresponding Morpheus paymaster endpoint. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Required by the `draft-operator` signed operator mutation route for operator-only draft persistence. |
@@ -140,6 +143,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 - **Safe to expose client-side:** `VITE_AA_RPC_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, `VITE_AA_RELAY_RPC_URL`, `VITE_AA_RELAY_META_ENABLED`, and `VITE_AA_EXPLORER_BASE_URL` are runtime hints the frontend needs in the browser.
 - **Server-only:** `AA_RELAY_WIF` and `SUPABASE_SERVICE_ROLE_KEY` are secrets and must stay on the server. `AA_RELAY_ALLOWED_HASH` and `AA_RELAY_ALLOW_RAW_FORWARD` are not secret material, but they are still server-only hardening knobs because they define what the relay and signed operator mutation routes are willing to accept.
+- **Debug-only:** `AA_RELAY_INCLUDE_RAW_ERRORS` should stay off in normal operation. Enable it only when you need a temporary deeper error trace for relay or paymaster debugging.
 - **Server-only paymaster settings:** `MORPHEUS_PAYMASTER_TESTNET_ENDPOINT`, `MORPHEUS_PAYMASTER_MAINNET_ENDPOINT`, and their matching API tokens should never be exposed to the browser. They let the relay backend request sponsorship tickets from Morpheus before broadcasting.
 
 ## Relay Behavior Matrix

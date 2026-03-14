@@ -31,8 +31,9 @@ If you want relay submission to request Morpheus sponsorship before broadcasting
 - `MORPHEUS_PAYMASTER_TESTNET_API_TOKEN`
 - `MORPHEUS_PAYMASTER_MAINNET_ENDPOINT`
 - `MORPHEUS_PAYMASTER_MAINNET_API_TOKEN`
+- Optional debug only: `AA_RELAY_INCLUDE_RAW_ERRORS=1`
 
-The relay route now forwards optional paymaster metadata and can request Morpheus paymaster pre-authorization before broadcasting a relay-ready `executeUserOp` or `executeUnifiedByAddress` invocation.
+The relay route now forwards optional paymaster metadata and can request Morpheus paymaster pre-authorization before broadcasting a relay-ready `executeUserOp` or `executeUnifiedByAddress` invocation. Failures are now phase-tagged as `preview`, `paymaster`, `relay`, or `response` so operator logs can separate Morpheus sponsorship errors from on-chain relay failures.
 
 For Morpheus / NeoDID production integration, also set:
 
