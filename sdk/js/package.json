@@ -20,6 +20,7 @@
     "test": "node --test tests/*.unit.test.js",
     "testnet:validate": "./run_testnet_validation_suite.sh",
     "testnet:validate:dry-run": "./run_testnet_validation_suite.sh --dry-run",
+    "testnet:validate:report": "./run_testnet_validation_suite.sh",
     "testnet:validate:smoke": "node tests/v3_testnet_smoke.js",
     "testnet:validate:plugin-matrix": "node tests/v3_testnet_plugin_matrix.js",
     "testnet:validate:paymaster": "node tests/v3_testnet_paymaster_relay.mjs"

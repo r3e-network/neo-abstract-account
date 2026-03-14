@@ -126,7 +126,13 @@ You can also run the stages individually with:
 npm run testnet:validate:smoke
 npm run testnet:validate:plugin-matrix
 npm run testnet:validate:paymaster
+npm run testnet:validate:report
 ```
+
+The suite writes:
+
+- JSON artifacts under `sdk/docs/reports/`
+- a consolidated markdown acceptance report under `docs/reports/2026-03-14-v3-testnet-validation-suite.md`
 
 ### Build
 

@@ -31,6 +31,11 @@ From `sdk/js`, run the full ordered suite:
 ./run_testnet_validation_suite.sh
 ```
 
+The suite writes:
+
+- machine-readable JSON reports to `sdk/docs/reports/`
+- a human-readable markdown summary to `docs/reports/2026-03-14-v3-testnet-validation-suite.md`
+
 ## Ordered scripts
 
 1. `tests/v3_testnet_smoke.js`
@@ -43,6 +48,7 @@ From `sdk/js`, run the full ordered suite:
 npm run testnet:validate:smoke
 npm run testnet:validate:plugin-matrix
 npm run testnet:validate:paymaster
+npm run testnet:validate:report
 ```
 
 ## Safety notes
