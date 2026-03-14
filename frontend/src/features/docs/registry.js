@@ -1,9 +1,9 @@
 import docOverview from '@repo/README.md?raw';
-import docArchitecture from '@repo/docs/architecture.md?raw';
+import docArchitecture from '@repo/docs/AA_V3_ARCHITECTURE.en.md?raw';
 import docGuide from '@/assets/docs/guide.md?raw';
 import docGuideZh from '@/assets/docs/guide.zh.md?raw';
 import docOverviewZh from '@/assets/docs/overview.zh.md?raw';
-import docArchitectureZh from '@/assets/docs/architecture.zh.md?raw';
+import docArchitectureZh from '@repo/docs/AA_V3_ARCHITECTURE.zh-CN.md?raw';
 import docWorkflow from '@/assets/docs/workflow.md?raw';
 import docWorkflowZh from '@/assets/docs/workflow.zh.md?raw';
 import docDataFlow from '@/assets/docs/data-flow.md?raw';
@@ -12,6 +12,8 @@ import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
 import docEvm from '@/assets/docs/evm-integration.md?raw';
 import docMixed from '@/assets/docs/mixed-multisig.md?raw';
 import docSdk from '@/assets/docs/sdk-usage.md?raw';
+import docPaymasterValidation from '@repo/docs/reports/2026-03-14-v3-testnet-paymaster-relay.md?raw';
+import docPaymasterValidationZh from '@/assets/docs/paymaster-validation.zh.md?raw';
 import docSecurityAudit from '@repo/docs/reports/2026-03-11-security-audit.md?raw';
 import docSecurityAuditZh from '@/assets/docs/security-audit.zh.md?raw';
 import docMorpheusActions from '@repo/docs/MORPHEUS_PRIVATE_ACTIONS.md?raw';
@@ -55,6 +57,10 @@ export const DOCS = {
   sdk: {
     title: { en: 'SDK Integration', 'zh-CN': 'SDK 集成' },
     content: { en: docSdk },
+  },
+  paymasterValidation: {
+    title: { en: 'Paymaster Live Validation', 'zh-CN': 'Paymaster 实网验证' },
+    content: { en: docPaymasterValidation, 'zh-CN': docPaymasterValidationZh },
   },
   securityAudit: {
     title: { en: 'Security Audit', 'zh-CN': '安全审计' },

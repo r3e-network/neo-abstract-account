@@ -58,6 +58,12 @@
           @input="$emit('set-paymaster-dapp-id', $event.target.value)"
         />
       </div>
+      <div class="mt-3 rounded-lg border border-biconomy-border/60 bg-biconomy-dark/60 p-3">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-biconomy-orange">{{ t('operations.paymasterValidatedLabel', 'Validated Live On Neo N3 Testnet') }}</p>
+        <p class="mt-1 text-xs leading-6 text-biconomy-muted">
+          {{ t('operations.paymasterValidatedBody', 'Policy testnet-aa has passed full live validation for registerAccount, updateVerifier, paymaster authorization, and relay-backed executeUserOp submission. See the Paymaster Live Validation docs entry for txids and attestation hashes.') }}
+        </p>
+      </div>
     </div>
 
     <p class="mt-4 text-xs text-biconomy-muted">{{ t('operations.relayEndpointLabel', 'Relay endpoint:') }} {{ relayEndpoint || t('operations.notConfigured', 'not configured') }}</p>
