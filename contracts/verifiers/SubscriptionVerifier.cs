@@ -10,6 +10,7 @@ using System.ComponentModel;
 namespace AbstractAccount.Verifiers
 {
     [DisplayName("SubscriptionVerifier")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Time-based Subscription Auto-Payment Verifier")]
     public class SubscriptionVerifier : SmartContract
     {
@@ -26,7 +27,12 @@ namespace AbstractAccount.Verifiers
 
         public static void CreateSubscription(UInt160 accountId, ByteString subId, UInt160 merchant, UInt160 token, BigInteger amount, BigInteger periodMs)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             
             SubscriptionConfig config = new SubscriptionConfig 
             { 
@@ -58,12 +64,25 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert(op.Args.Length >= 3, "Invalid transfer args");
             ExecutionEngine.Assert((UInt160)op.Args[1] == config.Merchant, "Transfer destination must be merchant");
             ExecutionEngine.Assert((BigInteger)op.Args[2] <= config.Amount, "Transfer amount exceeds subscription");
-            
-            ExecutionEngine.Assert(Runtime.Time >= config.LastChargeTime + config.PeriodMs, "Subscription period not yet elapsed");
 
-            // Update LastChargeTime
-            config.LastChargeTime = Runtime.Time;
-            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
+            ExecutionEngine.Assert(config.PeriodMs > 0, "Invalid subscription period");
+            BigInteger currentPeriod = Runtime.Time / config.PeriodMs;
+            ExecutionEngine.Assert(currentPeriod > 0, "Subscription period not yet elapsed");
+
+            // Replay protection without mutating state: require a salt-mode nonce
+            // that deterministically binds this request to the current billing
+            // period and subscription ID. Core nonce consumption then ensures
+            // the same period cannot be charged twice with the same subId.
+            BigInteger saltBase = 1_000_000_000_000_000_000;
+            ByteString digest = CryptoLib.Sha256(subId);
+            byte[] digestBytes = (byte[])digest;
+            BigInteger subTag = 0;
+            for (int i = 0; i < 8 && i < digestBytes.Length; i++)
+            {
+                subTag = (subTag << 8) + digestBytes[i];
+            }
+            BigInteger expectedNonce = saltBase + (subTag << 32) + currentPeriod;
+            ExecutionEngine.Assert(op.Nonce == expectedNonce, "Subscription nonce must match the current billing period");
 
             return true;
         }

@@ -29,15 +29,50 @@ namespace AbstractAccount
     }
 
     [DisplayName("Web3AuthVerifier")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "EIP-712 MetaTransaction Verifier Plugin for Neo N3")]
     public class Web3AuthVerifier : SmartContract
     {
         // Setup: AccountId -> Uncompressed Secp256k1 PublicKey (65 bytes)
         private static readonly byte[] Prefix_AccountPubKey = new byte[] { 0x01 };
+        private static readonly byte[] Eip712DomainTypeHash = new byte[]
+        {
+            0x8b, 0x73, 0xc3, 0xc6, 0x9b, 0xb8, 0xfe, 0x3d,
+            0x51, 0x2e, 0xcc, 0x4c, 0xf7, 0x59, 0xcc, 0x79,
+            0x23, 0x9f, 0x7b, 0x17, 0x9b, 0x0f, 0xfa, 0xca,
+            0xa9, 0xa7, 0x5d, 0x52, 0x2b, 0x39, 0x40, 0x0f
+        };
+        private static readonly byte[] Eip712NameHash = new byte[]
+        {
+            0x2e, 0x3d, 0x38, 0xea, 0x00, 0x55, 0xad, 0x99,
+            0xb5, 0x57, 0x2e, 0x06, 0x66, 0x58, 0x43, 0x1f,
+            0xf4, 0xc4, 0x0d, 0xba, 0xf3, 0xe1, 0x6e, 0x21,
+            0x54, 0x63, 0x9d, 0xc6, 0xe2, 0x63, 0x48, 0x03
+        };
+        private static readonly byte[] Eip712VersionHash = new byte[]
+        {
+            0xc8, 0x9e, 0xfd, 0xaa, 0x54, 0xc0, 0xf2, 0x0c,
+            0x7a, 0xdf, 0x61, 0x28, 0x82, 0xdf, 0x09, 0x50,
+            0xf5, 0xa9, 0x51, 0x63, 0x7e, 0x03, 0x07, 0xcd,
+            0xcb, 0x4c, 0x67, 0x2f, 0x29, 0x8b, 0x8b, 0xc6
+        };
+        private static readonly byte[] UserOperationTypeHash = new byte[]
+        {
+            0x11, 0x92, 0x53, 0xf9, 0x50, 0x4b, 0x54, 0xcf,
+            0xd9, 0x46, 0x60, 0xa8, 0x1a, 0x50, 0xad, 0xef,
+            0x30, 0x66, 0x3e, 0xd5, 0xa8, 0xe9, 0x40, 0x6b,
+            0x87, 0x1c, 0x96, 0xdf, 0x18, 0xe0, 0xf2, 0xf4
+        };
 
         public static void SetPublicKey(UInt160 accountId, ByteString uncompressedPubKey)
         {
             ExecutionEngine.Assert(uncompressedPubKey.Length == 65, "Invalid pubkey");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Prefix_AccountPubKey, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, uncompressedPubKey);
         }
@@ -60,8 +95,7 @@ namespace AbstractAccount
 
             byte[] structHash = BuildMetaTxStructHash(accountId, op);
             
-            // EIP-712 Domain Separator (Mocked for testnet logic)
-            byte[] domainSeparator = new byte[32]; // Normally keccak256 of domain data
+            byte[] domainSeparator = BuildDomainSeparator(Runtime.GetNetwork(), Runtime.ExecutingScriptHash);
             
             // 0x19 0x01 ...
             byte[] typedDataPayload = Helper.Concat(Helper.Concat(new byte[] { 0x19, 0x01 }, domainSeparator), structHash);
@@ -77,15 +111,84 @@ namespace AbstractAccount
 
         private static byte[] BuildMetaTxStructHash(UInt160 accountId, UserOperation op)
         {
-            // Simplified EIP-712 struct hash implementation. 
-            // In a real environment, this would compute keccak256 of the ABI encoded types.
-            // For now, we concat the critical fields to prevent malleability.
             byte[] argsSerialized = (byte[])StdLib.Serialize(op.Args);
             ByteString argsHash = NativeCryptoLib.Keccak256((ByteString)argsSerialized);
-
-            byte[] methodBytes = (byte[])StdLib.Serialize(op.Method);
-            byte[] payload = Helper.Concat(Helper.Concat(Helper.Concat(Helper.Concat((byte[])accountId, (byte[])op.TargetContract), methodBytes), (byte[])argsHash), op.Nonce.ToByteArray());
+            byte[] methodHash = (byte[])NativeCryptoLib.Keccak256((ByteString)op.Method);
+            byte[] payload = Helper.Concat(
+                Helper.Concat(
+                    Helper.Concat(
+                        Helper.Concat(
+                            Helper.Concat(
+                                Helper.Concat(UserOperationTypeHash, ToBytes20Word(accountId)),
+                                ToAddressWord(op.TargetContract)
+                            ),
+                            methodHash
+                        ),
+                        (byte[])argsHash
+                    ),
+                    ToUint256Word(op.Nonce)
+                ),
+                ToUint256Word(op.Deadline)
+            );
             return (byte[])NativeCryptoLib.Keccak256((ByteString)payload);
+        }
+
+        private static byte[] BuildDomainSeparator(uint network, UInt160 verifyingContract)
+        {
+            byte[] encoded = Helper.Concat(
+                Helper.Concat(
+                    Helper.Concat(
+                        Helper.Concat(Eip712DomainTypeHash, Eip712NameHash),
+                        Eip712VersionHash
+                    ),
+                    ToUint256Word((BigInteger)network)
+                ),
+                ToAddressWord(verifyingContract)
+            );
+            return (byte[])NativeCryptoLib.Keccak256((ByteString)encoded);
+        }
+
+        private static byte[] ToBytes20Word(UInt160 value)
+        {
+            byte[] source = (byte[])value;
+            ExecutionEngine.Assert(source.Length == 20, "Invalid accountId length");
+            byte[] result = new byte[32];
+            for (int i = 0; i < 20; i++)
+            {
+                result[i] = source[19 - i];
+            }
+            return result;
+        }
+
+        private static byte[] ToAddressWord(UInt160 value)
+        {
+            byte[] address = (byte[])value;
+            ExecutionEngine.Assert(address.Length == 20, "Invalid address length");
+            byte[] result = new byte[32];
+            for (int i = 0; i < 20; i++)
+            {
+                result[12 + i] = address[19 - i];
+            }
+            return result;
+        }
+
+        private static byte[] ToUint256Word(BigInteger value)
+        {
+            ExecutionEngine.Assert(value >= 0, "Invalid uint256");
+            byte[] little = value.ToByteArray();
+            int length = little.Length;
+            if (length > 0 && little[length - 1] == 0)
+            {
+                length--;
+            }
+            ExecutionEngine.Assert(length <= 32, "Uint256 overflow");
+
+            byte[] result = new byte[32];
+            for (int i = 0; i < length; i++)
+            {
+                result[31 - i] = little[i];
+            }
+            return result;
         }
 
         private static ECPoint CompressPubKey(ByteString uncompressedPubKey)

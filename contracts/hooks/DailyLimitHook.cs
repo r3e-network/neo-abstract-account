@@ -10,6 +10,7 @@ using System.ComponentModel;
 namespace AbstractAccount.Hooks
 {
     [DisplayName("DailyLimitHook")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Daily Limit Policy Hook Plugin for Neo N3 AA")]
     public class DailyLimitHook : SmartContract
     {
@@ -20,7 +21,12 @@ namespace AbstractAccount.Hooks
         // Configuration: Only AA account can configure its own limits
         public static void SetDailyLimit(UInt160 accountId, UInt160 token, BigInteger maxAmount)
         {
-            ExecutionEngine.Assert(Runtime.CallingScriptHash == accountId, "Only AA can set its own limit");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Helper.Concat(Prefix_DailyLimit, (byte[])accountId), (byte[])token);
             if (maxAmount <= 0) Storage.Delete(Storage.CurrentContext, key);
             else Storage.Put(Storage.CurrentContext, key, maxAmount);

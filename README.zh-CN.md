@@ -18,7 +18,14 @@
 4. `docs/DATA_FLOW.zh-CN.md`
 5. `docs/architecture.zh-CN.md`
 6. `docs/AA_V3_ARCHITECTURE.zh-CN.md`
+7. `docs/reports/2026-03-13-v3-testnet-plugin-matrix.md`
 
 ## 说明
 
 本文件是中文导航入口。英文 README 仍然是仓库的主事实来源。
+
+当前状态补充：
+
+- V3 插件矩阵已在 Neo N3 testnet 实际验证，报告见 `docs/reports/2026-03-13-v3-testnet-plugin-matrix.md`
+- 已验证的 verifier / hook 包括 Web3Auth、TEE、WebAuthn、SessionKey、MultiSig、Subscription、Whitelist、DailyLimit、TokenRestricted、MultiHook、NeoDIDCredentialHook
+- `ZKEmailVerifier` 当前被明确禁用，直到真实 proof verifier 实现完成

@@ -13,50 +13,57 @@ export function createCreateFormState() {
   return {
     accountId: '',
     matrixDomain: '',
-    signers: [''],
-    threshold: 1
+    verifierContract: '',
+    verifierParams: '',
+    hookContract: '',
+    backupOwner: '',
+    escapeTimelockDays: 30,
   };
 }
 
 export function createManageFormState() {
   return {
     accountAddress: '',
-    signers: [''],
-    threshold: 1
+    verifierContract: '',
+    verifierParams: '',
+    hookContract: '',
+    backupOwner: '',
+    escapeTimelock: '',
+    escapeTriggeredAt: '',
+    escapeActive: false,
+    escapeNewVerifier: '',
   };
 }
 
 export function createPermissionsFormState() {
   return {
     accountAddress: '',
-    verifierContract: '',
-    whitelistMode: false,
-    whitelistTarget: '',
-    blacklistTarget: '',
-    limitToken: '',
-    limitAmount: ''
+    verifierMethod: '',
+    verifierArgsJson: '[]',
+    hookMethod: '',
+    hookArgsJson: '[]',
   };
 }
 
 export function createManageBusyState() {
   return {
     load: false,
-    signers: false
+    hook: false,
+    verifier: false,
+    initiateEscape: false,
+    finalizeEscape: false,
   };
 }
 
 export function createPermissionsBusyState() {
   return {
-    verifier: false,
-    whitelistMode: false,
-    whitelist: false,
-    blacklist: false,
-    limit: false
+    verifierCall: false,
+    hookCall: false,
   };
 }
 
 export function createManageSnapshotState() {
   return {
-    loadedAt: ''
+    loadedAt: '',
   };
 }

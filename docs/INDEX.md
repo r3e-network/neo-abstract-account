@@ -37,6 +37,7 @@ This index keeps the root documentation set visible and easy to browse.
 
 - `SECURITY_IMPROVEMENTS.md`
 - `docs/reports/2026-03-11-security-audit.md`
+- `docs/reports/2026-03-13-v3-testnet-plugin-matrix.md`
 - `docs/SECURITY_FIX_REPORT.md`
 
 ## Formal Specification

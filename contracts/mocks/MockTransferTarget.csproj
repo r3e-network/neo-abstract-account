@@ -5,7 +5,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
-    <RunNccsAfterBuild>false</RunNccsAfterBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,12 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="UnifiedSmartWallet.cs" />
+    <Compile Include="MockTransferTarget.cs" />
   </ItemGroup>
 
-  <Target Name="CompileSmartContract" AfterTargets="Build" Condition="'$(RunNccsAfterBuild)' == 'true'">
-    <Message Text="Compiling Neo smart contract: UnifiedSmartWallet.cs" Importance="high" />
-    <Exec Command="nccs ./UnifiedSmartWallet.csproj -o bin/v3" WorkingDirectory="$(ProjectDir)" />
+  <Target Name="CompileSmartContract" AfterTargets="Build">
+    <Message Text="Compiling Neo smart contract: MockTransferTarget.cs" Importance="high" />
+    <Exec Command="nccs ./MockTransferTarget.csproj -o ../bin/mocks" WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 </Project>

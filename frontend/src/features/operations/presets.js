@@ -13,11 +13,6 @@ export const OPERATION_PRESETS = [
     description: 'Build a token transfer payload with account and recipient hashes.',
   },
   {
-    id: 'batchCreate',
-    label: 'Batch Account Creation',
-    description: 'Create multiple accounts with shared governance in one transaction.',
-  },
-  {
     id: 'multisigDraft',
     label: 'Multisig Draft',
     description: 'Prepare a shareable transaction draft for additional co-signers.',
@@ -104,26 +99,6 @@ export function buildOperationFromPreset({
     };
   }
 
-  if (preset === 'batchCreate') {
-    const accountIds = parseJson(batch.accountIds || '[]', []);
-    const admins = (parseJson(batch.admins || '[]', []) || []).map(normalizeHash160).filter(Boolean);
-    const managers = (parseJson(batch.managers || '[]', []) || []).map(normalizeHash160).filter(Boolean);
-
-    return {
-      kind: 'batchCreate',
-      targetContract: '',
-      method: 'createAccountBatch',
-      args: [
-        toArrayArg(accountIds, 'String'),
-        toArrayArg(signers.map(h => `0x${h}`), 'Hash160'),
-        toIntegerArg(batch.threshold || 1),
-      ],
-      metadata: {
-        accountCount: accountIds.length,
-      },
-    };
-  }
-
   if (preset === 'multisigDraft') {
     return {
       kind: 'multisig',
@@ -159,14 +134,6 @@ export function buildPresetSummary(operation = {}) {
     return {
       title: 'NEP-17 Transfer',
       detail: `Amount ${operation.args?.[2]?.value || '0'} via ${operation.targetContract || 'token contract pending'}`,
-    };
-  }
-
-  if (operation.kind === 'batchCreate') {
-    const count = operation.metadata?.accountCount || 0;
-    return {
-      title: 'Batch Account Creation',
-      detail: `Creating ${count} account${count !== 1 ? 's' : ''} with shared governance`,
     };
   }
 

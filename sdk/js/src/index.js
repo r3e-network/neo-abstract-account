@@ -1,6 +1,7 @@
 const { rpc, sc, u, wallet } = require('@cityofzion/neon-js');
 const {
   buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData,
   decodeByteStringStackHex,
   sanitizeHex,
 } = require('./metaTx');
@@ -15,11 +16,8 @@ class AbstractAccountClient {
   }
 
   buildVerifyScript(accountIdHex) {
-    const normalizedAccountId = sanitizeHex(accountIdHex);
+    const normalizedAccountId = this.deriveAccountIdHash(accountIdHex);
     const byteLength = normalizedAccountId.length / 2;
-    if (!Number.isInteger(byteLength) || byteLength < 0 || byteLength > 255) {
-      throw new Error(`Invalid accountId hex length: ${normalizedAccountId.length}`);
-    }
 
     return [
       '0c',
@@ -30,6 +28,30 @@ class AbstractAccountClient {
       sanitizeHex(u.reverseHex(this.masterContractHash)),
       '41627d5b52',
     ].join('');
+  }
+
+  deriveAccountIdHash(accountIdHexOrSeed) {
+    const normalized = sanitizeHex(accountIdHexOrSeed || '');
+    if (!normalized) {
+      throw new Error('Account seed is required');
+    }
+    if (/^[0-9a-f]{40}$/i.test(normalized)) {
+      return normalized;
+    }
+    return sanitizeHex(u.hash160(normalized));
+  }
+
+  deriveVirtualAccount(accountIdSeedHex) {
+    const accountIdHash = this.deriveAccountIdHash(accountIdSeedHex);
+    const verifyScript = this.buildVerifyScript(accountIdHash);
+    const scriptHash = sanitizeHex(u.hash160(verifyScript));
+    const address = wallet.getAddressFromScriptHash(scriptHash);
+    return {
+      accountIdHash,
+      verifyScript,
+      scriptHash,
+      address,
+    };
   }
 
   /**
@@ -50,6 +72,8 @@ class AbstractAccountClient {
   createAccountPayload(options) {
     const {
       accountIdHex,
+      accountScriptHash = '',
+      accountAddress = '',
       verifierContractHash,
       verifierParamsHex = '',
       hookContractHash = '',
@@ -66,16 +90,84 @@ class AbstractAccountClient {
       return addr;
     };
 
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : accountAddress
+        ? normalizeAddress(accountAddress)
+        : this.deriveVirtualAccount(accountIdHex).accountIdHash;
+
     return {
       scriptHash: this.masterContractHash,
       operation: 'registerAccount',
       args: [
-        sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(accountIdHex), true)),
+        sc.ContractParam.hash160(resolvedAccountHash),
         sc.ContractParam.hash160(normalizeAddress(verifierContractHash)),
         sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(verifierParamsHex), true)),
         sc.ContractParam.hash160(normalizeAddress(hookContractHash)),
         sc.ContractParam.hash160(normalizeAddress(backupOwnerAddress)),
         sc.ContractParam.integer(escapeTimelock)
+      ],
+    };
+  }
+
+  createUpdateVerifierPayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+      verifierContractHash,
+      verifierParamsHex = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'updateVerifier',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+        sc.ContractParam.hash160(normalizeAddress(verifierContractHash)),
+        sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(verifierParamsHex), true)),
+      ],
+    };
+  }
+
+  createUpdateHookPayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+      hookContractHash = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'updateHook',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+        sc.ContractParam.hash160(normalizeAddress(hookContractHash)),
       ],
     };
   }
@@ -101,7 +193,8 @@ class AbstractAccountClient {
   }
 
   /**
-   * Generates the contract-aligned EIP-712 payload for a Meta-Transaction signature.
+   * Generates the contract-aligned EIP-712 payload for a V3 UserOperation signature.
+   * Falls back to the legacy MetaTransaction schema only when no accountId path is provided.
    */
   async createEIP712Payload(options) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -112,7 +205,9 @@ class AbstractAccountClient {
       chainId,
       accountAddressScriptHash,
       accountAddressHash,
+      accountIdHash,
       accountIdHex,
+      verifierHash,
       targetContract,
       method,
       args = [],
@@ -120,13 +215,55 @@ class AbstractAccountClient {
       deadline,
     } = options;
 
+    const argsHashHex = await this.computeArgsHash(args);
+    const resolvedAccountIdHash = accountIdHash
+      ? sanitizeHex(accountIdHash)
+      : accountIdHex
+        ? this.deriveVirtualAccount(accountIdHex).accountIdHash
+        : '';
+
+    if (resolvedAccountIdHash) {
+      const resolvedVerifierHash = verifierHash
+        ? sanitizeHex(verifierHash)
+        : await (async () => {
+            const script = sc.createScript({
+              scriptHash: this.masterContractHash,
+              operation: 'getVerifier',
+              args: [{ type: 'Hash160', value: resolvedAccountIdHash }],
+            });
+            const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+            if (response?.state === 'FAULT') {
+              throw new Error(`getVerifier fault: ${response.exception || 'VM fault'}`);
+            }
+            return sanitizeHex(response?.stack?.[0]?.value || '');
+          })();
+
+      if (!resolvedVerifierHash) {
+        throw new Error('No verifier is configured for this V3 account.');
+      }
+
+      return buildV3UserOperationTypedData({
+        chainId,
+        verifyingContract: resolvedVerifierHash,
+        accountIdHash: resolvedAccountIdHash,
+        targetContract,
+        method,
+        argsHashHex,
+        nonce,
+        deadline,
+      });
+    }
+
     const resolvedAccountAddressScriptHash = accountAddressScriptHash
       ? sanitizeHex(accountAddressScriptHash)
       : accountAddressHash
         ? sanitizeHex(accountAddressHash)
-        : sanitizeHex(u.hash160(this.buildVerifyScript(accountIdHex)));
+        : '';
 
-    const argsHashHex = await this.computeArgsHash(args);
+    if (!resolvedAccountAddressScriptHash) {
+      throw new Error('createEIP712Payload requires either an accountId path or a legacy bound address.');
+    }
+
     return buildMetaTransactionTypedData({
       chainId,
       verifyingContract: this.masterContractHash,
@@ -140,27 +277,11 @@ class AbstractAccountClient {
   }
 
   async getAccountsByAdmin(address) {
-    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'getAccountsByAdmin',
-      args: [{ type: 'Hash160', value: normalizedAddress }],
-    });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`getAccountsByAdmin fault: ${response.exception}`);
-    return response?.stack?.[0]?.value || [];
+    throw new Error('Removed in V3: role-based admin discovery no longer exists.');
   }
 
   async getAccountsByManager(address) {
-    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'getAccountsByManager',
-      args: [{ type: 'Hash160', value: normalizedAddress }],
-    });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`getAccountsByManager fault: ${response.exception}`);
-    return response?.stack?.[0]?.value || [];
+    throw new Error('Removed in V3: role-based manager discovery no longer exists.');
   }
 
   decodeAddressArray(stackItem) {
@@ -175,45 +296,49 @@ class AbstractAccountClient {
   }
 
   async getAccountAddressesByAdmin(address) {
-    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'getAccountAddressesByAdmin',
-      args: [{ type: 'Hash160', value: normalizedAddress }],
-    });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`getAccountAddressesByAdmin fault: ${response.exception}`);
-    return this.decodeAddressArray(response?.stack?.[0]);
+    throw new Error('Removed in V3: role-based admin discovery no longer exists.');
   }
 
   async getAccountAddressesByManager(address) {
-    const normalizedAddress = address.startsWith('N') ? wallet.getScriptHashFromAddress(address) : sanitizeHex(address);
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'getAccountAddressesByManager',
-      args: [{ type: 'Hash160', value: normalizedAddress }],
-    });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`getAccountAddressesByManager fault: ${response.exception}`);
-    return this.decodeAddressArray(response?.stack?.[0]);
+    throw new Error('Removed in V3: role-based manager discovery no longer exists.');
   }
 
-  createAccountBatchPayload(accountIds, admins = [], adminThreshold = 1, managers = [], managerThreshold = 0) {
+  async getAccountState(accountHashOrAddress) {
     const normalizeAddress = (addr) => {
       if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
       if (addr.startsWith('0x')) return addr.slice(2);
       return addr;
     };
+    const accountId = normalizeAddress(accountHashOrAddress);
+
+    const invokeSafe = async (operation) => {
+      const script = sc.createScript({
+        scriptHash: this.masterContractHash,
+        operation,
+        args: [{ type: 'Hash160', value: accountId }],
+      });
+      const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+      if (response?.state === 'FAULT') throw new Error(`${operation} fault: ${response.exception}`);
+      return response?.stack?.[0] || null;
+    };
+
+    const [verifier, hook, backupOwner, escapeTimelock, escapeTriggeredAt, escapeActive] = await Promise.all([
+      invokeSafe('getVerifier'),
+      invokeSafe('getHook'),
+      invokeSafe('getBackupOwner'),
+      invokeSafe('getEscapeTimelock'),
+      invokeSafe('getEscapeTriggeredAt'),
+      invokeSafe('isEscapeActive'),
+    ]);
+
     return {
-      scriptHash: this.masterContractHash,
-      operation: 'createAccountBatch',
-      args: [
-        sc.ContractParam.array(...accountIds.map((id) => sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(id), true)))),
-        sc.ContractParam.array(...admins.map((addr) => sc.ContractParam.hash160(normalizeAddress(addr)))),
-        sc.ContractParam.integer(adminThreshold),
-        sc.ContractParam.array(...managers.map((addr) => sc.ContractParam.hash160(normalizeAddress(addr)))),
-        sc.ContractParam.integer(managerThreshold),
-      ],
+      accountId,
+      verifier: verifier?.value || '',
+      hook: hook?.value || '',
+      backupOwner: backupOwner?.value || '',
+      escapeTimelock: escapeTimelock?.value || '0',
+      escapeTriggeredAt: escapeTriggeredAt?.value || '0',
+      escapeActive: Boolean(escapeActive?.value),
     };
   }
 

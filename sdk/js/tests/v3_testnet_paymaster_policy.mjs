@@ -11,7 +11,7 @@ const execFileAsync = promisify(execFile);
 const PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56";
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
-const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || "0x1111222233334444555566667777888899990000";
+const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || "0x37298bb6bbb4580fdca24903d67b385ef2268e25";
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0x9cbbfc969f94a5056fd6a658cab090bcb3604724";
 const PAYMASTER_METHOD = process.env.MORPHEUS_PAYMASTER_METHOD || "executeUserOp";
 const PAYMASTER_MAX_GAS_UNITS = Number(process.env.MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS || 5_000_000);
@@ -70,7 +70,9 @@ async function callRemotePaymaster(payload) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
   const shellScript = `
 set -e
-docker exec -i morpheus-phala-worker node --input-type=module - <<'JS'
+WORKER_CONTAINER="$(docker ps --format '{{.Names}}' | grep 'phala-worker' | head -n1)"
+test -n "$WORKER_CONTAINER"
+docker exec -i "$WORKER_CONTAINER" node --input-type=module - <<'JS'
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
 const token = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET;
 const res = await fetch('http://127.0.0.1:8080/paymaster/authorize', {

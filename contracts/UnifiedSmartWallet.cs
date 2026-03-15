@@ -10,6 +10,7 @@ using System.ComponentModel;
 namespace AbstractAccount
 {
     [DisplayName("UnifiedSmartWalletV3")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "ERC-4337 Aligned Minimalist AA Engine for Neo N3")]
     public class UnifiedSmartWallet : SmartContract
     {
@@ -17,6 +18,8 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_AccountState = new byte[] { 0x01 };
         private static readonly byte[] Prefix_VerifyContext = new byte[] { 0x02 };
         private static readonly byte[] Prefix_Nonce = new byte[] { 0x03 };
+        private static readonly byte[] Prefix_VerifierConfigContext = new byte[] { 0x04 };
+        private static readonly byte[] Prefix_HookConfigContext = new byte[] { 0x05 };
         
         // ========================================================================
         // 1. 数据结构 (对齐 ERC-4337 UserOperation)
@@ -49,6 +52,10 @@ namespace AbstractAccount
         // ========================================================================
         public static void RegisterAccount(UInt160 accountId, UInt160 verifier, ByteString verifierParams, UInt160 hookId, UInt160 backupOwner, uint escapeTimelock)
         {
+            ExecutionEngine.Assert(backupOwner != null && backupOwner != UInt160.Zero, "Backup owner required");
+            ExecutionEngine.Assert(Runtime.CheckWitness(backupOwner), "Backup owner witness required");
+            ExecutionEngine.Assert(escapeTimelock > 0, "Escape timelock required");
+
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Account already exists");
 
@@ -64,26 +71,83 @@ namespace AbstractAccount
             
             if (verifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
             {
-                SetVerifyContext(accountId, verifier);
+                SetVerifierConfigContext(accountId, verifier);
                 try
                 {
                     Contract.Call(verifier, "setPublicKey", CallFlags.All, new object[] { accountId, verifierParams });
                 }
                 finally
                 {
-                    ClearVerifyContext(accountId);
+                    ClearVerifierConfigContext(accountId);
                 }
             }
         }
 
         public static void UpdateHook(UInt160 accountId, UInt160 newHookId)
         {
-            // Only Verifier or current script can update
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            AssertBackupOwner(accountId);
             AccountState state = GetAccountState(accountId);
             state.HookId = newHookId;
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+        }
+
+        public static void UpdateVerifier(UInt160 accountId, UInt160 newVerifier, ByteString verifierParams)
+        {
+            AssertBackupOwner(accountId);
+
+            AccountState state = GetAccountState(accountId);
+            state.Verifier = newVerifier;
+
+            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+
+            if (newVerifier != null && newVerifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
+            {
+                SetVerifierConfigContext(accountId, newVerifier);
+                try
+                {
+                    Contract.Call(newVerifier, "setPublicKey", CallFlags.All, new object[] { accountId, verifierParams });
+                }
+                finally
+                {
+                    ClearVerifierConfigContext(accountId);
+                }
+            }
+        }
+
+        public static object CallVerifier(UInt160 accountId, string method, object[] args)
+        {
+            AssertBackupOwner(accountId);
+            AccountState state = GetAccountState(accountId);
+            ExecutionEngine.Assert(state.Verifier != null && state.Verifier != UInt160.Zero, "Verifier not configured");
+
+            SetVerifierConfigContext(accountId, state.Verifier);
+            try
+            {
+                return Contract.Call(state.Verifier, method, CallFlags.All, args);
+            }
+            finally
+            {
+                ClearVerifierConfigContext(accountId);
+            }
+        }
+
+        public static object CallHook(UInt160 accountId, string method, object[] args)
+        {
+            AssertBackupOwner(accountId);
+            AccountState state = GetAccountState(accountId);
+            ExecutionEngine.Assert(state.HookId != null && state.HookId != UInt160.Zero, "Hook not configured");
+
+            SetHookConfigContext(accountId, state.HookId);
+            try
+            {
+                return Contract.Call(state.HookId, method, CallFlags.All, args);
+            }
+            finally
+            {
+                ClearHookConfigContext(accountId);
+            }
         }
 
         private static AccountState GetAccountState(UInt160 accountId)
@@ -92,6 +156,63 @@ namespace AbstractAccount
             ByteString? data = Storage.Get(Storage.CurrentContext, key);
             ExecutionEngine.Assert(data != null, "Account not found");
             return (AccountState)StdLib.Deserialize(data!);
+        }
+
+        [Safe]
+        public static UInt160 GetVerifier(UInt160 accountId)
+        {
+            return GetAccountState(accountId).Verifier;
+        }
+
+        [Safe]
+        public static UInt160 GetHook(UInt160 accountId)
+        {
+            return GetAccountState(accountId).HookId;
+        }
+
+        [Safe]
+        public static UInt160 GetBackupOwner(UInt160 accountId)
+        {
+            return GetAccountState(accountId).BackupOwner;
+        }
+
+        [Safe]
+        public static uint GetEscapeTimelock(UInt160 accountId)
+        {
+            return GetAccountState(accountId).EscapeTimelock;
+        }
+
+        [Safe]
+        public static BigInteger GetEscapeTriggeredAt(UInt160 accountId)
+        {
+            return GetAccountState(accountId).EscapeTriggeredAt;
+        }
+
+        [Safe]
+        public static bool IsEscapeActive(UInt160 accountId)
+        {
+            return GetAccountState(accountId).EscapeTriggeredAt > 0;
+        }
+
+        [Safe]
+        public static BigInteger GetNonce(UInt160 accountId, BigInteger channel)
+        {
+            byte[] key = Helper.Concat(Prefix_Nonce, (byte[])accountId);
+            key = Helper.Concat(key, channel.ToByteArray());
+
+            ByteString? currentData = Storage.Get(Storage.CurrentContext, key);
+            return currentData == null ? 0 : (BigInteger)currentData;
+        }
+
+        [Safe]
+        public static ByteString ComputeArgsHash(object[] args)
+        {
+            ByteString serialized = (ByteString)StdLib.Serialize(args);
+            return (ByteString)Contract.Call(
+                Neo.SmartContract.Framework.Native.CryptoLib.Hash,
+                "keccak256",
+                CallFlags.ReadOnly,
+                new object[] { serialized });
         }
 
         // ========================================================================
@@ -113,8 +234,10 @@ namespace AbstractAccount
             }
             else
             {
-                // 无插件时，退化为纯 N3 见证验证
-                ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Native witness failed");
+                // 无插件时，退化为备份钱包直接授权。accountId 仍作为虚拟账户身份使用，
+                // 但实际控制权来自 BackupOwner 的原生 N3 见证。
+                ExecutionEngine.Assert(state.BackupOwner != null && state.BackupOwner != UInt160.Zero, "Native fallback requires backup owner");
+                ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Native witness failed");
             }
 
             // 安全防御：如果该账户正处于被盗逃生状态，正常主权操作直接打断逃生
@@ -214,6 +337,26 @@ namespace AbstractAccount
             return false;
         }
 
+        [Safe]
+        public static bool CanConfigureVerifier(UInt160 accountId, UInt160 verifierContract)
+        {
+            byte[] key = Helper.Concat(Prefix_VerifierConfigContext, (byte[])accountId);
+            ByteString? expectedVerifier = Storage.Get(Storage.CurrentContext, key);
+            return expectedVerifier != null
+                && Runtime.CallingScriptHash == verifierContract
+                && (UInt160)expectedVerifier == verifierContract;
+        }
+
+        [Safe]
+        public static bool CanConfigureHook(UInt160 accountId, UInt160 hookContract)
+        {
+            byte[] key = Helper.Concat(Prefix_HookConfigContext, (byte[])accountId);
+            ByteString? expectedHook = Storage.Get(Storage.CurrentContext, key);
+            return expectedHook != null
+                && Runtime.CallingScriptHash == hookContract
+                && (UInt160)expectedHook == hookContract;
+        }
+
         private static void SetVerifyContext(UInt160 accountId, UInt160 targetContract)
         {
             byte[] key = Helper.Concat(Prefix_VerifyContext, (byte[])accountId);
@@ -224,6 +367,37 @@ namespace AbstractAccount
         {
             byte[] key = Helper.Concat(Prefix_VerifyContext, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        private static void SetVerifierConfigContext(UInt160 accountId, UInt160 verifierContract)
+        {
+            byte[] key = Helper.Concat(Prefix_VerifierConfigContext, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, (byte[])verifierContract);
+        }
+
+        private static void ClearVerifierConfigContext(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_VerifierConfigContext, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        private static void SetHookConfigContext(UInt160 accountId, UInt160 hookContract)
+        {
+            byte[] key = Helper.Concat(Prefix_HookConfigContext, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, (byte[])hookContract);
+        }
+
+        private static void ClearHookConfigContext(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_HookConfigContext, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        private static void AssertBackupOwner(UInt160 accountId)
+        {
+            AccountState state = GetAccountState(accountId);
+            ExecutionEngine.Assert(state.BackupOwner != null && state.BackupOwner != UInt160.Zero, "No backup owner");
+            ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Unauthorized");
         }
 
         // ========================================================================

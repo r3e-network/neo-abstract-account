@@ -10,6 +10,7 @@ using System.ComponentModel;
 namespace AbstractAccount.Verifiers
 {
     [DisplayName("MultiSigVerifier")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Heterogeneous Threshold Multi-Sig Verifier")]
     public class MultiSigVerifier : SmartContract
     {
@@ -23,7 +24,12 @@ namespace AbstractAccount.Verifiers
 
         public static void SetConfig(UInt160 accountId, UInt160[] verifiers, int threshold)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             ExecutionEngine.Assert(threshold > 0 && threshold <= verifiers.Length, "Invalid threshold");
             
             MultiSigConfig config = new MultiSigConfig { Verifiers = verifiers, Threshold = threshold };

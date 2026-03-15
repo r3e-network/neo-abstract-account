@@ -12,7 +12,7 @@ function buildV3UserOp({ targetContract, method, args, nonce, deadline }) {
   };
 }
 
-function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountId, userOp }) {
+function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountId, userOp, argsHash }) {
   // Matches the Web3AuthVerifier struct hashing logic
   const domain = {
     name: "Neo N3 Abstract Account",
@@ -32,14 +32,13 @@ function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountI
     ],
   };
 
-  // Mock args hash - in reality this would serialize the Neo args array and keccak256 it
-  const argsHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(userOp.Args)));
+  const resolvedArgsHash = argsHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(userOp.Args)));
 
   const message = {
     accountId: `0x${accountId}`,
     targetContract: `0x${userOp.TargetContract}`,
     method: userOp.Method,
-    argsHash: argsHash,
+    argsHash: resolvedArgsHash,
     nonce: userOp.Nonce,
     deadline: userOp.Deadline
   };

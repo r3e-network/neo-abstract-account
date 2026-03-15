@@ -10,6 +10,7 @@ using System.ComponentModel;
 namespace AbstractAccount.Verifiers
 {
     [DisplayName("ZKEmailVerifier")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "ZK-SNARK Email Proof Verifier")]
     public class ZKEmailVerifier : SmartContract
     {
@@ -17,7 +18,12 @@ namespace AbstractAccount.Verifiers
 
         public static void SetDKIMRegistry(UInt160 accountId, ByteString dkimHash)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Prefix_AccountDKIM, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, dkimHash);
         }
@@ -28,10 +34,10 @@ namespace AbstractAccount.Verifiers
             ByteString? dkim = Storage.Get(Storage.CurrentContext, key);
             ExecutionEngine.Assert(dkim != null, "No DKIM configured");
 
-            // ZK-SNARK verification logic would evaluate op.Signature against the dkim hash and the operation intent.
-            // Simplified placeholder for the hackathon architecture pitch.
-            ExecutionEngine.Assert(op.Signature != null && op.Signature.Length > 0, "Invalid ZK Proof");
-            return true; 
+            // This verifier was previously a placeholder that accepted any
+            // non-empty proof blob, which is unsafe for production use.
+            ExecutionEngine.Assert(false, "ZKEmailVerifier disabled pending real proof verification");
+            return false; 
         }
     }
 }

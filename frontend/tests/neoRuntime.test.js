@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_NEO_ADDRESS_VERSION,
   createVerifyScript,
+  deriveAccountIdHash,
   getAddressFromScriptHash,
   getScriptHashFromAddress,
   reverseHex,
@@ -23,7 +24,14 @@ test('Neo address helpers round-trip a known script hash', () => {
   assert.equal(DEFAULT_NEO_ADDRESS_VERSION, 53);
 });
 
-test('createVerifyScript matches the known contract verify script encoding', () => {
+test('deriveAccountIdHash normalizes arbitrary seeds into a 20-byte account id', () => {
+  assert.equal(
+    deriveAccountIdHash('56e5bbd0603bdf01699c047b2397ee0e'),
+    'f951cd3eb5196dacde99b339c5dcca37ac38cc22'
+  );
+});
+
+test('createVerifyScript matches the V3 verify script encoding', () => {
   const script = createVerifyScript(
     '5be915aea3ce85e4752d522632f0a9520e377aaf',
     '56e5bbd0603bdf01699c047b2397ee0e'
@@ -31,7 +39,7 @@ test('createVerifyScript matches the known contract verify script encoding', () 
 
   assert.equal(
     script,
-    '0c1056e5bbd0603bdf01699c047b2397ee0e11c01f0c067665726966790c14af7a370e52a9f03226522d75e485cea3ae15e95b41627d5b52'
+    '0c14f951cd3eb5196dacde99b339c5dcca37ac38cc2211c01f0c067665726966790c14af7a370e52a9f03226522d75e485cea3ae15e95b41627d5b52'
   );
 });
 

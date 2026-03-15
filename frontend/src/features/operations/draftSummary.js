@@ -33,11 +33,12 @@ function looksCopyable(value) {
 export function buildDraftSummaryItems({ draft = {} } = {}) {
   const signerRequirements = Array.isArray(draft?.signer_requirements) ? draft.signer_requirements : [];
   const signatures = Array.isArray(draft?.signatures) ? draft.signatures : [];
+  const accountReference = draft?.account?.accountIdHash || draft?.account?.accountAddressScriptHash || 'Not available';
 
   return [
     {
       label: 'Account',
-      value: draft?.account?.accountAddressScriptHash || 'Not available',
+      value: accountReference,
     },
     {
       label: 'Operation',
@@ -60,7 +61,7 @@ export function buildDraftSummaryItems({ draft = {} } = {}) {
 
 export function buildDraftSummaryActions({ draft = {}, shareUrl = '', collaboratorUrl = '', operatorUrl = '', explorerBaseUrl = '' } = {}) {
   const actions = {};
-  const accountValue = draft?.account?.accountAddressScriptHash || '';
+  const accountValue = draft?.account?.accountIdHash || draft?.account?.accountAddressScriptHash || '';
   const latestActivity = resolveLatestActivity(draft);
 
   if (looksCopyable(accountValue) && accountValue !== 'Not available') {

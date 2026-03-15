@@ -9,6 +9,7 @@ using System.ComponentModel;
 namespace AbstractAccount.Hooks
 {
     [DisplayName("TokenRestrictedHook")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Hook to restrict interacting with specific high-value tokens")]
     public class TokenRestrictedHook : SmartContract
     {
@@ -16,7 +17,12 @@ namespace AbstractAccount.Hooks
 
         public static void SetRestrictedToken(UInt160 accountId, UInt160 token, bool isRestricted)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Prefix_RestrictedTokens, (byte[])accountId);
             key = Helper.Concat(key, (byte[])token);
             

@@ -45,8 +45,10 @@ test('workspace derives signer and bound-address forms from an AA draft', () => 
   const workspace = createOperationsWorkspace();
 
   workspace.loadAbstractAccount({
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
     accountAddressScriptHash: '11223344',
   });
+  assert.equal(workspace.account.value.accountIdHash, 'f951cd3eb5196dacde99b339c5dcca37ac38cc22');
   assert.equal(workspace.account.value.accountSignerScriptHash, '44332211');
 
   workspace.loadAbstractAccount({

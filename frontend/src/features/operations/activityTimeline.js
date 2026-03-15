@@ -49,7 +49,7 @@ const TYPE_TO_PRESENTATION = {
 
 const FILTER_EMPTY_STATES = {
   all: 'No activity recorded yet.',
-  workflow: 'Load Abstract Account and Stage an operation to populate workflow activity.',
+  workflow: 'Load a V3 account and stage an operation to populate workflow activity.',
   identity: 'Connect DID, bind NeoDID, or request recovery/private sessions to populate identity activity.',
   signatures: 'Use Append Manual Signature or Sign with EVM Wallet to populate the signatures timeline.',
   relay: 'Run Check Relay to create relay diagnostics and readiness activity.',

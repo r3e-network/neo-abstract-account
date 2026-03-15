@@ -196,7 +196,9 @@ async function callRemotePaymaster(payload) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
   const shellScript = `
 set -e
-docker exec -i morpheus-phala-worker node --input-type=module - <<'JS'
+WORKER_CONTAINER="$(docker ps --format '{{.Names}}' | grep 'phala-worker' | head -n1)"
+test -n "$WORKER_CONTAINER"
+docker exec -i "$WORKER_CONTAINER" node --input-type=module - <<'JS'
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
 const token = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET;
 const res = await fetch('http://127.0.0.1:8080/paymaster/authorize', {

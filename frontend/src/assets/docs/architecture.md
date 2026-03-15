@@ -1,72 +1,130 @@
 # Core Architecture
 
-This page mirrors the repository architecture explainer so the frontend docs bundle has a clear component-level view of the system.
+This page describes the active `main`-branch architecture for `UnifiedSmartWalletV3`.
 
 ## 1. Component Map
 
 ```mermaid
 flowchart LR
-  User[User / Signer / Operator]
+  User[User / Operator]
   Browser[Frontend Workspace]
-  Wallet[Neo Wallet or EVM Wallet]
-  Drafts[Local Store / Supabase Draft Store]
-  Relay[Optional Relay + Signed Operator APIs]
-  Master[UnifiedSmartWallet Master Contract]
+  Drafts[Local Store / Supabase Drafts]
+  Relay[Optional Relay]
+  Wallets[Neo Wallet / EVM Wallet / Web3Auth]
+  Core[UnifiedSmartWalletV3]
+  Verifier[Verifier Plugin]
+  Hook[Hook Plugin]
   Target[Target Contract]
 
   User --> Browser
-  Browser --> Wallet
+  Browser --> Wallets
   Browser --> Drafts
   Browser --> Relay
-  Browser --> Master
-  Relay --> Master
-  Master --> Target
-  Oracle --> Master
+  Browser --> Core
+  Relay --> Core
+  Core --> Verifier
+  Core --> Hook
+  Core --> Target
 ```
 
-The Neo N3 Abstract Account system is a **policy-gated** smart contract wallet design with one shared execution engine and deterministic per-account verify addresses.
+The Neo N3 Abstract Account system is a **policy-gated** smart contract wallet architecture. V3 keeps one shared execution engine and moves account-specific auth and policy into plugin bindings instead of embedding large role tables inside the core wallet.
 
-## 2. Verification Pipeline
+## 2. Account Model
+
+Each account is keyed by a deterministic 20-byte `accountId`.
+
+- The frontend derives `accountId` from a seed, pubkey, or already-hashed 20-byte value.
+- The virtual Neo address is derived locally from `verify(accountId)` plus the master contract hash.
+- On-chain account state stores:
+  - `verifier`
+  - `hook`
+  - `backupOwner`
+  - `escapeTimelock`
+  - `escapeTriggeredAt`
+  - nonce channels
+
+V3 is therefore **accountId-first**. Reverse discovery from legacy role indexes is no longer part of the active model.
+
+## 3. Verification Pipeline
 
 ```mermaid
 flowchart TD
-  Start[Tx hits Neo node] --> Verify[Node triggers verify(accountId)]
-  Verify --> Context[Master contract rebuilds account context]
-  Context --> SelfCall{Top-level script is an AA self-call?}
-  SelfCall -- No --> Reject1[Reject hardened proxy misuse]
-  SelfCall -- Yes --> Auth{Auth path passes?}
-  Auth -- No --> Reject2[Reject unauthorized signer / verifier result]
-  Auth -- Yes --> Pass[Verification succeeds]
+  Start[Tx reaches Neo node] --> Verify[Node triggers verify(accountId)]
+  Verify --> Context[Core checks transient execution context]
+  Context --> Allowed{Target matches active ExecuteUserOp call?}
+  Allowed -- No --> Reject1[Reject unexpected witness use]
+  Allowed -- Yes --> Execute[ExecuteUserOp(accountId, op)]
+  Execute --> Auth{Verifier plugin passes or backup owner witness passes?}
+  Auth -- No --> Reject2[Reject unauthorized operation]
+  Auth -- Yes --> Nonce[Consume nonce / deadline]
+  Nonce --> PreHook[Run preExecute hook if configured]
+  PreHook --> Call[Contract.Call(target, method, args)]
+  Call --> PostHook[Run postExecute hook if configured]
+  PostHook --> Return[Return result]
 ```
 
-The hardened rule blocks direct proxy-signed external token transfers. The canonical runtime entrypoints are `executeUnified` and `executeUnifiedByAddress`.
-
-## 3. Application Execution Pipeline
+## 4. Application Execution Pipeline
 
 ```mermaid
 flowchart TD
-  Entry[AA wrapper entrypoint] --> Load[Load account roles and policy state]
-  Load --> RoleCheck{Threshold / verifier satisfied?}
-  RoleCheck -- No --> RejectA[Abort unauthorized call]
-  PolicyCheck -- No --> RejectC[Abort policy violation]
-  PolicyCheck -- Yes --> LimitCheck{Transfer limit OK?}
-  LimitCheck -- No --> RejectD[Abort amount violation]
-  LimitCheck -- Yes --> CallTarget[Contract.Call target]
-  CallTarget --> Return[Return result to caller]
+  Entry[executeUserOp] --> Load[Load account state]
+  Load --> Auth{Verifier plugin or backup owner passes?}
+  Auth -- No --> Reject[Abort unauthorized call]
+  Auth -- Yes --> Pre[Run preExecute hook]
+  Pre --> Call[Contract.Call target]
+  Call --> Post[Run postExecute hook]
+  Post --> Return[Return result]
 ```
 
-## 4. Contract File Map
+## 5. Authorization Modes
+
+V3 supports several authorization modes, but they all converge on `executeUserOp(accountId, op)`:
+
+- **Backup-owner native witness** when no verifier plugin is configured.
+- **Web3Auth / EIP-712 verifier** for secp256k1 typed-data approvals.
+- **TEE / WebAuthn / SessionKey / MultiSig / ZKEmail** verifier plugins.
+- **Custom hooks** for policy enforcement or post-execution bookkeeping.
+
+This is the critical boundary: verifier plugins decide **who may authorize**, while hook plugins decide **what extra policy runs around execution**.
+
+## 6. Escape Hatch
+
+Every V3 account can define a backup owner and timelock.
+
+1. `initiateEscape(accountId)` starts the backup-owner recovery window.
+2. After the timelock elapses, `finalizeEscape(accountId, newVerifier)` rotates the verifier binding.
+3. Any successful normal `executeUserOp` clears an in-progress escape flow.
+
+That makes recovery explicit and auditable without reintroducing the old V2 admin/manager graph.
+
+## 7. Frontend and Relay Model
+
+The home workspace is V3-first:
+
+- users load an account from its deterministic seed or `accountId` hash
+- the UI stages `executeUserOp`
+- EVM signatures are attached as relay-ready invocations
+- operators can choose client broadcast or relay submission
+- shared drafts keep only the latest 100 activity entries and 12 submission receipts
+
+Legacy `executeUnifiedByAddress` handling remains compatibility-only and should not be presented as the primary runtime path.
+
+## 8. Contract File Map
 
 | File | Responsibility |
 | --- | --- |
-| `contracts/AbstractAccount.cs` | Top-level entrypoints and shared glue |
-| `contracts/AbstractAccount.AccountLifecycle.cs` | Account creation and address binding |
-| `contracts/AbstractAccount.StorageAndContext.cs` | Storage normalization and execution locks |
-| `contracts/AbstractAccount.ExecutionAndPermissions.cs` | Policy checks and target execution |
-| `contracts/AbstractAccount.MetaTx.cs` | EIP-712 verification and signer recovery |
-| `contracts/AbstractAccount.Admin.cs` | Role and threshold governance |
-| `contracts/AbstractAccount.Upgrade.cs` | Deployer-only update path |
+| `contracts/UnifiedSmartWallet.cs` | V3 core account state, nonce handling, `verify`, `executeUserOp`, hook/verifier config, backup-owner escape |
+| `contracts/verifiers/Web3AuthVerifier.cs` | EIP-712 `UserOperation` verification for secp256k1/Web3Auth flows |
+| `contracts/verifiers/TEEVerifier.cs` | TEE-signed authorization |
+| `contracts/verifiers/WebAuthnVerifier.cs` | Passkey / WebAuthn authorization |
+| `contracts/verifiers/SessionKeyVerifier.cs` | Short-lived delegated execution keys |
+| `contracts/verifiers/MultiSigVerifier.cs` | Plugin-based multisig authorization |
+| `contracts/hooks/*.cs` | Optional execution policies such as daily limits, token restrictions, credential gating, and hook composition |
 
-## Matrix Naming Layer
+## 9. Security Invariants
 
-The `.matrix` naming layer remains outside the AA master contract trust boundary. Registration can be batched in the same transaction as AA creation, but the domain itself is treated as a human-readable discovery layer rather than a direct authority primitive.
+1. `verify(accountId)` only succeeds during a matching `executeUserOp` context.
+2. Nonces are consumed in the core wallet, not in the verifier plugins.
+3. Verifier plugins do not automatically grant policy bypass; hooks and target contracts still run.
+4. Backup-owner recovery is timelocked and explicit.
+5. The user-facing V3 path is deterministic `accountId -> virtual address -> executeUserOp`.

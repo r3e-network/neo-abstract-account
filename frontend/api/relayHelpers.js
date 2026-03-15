@@ -1,6 +1,6 @@
 import { sanitizeHex } from '../src/utils/hex.js';
 
-export const ALLOWED_RELAY_META_OPERATIONS = ['executeUnified', 'executeUnifiedByAddress'];
+export const ALLOWED_RELAY_META_OPERATIONS = ['executeUnified', 'executeUnifiedByAddress', 'executeUserOp', 'executeUserOps'];
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -79,6 +79,8 @@ export function convertContractParamFromJson(param, { sc, u } = {}) {
     case 'ByteArray':
       return sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(param.value), true));
     case 'Array':
+      return sc.ContractParam.array(...asArray(param.value).map((item) => convertContractParamFromJson(item, { sc, u })));
+    case 'Struct':
       return sc.ContractParam.array(...asArray(param.value).map((item) => convertContractParamFromJson(item, { sc, u })));
     case 'Any':
       return sc.ContractParam.any(param.value ?? null);

@@ -6,7 +6,7 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
-test('frontend adds matrix domain resolution and registration flow', () => {
+test('matrix domain helpers remain available while the V3 workspace rejects legacy reverse discovery', () => {
   const servicePath = path.resolve(root, 'src/services/matrixDomainService.js');
   assert.equal(fs.existsSync(servicePath), true, 'expected matrixDomainService to exist');
   const serviceSource = fs.readFileSync(servicePath, 'utf8');
@@ -21,6 +21,7 @@ test('frontend adds matrix domain resolution and registration flow', () => {
 
   const workspace = read('src/features/operations/components/HomeOperationsWorkspace.vue');
   const studioController = read('src/features/studio/useStudioController.js');
-  assert.match(workspace, /resolveMatrixDomain|discoverAccountsForMatrixDomain/);
+  assert.match(workspace, /\.matrix domain/);
+  assert.match(workspace, /cannot be discovered/);
   assert.match(studioController, /invokeMultiple/);
 });

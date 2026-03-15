@@ -124,6 +124,17 @@ export function hash160(hexValue) {
   return hash160Hex(hexValue);
 }
 
+export function deriveAccountIdHash(accountIdHexOrSeed) {
+  const normalized = sanitizeHex(accountIdHexOrSeed || '');
+  if (!normalized) {
+    throw new Error('Account seed is required');
+  }
+  if (/^[0-9a-f]{40}$/i.test(normalized)) {
+    return normalized;
+  }
+  return hash160Hex(normalized);
+}
+
 export function getAddressFromScriptHash(scriptHash, addressVersion = DEFAULT_NEO_ADDRESS_VERSION) {
   const payload = concatBytes(
     new Uint8Array([addressVersion]),
@@ -148,7 +159,7 @@ export function getScriptHashFromAddress(address) {
 }
 
 export function createVerifyScript(contractHash, accountIdHex) {
-  const accountId = sanitizeHex(accountIdHex);
+  const accountId = deriveAccountIdHash(accountIdHex);
   const contract = sanitizeHex(contractHash);
   const operationHex = bytesToHex(new TextEncoder().encode('verify'));
 

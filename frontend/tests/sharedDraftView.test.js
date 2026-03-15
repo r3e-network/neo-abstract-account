@@ -38,7 +38,7 @@ test('buildOperationSnapshotItems summarizes operation fields and available payl
   assert.equal(items[1].value, 'transfer');
   assert.equal(items[2].value, '2 argument(s)');
   assert.equal(items[3].value, 'Relay Ready');
-  assert.equal(items[4].value, 'Raw Tx + Meta Invocation');
+  assert.equal(items[4].value, 'Raw Tx + Relay Invocation');
 });
 
 test('buildSignerChecklistItems marks required signers and surfaces extras', () => {
@@ -74,5 +74,5 @@ test('buildCollectedSignatureCards formats signer labels previews and metadata b
   assert.equal(items[0].label, 'EVM · 0xabc');
   assert.equal(items[0].signaturePreview, 'abcdef12…34567890');
   assert.equal(items[0].createdLabel, '2026-03-09');
-  assert.equal(items[0].badges.join(', '), 'Typed Data, Relay Meta');
+  assert.equal(items[0].badges.join(', '), 'Typed Data, Relay Invocation');
 });

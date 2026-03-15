@@ -50,7 +50,7 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
         mode: 'meta',
         isReady: true,
         label: 'Relay Ready',
-        detail: 'Relay-ready meta invocation is available for submission.',
+        detail: 'Relay-ready invocation is available for submission.',
       };
     }
 
@@ -59,7 +59,7 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
       mode: 'meta',
       isReady: false,
       label: 'Relay Pending',
-      detail: 'Meta invocation is collected; enable relay meta mode to submit it directly.',
+        detail: 'Relay invocation is collected; enable relay invocation mode to submit it directly.',
     };
   }
 
@@ -68,6 +68,6 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
     mode: 'none',
     isReady: false,
     label: 'Relay Blocked',
-    detail: 'No signed raw transaction or relay-ready meta invocation is available yet.',
+    detail: 'No signed raw transaction or relay-ready invocation is available yet.',
   };
 }

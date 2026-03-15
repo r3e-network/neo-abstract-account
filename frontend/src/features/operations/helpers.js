@@ -4,9 +4,11 @@ import { reverseHex } from '../../utils/neo.js';
 export function deriveAccountForms(input = {}) {
   const accountAddressScriptHash = sanitizeHex(input.accountAddressScriptHash || '');
   const accountSignerScriptHash = sanitizeHex(input.accountSignerScriptHash || '');
+  const accountIdHash = sanitizeHex(input.accountIdHash || '');
 
   if (accountAddressScriptHash && !accountSignerScriptHash) {
     return {
+      accountIdHash,
       accountAddressScriptHash,
       accountSignerScriptHash: sanitizeHex(reverseHex(accountAddressScriptHash)),
     };
@@ -14,12 +16,14 @@ export function deriveAccountForms(input = {}) {
 
   if (accountSignerScriptHash && !accountAddressScriptHash) {
     return {
+      accountIdHash,
       accountAddressScriptHash: sanitizeHex(reverseHex(accountSignerScriptHash)),
       accountSignerScriptHash,
     };
   }
 
   return {
+    accountIdHash,
     accountAddressScriptHash,
     accountSignerScriptHash,
   };

@@ -21,6 +21,7 @@ namespace AbstractAccount.Verifiers
     }
 
     [DisplayName("TEEVerifier")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "TEE Hardware Signature Verifier")]
     public class TEEVerifier : SmartContract
     {
@@ -29,8 +30,12 @@ namespace AbstractAccount.Verifiers
 
         public static void SetPublicKey(UInt160 accountId, ByteString pubKey)
         {
-            // Only the AA account itself can change its TEE public key configuration
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Prefix_AccountPubKey, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, pubKey);
         }
@@ -43,31 +48,38 @@ namespace AbstractAccount.Verifiers
             return data ?? (ByteString)"";
         }
 
+        [Safe]
+        public static ByteString GetPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
+        {
+            return (ByteString)BuildPayload(accountId, targetContract, method, args, nonce, deadline);
+        }
+
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             ByteString teePubKey = GetPublicKey(accountId);
             ExecutionEngine.Assert(teePubKey.Length > 0, "No TEE pubkey configured");
 
             ExecutionEngine.Assert(op.Signature != null && op.Signature.Length == 64, "Invalid signature");
+            byte[] payload = BuildPayload(accountId, op.TargetContract, op.Method, op.Args, op.Nonce, op.Deadline);
             
-            // Reconstruct the message hash using the exact payload sent by TEE
-            byte[] argsSerialized = (byte[])StdLib.Serialize(op.Args);
-            byte[] methodBytes = (byte[])StdLib.Serialize(op.Method);
-            byte[] payload = Helper.Concat(
+            // Verify secp256r1 (P-256) which is commonly used in SGX/TDX TEEs.
+            return CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)teePubKey, op.Signature, NamedCurveHash.secp256r1SHA256);
+        }
+
+        private static byte[] BuildPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
+        {
+            byte[] argsSerialized = (byte[])StdLib.Serialize(args);
+            byte[] methodBytes = (byte[])StdLib.Serialize(method);
+            return Helper.Concat(
                 Helper.Concat(
                     Helper.Concat(
-                        Helper.Concat((byte[])accountId, (byte[])op.TargetContract), 
+                        Helper.Concat((byte[])accountId, (byte[])targetContract),
                         methodBytes
-                    ), 
+                    ),
                     argsSerialized
-                ), 
-                op.Nonce.ToByteArray()
+                ),
+                Helper.Concat(nonce.ToByteArray(), deadline.ToByteArray())
             );
-
-            ByteString messageHash = CryptoLib.Sha256((ByteString)payload);
-            
-            // Verify secp256r1 (P-256) which is commonly used in SGX/TDX TEEs
-            return CryptoLib.VerifyWithECDsa(messageHash, (ECPoint)teePubKey, op.Signature, NamedCurveHash.secp256r1SHA256);
         }
     }
 }

@@ -1,5 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue';
-import { createVerifyScript, getAddressFromScriptHash, hash160, invokeReadFunction, reverseHex } from '@/utils/neo.js';
+import { createVerifyScript, deriveAccountIdHash, getAddressFromScriptHash, hash160, invokeReadFunction, reverseHex } from '@/utils/neo.js';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
@@ -68,19 +68,11 @@ export function useStudioController() {
   const isEvmWallet = computed(() => walletService.provider === walletService.PROVIDERS.EVM_WALLET);
   const walletConnected = computed(() => !!connectedAccount.value);
 
-  const validCreateSigners = computed(() => sanitizeList(createForm.value.signers));
-  const validManageSigners = computed(() => sanitizeList(manageForm.value.signers));
-
   const canCreate = computed(() => {
     if (!walletConnected.value) return false;
     if (!createForm.value.accountId || !computedAddress.value) return false;
-    
-    const signerCount = validCreateSigners.value.length;
-    
-    if (signerCount === 0) return false; // Must have some role
-    
-    if (createForm.value.threshold < 1 || createForm.value.threshold > signerCount) return false;
-
+    if (!createForm.value.backupOwner) return false;
+    if ((Number(createForm.value.escapeTimelockDays) || 0) <= 0) return false;
     return true;
   });
 
@@ -97,52 +89,12 @@ export function useStudioController() {
     } else if (!createForm.value.accountId || createForm.value.accountId.length === 130) {
       createForm.value.accountId = createGeneratedAccountId();
     }
-    
-    // Auto-set creator as first signer
-    if (walletConnected.value && createForm.value.signers.length === 1 && !createForm.value.signers[0].value) {
-      createForm.value.signers[0].value = isEvmWallet.value ? walletService.address : connectedAccount.value;
-    }
-
-    // Auto-load managed account if not set
-    if (walletConnected.value) {
-      try {
-        const address = isEvmWallet.value ? walletService.address : connectedAccount.value;
-        const res = await invokeReadOperation('getAccountAddressesBySigner', [{ type: 'Hash160', value: hash160Param(address) }]);
-        const addresses = decodeStackHashArray(res.stack?.[0]);
-        autoLoadedAccounts.value = addresses;
-        
-        if (addresses.length > 0 && !manageForm.value.accountAddress) {
-          manageForm.value.accountAddress = addresses[0];
-          permissionsForm.value.accountAddress = addresses[0];
-          await loadAccountConfiguration();
-        }
-      } catch (e) {
-        console.warn('Failed to auto-discover managed accounts', e);
-      }
+    if (walletConnected.value && !createForm.value.backupOwner) {
+      createForm.value.backupOwner = walletService.address || connectedAccount.value || '';
     }
   }, { immediate: true });
 
   watch(() => createForm.value.accountId, computeAA);
-  watch(validCreateSigners, (signers) => {
-    if (signers.length === 0) {
-      createForm.value.threshold = 1;
-      return;
-    }
-    if (createForm.value.threshold < 1) createForm.value.threshold = 1;
-    if (createForm.value.threshold > signers.length) {
-      createForm.value.threshold = signers.length;
-    }
-  });
-  watch(validManageSigners, (signers) => {
-    if (signers.length === 0) {
-      manageForm.value.threshold = 1;
-      return;
-    }
-    if (manageForm.value.threshold < 1) manageForm.value.threshold = 1;
-    if (manageForm.value.threshold > signers.length) {
-      manageForm.value.threshold = signers.length;
-    }
-  });
 
   onMounted(() => {
     restoreRecentTransactions();
@@ -210,8 +162,9 @@ export function useStudioController() {
       const aaHash = getAbstractAccountHash();
       if (!aaHash) return;
 
-      const accountIdHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
-      const script = createVerifyScript(aaHash, accountIdHex);
+      const accountSeedHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
+      const accountIdHash = deriveAccountIdHash(accountSeedHex);
+      const script = createVerifyScript(aaHash, accountIdHash);
 
       computedScriptHex.value = script;
       const scriptHash = reverseHex(hash160(script));
@@ -277,30 +230,48 @@ export function useStudioController() {
 
     manageBusy.value.load = true;
     try {
-      const accountHash = hash160Param(manageForm.value.accountAddress);
+      const accountHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
 
       const [
-        signersRes,
-        thresholdRes,
-        lastActiveRes
+        verifierRes,
+        hookRes,
+        backupOwnerRes,
+        escapeTimelockRes,
+        escapeTriggeredAtRes,
+        escapeActiveRes
       ] = await Promise.all([
-        invokeReadOperation('getSignersByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getThresholdByAddress', [{ type: 'Hash160', value: accountHash }]),
-        invokeReadOperation('getLastActiveTimestampByAddress', [{ type: 'Hash160', value: accountHash }])
+        invokeReadOperation('getVerifier', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('getHook', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('getBackupOwner', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('getEscapeTimelock', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('getEscapeTriggeredAt', [{ type: 'Hash160', value: accountHash }]),
+        invokeReadOperation('isEscapeActive', [{ type: 'Hash160', value: accountHash }]),
       ]);
 
-      const signers = decodeStackHashArray(signersRes?.stack?.[0]);
-      const threshold = decodeStackInteger(thresholdRes?.stack?.[0]);
-      const lastActiveMs = decodeStackInteger(lastActiveRes?.stack?.[0]);
+      const verifier = decodeStackHash160(verifierRes?.stack?.[0]);
+      const hook = decodeStackHash160(hookRes?.stack?.[0]);
+      const backupOwner = decodeStackHash160(backupOwnerRes?.stack?.[0]);
+      const escapeTimelock = decodeStackInteger(escapeTimelockRes?.stack?.[0]);
+      const escapeTriggeredAt = decodeStackInteger(escapeTriggeredAtRes?.stack?.[0]);
+      const escapeActive = decodeStackBoolean(escapeActiveRes?.stack?.[0]);
 
-      manageForm.value.signers = signers.length > 0 ? signers.map((value) => `0x${value}`) : [''];
-      manageForm.value.threshold = signers.length > 0
-        ? normalizeThreshold(threshold, signers.length, 1)
-        : 1;
+      manageForm.value.verifierContract = verifier ? `0x${verifier}` : '';
+      manageForm.value.hookContract = hook ? `0x${hook}` : '';
+      manageForm.value.backupOwner = backupOwner ? `0x${backupOwner}` : '';
+      manageForm.value.escapeTimelock = String(escapeTimelock || 0);
+      manageForm.value.escapeTriggeredAt = String(escapeTriggeredAt || 0);
+      manageForm.value.escapeActive = escapeActive;
+      permissionsForm.value.accountAddress = manageForm.value.accountAddress;
 
       manageSnapshot.value = {
         loadedAt: new Date().toLocaleString(),
-        lastActiveMs
+        accountId: accountHash,
+        verifier: manageForm.value.verifierContract,
+        hook: manageForm.value.hookContract,
+        backupOwner: manageForm.value.backupOwner,
+        escapeTimelock,
+        escapeTriggeredAt,
+        escapeActive,
       };
 
       toast.success('Current account configuration loaded.');
@@ -321,16 +292,27 @@ export function useStudioController() {
 
     isCreating.value = true;
     try {
-      const accountIdHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
-      const accountScriptHash = hash160Param(computedAddress.value);
+      const accountSeedHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
+      const accountIdHash = deriveAccountIdHash(accountSeedHex);
+      const verifierHash = createForm.value.verifierContract.trim()
+        ? hash160Param(createForm.value.verifierContract)
+        : '0000000000000000000000000000000000000000';
+      const hookHash = createForm.value.hookContract.trim()
+        ? hash160Param(createForm.value.hookContract)
+        : '0000000000000000000000000000000000000000';
+      const backupOwnerHash = hash160Param(createForm.value.backupOwner);
+      const verifierParamsHex = sanitizeHex(createForm.value.verifierParams || '');
+      const escapeTimelockSeconds = Math.max(1, Math.floor((Number(createForm.value.escapeTimelockDays) || 0) * 24 * 60 * 60));
       const createInvocation = {
         scriptHash: getAbstractAccountHash(),
-        operation: 'createAccountWithAddress',
+        operation: 'registerAccount',
         args: [
-          { type: 'ByteArray', value: accountIdHex },
-          { type: 'Hash160', value: accountScriptHash },
-          { type: 'Array', value: toHashArray(validCreateSigners.value) },
-          { type: 'Integer', value: createForm.value.threshold }
+          { type: 'Hash160', value: accountIdHash },
+          { type: 'Hash160', value: verifierHash },
+          { type: 'ByteArray', value: verifierParamsHex ? `0x${verifierParamsHex}` : '0x' },
+          { type: 'Hash160', value: hookHash },
+          { type: 'Hash160', value: backupOwnerHash },
+          { type: 'Integer', value: escapeTimelockSeconds }
         ]
       };
 
@@ -351,10 +333,10 @@ export function useStudioController() {
         });
         const txid = result?.txid || result?.transaction || '';
         if (!txid) throw new Error('No transaction ID returned by wallet provider.');
-        pushTransaction(`Create account + register ${matrixDomain}`, txid);
-        toast.success(`Create account + ${matrixDomain} registration submitted.`);
+        pushTransaction(`Register V3 account + register ${matrixDomain}`, txid);
+        toast.success(`Register V3 account + ${matrixDomain} registration submitted.`);
       } else {
-        await invokeOperation('Create account', 'createAccountWithAddress', createInvocation.args);
+        await invokeOperation('Register V3 account', 'registerAccount', createInvocation.args);
       }
     } catch (err) {
       console.error(err);
@@ -364,131 +346,136 @@ export function useStudioController() {
     }
   }
 
-  async function setSignersByAddress() {
+  async function updateVerifier() {
     if (!requireWallet() || !canManageTarget.value) return;
-    if (validManageSigners.value.length === 0) {
-      toast.error('Provide at least one signer address.');
-      return;
-    }
-
-    manageBusy.value.signers = true;
+    manageBusy.value.verifier = true;
     try {
-      await invokeOperation('Set signers', 'setSignersByAddress', [
-        { type: 'Hash160', value: hash160Param(manageForm.value.accountAddress) },
-        { type: 'Array', value: toHashArray(validManageSigners.value) },
-        { type: 'Integer', value: manageForm.value.threshold }
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error(`Signers update failed: ${formatErrorMessage(err)}`);
-    } finally {
-      manageBusy.value.signers = false;
-    }
-  }
-
-  async function setVerifierContractByAddress() {
-    if (!requireWallet() || !canManagePermissions.value) return;
-
-    permissionsBusy.value.verifier = true;
-    try {
-      const verifierHash = permissionsForm.value.verifierContract.trim()
-        ? hash160Param(permissionsForm.value.verifierContract)
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const verifierHash = manageForm.value.verifierContract.trim()
+        ? hash160Param(manageForm.value.verifierContract)
         : '0000000000000000000000000000000000000000';
-
-      await invokeOperation('Set verifier contract', 'setVerifierContractByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
-        { type: 'Hash160', value: verifierHash }
+      const verifierParamsHex = sanitizeHex(manageForm.value.verifierParams || '');
+      await invokeOperation('Update verifier', 'updateVerifier', [
+        { type: 'Hash160', value: accountIdHash },
+        { type: 'Hash160', value: verifierHash },
+        { type: 'ByteArray', value: verifierParamsHex ? `0x${verifierParamsHex}` : '0x' }
       ]);
     } catch (err) {
       console.error(err);
       toast.error(`Verifier update failed: ${formatErrorMessage(err)}`);
     } finally {
-      permissionsBusy.value.verifier = false;
+      manageBusy.value.verifier = false;
     }
   }
 
-  async function setWhitelistModeByAddress() {
-    if (!requireWallet() || !canManagePermissions.value) return;
-
-    permissionsBusy.value.whitelistMode = true;
+  async function updateHook() {
+    if (!requireWallet() || !canManageTarget.value) return;
+    manageBusy.value.hook = true;
     try {
-      await invokeOperation('Set whitelist mode', 'setWhitelistModeByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
-        { type: 'Boolean', value: permissionsForm.value.whitelistMode }
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const hookHash = manageForm.value.hookContract.trim()
+        ? hash160Param(manageForm.value.hookContract)
+        : '0000000000000000000000000000000000000000';
+      await invokeOperation('Update hook', 'updateHook', [
+        { type: 'Hash160', value: accountIdHash },
+        { type: 'Hash160', value: hookHash }
       ]);
     } catch (err) {
       console.error(err);
-      toast.error(`Whitelist mode update failed: ${formatErrorMessage(err)}`);
+      toast.error(`Hook update failed: ${formatErrorMessage(err)}`);
     } finally {
-      permissionsBusy.value.whitelistMode = false;
+      manageBusy.value.hook = false;
     }
   }
 
-  async function updateWhitelistByAddress(isAdding) {
-    if (!requireWallet() || !canManagePermissions.value) return;
-    if (!permissionsForm.value.whitelistTarget) {
-      toast.error('Please specify a target contract address for the whitelist.');
+  async function initiateEscape() {
+    if (!requireWallet() || !canManageTarget.value) return;
+    manageBusy.value.initiateEscape = true;
+    try {
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      await invokeOperation('Initiate escape', 'initiateEscape', [
+        { type: 'Hash160', value: accountIdHash },
+      ]);
+    } catch (err) {
+      console.error(err);
+      toast.error(`Escape initiation failed: ${formatErrorMessage(err)}`);
+    } finally {
+      manageBusy.value.initiateEscape = false;
+    }
+  }
+
+  async function finalizeEscape() {
+    if (!requireWallet() || !canManageTarget.value) return;
+    if (!manageForm.value.escapeNewVerifier) {
+      toast.error('Provide the new verifier hash to finalize escape.');
       return;
     }
-
-    permissionsBusy.value.whitelist = true;
+    manageBusy.value.finalizeEscape = true;
     try {
-      await invokeOperation(isAdding ? 'Add to whitelist' : 'Remove from whitelist', 'setWhitelistByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.whitelistTarget) },
-        { type: 'Boolean', value: isAdding }
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      await invokeOperation('Finalize escape', 'finalizeEscape', [
+        { type: 'Hash160', value: accountIdHash },
+        { type: 'Hash160', value: hash160Param(manageForm.value.escapeNewVerifier) },
       ]);
     } catch (err) {
       console.error(err);
-      toast.error(`Whitelist update failed: ${formatErrorMessage(err)}`);
+      toast.error(`Escape finalization failed: ${formatErrorMessage(err)}`);
     } finally {
-      permissionsBusy.value.whitelist = false;
+      manageBusy.value.finalizeEscape = false;
     }
   }
 
-  async function updateBlacklistByAddress(isAdding) {
+  function parseTypedArgsJson(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      throw new Error('Arguments JSON must be an array of Neo RPC params.');
+    }
+    return parsed;
+  }
+
+  async function callVerifier() {
     if (!requireWallet() || !canManagePermissions.value) return;
-    if (!permissionsForm.value.blacklistTarget) {
-      toast.error('Please specify a target contract address for the blacklist.');
+    if (!permissionsForm.value.verifierMethod.trim()) {
+      toast.error('Provide a verifier method name.');
       return;
     }
-
-    permissionsBusy.value.blacklist = true;
+    permissionsBusy.value.verifierCall = true;
     try {
-      await invokeOperation(isAdding ? 'Add to blacklist' : 'Remove from blacklist', 'setBlacklistByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.blacklistTarget) },
-        { type: 'Boolean', value: isAdding }
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(permissionsForm.value.accountAddress, false));
+      await invokeOperation('Call verifier plugin', 'callVerifier', [
+        { type: 'Hash160', value: accountIdHash },
+        { type: 'String', value: permissionsForm.value.verifierMethod.trim() },
+        { type: 'Array', value: parseTypedArgsJson(permissionsForm.value.verifierArgsJson) },
       ]);
     } catch (err) {
       console.error(err);
-      toast.error(`Blacklist update failed: ${formatErrorMessage(err)}`);
+      toast.error(`Verifier call failed: ${formatErrorMessage(err)}`);
     } finally {
-      permissionsBusy.value.blacklist = false;
+      permissionsBusy.value.verifierCall = false;
     }
   }
 
-  async function setMaxTransferByAddress() {
+  async function callHook() {
     if (!requireWallet() || !canManagePermissions.value) return;
-    if (!permissionsForm.value.limitToken) {
-      toast.error('Please specify a token contract address.');
+    if (!permissionsForm.value.hookMethod.trim()) {
+      toast.error('Provide a hook method name.');
       return;
     }
-
-    permissionsBusy.value.limit = true;
+    permissionsBusy.value.hookCall = true;
     try {
-      const amount = Number(permissionsForm.value.limitAmount) || 0;
-
-      await invokeOperation('Set token transfer limit', 'setMaxTransferByAddress', [
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.accountAddress) },
-        { type: 'Hash160', value: hash160Param(permissionsForm.value.limitToken) },
-        { type: 'Integer', value: amount }
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(permissionsForm.value.accountAddress, false));
+      await invokeOperation('Call hook plugin', 'callHook', [
+        { type: 'Hash160', value: accountIdHash },
+        { type: 'String', value: permissionsForm.value.hookMethod.trim() },
+        { type: 'Array', value: parseTypedArgsJson(permissionsForm.value.hookArgsJson) },
       ]);
     } catch (err) {
       console.error(err);
-      toast.error(`Transfer limit update failed: ${formatErrorMessage(err)}`);
+      toast.error(`Hook call failed: ${formatErrorMessage(err)}`);
     } finally {
-      permissionsBusy.value.limit = false;
+      permissionsBusy.value.hookCall = false;
     }
   }
 
@@ -525,8 +512,6 @@ export function useStudioController() {
     contractFiles,
     isEvmWallet,
     walletConnected,
-    validCreateSigners,
-    validManageSigners,
     autoLoadedAccounts,
     canCreate,
     canManageTarget,
@@ -539,12 +524,12 @@ export function useStudioController() {
     createAccount,
     checkMatrixDomain,
     matrixCheckResult,
-    setSignersByAddress,
-    setVerifierContractByAddress,
-    setWhitelistModeByAddress,
-    updateWhitelistByAddress,
-    updateBlacklistByAddress,
-    setMaxTransferByAddress,
+    updateVerifier,
+    updateHook,
+    initiateEscape,
+    finalizeEscape,
+    callVerifier,
+    callHook,
     copyCode
   };
 }

@@ -26,21 +26,35 @@ function hasMetaInvocation(draft = {}) {
     : false;
 }
 
+function resolveInvocationLabel(draft = {}) {
+  const transactionBody = draft?.transaction_body || {};
+  const operation = transactionBody?.v3Invocation?.operation
+    || transactionBody?.clientInvocation?.operation
+    || transactionBody?.metaInvocation?.operation
+    || transactionBody?.metaInvocations?.[0]?.operation
+    || transactionBody?.meta_invocations?.[0]?.operation
+    || draft?.signatures?.find((item) => item?.metadata?.metaInvocation)?.metadata?.metaInvocation?.operation
+    || '';
+
+  return operation === 'executeUserOp' ? 'UserOperation Invocation' : 'Relay Invocation';
+}
+
 function buildPayloadSummary(draft = {}, runtime = null) {
   const availableModes = buildRelayPayloadOptions({
     runtime,
     transactionBody: draft?.transaction_body || {},
     signatures: draft?.signatures || [],
   });
+  const invocationLabel = resolveInvocationLabel(draft);
 
   if (availableModes.includes('raw') && availableModes.includes('meta')) {
-    return 'Raw Tx + Meta Invocation';
+    return `Raw Tx + ${invocationLabel}`;
   }
   if (availableModes.includes('raw')) {
     return 'Raw Tx';
   }
   if (availableModes.includes('meta')) {
-    return 'Meta Invocation';
+    return invocationLabel;
   }
   return 'Client Invocation Only';
 }
@@ -78,7 +92,7 @@ export function buildOperationSnapshotItems({ draft = {}, relayReadiness = {} } 
     {
       label: 'Payloads',
       value: buildPayloadSummary(draft, relayReadiness?.runtime || null),
-      note: hasMetaInvocation(draft) ? 'Collected EVM meta signatures can be relayed directly when relay meta mode is enabled.' : '',
+      note: hasMetaInvocation(draft) ? 'Collected typed-data approvals can be relayed directly when relay invocation mode is enabled.' : '',
     },
   ];
 }
@@ -118,7 +132,9 @@ export function buildCollectedSignatureCards(signatures = []) {
   return items.map((item) => {
     const badges = [];
     if (item?.metadata?.typedData) badges.push('Typed Data');
-    if (item?.metadata?.metaInvocation) badges.push('Relay Meta');
+    if (item?.metadata?.metaInvocation) {
+      badges.push(item.metadata.metaInvocation.operation === 'executeUserOp' ? 'Relay UserOp' : 'Relay Invocation');
+    }
     if (item?.payloadDigest) badges.push('Payload Digest');
 
     return {

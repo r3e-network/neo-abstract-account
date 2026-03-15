@@ -20,6 +20,7 @@ namespace AbstractAccount.Hooks
     }
 
     [DisplayName("MultiHook")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Composable Hook to chain multiple hooks")]
     public class MultiHook : SmartContract
     {
@@ -27,7 +28,12 @@ namespace AbstractAccount.Hooks
 
         public static void SetHooks(UInt160 accountId, UInt160[] hooks)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Prefix_Hooks, (byte[])accountId);
             if (hooks == null || hooks.Length == 0)
             {

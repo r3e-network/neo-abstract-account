@@ -48,8 +48,47 @@ function buildMetaTransactionTypedData({
   };
 }
 
+function buildV3UserOperationTypedData({
+  chainId,
+  verifyingContract,
+  accountIdHash,
+  targetContract,
+  method,
+  argsHashHex,
+  nonce,
+  deadline,
+}) {
+  return {
+    domain: {
+      name: 'Neo N3 Abstract Account',
+      version: '1',
+      chainId,
+      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
+    },
+    types: {
+      UserOperation: [
+        { name: 'accountId', type: 'bytes20' },
+        { name: 'targetContract', type: 'address' },
+        { name: 'method', type: 'string' },
+        { name: 'argsHash', type: 'bytes32' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' },
+      ],
+    },
+    message: {
+      accountId: `0x${sanitizeHex(accountIdHash)}`,
+      targetContract: `0x${sanitizeHex(targetContract)}`,
+      method: String(method || ''),
+      argsHash: `0x${sanitizeHex(argsHashHex)}`,
+      nonce: String(nonce),
+      deadline: String(deadline),
+    },
+  };
+}
+
 module.exports = {
   sanitizeHex,
   decodeByteStringStackHex,
   buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData,
 };

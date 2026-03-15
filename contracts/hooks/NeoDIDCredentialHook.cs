@@ -9,6 +9,7 @@ using System.ComponentModel;
 namespace AbstractAccount.Hooks
 {
     [DisplayName("NeoDIDCredentialHook")]
+    [ContractPermission("*", "*")]
     [ManifestExtra("Description", "NeoDID Credential Check Hook")]
     public class NeoDIDCredentialHook : SmartContract
     {
@@ -19,7 +20,12 @@ namespace AbstractAccount.Hooks
 
         public static void RequireCredentialForContract(UInt160 accountId, UInt160 targetContract, string credentialType)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Helper.Concat(Prefix_RequiredCredential, (byte[])accountId), (byte[])targetContract);
             if (string.IsNullOrEmpty(credentialType)) Storage.Delete(Storage.CurrentContext, key);
             else Storage.Put(Storage.CurrentContext, key, credentialType);
@@ -27,15 +33,24 @@ namespace AbstractAccount.Hooks
 
         public static void IssueCredential(UInt160 accountId, string credentialType)
         {
-            // Only the AA account itself (which might be driven by TEE validation) can set its own verified credentials
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (ByteString)credentialType);
             Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
         }
 
         public static void RevokeCredential(UInt160 accountId, string credentialType)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(accountId), "Unauthorized");
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
             byte[] key = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (ByteString)credentialType);
             Storage.Delete(Storage.CurrentContext, key);
         }
