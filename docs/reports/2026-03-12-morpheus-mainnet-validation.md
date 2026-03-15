@@ -4,8 +4,11 @@ Refresh note on 2026-03-15:
 
 - the production Morpheus Oracle and DataFeed contracts were updated in place
 - the independent mainnet `NeoDIDRegistry` is now deployed at `0x6a51671fd45d61b9536791390f275eb31d07954a` via `neodid.morpheus.neo`
+- the published AA hash `0x0466fa7e8fe548480d7978d2652625d4a22589a6` was updated in place to the current V3 runtime via `0xb0e163734ffd0641b44c6091f373f0b09acdde03c693f465c97e6659f2dda035`
+- a dedicated mainnet `Web3AuthVerifier` was deployed at `0x4696e7a68d5d6c6cf9c19c38cd0fdc9c0bcc3e0a` via `0x8a47340c5127fcf3d53cdfdce5a6b4555734c8db206ce5a5dfddd56199cfc3d3`
 - the AA recovery verifier remains a separate contract at `0x975483c2d0928c1ed6da568190b5137463431422`
 - do not treat `MorpheusSocialRecoveryVerifier` as the NeoDID registry address
+- current AA runtime details now live in `docs/reports/2026-03-15-v3-mainnet-upgrade-and-live-validation.md`
 
 ## Scope
 
@@ -18,29 +21,35 @@ Validated on 2026-03-12:
 - production Datafeed: `0x03013f49c42a14546c8bbe58f9d434c3517fccab` (`pricefeed.morpheus.neo`)
 - mainnet AA: `0x0466fa7e8fe548480d7978d2652625d4a22589a6`
 - mainnet NeoDIDRegistry: `0x6a51671fd45d61b9536791390f275eb31d07954a` (`neodid.morpheus.neo`)
+- mainnet AA Web3AuthVerifier: `0x4696e7a68d5d6c6cf9c19c38cd0fdc9c0bcc3e0a`
 - mainnet MorpheusSocialRecoveryVerifier: `0x975483c2d0928c1ed6da568190b5137463431422`
 - public NeoDID service DID: `did:morpheus:neo_n3:service:neodid`
 - public resolver route: `/api/neodid/resolve?did=did:morpheus:neo_n3:service:neodid`
 
 ## Deployment State
 
-The Oracle, Callback Consumer, Datafeed, AA core, and MorpheusSocialRecoveryVerifier already matched the latest local compiled artifacts at validation time.
-The independent NeoDIDRegistry was added later and should now be treated as its own anchor instead of overloading the recovery verifier address.
+This report originally captured the 2026-03-12 production validation window.
 
-No further redeploy or upgrade was required on 2026-03-12 because on-chain NEF checksums matched the local build outputs exactly.
+At that time, the Oracle, Callback Consumer, DataFeed, and then-live AA / recovery-verifier deployment were read-validated against the production state that existed on 2026-03-12.
 
-Checksum matches confirmed on 2026-03-12:
+That statement is no longer the full current picture.
 
-- `MorpheusOracle`: local `4221237044`, chain `4221237044`
-- `OracleCallbackConsumer`: local `1435370910`, chain `1435370910`
-- `MorpheusDataFeed`: local `250860605`, chain `250860605`
-- `UnifiedSmartWalletV2`: local `1702064541`, chain `1702064541`
-- `MorpheusSocialRecoveryVerifier`: local `4086032926`, chain `4086032926`
+As of the 2026-03-15 refresh:
+
+- `MorpheusOracle` was updated in place
+- `MorpheusDataFeed` was updated in place
+- `NeoDIDRegistry` was deployed as an independent mainnet anchor
+- the published AA hash was updated in place from the legacy V2-era runtime to the current V3 runtime
+- a dedicated mainnet `Web3AuthVerifier` was deployed for the V3 verifier-plugin path
+
+Use `docs/reports/2026-03-15-v3-mainnet-upgrade-and-live-validation.md` as the authoritative current AA runtime record.
 
 Additional mainnet changes recorded on 2026-03-15:
 
 - `MorpheusOracle` update tx: `0xed5fcf25c036cd2e0aff5c447f2ba1cba100b37102f8123adce407b07589f624`
 - `MorpheusDataFeed` update tx: `0x7a0fc672247077985ddea52fdd0ccf2b62725d4cbd21127b3791406a2d3cbcdf`
+- `AbstractAccount` in-place update tx: `0xb0e163734ffd0641b44c6091f373f0b09acdde03c693f465c97e6659f2dda035`
+- `Web3AuthVerifier` deploy tx: `0x8a47340c5127fcf3d53cdfdce5a6b4555734c8db206ce5a5dfddd56199cfc3d3`
 - `NeoDIDRegistry` deploy tx: `0x2dd001477b853fdbd5464a4b4d5eb2ac20b7bc780351369fa8c4fabae8d95f0c`
 - `NeoDIDRegistry.setVerifier(...)` tx: `0xd900a9cf65ad16a0b216cdce32f08023b5cc399cdf36c216e86447dc50032652`
 
@@ -158,3 +167,9 @@ As of 2026-03-12, the requested production entrypoint model is satisfied:
 - fresh mainnet Oracle requests succeeded end-to-end
 - AA action-session and recovery flows succeeded on the production Oracle path
 - recent Datafeed updates prove the synchronized price-feed path is also live
+
+Current note after the 2026-03-15 refresh:
+
+- this 2026-03-12 report remains useful as the historical record of the original production validation window
+- the current mainnet AA runtime state is no longer the legacy V2-era deployment described here
+- use `docs/reports/2026-03-15-v3-mainnet-upgrade-and-live-validation.md` for the current production AA V3 upgrade record and fresh live AA -> Oracle proofs
