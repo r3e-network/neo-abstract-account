@@ -1,5 +1,12 @@
 # Morpheus Mainnet Validation 2026-03-12
 
+Refresh note on 2026-03-15:
+
+- the production Morpheus Oracle and DataFeed contracts were updated in place
+- the independent mainnet `NeoDIDRegistry` is now deployed at `0x6a51671fd45d61b9536791390f275eb31d07954a` via `neodid.morpheus.neo`
+- the AA recovery verifier remains a separate contract at `0x975483c2d0928c1ed6da568190b5137463431422`
+- do not treat `MorpheusSocialRecoveryVerifier` as the NeoDID registry address
+
 ## Scope
 
 This report records the Neo N3 mainnet validation state for the Morpheus-integrated Abstract Account stack and the existing production Morpheus Oracle entrypoint.
@@ -10,6 +17,7 @@ Validated on 2026-03-12:
 - production Callback Consumer: `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844`
 - production Datafeed: `0x03013f49c42a14546c8bbe58f9d434c3517fccab` (`pricefeed.morpheus.neo`)
 - mainnet AA: `0x0466fa7e8fe548480d7978d2652625d4a22589a6`
+- mainnet NeoDIDRegistry: `0x6a51671fd45d61b9536791390f275eb31d07954a` (`neodid.morpheus.neo`)
 - mainnet MorpheusSocialRecoveryVerifier: `0x975483c2d0928c1ed6da568190b5137463431422`
 - public NeoDID service DID: `did:morpheus:neo_n3:service:neodid`
 - public resolver route: `/api/neodid/resolve?did=did:morpheus:neo_n3:service:neodid`
@@ -17,16 +25,24 @@ Validated on 2026-03-12:
 ## Deployment State
 
 The Oracle, Callback Consumer, Datafeed, AA core, and MorpheusSocialRecoveryVerifier already matched the latest local compiled artifacts at validation time.
+The independent NeoDIDRegistry was added later and should now be treated as its own anchor instead of overloading the recovery verifier address.
 
 No further redeploy or upgrade was required on 2026-03-12 because on-chain NEF checksums matched the local build outputs exactly.
 
-Checksum matches confirmed:
+Checksum matches confirmed on 2026-03-12:
 
 - `MorpheusOracle`: local `4221237044`, chain `4221237044`
 - `OracleCallbackConsumer`: local `1435370910`, chain `1435370910`
 - `MorpheusDataFeed`: local `250860605`, chain `250860605`
 - `UnifiedSmartWalletV2`: local `1702064541`, chain `1702064541`
 - `MorpheusSocialRecoveryVerifier`: local `4086032926`, chain `4086032926`
+
+Additional mainnet changes recorded on 2026-03-15:
+
+- `MorpheusOracle` update tx: `0xed5fcf25c036cd2e0aff5c447f2ba1cba100b37102f8123adce407b07589f624`
+- `MorpheusDataFeed` update tx: `0x7a0fc672247077985ddea52fdd0ccf2b62725d4cbd21127b3791406a2d3cbcdf`
+- `NeoDIDRegistry` deploy tx: `0x2dd001477b853fdbd5464a4b4d5eb2ac20b7bc780351369fa8c4fabae8d95f0c`
+- `NeoDIDRegistry.setVerifier(...)` tx: `0xd900a9cf65ad16a0b216cdce32f08023b5cc399cdf36c216e86447dc50032652`
 
 ## Oracle Entry Point
 
@@ -68,6 +84,9 @@ Mainnet event proofs on the existing Oracle path:
 - `RecoveryFinalized`: `0x2c9b76c4b811d8d98ec5721030773dfc54d5e90659418969642313231fa4d01c`
 
 The recovered owner and cleared pending state prove that the existing Oracle entry point, the deployed AA core, and the deployed MorpheusSocialRecoveryVerifier work together on Neo N3 mainnet.
+
+This recovery-verifier proof is distinct from the independent `NeoDIDRegistry` contract.
+The registry now anchors public NeoDID service discovery and action-ticket consumption, while the recovery verifier remains the AA-specific recovery plugin.
 
 ## Live Mainnet Oracle Requests
 

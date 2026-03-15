@@ -5,17 +5,21 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_ABSTRACT_ACCOUNT_HASH,
+  DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET,
   DEFAULT_DID_PROVIDER,
   DEFAULT_EXPLORER_BASE_URL,
   DEFAULT_MATRIX_CONTRACT_HASH,
   DEFAULT_N3INDEX_API_BASE_URL,
   DEFAULT_RPC_URL,
+  DEFAULT_RPC_URL_TESTNET,
   DEFAULT_WEB3AUTH_CHAIN_ID,
   DEFAULT_WEB3AUTH_CHAIN_NAMESPACE,
   DEFAULT_WEB3AUTH_NETWORK,
   DEFAULT_WEB3AUTH_PROJECT_NAME,
   DEFAULT_WEB3AUTH_RPC_TARGET,
+  MORPHEUS_NETWORK_DEFAULTS,
   getRuntimeConfig,
+  resolveRuntimeNetwork,
   resolveAbstractAccountHash,
   resolveRpcUrl,
   sanitizeHex
@@ -39,6 +43,10 @@ test('resolveAbstractAccountHash falls back for invalid values', () => {
 
 test('default abstract account hash tracks the hardened verified deployment', () => {
   assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '0466fa7e8fe548480d7978d2652625d4a22589a6');
+});
+
+test('testnet abstract account hash tracks the published V3 testnet deployment', () => {
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, '9cbbfc969f94a5056fd6a658cab090bcb3604724');
 });
 
 test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
@@ -117,6 +125,43 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     morpheusOracleKeyEndpoint: '/api/morpheus-oracle-public-key',
     didNotificationEmailEnabled: true,
     didNotificationSmsEnabled: true,
+  });
+});
+
+test('resolveRuntimeNetwork switches defaults to testnet when requested', () => {
+  assert.equal(resolveRuntimeNetwork({ VITE_AA_NETWORK: 'testnet' }), 'testnet');
+  assert.equal(resolveRuntimeNetwork({ VITE_MORPHEUS_NETWORK: 'testnet' }), 'testnet');
+  assert.equal(resolveRuntimeNetwork({ VITE_N3INDEX_NETWORK: 'testnet' }), 'testnet');
+  assert.equal(resolveRuntimeNetwork({ VITE_AA_NETWORK: 'mainnet' }), 'mainnet');
+});
+
+test('getRuntimeConfig uses testnet defaults when the selected runtime network is testnet', () => {
+  const config = getRuntimeConfig({
+    VITE_AA_NETWORK: 'testnet',
+  });
+
+  assert.equal(config.abstractAccountHash, DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET);
+  assert.equal(config.abstractAccountDomain, '');
+  assert.equal(config.rpcUrl, DEFAULT_RPC_URL_TESTNET);
+  assert.equal(config.relayRpcUrl, DEFAULT_RPC_URL_TESTNET);
+  assert.equal(config.n3IndexNetwork, 'testnet');
+  assert.equal(config.neoDidDomain, '');
+});
+
+test('network defaults keep mainnet and testnet anchors explicit', () => {
+  assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.mainnet, {
+    abstractAccountHash: '0466fa7e8fe548480d7978d2652625d4a22589a6',
+    abstractAccountDomain: 'aa.morpheus.neo',
+    rpcUrl: 'https://mainnet1.neo.coz.io:443',
+    n3IndexNetwork: 'mainnet',
+    neoDidDomain: 'neodid.morpheus.neo',
+  });
+  assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.testnet, {
+    abstractAccountHash: '9cbbfc969f94a5056fd6a658cab090bcb3604724',
+    abstractAccountDomain: '',
+    rpcUrl: 'https://testnet1.neo.coz.io:443',
+    n3IndexNetwork: 'testnet',
+    neoDidDomain: '',
   });
 });
 

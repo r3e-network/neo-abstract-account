@@ -53,6 +53,21 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
   });
 });
 
+test('getRuntimeConfig switches implicit defaults to testnet when selected', () => {
+  const config = getRuntimeConfig({
+    VITE_AA_NETWORK: 'testnet',
+    VITE_SUPABASE_URL: 'https://example.supabase.co',
+    VITE_SUPABASE_ANON_KEY: 'public-anon-key',
+  });
+
+  assert.equal(config.abstractAccountHash, '9cbbfc969f94a5056fd6a658cab090bcb3604724');
+  assert.equal(config.abstractAccountDomain, '');
+  assert.equal(config.rpcUrl, 'https://testnet1.neo.coz.io:443');
+  assert.equal(config.relayRpcUrl, 'https://testnet1.neo.coz.io:443');
+  assert.equal(config.n3IndexNetwork, 'testnet');
+  assert.equal(config.neoDidDomain, '');
+});
+
 test('getOperationsRuntime derives collaboration and relay flags', () => {
   const runtime = getOperationsRuntime({
     supabaseUrl: 'https://example.supabase.co',

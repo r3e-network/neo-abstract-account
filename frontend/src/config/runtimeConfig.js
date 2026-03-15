@@ -3,7 +3,9 @@ import { sanitizeHex } from '../utils/hex.js';
 export { sanitizeHex };
 
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '0466fa7e8fe548480d7978d2652625d4a22589a6';
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = '9cbbfc969f94a5056fd6a658cab090bcb3604724';
 export const DEFAULT_RPC_URL = 'https://mainnet1.neo.coz.io:443';
+export const DEFAULT_RPC_URL_TESTNET = 'https://testnet1.neo.coz.io:443';
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
 export const DEFAULT_EXPLORER_BASE_URL = 'https://neotube.io/tx/';
 export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b60a75';
@@ -20,6 +22,33 @@ export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'aa.morpheus.neo';
 export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
 export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://neo-morpheus-oracle-web.vercel.app';
 export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
+
+export const MORPHEUS_NETWORK_DEFAULTS = {
+  mainnet: {
+    abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH,
+    abstractAccountDomain: DEFAULT_ABSTRACT_ACCOUNT_DOMAIN,
+    rpcUrl: DEFAULT_RPC_URL,
+    n3IndexNetwork: 'mainnet',
+    neoDidDomain: DEFAULT_NEODID_DOMAIN,
+  },
+  testnet: {
+    abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET,
+    abstractAccountDomain: '',
+    rpcUrl: DEFAULT_RPC_URL_TESTNET,
+    n3IndexNetwork: 'testnet',
+    neoDidDomain: '',
+  },
+};
+
+export function resolveRuntimeNetwork(env = import.meta.env ?? {}) {
+  const normalized = String(
+    env.VITE_AA_NETWORK
+      || env.VITE_MORPHEUS_NETWORK
+      || env.VITE_N3INDEX_NETWORK
+      || DEFAULT_N3INDEX_NETWORK
+  ).trim().toLowerCase();
+  return normalized === 'testnet' ? 'testnet' : 'mainnet';
+}
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
   const normalized = sanitizeHex(value);
@@ -57,18 +86,20 @@ export function resolveOptionalBoolean(value, fallback = false) {
 }
 
 export function getRuntimeConfig(env = import.meta.env ?? {}) {
+  const runtimeNetwork = resolveRuntimeNetwork(env);
+  const networkDefaults = MORPHEUS_NETWORK_DEFAULTS[runtimeNetwork];
   return {
     abstractAccountHash: resolveAbstractAccountHash(
       env.VITE_AA_HASH || env.VITE_ABSTRACT_ACCOUNT_HASH,
-      DEFAULT_ABSTRACT_ACCOUNT_HASH
+      networkDefaults.abstractAccountHash
     ),
     abstractAccountDomain: resolveOptionalUrl(
       env.VITE_AA_DOMAIN || env.VITE_ABSTRACT_ACCOUNT_DOMAIN,
-      DEFAULT_ABSTRACT_ACCOUNT_DOMAIN
+      networkDefaults.abstractAccountDomain
     ),
     rpcUrl: resolveRpcUrl(
       env.VITE_AA_RPC_URL || env.VITE_NEO_RPC_URL,
-      DEFAULT_RPC_URL
+      networkDefaults.rpcUrl
     ),
     supabaseUrl: resolveOptionalUrl(
       env.VITE_SUPABASE_URL || env.VITE_SUPABASE_PROJECT_URL
@@ -82,7 +113,7 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     ),
     relayRpcUrl: resolveOptionalUrl(
       env.VITE_AA_RELAY_RPC_URL || env.VITE_NEO_RPC_URL || env.VITE_AA_RPC_URL,
-      DEFAULT_RPC_URL
+      networkDefaults.rpcUrl
     ),
     relayMetaEnabled: resolveOptionalBoolean(
       env.VITE_AA_RELAY_META_ENABLED || env.VITE_RELAY_META_ENABLED,
@@ -106,7 +137,7 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     ),
     n3IndexNetwork: resolveOptionalNetwork(
       env.VITE_AA_N3INDEX_NETWORK || env.VITE_N3INDEX_NETWORK,
-      DEFAULT_N3INDEX_NETWORK
+      networkDefaults.n3IndexNetwork
     ),
     neoNnsContractHash: resolveAbstractAccountHash(
       env.VITE_AA_NEO_NNS_CONTRACT_HASH || env.VITE_NEO_NNS_CONTRACT_HASH,
@@ -152,7 +183,7 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     ),
     neoDidDomain: resolveOptionalUrl(
       env.VITE_NEODID_DOMAIN,
-      DEFAULT_NEODID_DOMAIN
+      networkDefaults.neoDidDomain
     ),
     morpheusApiBaseUrl: resolveOptionalUrl(
       env.VITE_MORPHEUS_API_BASE_URL,

@@ -35,6 +35,30 @@ If you want relay submission to request Morpheus sponsorship before broadcasting
 
 The relay route now forwards optional paymaster metadata and can request Morpheus paymaster pre-authorization before broadcasting a relay-ready `executeUserOp` or `executeUnifiedByAddress` invocation. Failures are now phase-tagged as `preview`, `paymaster`, `relay`, or `response` so operator logs can separate Morpheus sponsorship errors from on-chain relay failures.
 
+## Canonical Morpheus Network Anchors
+
+When this repo references Morpheus-integrated addresses, treat the following as the current canonical Neo N3 anchors:
+
+| Item | Mainnet | Testnet |
+| --- | --- | --- |
+| AA core | `0x0466fa7e8fe548480d7978d2652625d4a22589a6` | `0x9cbbfc969f94a5056fd6a658cab090bcb3604724` |
+| Morpheus Oracle | `0x017520f068fd602082fe5572596185e62a4ad991` | `0x4b882e94ed766807c4fd728768f972e13008ad52` |
+| Morpheus DataFeed | `0x03013f49c42a14546c8bbe58f9d434c3517fccab` | `0x9bea75cf702f6afc09125aa6d22f082bfd2ee064` |
+| Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x6af95dac2c55d4af01f657c86b83583b6dd2fabe` |
+| NeoDIDRegistry | `0x6a51671fd45d61b9536791390f275eb31d07954a` | unpublished in the shared registry |
+| MorpheusSocialRecoveryVerifier | `0x975483c2d0928c1ed6da568190b5137463431422` | deployment-specific in current test flows |
+
+Domain rules:
+
+- mainnet AA domain: `aa.morpheus.neo`
+- mainnet NeoDID domain: `neodid.morpheus.neo`
+- testnet currently has no shared AA / NeoDID NNS aliases
+
+Do not conflate the AA recovery verifier with the independent NeoDID registry:
+
+- `MorpheusSocialRecoveryVerifier` is the AA-specific recovery verifier
+- `NeoDIDRegistry` is the independent Morpheus identity / action-ticket registry
+
 For Morpheus / NeoDID production integration, also set:
 
 - `VITE_WEB3AUTH_CLIENT_ID`
