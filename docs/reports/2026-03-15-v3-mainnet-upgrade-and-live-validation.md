@@ -14,7 +14,7 @@ This report records the Neo N3 mainnet AA migration into the current clean-name 
 - SocialRecoveryVerifier: `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3`
 - MorpheusOracle: `0x017520f068fd602082fe5572596185e62a4ad991`
 - MorpheusDataFeed: `0x03013f49c42a14546c8bbe58f9d434c3517fccab`
-- NeoDIDRegistry: `0x6a51671fd45d61b9536791390f275eb31d07954a`
+- NeoDIDRegistry: `0xb81f31ea81e279793b30411b82c2e82078b63105`
 - example consumer: `0x89b05cac00804648c666b47ecb1c57bc185821b7`
 
 ## Mainnet Transactions

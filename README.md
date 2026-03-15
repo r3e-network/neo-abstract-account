@@ -49,7 +49,7 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 | Morpheus Oracle | `0x017520f068fd602082fe5572596185e62a4ad991` | `0x4b882e94ed766807c4fd728768f972e13008ad52` |
 | Morpheus DataFeed | `0x03013f49c42a14546c8bbe58f9d434c3517fccab` | `0x9bea75cf702f6afc09125aa6d22f082bfd2ee064` |
 | Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x6af95dac2c55d4af01f657c86b83583b6dd2fabe` |
-| NeoDIDRegistry | `0x6a51671fd45d61b9536791390f275eb31d07954a` | unpublished in the shared registry |
+| NeoDIDRegistry | `0xb81f31ea81e279793b30411b82c2e82078b63105` | unpublished in the shared registry |
 | AA Web3AuthVerifier | `0xb4107cb2cb4bace0ebe15bc4842890734abe133a` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
 | SocialRecoveryVerifier | `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3` | deployment-specific in current test flows |
 
