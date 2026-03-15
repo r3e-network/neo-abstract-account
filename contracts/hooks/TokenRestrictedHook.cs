@@ -8,6 +8,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Hooks
 {
+    /// <summary>
+    /// Hook that blocks interaction with specific token contracts for a given account.
+    /// </summary>
+    /// <remarks>
+    /// This is useful for forbidding calls into sensitive or governance-critical assets even if
+    /// the rest of the AA account remains broadly usable.
+    /// </remarks>
     [DisplayName("TokenRestrictedHook")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Hook to restrict interacting with specific high-value tokens")]
@@ -15,6 +22,9 @@ namespace AbstractAccount.Hooks
     {
         private static readonly byte[] Prefix_RestrictedTokens = new byte[] { 0x01 };
 
+        /// <summary>
+        /// Marks a token contract as restricted or clears the restriction.
+        /// </summary>
         public static void SetRestrictedToken(UInt160 accountId, UInt160 token, bool isRestricted)
         {
             bool authorized = (bool)Contract.Call(
@@ -36,6 +46,9 @@ namespace AbstractAccount.Hooks
             }
         }
 
+        /// <summary>
+        /// Aborts execution if the target contract is in the account's restricted-token set.
+        /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             if (opParams.Length < 2) return;

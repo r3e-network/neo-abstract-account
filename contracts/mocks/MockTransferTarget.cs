@@ -6,6 +6,14 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Mocks
 {
+    /// <summary>
+    /// Minimal mock target used by validation suites for transfer-like calls.
+    /// </summary>
+    /// <remarks>
+    /// This contract is not meant for production value storage. It gives plugin and AA tests a
+    /// stable target that exposes <c>symbol</c>, <c>balanceOf</c>, and <c>transfer</c> without
+    /// depending on external token balances or live third-party contracts.
+    /// </remarks>
     [DisplayName("MockTransferTarget")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Minimal transfer-capable test target for AA V3 validation")]

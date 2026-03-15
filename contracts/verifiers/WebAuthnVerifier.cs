@@ -9,6 +9,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Verifiers
 {
+    /// <summary>
+    /// Verifier for passkey / WebAuthn secp256r1 signatures.
+    /// </summary>
+    /// <remarks>
+    /// This plugin lets a V3 AA account be controlled by a passkey credential after the
+    /// corresponding public key has been provisioned through the AA core.
+    /// </remarks>
     [DisplayName("WebAuthnVerifier")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "WebAuthn / Passkey Hardware Enclave Verifier")]
@@ -16,6 +23,9 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_AccountPubKey = new byte[] { 0x01 };
 
+        /// <summary>
+        /// Stores the passkey public key for an AA account.
+        /// </summary>
         public static void SetPublicKey(UInt160 accountId, ByteString pubKey)
         {
             bool authorized = (bool)Contract.Call(
@@ -37,11 +47,17 @@ namespace AbstractAccount.Verifiers
         }
 
         [Safe]
+        /// <summary>
+        /// Returns the payload bytes that a WebAuthn signer must approve.
+        /// </summary>
         public static ByteString GetPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
         {
             return (ByteString)BuildPayload(accountId, targetContract, method, args, nonce, deadline);
         }
 
+        /// <summary>
+        /// Validates the WebAuthn secp256r1 signature for the given user operation.
+        /// </summary>
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             ByteString pubKey = GetPublicKey(accountId);

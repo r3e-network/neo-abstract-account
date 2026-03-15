@@ -9,6 +9,17 @@ using System.ComponentModel;
 
 namespace AbstractAccount
 {
+    /// <summary>
+    /// Canonical Neo N3 AA core for the V3 runtime.
+    /// </summary>
+    /// <remarks>
+    /// This contract owns account state, nonce management, verifier and hook routing,
+    /// backup-owner recovery, and the final target-contract execution path. Users normally:
+    /// 1. register an account with <c>RegisterAccount</c>,
+    /// 2. optionally bind verifier and hook plugins,
+    /// 3. submit one or more <c>UserOperation</c> payloads through <c>ExecuteUserOp</c>.
+    /// Security-sensitive configuration changes are always gated by the backup owner witness.
+    /// </remarks>
     [DisplayName("UnifiedSmartWalletV3")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "ERC-4337 Aligned Minimalist AA Engine for Neo N3")]
@@ -50,6 +61,9 @@ namespace AbstractAccount
         // ========================================================================
         // 2. 账户初始化 (Factory 模式的雏形)
         // ========================================================================
+        /// <summary>
+        /// Creates a new deterministic AA account and optionally configures its initial verifier and hook.
+        /// </summary>
         public static void RegisterAccount(UInt160 accountId, UInt160 verifier, ByteString verifierParams, UInt160 hookId, UInt160 backupOwner, uint escapeTimelock)
         {
             ExecutionEngine.Assert(backupOwner != null && backupOwner != UInt160.Zero, "Backup owner required");
@@ -83,6 +97,9 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Replaces the hook plugin bound to an account.
+        /// </summary>
         public static void UpdateHook(UInt160 accountId, UInt160 newHookId)
         {
             AssertBackupOwner(accountId);
@@ -92,6 +109,9 @@ namespace AbstractAccount
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
         }
 
+        /// <summary>
+        /// Replaces the verifier plugin bound to an account and optionally pushes verifier setup data.
+        /// </summary>
         public static void UpdateVerifier(UInt160 accountId, UInt160 newVerifier, ByteString verifierParams)
         {
             AssertBackupOwner(accountId);
@@ -116,6 +136,9 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Allows the backup owner to call an account verifier for configuration or maintenance tasks.
+        /// </summary>
         public static object CallVerifier(UInt160 accountId, string method, object[] args)
         {
             AssertBackupOwner(accountId);
@@ -133,6 +156,9 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Allows the backup owner to call an account hook for configuration or maintenance tasks.
+        /// </summary>
         public static object CallHook(UInt160 accountId, string method, object[] args)
         {
             AssertBackupOwner(accountId);
@@ -218,6 +244,13 @@ namespace AbstractAccount
         // ========================================================================
         // 3. 核心路由: 验证与执行 (对齐 4337 的 Validate & Call)
         // ========================================================================
+        /// <summary>
+        /// Canonical execution entrypoint for a single V3 user operation.
+        /// </summary>
+        /// <remarks>
+        /// This path consumes the nonce, checks the verifier or backup-owner witness,
+        /// runs the pre-hook, executes the target contract call, and then runs the post-hook.
+        /// </remarks>
         public static object ExecuteUserOp(UInt160 accountId, UserOperation op)
         {
             AccountState state = GetAccountState(accountId);
@@ -279,6 +312,9 @@ namespace AbstractAccount
         // ========================================================================
         // 3.1 意图引擎: 批量执行 (Intent & Batch)
         // ========================================================================
+        /// <summary>
+        /// Executes multiple user operations in sequence under the same account context.
+        /// </summary>
         public static object[] ExecuteUserOps(UInt160 accountId, UserOperation[] ops)
         {
             object[] results = new object[ops.Length];
@@ -326,6 +362,9 @@ namespace AbstractAccount
         // ========================================================================
         // 允许外部 DeFi 合约在执行 `ExecuteUserOp` 期间，调用 CheckWitness(accountId)
         [Safe]
+        /// <summary>
+        /// Temporary witness bridge that lets the target contract recognize the active AA context.
+        /// </summary>
         public static bool Verify(UInt160 accountId)
         {
             if (Runtime.Trigger == TriggerType.Application)
@@ -403,6 +442,9 @@ namespace AbstractAccount
         // ========================================================================
         // 6. L1 逃生舱 (Native 兜底)
         // ========================================================================
+        /// <summary>
+        /// Starts the backup-owner escape flow for a compromised or unavailable verifier setup.
+        /// </summary>
         public static void InitiateEscape(UInt160 accountId)
         {
             AccountState state = GetAccountState(accountId);
@@ -414,6 +456,9 @@ namespace AbstractAccount
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
         }
 
+        /// <summary>
+        /// Completes the escape flow after the configured timelock and rotates to a new verifier.
+        /// </summary>
         public static void FinalizeEscape(UInt160 accountId, UInt160 newVerifier)
         {
             AccountState state = GetAccountState(accountId);

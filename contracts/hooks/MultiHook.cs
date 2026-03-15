@@ -19,6 +19,14 @@ namespace AbstractAccount.Hooks
         public ByteString Signature;
     }
 
+    /// <summary>
+    /// Hook combiner that executes multiple hook plugins as a single policy surface.
+    /// </summary>
+    /// <remarks>
+    /// Use this contract when an account must satisfy more than one policy at once, for example
+    /// whitelist plus daily limit plus a credential check. Pre-hooks run in forward order and
+    /// post-hooks run in reverse order.
+    /// </remarks>
     [DisplayName("MultiHook")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Composable Hook to chain multiple hooks")]
@@ -26,6 +34,9 @@ namespace AbstractAccount.Hooks
     {
         private static readonly byte[] Prefix_Hooks = new byte[] { 0x01 };
 
+        /// <summary>
+        /// Sets the ordered hook list for an account or clears it when the array is empty.
+        /// </summary>
         public static void SetHooks(UInt160 accountId, UInt160[] hooks)
         {
             bool authorized = (bool)Contract.Call(
@@ -54,6 +65,9 @@ namespace AbstractAccount.Hooks
             return (UInt160[])StdLib.Deserialize(data!);
         }
 
+        /// <summary>
+        /// Forwards the pre-execution phase through each configured hook in order.
+        /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             UInt160[] hooks = GetHooks(accountId);
@@ -63,6 +77,9 @@ namespace AbstractAccount.Hooks
             }
         }
 
+        /// <summary>
+        /// Forwards the post-execution phase through each configured hook in reverse order.
+        /// </summary>
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
             UInt160[] hooks = GetHooks(accountId);

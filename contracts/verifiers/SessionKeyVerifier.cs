@@ -9,6 +9,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Verifiers
 {
+    /// <summary>
+    /// Verifier for short-lived delegated session keys.
+    /// </summary>
+    /// <remarks>
+    /// This plugin is intended for constrained delegation, such as a bot or game session that may
+    /// call only one contract and one method until a fixed expiry time.
+    /// </remarks>
     [DisplayName("SessionKeyVerifier")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Temporary Session Key Verifier for High Frequency Actions")]
@@ -25,6 +32,9 @@ namespace AbstractAccount.Verifiers
             public BigInteger ValidUntil;
         }
 
+        /// <summary>
+        /// Configures the active session key and its target/method/expiry scope.
+        /// </summary>
         public static void SetSessionKey(UInt160 accountId, ByteString pubKey, UInt160 targetContract, string method, BigInteger validUntil)
         {
             bool authorized = (bool)Contract.Call(
@@ -48,6 +58,9 @@ namespace AbstractAccount.Verifiers
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(data));
         }
 
+        /// <summary>
+        /// Removes the current delegated session key for the account.
+        /// </summary>
         public static void ClearSessionKey(UInt160 accountId)
         {
             bool authorized = (bool)Contract.Call(
@@ -70,11 +83,17 @@ namespace AbstractAccount.Verifiers
         }
 
         [Safe]
+        /// <summary>
+        /// Returns the exact payload bytes that the delegated session key must sign.
+        /// </summary>
         public static ByteString GetPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
         {
             return (ByteString)BuildPayload(accountId, targetContract, method, args, nonce, deadline);
         }
 
+        /// <summary>
+        /// Validates the delegated session signature and enforces its contract/method/expiry scope.
+        /// </summary>
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             SessionKeyData sk = GetSessionKey(accountId);

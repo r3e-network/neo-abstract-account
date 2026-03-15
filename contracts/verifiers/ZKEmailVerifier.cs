@@ -9,6 +9,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Verifiers
 {
+    /// <summary>
+    /// Placeholder verifier reserved for a future zkEmail proof flow.
+    /// </summary>
+    /// <remarks>
+    /// The contract intentionally stays disabled until a real proof verifier is added.
+    /// It is kept in the tree so integrators can see the intended configuration surface.
+    /// </remarks>
     [DisplayName("ZKEmailVerifier")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "ZK-SNARK Email Proof Verifier")]
@@ -16,6 +23,9 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_AccountDKIM = new byte[] { 0x01 };
 
+        /// <summary>
+        /// Stores the DKIM root or registry hash that a future zkEmail proof should bind against.
+        /// </summary>
         public static void SetDKIMRegistry(UInt160 accountId, ByteString dkimHash)
         {
             bool authorized = (bool)Contract.Call(
@@ -28,6 +38,9 @@ namespace AbstractAccount.Verifiers
             Storage.Put(Storage.CurrentContext, key, dkimHash);
         }
 
+        /// <summary>
+        /// Always faults today because the verifier is intentionally disabled pending real proof verification.
+        /// </summary>
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             byte[] key = Helper.Concat(Prefix_AccountDKIM, (byte[])accountId);

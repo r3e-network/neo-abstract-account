@@ -28,6 +28,14 @@ namespace AbstractAccount
         }
     }
 
+    /// <summary>
+    /// Verifier for EVM-style secp256k1 signatures produced through Web3Auth or compatible wallets.
+    /// </summary>
+    /// <remarks>
+    /// This plugin verifies an EIP-712-style user operation payload inside Neo N3 so a V3 AA
+    /// account can be controlled by an EVM identity without changing the AA core contract.
+    /// Public-key setup is still routed through the AA core authorization boundary.
+    /// </remarks>
     [DisplayName("Web3AuthVerifier")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "EIP-712 MetaTransaction Verifier Plugin for Neo N3")]
@@ -64,6 +72,9 @@ namespace AbstractAccount
             0x87, 0x1c, 0x96, 0xdf, 0x18, 0xe0, 0xf2, 0xf4
         };
 
+        /// <summary>
+        /// Stores the 65-byte uncompressed secp256k1 public key for an account.
+        /// </summary>
         public static void SetPublicKey(UInt160 accountId, ByteString uncompressedPubKey)
         {
             ExecutionEngine.Assert(uncompressedPubKey.Length == 65, "Invalid pubkey");
@@ -86,6 +97,9 @@ namespace AbstractAccount
         }
 
         [Safe]
+        /// <summary>
+        /// Verifies the EIP-712-style user operation signature for the configured account key.
+        /// </summary>
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             ByteString pubKey = GetPublicKey(accountId);

@@ -9,6 +9,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Verifiers
 {
+    /// <summary>
+    /// Verifier for recurring merchant payments with period-bound replay protection.
+    /// </summary>
+    /// <remarks>
+    /// The signature field carries the subscription identifier, and the nonce must encode the
+    /// current billing period so the AA core replay checks prevent duplicate charges.
+    /// </remarks>
     [DisplayName("SubscriptionVerifier")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Time-based Subscription Auto-Payment Verifier")]
@@ -25,6 +32,9 @@ namespace AbstractAccount.Verifiers
             public BigInteger LastChargeTime;
         }
 
+        /// <summary>
+        /// Creates or overwrites a subscription configuration for an account and subscription id.
+        /// </summary>
         public static void CreateSubscription(UInt160 accountId, ByteString subId, UInt160 merchant, UInt160 token, BigInteger amount, BigInteger periodMs)
         {
             bool authorized = (bool)Contract.Call(
@@ -47,6 +57,9 @@ namespace AbstractAccount.Verifiers
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
         }
 
+        /// <summary>
+        /// Validates that the claimed subscription payment matches the configured merchant, token, amount, and billing period.
+        /// </summary>
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             // Signature field acts as the Subscription ID being claimed by the merchant

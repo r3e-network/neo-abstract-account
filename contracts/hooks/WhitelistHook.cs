@@ -7,6 +7,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Hooks
 {
+    /// <summary>
+    /// Hook that restricts an AA account to an explicit target-contract allowlist.
+    /// </summary>
+    /// <remarks>
+    /// Use this hook when an account should only talk to a small, reviewed set of contracts.
+    /// Configuration must still flow through the AA core via <c>canConfigureHook</c>.
+    /// </remarks>
     [DisplayName("WhitelistHook")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Target Contract Whitelist Hook")]
@@ -14,6 +21,9 @@ namespace AbstractAccount.Hooks
     {
         private static readonly byte[] Prefix_Whitelist = new byte[] { 0x01 };
 
+        /// <summary>
+        /// Adds or removes a target contract from the account's allowlist.
+        /// </summary>
         public static void SetWhitelist(UInt160 accountId, UInt160 targetContract, bool allowed)
         {
             bool authorized = (bool)Contract.Call(
@@ -28,6 +38,9 @@ namespace AbstractAccount.Hooks
             else Storage.Delete(Storage.CurrentContext, key);
         }
 
+        /// <summary>
+        /// Blocks execution unless the target contract is explicitly allowlisted for the account.
+        /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             if (opParams.Length < 1) return;

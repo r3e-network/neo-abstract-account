@@ -8,6 +8,14 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Hooks
 {
+    /// <summary>
+    /// Hook that gates target-contract access on account-local NeoDID credential markers.
+    /// </summary>
+    /// <remarks>
+    /// This hook does not perform off-chain verification itself. Instead, a trusted orchestration
+    /// path issues or revokes credential flags after NeoDID or Oracle workflows succeed, and this
+    /// hook enforces those flags at execution time.
+    /// </remarks>
     [DisplayName("NeoDIDCredentialHook")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "NeoDID Credential Check Hook")]
@@ -18,6 +26,9 @@ namespace AbstractAccount.Hooks
         // Setup: AccountId -> Verified Credentials HashMap
         private static readonly byte[] Prefix_VerifiedCredentials = new byte[] { 0x02 };
 
+        /// <summary>
+        /// Declares which credential type is required before the account may call a target contract.
+        /// </summary>
         public static void RequireCredentialForContract(UInt160 accountId, UInt160 targetContract, string credentialType)
         {
             bool authorized = (bool)Contract.Call(
@@ -31,6 +42,9 @@ namespace AbstractAccount.Hooks
             else Storage.Put(Storage.CurrentContext, key, credentialType);
         }
 
+        /// <summary>
+        /// Marks a credential type as satisfied for the account.
+        /// </summary>
         public static void IssueCredential(UInt160 accountId, string credentialType)
         {
             bool authorized = (bool)Contract.Call(
@@ -43,6 +57,9 @@ namespace AbstractAccount.Hooks
             Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
         }
 
+        /// <summary>
+        /// Removes a previously issued credential marker from the account.
+        /// </summary>
         public static void RevokeCredential(UInt160 accountId, string credentialType)
         {
             bool authorized = (bool)Contract.Call(
@@ -55,6 +72,9 @@ namespace AbstractAccount.Hooks
             Storage.Delete(Storage.CurrentContext, key);
         }
 
+        /// <summary>
+        /// Rejects execution when the target contract requires a credential the account has not been issued.
+        /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             if (opParams.Length < 1) return;

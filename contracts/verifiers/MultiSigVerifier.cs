@@ -9,6 +9,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Verifiers
 {
+    /// <summary>
+    /// Threshold verifier that composes multiple child verifiers into one approval policy.
+    /// </summary>
+    /// <remarks>
+    /// Each child verifier validates its own signature format. This contract only enforces that a
+    /// sufficient number of child verifiers approve the same user operation.
+    /// </remarks>
     [DisplayName("MultiSigVerifier")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Heterogeneous Threshold Multi-Sig Verifier")]
@@ -22,6 +29,9 @@ namespace AbstractAccount.Verifiers
             public int Threshold;
         }
 
+        /// <summary>
+        /// Stores the ordered verifier set and threshold for the account.
+        /// </summary>
         public static void SetConfig(UInt160 accountId, UInt160[] verifiers, int threshold)
         {
             bool authorized = (bool)Contract.Call(
@@ -37,6 +47,9 @@ namespace AbstractAccount.Verifiers
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
         }
 
+        /// <summary>
+        /// Validates a multi-signature bundle by forwarding to the configured child verifiers.
+        /// </summary>
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             byte[] key = Helper.Concat(Prefix_Config, (byte[])accountId);

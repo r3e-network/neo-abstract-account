@@ -9,6 +9,13 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Hooks
 {
+    /// <summary>
+    /// Hook that enforces per-token daily transfer ceilings for an AA account.
+    /// </summary>
+    /// <remarks>
+    /// This hook only inspects transfer-style calls and maintains rolling daily spend state
+    /// inside its own storage. It is meant for treasury and user-wallet safety policies.
+    /// </remarks>
     [DisplayName("DailyLimitHook")]
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "Daily Limit Policy Hook Plugin for Neo N3 AA")]
@@ -19,6 +26,9 @@ namespace AbstractAccount.Hooks
         private static readonly byte[] Prefix_LastReset = new byte[] { 0x03 };
 
         // Configuration: Only AA account can configure its own limits
+        /// <summary>
+        /// Sets or clears the maximum amount a given token may transfer in a 24-hour window.
+        /// </summary>
         public static void SetDailyLimit(UInt160 accountId, UInt160 token, BigInteger maxAmount)
         {
             bool authorized = (bool)Contract.Call(
@@ -40,6 +50,9 @@ namespace AbstractAccount.Hooks
             return data == null ? 0 : (BigInteger)data;
         }
 
+        /// <summary>
+        /// Rejects transfer calls that would exceed the configured daily token limit.
+        /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             // Expected opParams layout: TargetContract, Method, Args, Nonce, Deadline, Signature
