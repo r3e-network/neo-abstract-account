@@ -56,6 +56,7 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 Domain rules:
 
 - mainnet AA domain: `smartwallet.neo`
+- mainnet AA compatibility alias: `aa.morpheus.neo`
 - mainnet NeoDID domain: `neodid.morpheus.neo`
 - testnet currently has no shared AA / NeoDID NNS aliases
 
