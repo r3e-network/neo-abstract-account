@@ -4,6 +4,12 @@ Date: 2026-03-13
 Network: Neo N3 Testnet (`894710606`)
 Executor address: `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
 
+Refresh note on 2026-03-15:
+
+- the current shared testnet AA core is now `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38`
+- the current shared testnet `Web3AuthVerifier` anchor is now `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`
+- the deployment set below is preserved as the historical matrix run environment
+
 This report records the V3 verifier/hook matrix that was executed on testnet after hardening the current branch.
 
 ## Pre-Matrix Security Fixes

@@ -46,7 +46,7 @@ test('default abstract account hash tracks the hardened verified deployment', ()
 });
 
 test('testnet abstract account hash tracks the published V3 testnet deployment', () => {
-  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, '9cbbfc969f94a5056fd6a658cab090bcb3604724');
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38');
 });
 
 test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
@@ -157,7 +157,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
     neoDidDomain: 'neodid.morpheus.neo',
   });
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.testnet, {
-    abstractAccountHash: '9cbbfc969f94a5056fd6a658cab090bcb3604724',
+    abstractAccountHash: 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38',
     abstractAccountDomain: '',
     rpcUrl: 'https://testnet1.neo.coz.io:443',
     n3IndexNetwork: 'testnet',

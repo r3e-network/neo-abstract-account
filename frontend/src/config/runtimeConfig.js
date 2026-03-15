@@ -3,7 +3,7 @@ import { sanitizeHex } from '../utils/hex.js';
 export { sanitizeHex };
 
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '0466fa7e8fe548480d7978d2652625d4a22589a6';
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = '9cbbfc969f94a5056fd6a658cab090bcb3604724';
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38';
 export const DEFAULT_RPC_URL = 'https://mainnet1.neo.coz.io:443';
 export const DEFAULT_RPC_URL_TESTNET = 'https://testnet1.neo.coz.io:443';
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';

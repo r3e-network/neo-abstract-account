@@ -60,7 +60,7 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
     VITE_SUPABASE_ANON_KEY: 'public-anon-key',
   });
 
-  assert.equal(config.abstractAccountHash, '9cbbfc969f94a5056fd6a658cab090bcb3604724');
+  assert.equal(config.abstractAccountHash, 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38');
   assert.equal(config.abstractAccountDomain, '');
   assert.equal(config.rpcUrl, 'https://testnet1.neo.coz.io:443');
   assert.equal(config.relayRpcUrl, 'https://testnet1.neo.coz.io:443');

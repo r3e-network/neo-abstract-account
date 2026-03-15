@@ -22,8 +22,8 @@ const relayHandler = relayModule.default;
 
 const TEST_WIF = process.env.TEST_WIF || process.env.NEO_TESTNET_WIF || "";
 const RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https://testnet1.neo.coz.io:443";
-const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0x9cbbfc969f94a5056fd6a658cab090bcb3604724";
-const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xcd2e4589debfd80449ba9190548c5a7d539ce062";
+const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
+const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56";
 const PAYMASTER_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
