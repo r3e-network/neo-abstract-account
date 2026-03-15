@@ -6,7 +6,8 @@ Current status note:
 
 - The latest `main` branch is migrating to `UnifiedSmartWalletV3`.
 - V3 removes the old role-heavy / dome-heavy core wallet model and replaces it with a minimalist account core plus verifier and hook plugins.
-- The published mainnet AA hash `0x0466fa7e8fe548480d7978d2652625d4a22589a6` was updated in place on 2026-03-15 and now serves the V3 runtime ABI at the same address.
+- The canonical mainnet AA anchor now points to the clean deploy `0x9742b4ed62a84a886f404d36149da6147528ee33` and resolves from `smartwallet.neo`.
+- The older mainnet hash `0x0466fa7e8fe548480d7978d2652625d4a22589a6` was updated in place to a V3-compatible runtime on 2026-03-15 and is now retained as a legacy compatibility deployment, not the canonical public anchor.
 - The canonical shared testnet AA anchor now points to the clean deployment `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38`, with shared `Web3AuthVerifier` `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`.
 - Older role / dome / `executeUnifiedByAddress` materials below are historical unless explicitly updated to mention V3.
 
@@ -43,24 +44,24 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 
 | Item | Mainnet | Testnet |
 | --- | --- | --- |
-| AA core | `0x0466fa7e8fe548480d7978d2652625d4a22589a6` | `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38` |
+| AA core | `0x9742b4ed62a84a886f404d36149da6147528ee33` | `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38` |
 | AA runtime label | `UnifiedSmartWalletV3` | `UnifiedSmartWalletV3` |
 | Morpheus Oracle | `0x017520f068fd602082fe5572596185e62a4ad991` | `0x4b882e94ed766807c4fd728768f972e13008ad52` |
 | Morpheus DataFeed | `0x03013f49c42a14546c8bbe58f9d434c3517fccab` | `0x9bea75cf702f6afc09125aa6d22f082bfd2ee064` |
 | Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x6af95dac2c55d4af01f657c86b83583b6dd2fabe` |
 | NeoDIDRegistry | `0x6a51671fd45d61b9536791390f275eb31d07954a` | unpublished in the shared registry |
-| AA Web3AuthVerifier | `0x4696e7a68d5d6c6cf9c19c38cd0fdc9c0bcc3e0a` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
-| MorpheusSocialRecoveryVerifier | `0x975483c2d0928c1ed6da568190b5137463431422` | deployment-specific in current test flows |
+| AA Web3AuthVerifier | `0xb4107cb2cb4bace0ebe15bc4842890734abe133a` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
+| SocialRecoveryVerifier | `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3` | deployment-specific in current test flows |
 
 Domain rules:
 
-- mainnet AA domain: `aa.morpheus.neo`
+- mainnet AA domain: `smartwallet.neo`
 - mainnet NeoDID domain: `neodid.morpheus.neo`
 - testnet currently has no shared AA / NeoDID NNS aliases
 
 Do not conflate the AA recovery verifier with the independent NeoDID registry:
 
-- `MorpheusSocialRecoveryVerifier` is the AA-specific recovery verifier
+- `SocialRecoveryVerifier` is the AA-specific recovery verifier
 - `NeoDIDRegistry` is the independent Morpheus identity / action-ticket registry
 
 Mainnet validation references:

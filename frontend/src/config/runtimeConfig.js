@@ -2,7 +2,7 @@ import { sanitizeHex } from '../utils/hex.js';
 
 export { sanitizeHex };
 
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '0466fa7e8fe548480d7978d2652625d4a22589a6';
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '9742b4ed62a84a886f404d36149da6147528ee33';
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38';
 export const DEFAULT_RPC_URL = 'https://mainnet1.neo.coz.io:443';
 export const DEFAULT_RPC_URL_TESTNET = 'https://testnet1.neo.coz.io:443';
@@ -18,7 +18,7 @@ export const DEFAULT_WEB3AUTH_CHAIN_ID = '0x1';
 export const DEFAULT_WEB3AUTH_RPC_TARGET = 'https://rpc.ankr.com/eth';
 export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
 export const DEFAULT_DID_PROVIDER = 'web3auth';
-export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'aa.morpheus.neo';
+export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'smartwallet.neo';
 export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
 export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://neo-morpheus-oracle-web.vercel.app';
 export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';

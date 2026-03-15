@@ -42,7 +42,7 @@ test('resolveAbstractAccountHash falls back for invalid values', () => {
 });
 
 test('default abstract account hash tracks the hardened verified deployment', () => {
-  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '0466fa7e8fe548480d7978d2652625d4a22589a6');
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '9742b4ed62a84a886f404d36149da6147528ee33');
 });
 
 test('testnet abstract account hash tracks the published V3 testnet deployment', () => {
@@ -92,7 +92,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
 
   assert.deepEqual(config, {
     abstractAccountHash: '1111111111111111111111111111111111111111',
-    abstractAccountDomain: 'aa.morpheus.neo',
+    abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://rpc.example.org',
     supabaseUrl: '',
     supabaseAnonKey: '',
@@ -150,8 +150,8 @@ test('getRuntimeConfig uses testnet defaults when the selected runtime network i
 
 test('network defaults keep mainnet and testnet anchors explicit', () => {
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.mainnet, {
-    abstractAccountHash: '0466fa7e8fe548480d7978d2652625d4a22589a6',
-    abstractAccountDomain: 'aa.morpheus.neo',
+    abstractAccountHash: '9742b4ed62a84a886f404d36149da6147528ee33',
+    abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://mainnet1.neo.coz.io:443',
     n3IndexNetwork: 'mainnet',
     neoDidDomain: 'neodid.morpheus.neo',

@@ -17,7 +17,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
 
   assert.deepEqual(config, {
     abstractAccountHash: '1111111111111111111111111111111111111111',
-    abstractAccountDomain: 'aa.morpheus.neo',
+    abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://rpc.example.org',
     supabaseUrl: 'https://example.supabase.co',
     supabaseAnonKey: 'public-anon-key',

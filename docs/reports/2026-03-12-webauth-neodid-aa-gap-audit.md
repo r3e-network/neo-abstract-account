@@ -122,7 +122,7 @@ The following production domains are the intended public entrypoints:
 
 - `oracle.morpheus.neo`
 - `pricefeed.morpheus.neo`
-- `aa.morpheus.neo`
+- `smartwallet.neo`
 - `neodid.morpheus.neo`
 
 Status:

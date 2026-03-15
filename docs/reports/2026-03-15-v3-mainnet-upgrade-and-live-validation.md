@@ -4,14 +4,14 @@ Date: 2026-03-15
 
 ## Scope
 
-This report records the Neo N3 mainnet AA core upgrade from the legacy V2-era runtime to the current V3 runtime at the same published AA hash, together with fresh live validation against the production Morpheus Oracle path.
+This report records the Neo N3 mainnet AA migration into the current clean-name V3 anchor set, together with fresh live validation against the production Morpheus Oracle path.
 
 ## Canonical Mainnet Anchors
 
-- AA core: `0x0466fa7e8fe548480d7978d2652625d4a22589a6`
-- AA domain: `aa.morpheus.neo`
-- AA Web3AuthVerifier: `0x4696e7a68d5d6c6cf9c19c38cd0fdc9c0bcc3e0a`
-- MorpheusSocialRecoveryVerifier: `0x975483c2d0928c1ed6da568190b5137463431422`
+- AA core: `0x9742b4ed62a84a886f404d36149da6147528ee33`
+- AA domain: `smartwallet.neo`
+- AA Web3AuthVerifier: `0xb4107cb2cb4bace0ebe15bc4842890734abe133a`
+- SocialRecoveryVerifier: `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3`
 - MorpheusOracle: `0x017520f068fd602082fe5572596185e62a4ad991`
 - MorpheusDataFeed: `0x03013f49c42a14546c8bbe58f9d434c3517fccab`
 - NeoDIDRegistry: `0x6a51671fd45d61b9536791390f275eb31d07954a`
@@ -19,25 +19,29 @@ This report records the Neo N3 mainnet AA core upgrade from the legacy V2-era ru
 
 ## Mainnet Transactions
 
-- AA core in-place update tx: `0xb0e163734ffd0641b44c6091f373f0b09acdde03c693f465c97e6659f2dda035`
-- AA Web3AuthVerifier deploy tx: `0x8a47340c5127fcf3d53cdfdce5a6b4555734c8db206ce5a5dfddd56199cfc3d3`
+- AA core clean deploy tx: `0x94d7a6d45196ed59a0eeb604450b305949e31650d1077ba2a824a90591644b3b`
+- AA Web3AuthVerifier clean deploy tx: `0xa96407df4ffc8496a5cd5f129b9f9881164b28c843265467d5f886e3435af6a4`
+- SocialRecoveryVerifier clean deploy tx: `0xadfc405bf40d21ab2d56bacc9ced028de1f5ccbc00803f122f93676ad3388855`
+- smartwallet domain register tx: `0x7a452ddf727fb8155b0a736b5b3bdfd1e7b8a244c8d1e56ac8393e209617cae8`
+- smartwallet domain setAdmin tx: `0xff5535aab82de9b1bdd998449eb019cb3fb230de68cff9fbf202f5bb42d6bc95`
+- smartwallet domain setRecord tx: `0x3755360a7a304be613abb735d3d798234e93fc5482d55f1792a7f05f7c869e17`
 - Oracle update tx: `0xed5fcf25c036cd2e0aff5c447f2ba1cba100b37102f8123adce407b07589f624`
 - DataFeed update tx: `0x7a0fc672247077985ddea52fdd0ccf2b62725d4cbd21127b3791406a2d3cbcdf`
 - NeoDIDRegistry deploy tx: `0x2dd001477b853fdbd5464a4b4d5eb2ac20b7bc780351369fa8c4fabae8d95f0c`
 
 ## Current Runtime State
 
-- The published AA hash stayed unchanged at `0x0466fa7e8fe548480d7978d2652625d4a22589a6`.
-- `updateCounter` increased from `0` to `1`.
-- The current runtime ABI exposes the V3 entrypoints `registerAccount`, `updateVerifier`, `executeUserOp`, and `executeUserOps`.
-- The raw on-chain manifest name remains `UnifiedSmartWalletV2-1773294968429` because Neo N3 contract update rules do not allow changing the manifest name during an in-place update.
-- The canonical product/runtime name remains `UnifiedSmartWalletV3`. The preserved manifest string is an update-compatibility detail, not the user-facing runtime label.
+- The canonical AA hash is now `0x9742b4ed62a84a886f404d36149da6147528ee33`.
+- The canonical runtime ABI exposes the V3 entrypoints `registerAccount`, `updateVerifier`, `executeUserOp`, and `executeUserOps`.
+- `smartwallet.neo` now resolves to the clean canonical AA address `NQeYx3qhVboVNU4Yk2NZPXQtudTeCNmjFq`.
+- The older hash `0x0466fa7e8fe548480d7978d2652625d4a22589a6` remains as a legacy V3-compatible deployment whose manifest name cannot be cleaned in place.
+- The canonical product/runtime name remains `UnifiedSmartWalletV3`.
 
 ## Live Validation Matrix
 
-### A. Native fallback AA path -> Oracle
+### A. Legacy compatibility AA path -> Oracle
 
-Fresh disposable V3 account:
+Fresh disposable V3 account on the legacy compatibility AA hash:
 
 - account id: `0xf71a70baf582db5e89bcaf8fa064dbd12423e3d8`
 - `registerAccount` tx: `0xe705fc6f618aa6f3a0fb3caa546e69df75af0ca9e235eaaecf68cf54e2b34367`
@@ -57,9 +61,9 @@ Oracle callback result:
 - extracted price/result: `2.96`
 - callback payload included the expected Morpheus verification envelope and TEE attestation fields
 
-### B. Web3Auth verifier AA path -> Oracle
+### B. Legacy compatibility Web3Auth AA path -> Oracle
 
-Fresh disposable V3 account:
+Fresh disposable V3 account on the legacy compatibility AA hash:
 
 - account id: `0x463f786bc02dc95083d7c101b5b2d6aaa21d7aae`
 - `registerAccount` tx: `0x67521c0ea861114b44a56728a559e85ad21bf992a7431854f6efb316c118b75a`
@@ -89,7 +93,11 @@ Oracle callback result:
 
 ## Conclusion
 
-The mainnet AA core is now aligned with the current V3 runtime at the published production hash.
+The mainnet AA stack now has a clean canonical anchor set:
+
+- `smartwallet.neo` -> `0x9742b4ed62a84a886f404d36149da6147528ee33`
+- `web3auth.smartwallet.neo` -> `0xb4107cb2cb4bace0ebe15bc4842890734abe133a`
+- `recovery.smartwallet.neo` -> `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3`
 
 Fresh live proofs now exist for both of the practical production execution paths that matter most:
 
