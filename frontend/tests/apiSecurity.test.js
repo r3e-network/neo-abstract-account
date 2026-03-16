@@ -104,6 +104,8 @@ test('relay API binds paymaster requests to dapp and operation hashes', () => {
 
   assert.match(source, /dapp_id/);
   assert.match(source, /operation_hash/);
+  assert.match(source, /userop_target_contract/);
+  assert.match(source, /userop_method/);
   assert.match(source, /sha256Hex\(metaInvocation\)/);
   assert.match(source, /paymaster \? \{ \.\.\.result, paymaster \} : result/);
 });

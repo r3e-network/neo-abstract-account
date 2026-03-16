@@ -46,14 +46,19 @@ namespace AbstractAccount.Hooks
             if (opParams.Length < 1) return;
             UInt160 targetContract = (UInt160)opParams[0];
 
-            byte[] key = Helper.Concat(Prefix_Whitelist, (byte[])accountId);
-            key = Helper.Concat(key, (byte[])targetContract);
-            
-            ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) != null, "Target contract not in whitelist");
+            ExecutionEngine.Assert(IsWhitelisted(accountId, targetContract), "Target contract not in whitelist");
         }
 
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
+        }
+
+        [Safe]
+        public static bool IsWhitelisted(UInt160 accountId, UInt160 targetContract)
+        {
+            byte[] key = Helper.Concat(Prefix_Whitelist, (byte[])accountId);
+            key = Helper.Concat(key, (byte[])targetContract);
+            return Storage.Get(Storage.CurrentContext, key) != null;
         }
     }
 }

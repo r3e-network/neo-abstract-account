@@ -77,12 +77,19 @@ function resolvePaymasterConfig() {
 
 function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimatedGasUnits = 0, network }) {
   const firstArg = Array.isArray(metaInvocation?.args) ? metaInvocation.args[0] : null;
+  const secondArg = Array.isArray(metaInvocation?.args) ? metaInvocation.args[1] : null;
   const accountId = trimString(
     paymaster.account_id
       || paymaster.accountId
       || firstArg?.value
       || ''
   );
+  const downstreamTarget = secondArg?.type === 'Struct'
+    ? trimString(secondArg?.value?.[0]?.value || '')
+    : '';
+  const downstreamMethod = secondArg?.type === 'Struct'
+    ? trimString(secondArg?.value?.[1]?.value || '')
+    : '';
 
   return {
     network,
@@ -91,6 +98,8 @@ function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimatedGasUni
     dapp_id: trimString(paymaster.dapp_id || paymaster.dappId || ''),
     target_contract: `0x${sanitizeHex(metaInvocation?.scriptHash || '')}`,
     method: trimString(metaInvocation?.operation || ''),
+    userop_target_contract: downstreamTarget ? normalizeHash(downstreamTarget) : '',
+    userop_method: downstreamMethod,
     estimated_gas_units: Number(paymaster.estimated_gas_units || paymaster.estimatedGasUnits || estimatedGasUnits || 0),
     operation_hash: trimString(paymaster.operation_hash || paymaster.operationHash || `0x${sha256Hex(metaInvocation)}`),
   };
