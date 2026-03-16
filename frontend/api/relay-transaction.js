@@ -35,6 +35,11 @@ function trimString(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeHash(value) {
+  const hex = sanitizeHex(value || '');
+  return hex ? `0x${hex}` : '';
+}
+
 function shouldIncludeRawRelayErrors() {
   return resolveOptionalBoolean(
     process.env.AA_RELAY_INCLUDE_RAW_ERRORS

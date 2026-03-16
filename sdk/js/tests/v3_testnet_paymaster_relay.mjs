@@ -219,7 +219,7 @@ JS
 }
 
 async function updateRemotePaymasterAccount(accountId) {
-  const normalized = normalizeHash(accountId);
+  const normalized = normalizeHash(accountId).toLowerCase();
   const shellScript = `
 set -e
 file="/dstack/.host-shared/.decrypted-env"
@@ -232,10 +232,25 @@ else
     *) next="$current,${normalized}" ;;
   esac
 fi
+dapps="$(grep '^MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=' "$file" | sed 's/^MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=//')"
+if [ -z "$dapps" ]; then
+  next_dapps="${PAYMASTER_DAPP_ID}"
+else
+  case ",$dapps," in
+    *",${PAYMASTER_DAPP_ID},"*) next_dapps="$dapps" ;;
+    *) next_dapps="$dapps,${PAYMASTER_DAPP_ID}" ;;
+  esac
+fi
+runtime="$(grep '^MORPHEUS_RUNTIME_CONFIG_JSON=' "$file" | sed 's/^MORPHEUS_RUNTIME_CONFIG_JSON=//')"
+runtime="$(printf '%s' "$runtime" | sed "s/^'//" | sed "s/'\$//" | sed 's/^"//' | sed 's/"$//' | sed 's/\\"/"/g')"
+runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_ENABLED\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_ENABLED\":\"true\"#g")"
+runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_POLICY_ID\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_POLICY_ID\":\"testnet-aa\"#g")"
+runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS\":\"$next_dapps\"#g")"
+runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS\":\"$next\"#g")"
 for kv in \
   "MORPHEUS_PAYMASTER_TESTNET_ENABLED=true" \
   "MORPHEUS_PAYMASTER_TESTNET_POLICY_ID=testnet-aa" \
-  "MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=${PAYMASTER_DAPP_ID}" \
+  "MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=$next_dapps" \
   "MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=$next"
 do
   key="\${kv%%=*}"
@@ -246,10 +261,42 @@ do
     printf '%s=%s\\n' "$key" "$value" >> "$file"
   fi
 done
+if grep -q '^MORPHEUS_RUNTIME_CONFIG_JSON=' "$file"; then
+  sed -i "s#^MORPHEUS_RUNTIME_CONFIG_JSON=.*#MORPHEUS_RUNTIME_CONFIG_JSON='$runtime'#" "$file"
+else
+  printf "MORPHEUS_RUNTIME_CONFIG_JSON='%s'\\n" "$runtime" >> "$file"
+fi
 cd /dstack
 MORPHEUS_LOCAL_ENV_FILE=/dstack/.host-shared/.decrypted-env docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml up -d
 `;
   await runPhalaRemoteShell(shellScript, { maxBuffer: 20 * 1024 * 1024 });
+}
+
+async function waitForRemotePaymasterAccount(accountId, timeoutMs = 180000) {
+  const normalized = normalizeHash(accountId).toLowerCase();
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const result = await callRemotePaymaster({
+      network: "testnet",
+      target_chain: "neo_n3",
+      account_id: normalized,
+      dapp_id: PAYMASTER_DAPP_ID,
+      target_contract: normalizeHash(CORE_HASH),
+      method: "executeUserOp",
+      userop_target_contract: normalizeHash(GAS_HASH),
+      userop_method: "symbol",
+      estimated_gas_units: 2_000_000,
+      operation_hash: `0x${Buffer.from(randomBytes(32)).toString("hex")}`,
+    });
+    const allowAccounts = Array.isArray(result?.body?.policy?.allow_accounts)
+      ? result.body.policy.allow_accounts.map((value) => String(value).toLowerCase())
+      : [];
+    if (allowAccounts.includes(normalized)) {
+      return result.body;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+  throw new Error(`timed out waiting for remote paymaster allowlist update for ${normalized}`);
 }
 
 async function startPaymasterProxy() {
@@ -357,6 +404,11 @@ async function main() {
   if (!SKIP_PAYMASTER_ALLOWLIST_UPDATE) {
     console.log("Updating remote paymaster allowlist...");
     await updateRemotePaymasterAccount(accountId);
+    const paymasterPolicy = await waitForRemotePaymasterAccount(accountId);
+    console.log(JSON.stringify({
+      paymasterPolicyId: paymasterPolicy?.policy_id || null,
+      allowAccounts: paymasterPolicy?.policy?.allow_accounts || [],
+    }, null, 2));
   }
   const paymasterProxy = await startPaymasterProxy();
 
