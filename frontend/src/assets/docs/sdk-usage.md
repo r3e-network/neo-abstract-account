@@ -74,9 +74,9 @@ const signature = await signer.signTypedData(
 );
 ```
 
-## 5. Home Workspace Runtime Setup
+## 5. App Workspace Runtime Setup
 
-The app-first home workspace accepts both direct browser-wallet broadcast and optional relay broadcast. For a Vercel deployment, wire these environment variables into the frontend:
+The app workspace accepts both direct browser-wallet broadcast and optional relay broadcast. For a Vercel deployment, wire these environment variables into the frontend:
 Start from `frontend/.env.example` when creating a local `frontend/.env.local` file or mirroring the same keys into your deployment provider.
 
 ```bash
@@ -94,7 +94,7 @@ VITE_AA_RELAY_META_ENABLED=1
 - `AA_RELAY_WIF` on the server enables relay submission of stored `executeUnifiedByAddress` invocations built from collected EVM signatures.
 - shared draft metadata is intentionally bounded: the frontend retains the latest 100 activity entries and the latest 12 submission receipts per draft in both local and Supabase-backed storage.
 - client-side broadcast remains the default safe path, while relay mode is reserved for already-signed raw transactions.
-- the home workspace presets now stage concrete AA wrapper payloads, so a browser-wallet submission targets `executeUnifiedByAddress` on the AA contract rather than the downstream contract directly.
+- the app workspace presets now stage concrete AA wrapper payloads, so a browser-wallet submission targets `executeUnifiedByAddress` on the AA contract rather than the downstream contract directly.
 
 ### Server Runtime Add-Ons
 
@@ -121,7 +121,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 | Setting | Scope | Purpose |
 | --- | --- | --- |
-| `VITE_AA_RPC_URL` | Frontend | Neo RPC used for home workspace reads and staging. |
+| `VITE_AA_RPC_URL` | Frontend | Neo RPC used for app workspace reads and staging. |
 | `VITE_SUPABASE_URL` | Frontend | Enables anonymous shared-draft persistence when paired with the anon key. |
 | `VITE_SUPABASE_ANON_KEY` | Frontend | Public browser key for anonymous shared-draft persistence. |
 | `VITE_AA_RELAY_URL` | Frontend | Relay endpoint used for preflight checks and relay submission. |

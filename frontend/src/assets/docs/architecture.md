@@ -99,7 +99,7 @@ That makes recovery explicit and auditable without reintroducing the old V2 admi
 
 ## 7. Frontend and Relay Model
 
-The home workspace is V3-first:
+The app workspace is V3-first:
 
 - users load an account from its deterministic seed or `accountId` hash
 - the UI stages `executeUserOp`

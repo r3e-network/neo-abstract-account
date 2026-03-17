@@ -20,11 +20,24 @@
             {{ t('home.powered', 'Neo N3 Powered') }}
           </div>
           <h1 class="text-4xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6 font-outfit drop-shadow-lg">
-            {{ t('home.title', 'Abstract Account Workspace') }}
+            {{ t('home.title', 'Programmable Accounts for Neo N3') }}
           </h1>
           <p class="text-lg md:text-xl text-biconomy-muted max-w-3xl mx-auto leading-relaxed font-light">
-            {{ t('home.subtitle', 'Load an Abstract Account, compose operations, collect Neo and EVM approvals, and broadcast seamlessly.') }}
+            {{ t('home.subtitle', 'Abstract Account turns one Neo N3 identity into a programmable wallet surface with plugin-based authorization, controlled execution policy, relay support, and transferable AA address inventory.') }}
           </p>
+          <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <router-link to="/app" class="btn-primary min-w-44">
+              {{ t('home.heroPrimaryAction', 'Open App Workspace') }}
+            </router-link>
+            <router-link to="/market" class="btn-secondary min-w-44">
+              {{ t('home.heroSecondaryAction', 'Browse Address Market') }}
+            </router-link>
+          </div>
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1">{{ t('home.heroBadgeOne', 'Plugin-based verification') }}</span>
+            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1">{{ t('home.heroBadgeTwo', 'Transferable AA addresses') }}</span>
+            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1">{{ t('home.heroBadgeThree', 'Relay and paymaster ready') }}</span>
+          </div>
           <div class="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-slate-700/50 bg-slate-800/70 px-4 py-2 text-xs font-semibold text-biconomy-text backdrop-blur-md">
             <span class="text-emerald-400">N3Index</span>
             <span>Live testnet</span>
@@ -65,9 +78,30 @@
           </div>
         </section>
 
-        <!-- Main Workspace -->
+        <!-- Primary Entry Points -->
         <section class="mb-20 animate-fade-in-up" style="animation-delay: 0.15s">
-          <HomeOperationsWorkspace />
+          <div class="grid gap-6 lg:grid-cols-3">
+            <router-link to="/app" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-emerald-400/50 hover:bg-slate-800/70">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-300">{{ t('home.entryAppLabel', 'App Workspace') }}</p>
+              <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryAppTitle', 'Create and operate AA accounts') }}</h2>
+              <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryAppBody', 'Move account creation, ownership changes, mixed signing, relay submission, and recovery actions into one operator-focused workspace.') }}</p>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-emerald-300 group-hover:text-emerald-200">{{ t('home.entryAppAction', 'Open App') }}</span>
+            </router-link>
+
+            <router-link to="/market" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-sky-400/50 hover:bg-slate-800/70">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-sky-300">{{ t('home.entryMarketLabel', 'Address Market') }}</p>
+              <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryMarketTitle', 'List and acquire AA addresses') }}</h2>
+              <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryMarketBody', 'Publish sale listings for desirable AA addresses, include hook/verifier posture, and track buyer acquisition commitments in one marketplace view.') }}</p>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-sky-300 group-hover:text-sky-200">{{ t('home.entryMarketAction', 'Open Market') }}</span>
+            </router-link>
+
+            <router-link :to="{ path: '/docs', query: { doc: 'pluginGuide' } }" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-amber-400/50 hover:bg-slate-800/70">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-amber-300">{{ t('home.entryDocsLabel', 'Hooks & Plugins') }}</p>
+              <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryDocsTitle', 'Understand verifier and hook composition') }}</h2>
+              <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryDocsBody', 'Use the new hook and plugin guide to choose the right verifier, policy hook, and recovery setup before you deploy or buy an AA address.') }}</p>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-amber-300 group-hover:text-amber-200">{{ t('home.entryDocsAction', 'Read Guide') }}</span>
+            </router-link>
+          </div>
         </section>
 
         <!-- Architecture Description -->
@@ -77,7 +111,7 @@
             <h2 class="text-2xl md:text-3xl font-bold text-white font-outfit">{{ t('home.architectureTitle', 'How Abstract Accounts Work on Neo N3') }}</h2>
             <div class="mt-4 h-1 w-20 bg-gradient-to-r from-neo-500 to-transparent mx-auto rounded-full"></div>
             <p class="text-biconomy-muted mt-6 text-base max-w-2xl mx-auto leading-relaxed">
-              {{ t('home.architectureSubtitle', 'The home workspace stages V3 executeUserOp calls against the UnifiedSmartWallet core, while verifier plugins, hook plugins, backup-owner recovery, and deterministic verification stay enforced by the master contract pipeline.') }}
+              {{ t('home.architectureSubtitle', 'The app workspace stages V3 executeUserOp calls against the UnifiedSmartWallet core, while verifier plugins, hook plugins, backup-owner recovery, and deterministic verification stay enforced by the master contract pipeline.') }}
             </p>
           </div>
           <div class="relative z-10 bg-slate-900/50 rounded-xl p-4 md:p-8 border border-slate-700/50 shadow-inner">
@@ -96,7 +130,6 @@ import { fetchTestnetStatus, fetchTestnetSummary } from '@/services/n3indexServi
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig.js';
 import { buildTransactionExplorerUrl } from '@/features/operations/explorer.js';
 
-const HomeOperationsWorkspace = defineAsyncComponent(() => import('@/features/operations/components/HomeOperationsWorkspace.vue'));
 const ArchitectureDiagram = defineAsyncComponent(() => import('@/components/ArchitectureDiagram.vue'));
 const { t } = useI18n();
 const testnetSummary = ref(null);

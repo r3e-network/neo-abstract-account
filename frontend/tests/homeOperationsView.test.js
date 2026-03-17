@@ -18,15 +18,21 @@ const activityTimelinePath = path.resolve('src/features/operations/activityTimel
 const preferencesPath = path.resolve('src/features/operations/preferences.js');
 const presetsPath = path.resolve('src/features/operations/presets.js');
 
-test('home view renders the operations workspace above explanatory content', () => {
+test('home view is a product landing page with app, market, and docs entry points', () => {
   const homeSource = fs.readFileSync(homePath, 'utf8');
-  assert.match(homeSource, /HomeOperationsWorkspace/);
-  assert.ok(homeSource.indexOf('HomeOperationsWorkspace') < homeSource.indexOf('ArchitectureDiagram'));
+  assert.doesNotMatch(homeSource, /HomeOperationsWorkspace/);
+  assert.match(homeSource, /Programmable Accounts for Neo N3/);
+  assert.match(homeSource, /Open App Workspace/);
+  assert.match(homeSource, /Browse Address Market/);
+  assert.match(homeSource, /Transferable AA addresses/);
+  assert.match(homeSource, /pluginGuide/);
+  assert.match(homeSource, /Address Market/);
   assert.match(homeSource, /Live-Validated Paymaster Path/);
   assert.match(homeSource, /Open Validation Ledger/);
   assert.match(homeSource, /Open Explorer Tx/);
   assert.match(homeSource, /buildTransactionExplorerUrl/);
   assert.match(homeSource, /paymasterValidation/);
+  assert.match(homeSource, /ArchitectureDiagram/);
 });
 
 test('operation composer supports live contract suggestions, method dropdowns, and generated parameter fields', () => {

@@ -131,13 +131,13 @@ test('core explainer docs provide onboarding architecture workflow and boundary 
   assert.match(readme, /Documentation Map/i);
 });
 
-test('operations docs cover the home workspace, anonymous drafts, both broadcast modes, and bounded draft retention', () => {
+test('operations docs cover the app workspace, anonymous drafts, both broadcast modes, and bounded draft retention', () => {
   const workflowDoc = read('src/assets/docs/workflow.md');
   const mixedMultisigDoc = read('src/assets/docs/mixed-multisig.md');
   const sdkDoc = read('src/assets/docs/sdk-usage.md');
   const readme = readRepo('README.md');
 
-  assert.match(workflowDoc, /home operations workspace/i);
+  assert.match(workflowDoc, /app workspace/i);
   assert.match(workflowDoc, /client-side broadcast/i);
   assert.match(workflowDoc, /relay broadcast/i);
   assert.match(workflowDoc, /localStorage|local-only fallback/i);
@@ -173,6 +173,8 @@ test('operations docs cover the home workspace, anonymous drafts, both broadcast
   assert.match(mixedMultisigDoc, /supabase/i);
   assert.match(mixedMultisigDoc, /100 activity entries/i);
   assert.match(mixedMultisigDoc, /12 submission receipts/i);
+  assert.match(read('src/assets/docs/hook-plugin-guide.md'), /Choose In Layers/i);
+  assert.match(read('src/assets/docs/address-market.md'), /What A Listing Includes/i);
   assert.match(sdkDoc, /VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY|relay/i);
   assert.match(sdkDoc, /Runtime Reference/i);
   assert.match(sdkDoc, /Relay Behavior Matrix/i);

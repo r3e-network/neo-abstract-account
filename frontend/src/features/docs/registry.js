@@ -12,6 +12,8 @@ import docVerifiers from '@/assets/docs/custom-verifiers.md?raw';
 import docEvm from '@/assets/docs/evm-integration.md?raw';
 import docMixed from '@/assets/docs/mixed-multisig.md?raw';
 import docSdk from '@/assets/docs/sdk-usage.md?raw';
+import docPluginGuide from '@/assets/docs/hook-plugin-guide.md?raw';
+import docAddressMarket from '@/assets/docs/address-market.md?raw';
 import docPaymasterValidation from '@repo/docs/reports/2026-03-14-v3-testnet-paymaster-relay.md?raw';
 import docPaymasterValidationZh from '@/assets/docs/paymaster-validation.zh.md?raw';
 import docSecurityAudit from '@repo/docs/reports/2026-03-11-security-audit.md?raw';
@@ -57,6 +59,14 @@ export const DOCS = {
   sdk: {
     title: { en: 'SDK Integration', 'zh-CN': 'SDK 集成' },
     content: { en: docSdk },
+  },
+  pluginGuide: {
+    title: { en: 'Hook & Plugin Guide', 'zh-CN': 'Hook 与 Plugin 指南' },
+    content: { en: docPluginGuide },
+  },
+  addressMarket: {
+    title: { en: 'AA Address Market', 'zh-CN': 'AA 地址市场' },
+    content: { en: docAddressMarket },
   },
   paymasterValidation: {
     title: { en: 'Paymaster Live Validation', 'zh-CN': 'Paymaster 实网验证' },

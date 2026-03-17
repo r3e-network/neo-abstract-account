@@ -57,7 +57,7 @@ Use the path that matches your role and risk profile:
 Think of the full product as four connected surfaces:
 
 1. **On-chain engine** — the master contract plus deterministic verify path
-2. **Frontend workspace** — compose, review, sign, and broadcast UI
+2. **App workspace** — compose, review, sign, and broadcast UI
 3. **Collaboration storage** — immutable draft body plus append-only signatures/activity
 4. **Optional server helpers** — relay submission and signed operator mutations
 
@@ -65,7 +65,7 @@ Those surfaces are connected, but they do not all have the same authority. Supab
 
 ## 5. What Happens During One Transaction?
 
-Most users interact through the home workspace:
+Most users interact through the app workspace:
 
 ```mermaid
 sequenceDiagram
@@ -109,7 +109,7 @@ That means:
 
 ### For a new user
 
-1. Open **Home**
+1. Open **App**
 2. Load or derive the abstract account
 3. Choose an operation preset or create a custom invocation
 4. Persist the draft

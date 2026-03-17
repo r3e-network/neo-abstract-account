@@ -4,9 +4,9 @@ This page describes the active V3 workflow built around `UnifiedSmartWalletV3` a
 
 Direct proxy-signed external calls are intentionally rejected after hardening. The supported V3 execution path is the core wallet's `executeUserOp`.
 
-## Home Operations Workspace
+## App Workspace
 
-The home operations workspace is the primary V3 operator surface.
+The app workspace is the primary V3 operator surface.
 
 - Load an account from a deterministic seed or 20-byte `accountId` hash.
 - Derive the virtual Neo address locally.

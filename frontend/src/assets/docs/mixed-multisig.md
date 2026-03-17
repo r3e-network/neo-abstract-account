@@ -10,13 +10,13 @@ On the hardened verified testnet deployment `0x5be915aea3ce85e4752d522632f0a9520
 - the Neo account relays and pays GAS for the transaction
 - the contract increments nonces correctly and still enforces whitelist mode and related restrictions
 
-## Home Workspace Draft Sharing
+## App Workspace Draft Sharing
 
-The home workspace also supports anonymous share drafts for mixed approval collection. In the frontend, Supabase stores the immutable transaction body, signer requirements, and append-only signatures behind an opaque read-only share slug plus a separate collaborator link for signatures and an operator link for relay/broadcast actions.
+The app workspace also supports anonymous share drafts for mixed approval collection. In the frontend, Supabase stores the immutable transaction body, signer requirements, and append-only signatures behind an opaque read-only share slug plus a separate collaborator link for signatures and an operator link for relay/broadcast actions.
 
 That means a coordinator can:
 
-1. stage an AA invocation or transfer on the home page
+1. stage an AA invocation or transfer in the app workspace
 2. persist it to Supabase with a read-only share link plus collaborator and operator links
 3. collect EVM approvals or manual Neo signature material from collaborators through the collaborator link while reviewers can stay on the read-only link
 4. keep relay checks, final broadcast, and link rotation behind the operator link

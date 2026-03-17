@@ -16,6 +16,12 @@
               <router-link to="/" class="border-transparent text-biconomy-muted hover:text-white hover:border-biconomy-border inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200" active-class="border-biconomy-lightOrange text-white">
                 {{ t('nav.home', 'HOME') }}
               </router-link>
+              <router-link to="/app" class="border-transparent text-biconomy-muted hover:text-white hover:border-biconomy-border inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200" active-class="border-biconomy-lightOrange text-white">
+                {{ t('nav.app', 'APP') }}
+              </router-link>
+              <router-link to="/market" class="border-transparent text-biconomy-muted hover:text-white hover:border-biconomy-border inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200" active-class="border-biconomy-lightOrange text-white">
+                {{ t('nav.market', 'MARKET') }}
+              </router-link>
               <router-link to="/docs" class="border-transparent text-biconomy-muted hover:text-white hover:border-biconomy-border inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200" active-class="border-biconomy-lightOrange text-white">
                 {{ t('nav.docs', 'DOCS') }}
               </router-link>
@@ -53,6 +59,20 @@
             </div>
           </div>
         </div>
+        <div class="flex gap-2 overflow-x-auto pb-3 sm:hidden">
+          <router-link to="/" class="rounded-full border border-biconomy-border bg-biconomy-panel px-4 py-2 text-xs font-semibold uppercase tracking-wider text-biconomy-muted transition-colors hover:text-white" active-class="border-biconomy-lightOrange text-white">
+            {{ t('nav.home', 'HOME') }}
+          </router-link>
+          <router-link to="/app" class="rounded-full border border-biconomy-border bg-biconomy-panel px-4 py-2 text-xs font-semibold uppercase tracking-wider text-biconomy-muted transition-colors hover:text-white" active-class="border-biconomy-lightOrange text-white">
+            {{ t('nav.app', 'APP') }}
+          </router-link>
+          <router-link to="/market" class="rounded-full border border-biconomy-border bg-biconomy-panel px-4 py-2 text-xs font-semibold uppercase tracking-wider text-biconomy-muted transition-colors hover:text-white" active-class="border-biconomy-lightOrange text-white">
+            {{ t('nav.market', 'MARKET') }}
+          </router-link>
+          <router-link to="/docs" class="rounded-full border border-biconomy-border bg-biconomy-panel px-4 py-2 text-xs font-semibold uppercase tracking-wider text-biconomy-muted transition-colors hover:text-white" active-class="border-biconomy-lightOrange text-white">
+            {{ t('nav.docs', 'DOCS') }}
+          </router-link>
+        </div>
       </div>
     </nav>
 
@@ -78,7 +98,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { useWalletConnection } from '@/composables/useWalletConnection';
 import { useDidConnection } from '@/composables/useDidConnection';
 import { useI18n } from '@/i18n';
@@ -86,7 +105,6 @@ import { useI18n } from '@/i18n';
 const { isConnected, truncatedAddress, connect, disconnect } = useWalletConnection();
 const { isConfigured: didAvailable, isConnected: didConnected, shortDid: didShort, connectDid, disconnectDid } = useDidConnection();
 const { locale, locales, setLocale, t } = useI18n();
-const activeLocale = computed(() => locale.value);
 </script>
 
 <style scoped>

@@ -4,6 +4,38 @@
     <p class="text-sm text-biconomy-muted mb-8">V3 policy lives in hook and verifier plugins. Use the active account plus raw method/args calls below to configure the currently bound plugin contracts.</p>
 
     <div class="space-y-8">
+      <div class="rounded-lg border border-biconomy-border/60 bg-biconomy-panel/60 p-5">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h4 class="text-sm font-bold text-white uppercase tracking-widest font-mono mb-2">Preset Catalog</h4>
+            <p class="text-sm text-biconomy-muted">Pick a common verifier or hook preset first, then adjust the typed args only where your account needs a different target, token, or expiry.</p>
+          </div>
+          <router-link :to="{ path: '/docs', query: { doc: 'pluginGuide' } }" class="btn-secondary whitespace-nowrap">
+            Open Hook & Plugin Guide
+          </router-link>
+        </div>
+        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-biconomy-muted">Verifier Presets</p>
+            <div class="grid gap-2">
+              <button v-for="preset in verifierPresets" :key="preset.label" type="button" class="rounded-lg border border-biconomy-border bg-biconomy-dark/70 px-4 py-3 text-left transition hover:border-biconomy-orange/50 hover:bg-biconomy-dark" @click="applyVerifierPreset(preset)">
+                <p class="text-sm font-semibold text-white">{{ preset.label }}</p>
+                <p class="mt-1 text-xs text-biconomy-muted">{{ preset.description }}</p>
+              </button>
+            </div>
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-biconomy-muted">Hook Presets</p>
+            <div class="grid gap-2">
+              <button v-for="preset in hookPresets" :key="preset.label" type="button" class="rounded-lg border border-biconomy-border bg-biconomy-dark/70 px-4 py-3 text-left transition hover:border-biconomy-orange/50 hover:bg-biconomy-dark" @click="applyHookPreset(preset)">
+                <p class="text-sm font-semibold text-white">{{ preset.label }}</p>
+                <p class="mt-1 text-xs text-biconomy-muted">{{ preset.description }}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-biconomy-panel p-5 rounded-lg border border-biconomy-border/60">
         <label class="block text-sm font-semibold text-biconomy-text mb-3">Target Account Seed / AccountId Hash</label>
         <div class="flex flex-col sm:flex-row gap-4">
@@ -119,4 +151,92 @@ const {
   callVerifier,
   callHook,
 } = studio;
+
+const verifierPresets = [
+  {
+    label: 'SessionKeyVerifier',
+    description: 'Temporary delegated signer for one target + method.',
+    method: 'setSessionKey',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'ByteArray', value: '0x<sessionPubKey>' },
+      { type: 'Hash160', value: '0x<targetContract>' },
+      { type: 'String', value: '*' },
+      { type: 'Integer', value: '1735689600' },
+    ],
+  },
+  {
+    label: 'SubscriptionVerifier',
+    description: 'Recurring approvals for scheduled pull-style flows.',
+    method: 'createSubscription',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'Hash160', value: '0x<targetContract>' },
+      { type: 'String', value: 'executeUserOp' },
+      { type: 'Integer', value: '86400' },
+    ],
+  },
+  {
+    label: 'MultiSigVerifier',
+    description: 'Threshold-based approvals for treasury-style accounts.',
+    method: 'setSigners',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'Array', value: [] },
+      { type: 'Integer', value: '2' },
+    ],
+  },
+];
+
+const hookPresets = [
+  {
+    label: 'WhitelistHook',
+    description: 'Allow one target contract.',
+    method: 'setWhitelist',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'Hash160', value: '0x<targetContract>' },
+      { type: 'Boolean', value: true },
+    ],
+  },
+  {
+    label: 'DailyLimitHook',
+    description: 'Cap daily token outflow.',
+    method: 'setDailyLimit',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'Hash160', value: '0x<token>' },
+      { type: 'Integer', value: '1000000' },
+    ],
+  },
+  {
+    label: 'NeoDIDCredentialHook',
+    description: 'Require a credential before target access.',
+    method: 'requireCredentialForContract',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'Hash160', value: '0x<targetContract>' },
+      { type: 'String', value: 'Web3Auth_PrimaryIdentity' },
+    ],
+  },
+  {
+    label: 'MultiHook',
+    description: 'Compose multiple policy hooks behind one slot.',
+    method: 'setHooks',
+    args: [
+      { type: 'Hash160', value: '0x<accountId>' },
+      { type: 'Array', value: [] },
+    ],
+  },
+];
+
+function applyVerifierPreset(preset) {
+  permissionsForm.value.verifierMethod = preset.method;
+  permissionsForm.value.verifierArgsJson = JSON.stringify(preset.args, null, 2);
+}
+
+function applyHookPreset(preset) {
+  permissionsForm.value.hookMethod = preset.method;
+  permissionsForm.value.hookArgsJson = JSON.stringify(preset.args, null, 2);
+}
 </script>
