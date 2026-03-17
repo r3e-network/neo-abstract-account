@@ -26,6 +26,27 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isRetryableRpcError(error) {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED/i.test(message);
+}
+
+async function withRpcRetry(label, fn, attempts = 5) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableRpcError(error) || attempt >= attempts) throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`[rpc-retry] ${label} attempt ${attempt}/${attempts} failed: ${message}`);
+      await sleep(1500 * attempt);
+    }
+  }
+  throw lastError;
+}
+
 function repoRoot() {
   return path.resolve(__dirname, '..', '..', '..');
 }
@@ -152,7 +173,7 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
   const { nef, manifest } = loadArtifact(baseName, uniqueSuffix);
   const predictedHash = normalizeHash(experimental.getContractHash(account.scriptHash, nef.checksum, manifest.name));
   console.log(`Deploying ${baseName} (${manifest.name})...`);
-  const txid = await experimental.deployContract(nef, manifest, buildConfig(account, networkMagic));
+  const txid = await withRpcRetry(`deploy ${baseName}`, () => experimental.deployContract(nef, manifest, buildConfig(account, networkMagic)));
   const appLog = await waitForAppLog(client, txid, `deploy ${baseName}`);
   assertVmState(appLog, `deploy ${baseName}`, 'HALT');
   const deployedHash = extractDeployedContractHash(appLog) || predictedHash;
@@ -161,7 +182,7 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
 }
 
 async function invokeRead(client, contractHash, operation, params = [], signers = undefined) {
-  return client.invokeFunction(sanitizeHex(contractHash), operation, params, signers);
+  return withRpcRetry(`${sanitizeHex(contractHash)}.${operation}`, () => client.invokeFunction(sanitizeHex(contractHash), operation, params, signers));
 }
 
 async function readAndDecode(client, contractHash, operation, params = [], signers = undefined) {
@@ -175,7 +196,7 @@ async function readAndDecode(client, contractHash, operation, params = [], signe
 
 async function invokePersisted(client, contractHash, account, networkMagic, operation, params = [], signers = undefined) {
   const contract = new experimental.SmartContract(sanitizeHex(contractHash), buildConfig(account, networkMagic));
-  const txid = await contract.invoke(operation, params, signers);
+  const txid = await withRpcRetry(`${sanitizeHex(contractHash)}.${operation}.invoke`, () => contract.invoke(operation, params, signers));
   const appLog = await waitForAppLog(client, txid, `${operation}`);
   const execution = assertVmState(appLog, `${operation}`, 'HALT');
   return { txid, appLog, execution };
@@ -183,7 +204,7 @@ async function invokePersisted(client, contractHash, account, networkMagic, oper
 
 async function testInvoke(client, contractHash, account, networkMagic, operation, params = [], signers = undefined) {
   const contract = new experimental.SmartContract(sanitizeHex(contractHash), buildConfig(account, networkMagic));
-  return contract.testInvoke(operation, params, signers);
+  return withRpcRetry(`${sanitizeHex(contractHash)}.${operation}.testInvoke`, () => contract.testInvoke(operation, params, signers));
 }
 
 function compactSignature(signature) {
@@ -193,6 +214,10 @@ function compactSignature(signature) {
 
 function randomAccountId() {
   return Buffer.from(ethers.randomBytes(20)).toString('hex');
+}
+
+function validationRunId() {
+  return (process.env.AA_VALIDATION_RUN_ID || Date.now().toString(36)).toLowerCase();
 }
 
 function logSection(title) {
@@ -265,8 +290,8 @@ function expectedSubscriptionNonce(subIdHex, periodMs, runtimeMs = Date.now()) {
 
 async function getLatestBlockTimeMs(rpcClient) {
   try {
-    const latestHeight = Number(await rpcClient.getBlockCount()) - 1;
-    const block = await rpcClient.getBlock(latestHeight, 1);
+    const latestHeight = Number(await withRpcRetry('rpc.getBlockCount', () => rpcClient.getBlockCount())) - 1;
+    const block = await withRpcRetry('rpc.getBlock', () => rpcClient.getBlock(latestHeight, 1));
     const raw = Number(block?.time ?? block?.timestamp ?? 0);
     if (Number.isFinite(raw) && raw > 0) return raw;
   } catch {
@@ -289,9 +314,9 @@ function assertFaultResult(result, label, pattern) {
 async function main() {
   const account = new wallet.Account(TEST_WIF);
   const rpcClient = new rpc.RPCClient(RPC_URL);
-  const version = await rpcClient.getVersion();
+  const version = await withRpcRetry('rpc.getVersion', () => rpcClient.getVersion());
   const networkMagic = Number(version.protocol.network);
-  const timestampSuffix = `${Date.now()}`;
+  const deploymentTag = process.env.AA_VALIDATION_DEPLOY_TAG || `validation-plugin-matrix-${validationRunId()}`;
   const results = {
     env: {
       rpc: RPC_URL,
@@ -306,21 +331,21 @@ async function main() {
   console.log(JSON.stringify(results.env, null, 2));
 
   logSection('Deploy Contracts');
-  const core = await deployContract(rpcClient, account, networkMagic, 'UnifiedSmartWalletV3', `${timestampSuffix}-core`);
-  const web3AuthA = await deployContract(rpcClient, account, networkMagic, 'Web3AuthVerifier', `${timestampSuffix}-w3a`);
-  const web3AuthB = await deployContract(rpcClient, account, networkMagic, 'Web3AuthVerifier', `${timestampSuffix}-w3b`);
-  const teeVerifier = await deployContract(rpcClient, account, networkMagic, 'TEEVerifier', `${timestampSuffix}-tee`);
-  const webAuthnVerifier = await deployContract(rpcClient, account, networkMagic, 'WebAuthnVerifier', `${timestampSuffix}-webauthn`);
-  const sessionKeyVerifier = await deployContract(rpcClient, account, networkMagic, 'SessionKeyVerifier', `${timestampSuffix}-session`);
-  const multiSigVerifier = await deployContract(rpcClient, account, networkMagic, 'MultiSigVerifier', `${timestampSuffix}-multisig`);
-  const subscriptionVerifier = await deployContract(rpcClient, account, networkMagic, 'SubscriptionVerifier', `${timestampSuffix}-sub`);
-  const zkEmailVerifier = await deployContract(rpcClient, account, networkMagic, 'ZKEmailVerifier', `${timestampSuffix}-zkemail`);
-  const whitelistHook = await deployContract(rpcClient, account, networkMagic, 'WhitelistHook', `${timestampSuffix}-wl`);
-  const dailyLimitHook = await deployContract(rpcClient, account, networkMagic, 'DailyLimitHook', `${timestampSuffix}-daily`);
-  const tokenRestrictedHook = await deployContract(rpcClient, account, networkMagic, 'TokenRestrictedHook', `${timestampSuffix}-restricted`);
-  const multiHook = await deployContract(rpcClient, account, networkMagic, 'MultiHook', `${timestampSuffix}-multihook`);
-  const neoDidHook = await deployContract(rpcClient, account, networkMagic, 'NeoDIDCredentialHook', `${timestampSuffix}-neodid`);
-  const mockTarget = await deployContract(rpcClient, account, networkMagic, 'MockTransferTarget', `${timestampSuffix}-mock`);
+  const core = await deployContract(rpcClient, account, networkMagic, 'UnifiedSmartWalletV3', `${deploymentTag}-core`);
+  const web3AuthA = await deployContract(rpcClient, account, networkMagic, 'Web3AuthVerifier', `${deploymentTag}-web3auth-a`);
+  const web3AuthB = await deployContract(rpcClient, account, networkMagic, 'Web3AuthVerifier', `${deploymentTag}-web3auth-b`);
+  const teeVerifier = await deployContract(rpcClient, account, networkMagic, 'TEEVerifier', `${deploymentTag}-tee`);
+  const webAuthnVerifier = await deployContract(rpcClient, account, networkMagic, 'WebAuthnVerifier', `${deploymentTag}-webauthn`);
+  const sessionKeyVerifier = await deployContract(rpcClient, account, networkMagic, 'SessionKeyVerifier', `${deploymentTag}-session-key`);
+  const multiSigVerifier = await deployContract(rpcClient, account, networkMagic, 'MultiSigVerifier', `${deploymentTag}-multisig`);
+  const subscriptionVerifier = await deployContract(rpcClient, account, networkMagic, 'SubscriptionVerifier', `${deploymentTag}-subscription`);
+  const zkEmailVerifier = await deployContract(rpcClient, account, networkMagic, 'ZKEmailVerifier', `${deploymentTag}-zkemail`);
+  const whitelistHook = await deployContract(rpcClient, account, networkMagic, 'WhitelistHook', `${deploymentTag}-whitelist`);
+  const dailyLimitHook = await deployContract(rpcClient, account, networkMagic, 'DailyLimitHook', `${deploymentTag}-daily-limit`);
+  const tokenRestrictedHook = await deployContract(rpcClient, account, networkMagic, 'TokenRestrictedHook', `${deploymentTag}-token-restricted`);
+  const multiHook = await deployContract(rpcClient, account, networkMagic, 'MultiHook', `${deploymentTag}-multi-hook`);
+  const neoDidHook = await deployContract(rpcClient, account, networkMagic, 'NeoDIDCredentialHook', `${deploymentTag}-neodid-hook`);
+  const mockTarget = await deployContract(rpcClient, account, networkMagic, 'MockTransferTarget', `${deploymentTag}-mock-target`);
 
   Object.assign(results.deployments, {
     core,

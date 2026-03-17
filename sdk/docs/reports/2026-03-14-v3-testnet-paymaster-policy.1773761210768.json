@@ -1,0 +1,42 @@
+{
+  "network": "testnet",
+  "appId": "28294e89d490924b79c85cdee057ce55723b3d56",
+  "policyId": "testnet-aa",
+  "accountId": "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56",
+  "approved": {
+    "approvalDigest": "4e6f87401838f21de14798e50a6eee0182c5a0877fd8461a306cb686254c1d49",
+    "attestationHash": "edfb69425055f7201d3c471c1c2b908ddaeec9f41c13f9ec5b4a9ebe4fe72a5f",
+    "targetContract": "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38",
+    "method": "executeUserOp"
+  },
+  "deniedCases": {
+    "missingOperationHash": {
+      "approved": false,
+      "reason": "operation_hash is required"
+    },
+    "wrongDappId": {
+      "approved": false,
+      "reason": "dapp_id is not allowlisted"
+    },
+    "wrongAccountId": {
+      "approved": false,
+      "reason": "account_id is not allowlisted"
+    },
+    "wrongTargetContract": {
+      "approved": false,
+      "reason": "target_contract is not allowlisted"
+    },
+    "wrongMethod": {
+      "approved": false,
+      "reason": "method is not allowlisted"
+    },
+    "gasTooHigh": {
+      "approved": false,
+      "reason": "estimated gas exceeds network paymaster limit"
+    },
+    "wrongTargetChain": {
+      "approved": false,
+      "reason": "paymaster currently supports neo_n3 only"
+    }
+  }
+}

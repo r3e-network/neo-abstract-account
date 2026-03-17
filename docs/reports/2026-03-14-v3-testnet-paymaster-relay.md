@@ -12,7 +12,7 @@ Refresh note on 2026-03-15:
 Refresh note on 2026-03-17:
 
 - `frontend/api/relay-transaction.js` was fixed again so paymaster request construction no longer faults with `normalizeHash is not defined`
-- the canonical stable paymaster replay path uses the existing allowlisted account id `0x37298bb6bbb4580fdca24903d67b385ef2268e25`
+- the canonical stable paymaster replay path now uses the existing allowlisted account id `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
 - the canonical stable replay signer for that account is `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
 - a fresh stable replay succeeded with:
   - `updateVerifier`: `0xee656e2305a224bfcb33d2e0339500ead745801d0b0d5618b98f8ddf13d0cb28`
@@ -20,7 +20,7 @@ Refresh note on 2026-03-17:
 - the current cross-repo direct replay succeeded with:
   - `updateVerifier`: `0xd54fe4813693df0f244ada1c1daf8966ba70d0ced76bcdefc5e9fa6ba05aab2d`
   - relay-backed `executeUserOp`: `0xd433d9dbc435dc83835aa8ff7eb36e757d2a77499728ad6d09cb599044172e20`
-- `sdk/js/tests/v3_testnet_paymaster_relay.mjs` now defaults to the stable allowlisted account and skips remote allowlist mutation unless a custom `PAYMASTER_ACCOUNT_ID` is explicitly provided
+- `sdk/js/tests/v3_testnet_paymaster_relay.mjs` now defaults to the current stable allowlisted account and skips remote allowlist mutation unless a custom `PAYMASTER_ACCOUNT_ID` is explicitly provided
 
 ## Scope
 
@@ -32,7 +32,7 @@ Validated components:
 - Web3Auth verifier: `0xcd2e4589debfd80449ba9190548c5a7d539ce062`
 - Morpheus paymaster worker policy: `testnet-aa`
 - Relay signer address: `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
-- Reused allowlisted AA account id: `0x1111222233334444555566667777888899990000`
+- Reused allowlisted AA account id: `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
 
 ## Root Cause Fixed
 
@@ -86,7 +86,7 @@ Validated live pieces after the fix:
 
 ### Successful replay against an existing allowlisted account
 
-- account id: `0x1111222233334444555566667777888899990000`
+- account id: `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
 - relay txid: `0x1d79429b9e8af4115845d7858ddaefcc575dafff2b14a37a000caaea58a0f0bb`
 - paymaster approval digest: `bb40b23016f702b3e7e084a977bcba02e595a3054095053294618cf65d630a3c`
 - paymaster attestation hash: `e352300442435c80478e09f27328150cdd50dd97e052865f39a410b5cfc5133f`

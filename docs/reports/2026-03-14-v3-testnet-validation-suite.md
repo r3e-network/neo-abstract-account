@@ -1,6 +1,6 @@
 # V3 Testnet Validation Suite Report
 
-Date: 2026-03-14T01:48:40.049Z
+Date: 2026-03-17T14:59:53.705Z
 
 ## Environment
 
@@ -8,7 +8,7 @@ Date: 2026-03-14T01:48:40.049Z
 - Has TEST_WIF: `true`
 - Has PHALA_API_TOKEN: `true`
 - Paymaster app id: `28294e89d490924b79c85cdee057ce55723b3d56`
-- Paymaster account override: `none`
+- Paymaster account override: `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
 - Skip allowlist update: `false`
 
 ## Stages
@@ -21,24 +21,24 @@ Date: 2026-03-14T01:48:40.049Z
 ## Smoke Summary
 
 - Address: `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
-- Core hash: `0x911e205fed6efff4ce95b8bbff259846be1fede8`
-- Web3Auth verifier: `0xdd09c7b9f01054b6e930e054f35bc13015c98733`
-- Whitelist hook: `0xf0152384aa2577e353ab67db31f4edf647048374`
-- Account ID: `0x4b3e568501f5eab60e8089b7138739c8ca19b712`
-- Virtual address: `NWuVZB5bWAZ3THo5H9i4qntybTPPnfunrK`
+- Core hash: `0x9dea21b70f9b26b9e1e121a8a7d0a5d8e531fa32`
+- Web3Auth verifier: `0xda11e67c71ff7c3cf107f1d53b5d8c3132480f3c`
+- Whitelist hook: `0x569519499ebf9a620bc3a907b2c074f4a25f1252`
+- Account ID: `0x9792e1be4c5fcee54421e63268fe6b2481165f84`
+- Virtual address: `NPHCKBEVHET6uGUxLsZL6yvebX7cJdh9qs`
 
 Transactions:
 
-- registerAccount: `0xa041c2c3ac501dd07030f707df4fac8f96d34ede49701958f6953cf7d3503475`
-- nativeExecute: `0xb06a3776504a169077a8968e42a3a42a739549d29c8e0b3ce3e36d9d0e0681c9`
-- hookExecute: `0x359fc9e212b0f0efd80ef8ae81bd00f042966ed0059e67408a8f8b70d6730c52`
-- evmExecute: `0xe731e7fbd9b691a2b8c851f34ceb55b2b298820e51f945e163abe1f63b72d150`
+- registerAccount: `0x0a0da79651849fdfd81e94ed22d9378eb77f083f8d40ee05fab564706d28a1d1`
+- nativeExecute: `0xb7f69521e55a5e41540f29c4e2a7f44b0d58aae58b0eea85b4f383aa7f341a59`
+- hookExecute: `0xb8234523eea22b995dff6813ebfd45186b279920c9ecb18b972e87d3a69efe4f`
+- evmExecute: `0x663c489eabb5422e5f08c2d70de0def4288bc24f4c578c2276e2a751b6a3e118`
 
 ## Plugin Matrix Summary
 
-- Report path: `sdk/docs/reports/2026-03-13-v3-testnet-plugin-matrix.1773454185382.json`
-- Core hash: `0xdf10f6605eb076395ec579538ba8e8594e6b31f1`
-- Mock target: `0x1fb4b4ed39354baf2ae45b198ef6bed037e27592`
+- Report path: `sdk/docs/reports/2026-03-13-v3-testnet-plugin-matrix.1773760991823.json`
+- Core hash: `0x1e3767bde710932db1e66ffbebf452e24e664584`
+- Mock target: `0xdb161689a758489bb848079e428fc6ffaa73a633`
 
 Scenarios:
 
@@ -58,11 +58,11 @@ Scenarios:
 
 ## Paymaster Policy Summary
 
-- Report path: `sdk/docs/reports/2026-03-14-v3-testnet-paymaster-policy.1773454365197.json`
+- Report path: `sdk/docs/reports/2026-03-14-v3-testnet-paymaster-policy.1773761210768.json`
 - Policy ID: `testnet-aa`
-- Account ID: `0x1111222233334444555566667777888899990000`
-- Approval digest: `d50eceff250a5a909a290dcfbf8fd794e6139276a63cb117922719c8c3fd6769`
-- Attestation hash: `f0e3b0ac78e0d27f3d93d21652fe62a50ddd5df0a1dfb3cb409988fa83c330fb`
+- Account ID: `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
+- Approval digest: `4e6f87401838f21de14798e50a6eee0182c5a0877fd8461a306cb686254c1d49`
+- Attestation hash: `edfb69425055f7201d3c471c1c2b908ddaeec9f41c13f9ec5b4a9ebe4fe72a5f`
 
 Denied cases:
 
@@ -76,11 +76,11 @@ Denied cases:
 
 ## Paymaster Relay Summary
 
-- Relay txid: `0xb55e8c4c02243cc3769074c89d2b0dfc16ffa6c7dfbec1a62da9cb89df86c856`
-- Account ID: `0x5d65b8721cfa293d869abdeb474b0f33736f2e8f`
+- Relay txid: `0xa04a52e2cc2c1ded62902e3766768b14c610c5cd4e56b333c89e1fc6a31b85c4`
+- Account ID: `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
 - Policy ID: `testnet-aa`
-- Approval digest: `775bf2ff09499b96c33546317416f1ba052a777f0bda9ed6e8a99b1df06a62cb`
-- Attestation hash: `b697e13b497201bbefbeb933269d878997e0c7cc274176ad5656e62372f61bbe`
+- Approval digest: `1f2f0ffe978ababa1488a3b329fb7331aa14b8c87a12c4277977a8c160e29276`
+- Attestation hash: `f7ab98517618ab5cb9acf2e3455dc4236cb6186e077159051cb10b32199bc090`
 - CVM app id: `28294e89d490924b79c85cdee057ce55723b3d56`
 - VM state: `HALT`
 
