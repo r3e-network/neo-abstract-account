@@ -89,5 +89,16 @@ namespace AbstractAccount.Hooks
                 Contract.Call(hooks[i], "postExecute", CallFlags.All, new object[] { accountId, opParams, result });
             }
         }
+
+        public static void ClearAccount(UInt160 accountId)
+        {
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_Hooks, (byte[])accountId));
+        }
     }
 }

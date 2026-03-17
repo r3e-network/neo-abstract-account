@@ -91,7 +91,7 @@
             <router-link to="/market" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-sky-400/50 hover:bg-slate-800/70">
               <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-sky-300">{{ t('home.entryMarketLabel', 'Address Market') }}</p>
               <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryMarketTitle', 'List and acquire AA addresses') }}</h2>
-              <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryMarketBody', 'Publish sale listings for desirable AA addresses, include hook/verifier posture, and track buyer acquisition commitments in one marketplace view.') }}</p>
+              <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryMarketBody', 'List AA addresses in trustless on-chain escrow, freeze control during sale, and transfer only the AA shell plus backup-owner governance when the buyer settles.') }}</p>
               <span class="mt-6 inline-flex items-center text-sm font-semibold text-sky-300 group-hover:text-sky-200">{{ t('home.entryMarketAction', 'Open Market') }}</span>
             </router-link>
 

@@ -16,12 +16,19 @@ Current status note:
 - **Verifier Plugin Authorization**: Bind Web3Auth, TEE, WebAuthn, session keys, multisig, or other verifier plugins per account.
 - **Hook Plugin Policy Enforcement**: Attach optional hook plugins for daily limits, token restrictions, credential gates, and post-execution controls.
 - **Backup-Owner Escape Hatch**: Every account can define a native Neo backup owner plus timelocked verifier rotation.
+- **Trustless AA Address Escrow Market**: Deterministic AA addresses can be listed, escrow-locked, purchased with GAS, and transferred atomically on-chain.
 - **Cross-Chain EVM Compatibility**: V3 supports secp256k1 / Keccak256 EIP-712 `UserOperation` signatures through the Web3Auth verifier path.
 - **Policy-Gated Execution**: New integrations should flow through `executeUserOp(accountId, op)` where nonce handling, verification, hooks, and target execution stay centralized.
 
-## Home Workspace Deployment
+## App + Market Deployment
 
-The frontend home page now exposes an app-first V3 workspace for loading an account from its deterministic seed or `accountId` hash, building a `UserOperation`, persisting anonymous Supabase drafts, collecting mixed Neo + EVM approvals, and choosing either client-side or relay broadcast. Shared drafts retain the latest 100 activity entries and latest 12 submission receipts.
+The frontend now separates:
+
+- a marketing-style home page,
+- an app workspace for account creation and operation flow,
+- and a trustless AA address market backed by an on-chain escrow contract.
+
+For the market UI, set `VITE_AA_MARKET_HASH` to the deployed `AAAddressMarket` contract hash.
 
 For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, and `VITE_AA_RELAY_RPC_URL`, then apply the Supabase draft migrations in order. Start with `supabase/migrations/20260308_home_operations_workspace.sql`, then apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql`, `supabase/migrations/20260309_submission_receipts.sql`, `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql`, `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql`, `supabase/migrations/20260312_scoped_draft_access.sql`, `supabase/migrations/20260313_activity_scope_guards.sql`, and `supabase/migrations/20260314_signed_operator_mutations.sql`. That full chain keeps the public share link read-only, narrows collaborator links to signature-safe writes, and moves operator-only status/relay mutations behind the signed operator mutation server route in `frontend/api/draft-operator.js`.
 

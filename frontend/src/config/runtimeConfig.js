@@ -71,6 +71,13 @@ export function resolveOptionalToken(value, fallback = '') {
   return normalized || fallback;
 }
 
+export function resolveOptionalHash(value, fallback = '') {
+  const normalized = sanitizeHex(value);
+  if (!normalized) return fallback;
+  if (!/^[0-9a-f]{40}$/.test(normalized)) return fallback;
+  return normalized;
+}
+
 export function resolveOptionalNetwork(value, fallback = DEFAULT_N3INDEX_NETWORK) {
   const normalized = String(value || '').trim().toLowerCase();
   if (normalized === 'mainnet' || normalized === 'testnet') return normalized;
@@ -130,6 +137,9 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     matrixContractHash: resolveAbstractAccountHash(
       env.VITE_AA_MATRIX_CONTRACT_HASH || env.VITE_MATRIX_CONTRACT_HASH || env.VITE_MATRIX_CONTRACT_HASH_TESTNET,
       DEFAULT_MATRIX_CONTRACT_HASH
+    ),
+    addressMarketHash: resolveOptionalHash(
+      env.VITE_AA_MARKET_HASH || env.VITE_AA_ADDRESS_MARKET_HASH
     ),
     n3IndexApiBaseUrl: resolveOptionalUrl(
       env.VITE_AA_N3INDEX_API_BASE_URL || env.VITE_N3INDEX_API_BASE_URL,

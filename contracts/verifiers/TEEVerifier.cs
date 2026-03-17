@@ -59,6 +59,17 @@ namespace AbstractAccount.Verifiers
             return data ?? (ByteString)"";
         }
 
+        public static void ClearAccount(UInt160 accountId)
+        {
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_AccountPubKey, (byte[])accountId));
+        }
+
         [Safe]
         /// <summary>
         /// Returns the exact payload bytes a TEE signer must sign for this verifier.

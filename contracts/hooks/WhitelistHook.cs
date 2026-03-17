@@ -60,5 +60,22 @@ namespace AbstractAccount.Hooks
             key = Helper.Concat(key, (byte[])targetContract);
             return Storage.Get(Storage.CurrentContext, key) != null;
         }
+
+        public static void ClearAccount(UInt160 accountId)
+        {
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+
+            byte[] prefix = Helper.Concat(Prefix_Whitelist, (byte[])accountId);
+            Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly);
+            while (iterator.Next())
+            {
+                Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
+            }
+        }
     }
 }

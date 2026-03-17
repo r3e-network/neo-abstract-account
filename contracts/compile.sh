@@ -30,4 +30,7 @@ echo "Compiling Hooks..."
 echo "Compiling Mock Targets..."
 ~/.dotnet/tools/nccs mocks/MockTransferTarget.csproj -o bin/v3
 
+echo "Compiling Market Contracts..."
+~/.dotnet/tools/nccs market/AAAddressMarket.csproj -o bin/v3
+
 echo "Compilation completed successfully."

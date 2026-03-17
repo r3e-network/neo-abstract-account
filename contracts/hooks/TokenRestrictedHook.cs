@@ -65,5 +65,22 @@ namespace AbstractAccount.Hooks
         {
             // No post-execution logic required for token restriction
         }
+
+        public static void ClearAccount(UInt160 accountId)
+        {
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+
+            byte[] prefix = Helper.Concat(Prefix_RestrictedTokens, (byte[])accountId);
+            Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly);
+            while (iterator.Next())
+            {
+                Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
+            }
+        }
     }
 }

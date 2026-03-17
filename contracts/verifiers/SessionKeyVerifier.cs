@@ -82,6 +82,11 @@ namespace AbstractAccount.Verifiers
             return (SessionKeyData)StdLib.Deserialize(data!);
         }
 
+        public static void ClearAccount(UInt160 accountId)
+        {
+            ClearSessionKey(accountId);
+        }
+
         [Safe]
         /// <summary>
         /// Returns the exact payload bytes that the delegated session key must sign.

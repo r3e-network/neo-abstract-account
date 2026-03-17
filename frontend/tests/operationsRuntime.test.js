@@ -27,6 +27,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     relayRawEnabled: false,
     explorerBaseUrl: 'https://neotube.io/tx/',
     matrixContractHash: '89908093c5ccc463e2c5744d6bacb06108b60a75',
+    addressMarketHash: '',
     n3IndexApiBaseUrl: 'https://api.n3index.dev',
     n3IndexNetwork: 'mainnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',

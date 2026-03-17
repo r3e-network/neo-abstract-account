@@ -96,6 +96,17 @@ namespace AbstractAccount
             return data ?? (ByteString)"";
         }
 
+        public static void ClearAccount(UInt160 accountId)
+        {
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_AccountPubKey, (byte[])accountId));
+        }
+
         [Safe]
         /// <summary>
         /// Verifies the EIP-712-style user operation signature for the configured account key.

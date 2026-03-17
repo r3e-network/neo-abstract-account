@@ -31,6 +31,8 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_Nonce = new byte[] { 0x03 };
         private static readonly byte[] Prefix_VerifierConfigContext = new byte[] { 0x04 };
         private static readonly byte[] Prefix_HookConfigContext = new byte[] { 0x05 };
+        private static readonly byte[] Prefix_MarketEscrowContract = new byte[] { 0x06 };
+        private static readonly byte[] Prefix_MarketEscrowListing = new byte[] { 0x07 };
         
         // ========================================================================
         // 1. 数据结构 (对齐 ERC-4337 UserOperation)
@@ -103,6 +105,7 @@ namespace AbstractAccount
         public static void UpdateHook(UInt160 accountId, UInt160 newHookId)
         {
             AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
             AccountState state = GetAccountState(accountId);
             state.HookId = newHookId;
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
@@ -115,6 +118,7 @@ namespace AbstractAccount
         public static void UpdateVerifier(UInt160 accountId, UInt160 newVerifier, ByteString verifierParams)
         {
             AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
 
             AccountState state = GetAccountState(accountId);
             state.Verifier = newVerifier;
@@ -142,6 +146,7 @@ namespace AbstractAccount
         public static object CallVerifier(UInt160 accountId, string method, object[] args)
         {
             AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
             AccountState state = GetAccountState(accountId);
             ExecutionEngine.Assert(state.Verifier != null && state.Verifier != UInt160.Zero, "Verifier not configured");
 
@@ -162,6 +167,7 @@ namespace AbstractAccount
         public static object CallHook(UInt160 accountId, string method, object[] args)
         {
             AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
             AccountState state = GetAccountState(accountId);
             ExecutionEngine.Assert(state.HookId != null && state.HookId != UInt160.Zero, "Hook not configured");
 
@@ -215,6 +221,28 @@ namespace AbstractAccount
         }
 
         [Safe]
+        public static UInt160 GetMarketEscrowContract(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_MarketEscrowContract, (byte[])accountId);
+            ByteString? market = Storage.Get(Storage.CurrentContext, key);
+            return market == null ? UInt160.Zero : (UInt160)market;
+        }
+
+        [Safe]
+        public static BigInteger GetMarketEscrowListingId(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
+            ByteString? listing = Storage.Get(Storage.CurrentContext, key);
+            return listing == null ? 0 : (BigInteger)listing;
+        }
+
+        [Safe]
+        public static bool IsMarketEscrowActive(UInt160 accountId)
+        {
+            return GetMarketEscrowContract(accountId) != UInt160.Zero && GetMarketEscrowListingId(accountId) > 0;
+        }
+
+        [Safe]
         public static bool IsEscapeActive(UInt160 accountId)
         {
             return GetAccountState(accountId).EscapeTriggeredAt > 0;
@@ -254,6 +282,7 @@ namespace AbstractAccount
         public static object ExecuteUserOp(UInt160 accountId, UserOperation op)
         {
             AccountState state = GetAccountState(accountId);
+            AssertNoMarketEscrow(accountId);
 
             // [ValidateUserOp 阶段]
             ExecutionEngine.Assert(Runtime.Time <= op.Deadline, "UserOp expired");
@@ -448,6 +477,7 @@ namespace AbstractAccount
         public static void InitiateEscape(UInt160 accountId)
         {
             AccountState state = GetAccountState(accountId);
+            AssertNoMarketEscrow(accountId);
             ExecutionEngine.Assert(state.BackupOwner != UInt160.Zero, "No backup owner");
             ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Only backup owner can initiate");
             
@@ -462,6 +492,7 @@ namespace AbstractAccount
         public static void FinalizeEscape(UInt160 accountId, UInt160 newVerifier)
         {
             AccountState state = GetAccountState(accountId);
+            AssertNoMarketEscrow(accountId);
             ExecutionEngine.Assert(state.EscapeTriggeredAt > 0, "Escape not initiated");
             ExecutionEngine.Assert(Runtime.Time >= state.EscapeTriggeredAt + state.EscapeTimelock, "Timelock active");
             ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Only backup owner can finalize");
@@ -470,6 +501,114 @@ namespace AbstractAccount
             state.EscapeTriggeredAt = 0;
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+        }
+
+        /// <summary>
+        /// Locks an account into a market-controlled escrow state so it can be sold atomically.
+        /// While escrow is active, normal execution and configuration flows are blocked.
+        /// </summary>
+        public static void EnterMarketEscrow(UInt160 accountId, UInt160 marketContract, BigInteger listingId)
+        {
+            AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
+            ExecutionEngine.Assert(marketContract != null && marketContract != UInt160.Zero, "Market contract required");
+            ExecutionEngine.Assert(listingId > 0, "Listing id required");
+
+            byte[] marketKey = Helper.Concat(Prefix_MarketEscrowContract, (byte[])accountId);
+            byte[] listingKey = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, marketKey, (byte[])marketContract);
+            Storage.Put(Storage.CurrentContext, listingKey, listingId);
+        }
+
+        /// <summary>
+        /// Clears an active market escrow without changing control. Intended for listing cancellation.
+        /// </summary>
+        public static void CancelMarketEscrow(UInt160 accountId, BigInteger listingId)
+        {
+            AssertEscrowMarket(accountId, listingId);
+            ClearMarketEscrow(accountId);
+        }
+
+        /// <summary>
+        /// Completes a market escrow sale by transferring only the AA shell and wiping prior plugin state.
+        /// The buyer receives a clean account with a new backup owner and no inherited verifier/hook bindings.
+        /// </summary>
+        public static void SettleMarketEscrow(UInt160 accountId, BigInteger listingId, UInt160 newBackupOwner)
+        {
+            AssertEscrowMarket(accountId, listingId);
+            ExecutionEngine.Assert(newBackupOwner != null && newBackupOwner != UInt160.Zero, "New backup owner required");
+
+            AccountState state = GetAccountState(accountId);
+            UInt160 previousVerifier = state.Verifier;
+            UInt160 previousHook = state.HookId;
+
+            if (previousVerifier != null && previousVerifier != UInt160.Zero)
+            {
+                ClearVerifierPluginState(accountId, previousVerifier);
+            }
+
+            if (previousHook != null && previousHook != UInt160.Zero)
+            {
+                ClearHookPluginState(accountId, previousHook);
+            }
+
+            state.BackupOwner = newBackupOwner;
+            state.Verifier = UInt160.Zero;
+            state.HookId = UInt160.Zero;
+            state.EscapeTriggeredAt = 0;
+
+            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+
+            ClearMarketEscrow(accountId);
+        }
+
+        private static void AssertNoMarketEscrow(UInt160 accountId)
+        {
+            ExecutionEngine.Assert(!IsMarketEscrowActive(accountId), "Account locked in market escrow");
+        }
+
+        private static void AssertEscrowMarket(UInt160 accountId, BigInteger listingId)
+        {
+            UInt160 market = GetMarketEscrowContract(accountId);
+            BigInteger currentListingId = GetMarketEscrowListingId(accountId);
+            ExecutionEngine.Assert(market != UInt160.Zero, "Market escrow not active");
+            ExecutionEngine.Assert(Runtime.CallingScriptHash == market, "Only escrow market");
+            ExecutionEngine.Assert(currentListingId == listingId, "Listing mismatch");
+        }
+
+        private static void ClearMarketEscrow(UInt160 accountId)
+        {
+            byte[] marketKey = Helper.Concat(Prefix_MarketEscrowContract, (byte[])accountId);
+            byte[] listingKey = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, marketKey);
+            Storage.Delete(Storage.CurrentContext, listingKey);
+        }
+
+        private static void ClearVerifierPluginState(UInt160 accountId, UInt160 verifierContract)
+        {
+            SetVerifierConfigContext(accountId, verifierContract);
+            try
+            {
+                Contract.Call(verifierContract, "clearAccount", CallFlags.All, new object[] { accountId });
+            }
+            finally
+            {
+                ClearVerifierConfigContext(accountId);
+            }
+        }
+
+        private static void ClearHookPluginState(UInt160 accountId, UInt160 hookContract)
+        {
+            SetHookConfigContext(accountId, hookContract);
+            try
+            {
+                Contract.Call(hookContract, "clearAccount", CallFlags.All, new object[] { accountId });
+            }
+            finally
+            {
+                ClearHookConfigContext(accountId);
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ import {
   getRuntimeConfig,
   resolveRuntimeNetwork,
   resolveAbstractAccountHash,
+  resolveOptionalHash,
   resolveRpcUrl,
   sanitizeHex
 } from '../src/config/runtimeConfig.js';
@@ -54,6 +55,11 @@ test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
   assert.equal(resolveRpcUrl(''), DEFAULT_RPC_URL);
 });
 
+test('resolveOptionalHash preserves valid hashes and rejects invalid values', () => {
+  assert.equal(resolveOptionalHash('0x49C095CE04D38642E39155F5481615C58227A498'), '49c095ce04d38642e39155f5481615c58227a498');
+  assert.equal(resolveOptionalHash('bad-value'), '');
+});
+
 test('frontend ships a runtime env example for browser and server routes', () => {
   const examplePath = path.resolve(import.meta.dirname, '..', '.env.example');
   assert.equal(fs.existsSync(examplePath), true, 'expected frontend/.env.example to exist');
@@ -65,6 +71,7 @@ test('frontend ships a runtime env example for browser and server routes', () =>
   assert.match(example, /VITE_AA_RELAY_URL=/);
   assert.match(example, /VITE_AA_RELAY_META_ENABLED=/);
   assert.match(example, /VITE_AA_MATRIX_CONTRACT_HASH=/);
+  assert.match(example, /VITE_AA_MARKET_HASH=/);
   assert.match(example, /VITE_WEB3AUTH_CLIENT_ID=/);
   assert.match(example, /VITE_WEB3AUTH_PROJECT_NAME=/);
   assert.match(example, /VITE_WEB3AUTH_NETWORK=/);
@@ -102,6 +109,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     relayRawEnabled: false,
     explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
     matrixContractHash: DEFAULT_MATRIX_CONTRACT_HASH,
+    addressMarketHash: '',
     n3IndexApiBaseUrl: DEFAULT_N3INDEX_API_BASE_URL,
     n3IndexNetwork: 'mainnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',

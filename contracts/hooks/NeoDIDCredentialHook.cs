@@ -95,5 +95,28 @@ namespace AbstractAccount.Hooks
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
         }
+
+        public static void ClearAccount(UInt160 accountId)
+        {
+            bool authorized = (bool)Contract.Call(
+                Runtime.CallingScriptHash,
+                "canConfigureHook",
+                CallFlags.ReadOnly,
+                new object[] { accountId, Runtime.ExecutingScriptHash });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+
+            ClearPrefixForAccount(Prefix_RequiredCredential, accountId);
+            ClearPrefixForAccount(Prefix_VerifiedCredentials, accountId);
+        }
+
+        private static void ClearPrefixForAccount(byte[] prefix, UInt160 accountId)
+        {
+            byte[] accountPrefix = Helper.Concat(prefix, (byte[])accountId);
+            Iterator iterator = Storage.Find(Storage.CurrentContext, accountPrefix, FindOptions.KeysOnly);
+            while (iterator.Next())
+            {
+                Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
+            }
+        }
     }
 }
