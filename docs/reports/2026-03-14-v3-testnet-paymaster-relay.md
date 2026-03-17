@@ -9,6 +9,19 @@ Refresh note on 2026-03-15:
 - the canonical shared testnet `Web3AuthVerifier` is now `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`
 - this report remains the historical record of the 2026-03-14 validation run, not the current shared-anchor source of truth
 
+Refresh note on 2026-03-17:
+
+- `frontend/api/relay-transaction.js` was fixed again so paymaster request construction no longer faults with `normalizeHash is not defined`
+- the canonical stable paymaster replay path uses the existing allowlisted account id `0x37298bb6bbb4580fdca24903d67b385ef2268e25`
+- the canonical stable replay signer for that account is `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
+- a fresh stable replay succeeded with:
+  - `updateVerifier`: `0xee656e2305a224bfcb33d2e0339500ead745801d0b0d5618b98f8ddf13d0cb28`
+  - relay-backed `executeUserOp`: `0xa7beaa775bcf9fee4f077f41b4fa3cddc08a66ee8913187e30864d953c99b6dd`
+- the current cross-repo direct replay succeeded with:
+  - `updateVerifier`: `0xd54fe4813693df0f244ada1c1daf8966ba70d0ced76bcdefc5e9fa6ba05aab2d`
+  - relay-backed `executeUserOp`: `0xd433d9dbc435dc83835aa8ff7eb36e757d2a77499728ad6d09cb599044172e20`
+- `sdk/js/tests/v3_testnet_paymaster_relay.mjs` now defaults to the stable allowlisted account and skips remote allowlist mutation unless a custom `PAYMASTER_ACCOUNT_ID` is explicitly provided
+
 ## Scope
 
 This report validates the end-to-end `AbstractAccount -> Morpheus paymaster pre-authorization -> AA relay -> Neo N3 execution` flow on testnet.
