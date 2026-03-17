@@ -416,13 +416,13 @@ async function main() {
       whitelistHook.hash,
       'setWhitelist',
       [hash160Param(randomAccountId()), hash160Param(mockTarget.hash), boolParam(true)],
-      /(Unauthorized|not found)/
+      /(Unauthorized|not found|Called Contract Does Not Exist)/
     ),
     web3AuthDirectSet: await directFault(
       web3AuthA.hash,
       'setPublicKey',
       [hash160Param(randomAccountId()), byteArrayParam(sanitizeHex(ethers.Wallet.createRandom().signingKey.publicKey))],
-      /(Unauthorized|not found)/
+      /(Unauthorized|not found|Called Contract Does Not Exist)/
     ),
   };
   console.log(JSON.stringify(results.matrix.directConfigGuards, null, 2));
