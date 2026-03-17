@@ -68,18 +68,33 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
 
 async function callRemotePaymaster(payload) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
+  const normalizedAccount = normalizeHash(PAYMASTER_ACCOUNT_ID);
+  const normalizedTarget = normalizeHash(CORE_HASH);
+  const overrideAssignments = [
+    ["MORPHEUS_PAYMASTER_TESTNET_ENABLED", "true"],
+    ["MORPHEUS_PAYMASTER_TESTNET_POLICY_ID", "testnet-aa"],
+    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS", PAYMASTER_DAPP_ID],
+    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS", normalizedAccount],
+    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_TARGETS", normalizedTarget],
+    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_METHODS", "executeUserOp,executeUnifiedByAddress"],
+    ["MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS", String(PAYMASTER_MAX_GAS_UNITS)],
+  ]
+    .map(([key, value]) => `process.env.${key} = ${JSON.stringify(value)};`)
+    .join("\n");
   const shellScript = `
 set -e
-WORKER_CONTAINER="$(docker ps --format '{{.Names}}' | grep 'phala-worker' | head -n1)"
-test -n "$WORKER_CONTAINER"
-docker exec -i "$WORKER_CONTAINER" node --input-type=module - <<'JS'
+cd /dstack
+docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T phala-worker node --input-type=module - <<'JS'
+${overrideAssignments}
+process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
-const token = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET;
-const res = await fetch('http://127.0.0.1:8080/paymaster/authorize', {
+const { default: handler } = await import('/app/workers/phala-worker/src/worker.js');
+const req = new Request('http://local/paymaster/authorize', {
   method: 'POST',
-  headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+  headers: { authorization: 'Bearer ' + process.env.PHALA_API_TOKEN, 'content-type': 'application/json' },
   body: JSON.stringify(body),
 });
+const res = await handler(req);
 const text = await res.text();
 let parsed;
 try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
@@ -90,40 +105,6 @@ JS
   const jsonLine = stdout.trim().split("\n").find((line) => line.trim().startsWith("{"));
   if (!jsonLine) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
   return JSON.parse(jsonLine);
-}
-
-async function updateRemotePaymasterAccount(accountId) {
-  const normalized = normalizeHash(accountId);
-  const shellScript = `
-set -e
-file="/dstack/.host-shared/.decrypted-env"
-current="$(grep '^MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=' "$file" | sed 's/^MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=//')"
-if [ -z "$current" ]; then
-  next="${normalized}"
-else
-  case ",$current," in
-    *",${normalized},"*) next="$current" ;;
-    *) next="$current,${normalized}" ;;
-  esac
-fi
-for kv in \\
-  "MORPHEUS_PAYMASTER_TESTNET_ENABLED=true" \\
-  "MORPHEUS_PAYMASTER_TESTNET_POLICY_ID=testnet-aa" \\
-  "MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=${PAYMASTER_DAPP_ID}" \\
-  "MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=$next"
-do
-  key="\${kv%%=*}"
-  value="\${kv#*=}"
-  if grep -q "^$key=" "$file"; then
-    sed -i "s#^$key=.*#$key=$value#" "$file"
-  else
-    printf '%s=%s\\n' "$key" "$value" >> "$file"
-  fi
-done
-cd /dstack
-MORPHEUS_LOCAL_ENV_FILE=/dstack/.host-shared/.decrypted-env docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml up -d
-`;
-  await runPhalaRemoteShell(shellScript, { maxBuffer: 20 * 1024 * 1024 });
 }
 
 function assertApproved(response, label) {
@@ -150,8 +131,7 @@ function assertDenied(response, label, reasonPattern) {
 async function main() {
   const accountId = normalizeHash(PAYMASTER_ACCOUNT_ID);
   if (!SKIP_PAYMASTER_ALLOWLIST_UPDATE) {
-    console.log(`Updating remote paymaster allowlist for ${accountId}...`);
-    await updateRemotePaymasterAccount(accountId);
+    console.log(`Using per-request remote paymaster overrides for ${accountId}...`);
   }
 
   const approvedPayload = {

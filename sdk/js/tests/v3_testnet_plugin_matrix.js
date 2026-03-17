@@ -263,6 +263,18 @@ function expectedSubscriptionNonce(subIdHex, periodMs, runtimeMs = Date.now()) {
   return 1_000_000_000_000_000_000n + (subTag << 32n) + currentPeriod;
 }
 
+async function getLatestBlockTimeMs(rpcClient) {
+  try {
+    const latestHeight = Number(await rpcClient.getBlockCount()) - 1;
+    const block = await rpcClient.getBlock(latestHeight, 1);
+    const raw = Number(block?.time ?? block?.timestamp ?? 0);
+    if (Number.isFinite(raw) && raw > 0) return raw;
+  } catch {
+    // fall back to local wall clock if the RPC helper is unavailable
+  }
+  return Date.now();
+}
+
 function assertFaultResult(result, label, pattern) {
   const state = String(result?.state || '');
   if (!state.includes('FAULT')) {
@@ -643,7 +655,7 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
   {
     const scenario = await registerAccount('subscription');
     const subId = Buffer.from(ethers.randomBytes(8)).toString('hex');
-    const periodMs = 60000n;
+    const periodMs = 3600000n;
     await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateVerifier', [
       hash160Param(scenario.accountId),
       hash160Param(subscriptionVerifier.hash),
@@ -662,19 +674,20 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
       ]),
     ]);
 
+    const chainNowMs = await getLatestBlockTimeMs(rpcClient);
     const overAmount = await testInvoke(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
       userOpParam({
         targetContract: mockTarget.hash,
         method: 'transfer',
         args: [hash160Param(scenario.virtualScriptHash), hash160Param(account.scriptHash), integerParam(101), stringParam('sub')],
-        nonce: expectedSubscriptionNonce(subId, periodMs, Date.now()),
-        deadline: BigInt(Date.now() + (60 * 60 * 1000)),
+        nonce: expectedSubscriptionNonce(subId, periodMs, chainNowMs),
+        deadline: BigInt(chainNowMs + (60 * 60 * 1000)),
         signatureHex: subId,
       }),
     ]);
 
-    const nowMs = Date.now();
+    const nowMs = await getLatestBlockTimeMs(rpcClient);
     const nonce = expectedSubscriptionNonce(subId, periodMs, nowMs);
     const success = await invokePersisted(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
