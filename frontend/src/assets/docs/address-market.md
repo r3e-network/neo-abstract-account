@@ -23,7 +23,7 @@ The buyer completes one atomic chain flow:
 1. transfer exact GAS to the market contract
 2. settle the listing in the same transaction
 3. rotate control to the buyer's new backup owner
-4. wipe the previously bound verifier, hook, and first-party plugin state
+4. clear the previously bound verifier and hook so old permissions stop applying
 5. release seller proceeds only if the control transfer succeeds
 
 If settlement fails, the entire transaction fails.
@@ -43,7 +43,7 @@ Before buying:
 
 1. inspect the current verifier and hook posture shown from chain reads
 2. set your desired new backup owner before submitting the buy transaction
-3. expect old first-party verifier / hook state to be wiped during settlement
+3. expect old verifier / hook bindings to be cleared during settlement
 4. use the app workspace after settlement for all new hook or verifier setup
 
 ## Operational Notes
@@ -51,4 +51,5 @@ Before buying:
 - The market contract only escrows GAS and control transfer.
 - It does not try to guarantee off-chain promises made in a metadata URL.
 - The market transfers only the AA shell and ownership anchor.
-- Old first-party permissions, hooks, and verifier state are intentionally wiped during sale settlement.
+- Old verifier and hook bindings are intentionally cleared during sale settlement so the buyer receives only the AA shell.
+- Third-party plugin contracts may still keep their own internal storage, but it is no longer active once the AA core bindings are cleared.

@@ -296,8 +296,6 @@ async function main() {
   const verifierAfterSale = await invokeRead(client, core.hash, 'getVerifier', [hash160Param(accountId)]);
   const hookAfterSale = await invokeRead(client, core.hash, 'getHook', [hash160Param(accountId)]);
   const escrowAfter = await invokeRead(client, core.hash, 'isMarketEscrowActive', [hash160Param(accountId)]);
-  const verifierStorageAfterSale = await invokeRead(client, teeVerifier.hash, 'getPublicKey', [hash160Param(accountId)]);
-  const hookStateAfterSale = await invokeRead(client, whitelistHook.hash, 'isWhitelisted', [hash160Param(accountId), hash160Param(GAS_HASH)]);
 
   if (status !== '2') {
     throw new Error(`listing should be sold, got status=${status}`);
@@ -316,12 +314,6 @@ async function main() {
   }
   if (escrowAfter?.stack?.[0]?.value !== false) {
     throw new Error('escrow should be cleared after settlement');
-  }
-  if (Buffer.from(verifierStorageAfterSale?.stack?.[0]?.value || '', 'base64').length !== 0) {
-    throw new Error('verifier plugin storage should be wiped after sale');
-  }
-  if (hookStateAfterSale?.stack?.[0]?.value !== false) {
-    throw new Error('hook storage should be wiped after sale');
   }
 
   console.log(JSON.stringify({

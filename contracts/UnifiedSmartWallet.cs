@@ -539,19 +539,6 @@ namespace AbstractAccount
             ExecutionEngine.Assert(newBackupOwner != null && newBackupOwner != UInt160.Zero, "New backup owner required");
 
             AccountState state = GetAccountState(accountId);
-            UInt160 previousVerifier = state.Verifier;
-            UInt160 previousHook = state.HookId;
-
-            if (previousVerifier != null && previousVerifier != UInt160.Zero)
-            {
-                ClearVerifierPluginState(accountId, previousVerifier);
-            }
-
-            if (previousHook != null && previousHook != UInt160.Zero)
-            {
-                ClearHookPluginState(accountId, previousHook);
-            }
-
             state.BackupOwner = newBackupOwner;
             state.Verifier = UInt160.Zero;
             state.HookId = UInt160.Zero;
@@ -583,32 +570,6 @@ namespace AbstractAccount
             byte[] listingKey = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, marketKey);
             Storage.Delete(Storage.CurrentContext, listingKey);
-        }
-
-        private static void ClearVerifierPluginState(UInt160 accountId, UInt160 verifierContract)
-        {
-            SetVerifierConfigContext(accountId, verifierContract);
-            try
-            {
-                Contract.Call(verifierContract, "clearAccount", CallFlags.All, new object[] { accountId });
-            }
-            finally
-            {
-                ClearVerifierConfigContext(accountId);
-            }
-        }
-
-        private static void ClearHookPluginState(UInt160 accountId, UInt160 hookContract)
-        {
-            SetHookConfigContext(accountId, hookContract);
-            try
-            {
-                Contract.Call(hookContract, "clearAccount", CallFlags.All, new object[] { accountId });
-            }
-            finally
-            {
-                ClearHookConfigContext(accountId);
-            }
         }
     }
 }

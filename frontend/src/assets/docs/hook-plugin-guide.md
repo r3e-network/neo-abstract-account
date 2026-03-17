@@ -176,4 +176,4 @@ When listing an AA address in the market, publish at minimum:
 
 That lets buyers understand whether they are purchasing a clean shell or a heavily opinionated policy stack.
 
-For trustless escrow sales, the market should transfer only the AA shell. Existing first-party verifier and hook state is wiped during settlement, and the buyer should configure fresh plugins in the app workspace after purchase.
+For trustless escrow sales, the market should transfer only the AA shell. Existing verifier and hook bindings are cleared during settlement, and the buyer should configure fresh plugins in the app workspace after purchase.

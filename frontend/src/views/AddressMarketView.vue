@@ -151,7 +151,7 @@
                   <div class="mt-5 rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4">
                     <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">Buyer Transfer Plan</p>
                     <p class="mt-2 text-sm leading-7 text-slate-400">
-                      Settlement transfers only the AA shell. Existing verifier, hook, and plugin state are wiped during settlement. Reconfigure from scratch in the app workspace afterward.
+                      Settlement transfers only the AA shell. Existing verifier and hook bindings are cleared during settlement, so old permissions stop applying. Reconfigure fresh plugins in the app workspace afterward.
                     </p>
 
                     <div class="mt-4 space-y-3">
