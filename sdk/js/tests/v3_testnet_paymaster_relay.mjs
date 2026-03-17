@@ -195,20 +195,40 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
+function buildRemotePaymasterOverrides(accountId) {
+  const normalized = normalizeHash(accountId).toLowerCase();
+  return {
+    MORPHEUS_PAYMASTER_TESTNET_ENABLED: "true",
+    MORPHEUS_PAYMASTER_TESTNET_POLICY_ID: "testnet-aa",
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS: PAYMASTER_DAPP_ID,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS: normalized,
+  };
+}
+
 async function callRemotePaymaster(payload) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
+  const remoteOverrides = (!SKIP_PAYMASTER_ALLOWLIST_UPDATE && PAYMASTER_ACCOUNT_ID)
+    ? buildRemotePaymasterOverrides(PAYMASTER_ACCOUNT_ID)
+    : null;
+  const overrideAssignments = remoteOverrides
+    ? Object.entries(remoteOverrides)
+        .map(([key, value]) => `process.env.${key} = ${JSON.stringify(value)};`)
+        .join("\n")
+    : "";
   const shellScript = `
 set -e
-WORKER_CONTAINER="$(docker ps --format '{{.Names}}' | grep 'phala-worker' | head -n1)"
-test -n "$WORKER_CONTAINER"
-docker exec -i "$WORKER_CONTAINER" node --input-type=module - <<'JS'
+cd /dstack
+docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T phala-worker node --input-type=module - <<'JS'
+${overrideAssignments}
+process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
-const token = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET;
-const res = await fetch('http://127.0.0.1:8080/paymaster/authorize', {
+const { default: handler } = await import('/app/workers/phala-worker/src/worker.js');
+const req = new Request('http://local/paymaster/authorize', {
   method: 'POST',
-  headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+  headers: { authorization: 'Bearer ' + process.env.PHALA_API_TOKEN, 'content-type': 'application/json' },
   body: JSON.stringify(body),
 });
+const res = await handler(req);
 const text = await res.text();
 let parsed;
 try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
@@ -219,87 +239,6 @@ JS
   const jsonLine = stdout.trim().split("\n").find((line) => line.trim().startsWith("{"));
   if (!jsonLine) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
   return JSON.parse(jsonLine);
-}
-
-async function updateRemotePaymasterAccount(accountId) {
-  const normalized = normalizeHash(accountId).toLowerCase();
-  const shellScript = `
-set -e
-file="/dstack/.host-shared/.decrypted-env"
-current="$(grep '^MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=' "$file" | sed 's/^MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=//')"
-if [ -z "$current" ]; then
-  next="${normalized}"
-else
-  case ",$current," in
-    *",${normalized},"*) next="$current" ;;
-    *) next="$current,${normalized}" ;;
-  esac
-fi
-dapps="$(grep '^MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=' "$file" | sed 's/^MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=//')"
-if [ -z "$dapps" ]; then
-  next_dapps="${PAYMASTER_DAPP_ID}"
-else
-  case ",$dapps," in
-    *",${PAYMASTER_DAPP_ID},"*) next_dapps="$dapps" ;;
-    *) next_dapps="$dapps,${PAYMASTER_DAPP_ID}" ;;
-  esac
-fi
-runtime="$(grep '^MORPHEUS_RUNTIME_CONFIG_JSON=' "$file" | sed 's/^MORPHEUS_RUNTIME_CONFIG_JSON=//')"
-runtime="$(printf '%s' "$runtime" | sed "s/^'//" | sed "s/'\$//" | sed 's/^"//' | sed 's/"$//' | sed 's/\\"/"/g')"
-runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_ENABLED\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_ENABLED\":\"true\"#g")"
-runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_POLICY_ID\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_POLICY_ID\":\"testnet-aa\"#g")"
-runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS\":\"$next_dapps\"#g")"
-runtime="$(printf '%s' "$runtime" | sed "s#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS\":\"[^\"]*\"#\"MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS\":\"$next\"#g")"
-for kv in \
-  "MORPHEUS_PAYMASTER_TESTNET_ENABLED=true" \
-  "MORPHEUS_PAYMASTER_TESTNET_POLICY_ID=testnet-aa" \
-  "MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS=$next_dapps" \
-  "MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS=$next"
-do
-  key="\${kv%%=*}"
-  value="\${kv#*=}"
-  if grep -q "^$key=" "$file"; then
-    sed -i "s#^$key=.*#$key=$value#" "$file"
-  else
-    printf '%s=%s\\n' "$key" "$value" >> "$file"
-  fi
-done
-if grep -q '^MORPHEUS_RUNTIME_CONFIG_JSON=' "$file"; then
-  sed -i "s#^MORPHEUS_RUNTIME_CONFIG_JSON=.*#MORPHEUS_RUNTIME_CONFIG_JSON='$runtime'#" "$file"
-else
-  printf "MORPHEUS_RUNTIME_CONFIG_JSON='%s'\\n" "$runtime" >> "$file"
-fi
-cd /dstack
-MORPHEUS_LOCAL_ENV_FILE=/dstack/.host-shared/.decrypted-env docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml up -d
-`;
-  await runPhalaRemoteShell(shellScript, { maxBuffer: 20 * 1024 * 1024 });
-}
-
-async function waitForRemotePaymasterAccount(accountId, timeoutMs = 180000) {
-  const normalized = normalizeHash(accountId).toLowerCase();
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < timeoutMs) {
-    const result = await callRemotePaymaster({
-      network: "testnet",
-      target_chain: "neo_n3",
-      account_id: normalized,
-      dapp_id: PAYMASTER_DAPP_ID,
-      target_contract: normalizeHash(CORE_HASH),
-      method: "executeUserOp",
-      userop_target_contract: normalizeHash(GAS_HASH),
-      userop_method: "symbol",
-      estimated_gas_units: 2_000_000,
-      operation_hash: `0x${Buffer.from(randomBytes(32)).toString("hex")}`,
-    });
-    const allowAccounts = Array.isArray(result?.body?.policy?.allow_accounts)
-      ? result.body.policy.allow_accounts.map((value) => String(value).toLowerCase())
-      : [];
-    if (allowAccounts.includes(normalized)) {
-      return result.body;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  }
-  throw new Error(`timed out waiting for remote paymaster allowlist update for ${normalized}`);
 }
 
 async function startPaymasterProxy() {
@@ -405,12 +344,22 @@ async function main() {
   }, null, 2));
 
   if (!SKIP_PAYMASTER_ALLOWLIST_UPDATE) {
-    console.log("Updating remote paymaster allowlist...");
-    await updateRemotePaymasterAccount(accountId);
-    const paymasterPolicy = await waitForRemotePaymasterAccount(accountId);
+    console.log("Using per-request remote paymaster overrides for allowlist validation...");
+    const paymasterPolicy = await callRemotePaymaster({
+      network: "testnet",
+      target_chain: "neo_n3",
+      account_id: normalizeHash(accountId),
+      dapp_id: PAYMASTER_DAPP_ID,
+      target_contract: normalizeHash(CORE_HASH),
+      method: "executeUserOp",
+      userop_target_contract: normalizeHash(GAS_HASH),
+      userop_method: "symbol",
+      estimated_gas_units: 2_000_000,
+      operation_hash: `0x${Buffer.from(randomBytes(32)).toString("hex")}`,
+    });
     console.log(JSON.stringify({
-      paymasterPolicyId: paymasterPolicy?.policy_id || null,
-      allowAccounts: paymasterPolicy?.policy?.allow_accounts || [],
+      paymasterPolicyId: paymasterPolicy?.body?.policy_id || null,
+      allowAccounts: paymasterPolicy?.body?.policy?.allow_accounts || [],
     }, null, 2));
   }
   const paymasterProxy = await startPaymasterProxy();
