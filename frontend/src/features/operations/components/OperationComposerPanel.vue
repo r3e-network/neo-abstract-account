@@ -149,14 +149,25 @@
         <label v-for="field in parameterFields" :key="field.key" class="space-y-1.5 text-sm">
           <span class="font-medium text-biconomy-text">{{ field.name }} <span class="text-xs text-biconomy-muted">({{ field.type }})</span></span>
           <input v-if="!isBooleanField(field.type) && !isComplexField(field.type)" :value="field.value" class="w-full rounded-lg border border-biconomy-border px-3 py-2.5 font-mono text-xs focus:border-biconomy-orange focus:ring-2 focus:ring-biconomy-orange transition-all bg-biconomy-dark" @input="$emit('update:parameterValue', { key: field.key, value: $event.target.value })" />
-          <select v-else-if="isBooleanField(field.type)" :value="String(field.value)" class="w-full rounded-lg border border-biconomy-border px-3 py-2.5 focus:border-biconomy-orange focus:ring-2 focus:ring-biconomy-orange transition-all bg-biconomy-dark text-white" @change="$emit('update:parameterValue', { key: field.key, value: $event.target.value === 'true' })">
-            <option value="false">false</option>
-            <option value="true">true</option>
-          </select>
+          <div v-else-if="isBooleanField(field.type)" class="flex items-center">
+            <button
+              type="button"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-biconomy-orange focus:ring-offset-2 focus:ring-offset-biconomy-dark"
+              :class="field.value ? 'bg-biconomy-orange' : 'bg-slate-600'"
+              @click="$emit('update:parameterValue', { key: field.key, value: !field.value })"
+            >
+              <span class="sr-only">Toggle {{ field.name }}</span>
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform"
+                :class="field.value ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+            <span class="ml-3 text-sm text-biconomy-muted">{{ field.value ? 'true' : 'false' }}</span>
+          </div>
           <textarea v-else :value="field.value" rows="3" class="w-full rounded-lg border border-biconomy-border px-3 py-2.5 font-mono text-xs focus:border-biconomy-orange focus:ring-2 focus:ring-biconomy-orange transition-all resize-none bg-biconomy-dark" @input="$emit('update:parameterValue', { key: field.key, value: $event.target.value })" />
         </label>
       </div>
-      <label class="space-y-1.5 text-sm md:col-span-3">
+      <label v-if="!parameterFields.length" class="space-y-1.5 text-sm md:col-span-3">
         <span class="font-medium text-biconomy-text">{{ t('operations.argsJsonLabel', 'Args JSON') }}</span>
         <textarea :value="argsText" rows="4" class="w-full rounded-lg border border-biconomy-border px-3 py-2.5 font-mono text-xs focus:border-biconomy-orange focus:ring-2 focus:ring-biconomy-orange transition-all resize-none bg-biconomy-dark" @input="$emit('update:argsText', $event.target.value)" />
       </label>

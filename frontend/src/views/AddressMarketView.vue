@@ -38,7 +38,9 @@
           <div class="mt-6 space-y-4">
             <label class="block">
               <span class="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">Account Seed / AccountId Hash</span>
-              <input v-model="createForm.accountSeed" type="text" class="input-field w-full bg-biconomy-dark font-mono text-sm" placeholder="seed text or 20-byte accountId hash" />
+              <input v-model="createForm.accountSeed" type="text" class="input-field w-full bg-biconomy-dark font-mono text-sm" :class="accountSeedInputClass" placeholder="64-char hex, 40-char hash, or Neo address" />
+              <p v-if="accountSeedError" class="mt-1 text-xs text-rose-400">{{ accountSeedError }}</p>
+              <p v-else-if="listingPreview.address" class="mt-1 text-xs text-emerald-400/70">Valid account detected</p>
             </label>
 
             <div class="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4">
@@ -54,7 +56,8 @@
 
             <label class="block">
               <span class="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-400">Price (GAS)</span>
-              <input v-model="createForm.price_gas" type="text" class="input-field w-full bg-biconomy-dark font-mono text-sm" placeholder="25" />
+              <input v-model="createForm.price_gas" type="text" class="input-field w-full bg-biconomy-dark font-mono text-sm" :class="priceInputClass" placeholder="e.g. 25.5" @input="validatePrice" />
+              <p v-if="priceError" class="mt-1 text-xs text-rose-400">{{ priceError }}</p>
             </label>
 
             <label class="block">
@@ -84,8 +87,15 @@
             </button>
           </div>
 
-          <div v-if="marketConfigured && listings.length === 0" class="rounded-2xl border border-dashed border-slate-700 bg-slate-800/40 p-10 text-center text-slate-400">
-            No listings found on-chain yet.
+          <div v-if="marketConfigured && listings.length === 0" class="rounded-2xl border border-dashed border-slate-700 bg-slate-800/40 p-12 text-center">
+            <div class="mx-auto w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mb-4">
+              <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            </div>
+            <p class="text-slate-300 font-medium mb-2">No listings found on-chain yet</p>
+            <p class="text-sm text-slate-500 max-w-md mx-auto mb-6">Be the first to list your Abstract Account address for sale. Listings are secured by trustless on-chain escrow.</p>
+            <router-link to="/app" class="inline-flex items-center gap-2 text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors">
+              Create an AA account first <span aria-hidden="true">→</span>
+            </router-link>
           </div>
 
           <div v-else class="space-y-4">
@@ -194,7 +204,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig.js';
@@ -231,6 +241,41 @@ const createForm = reactive({
   metadataUri: '',
 });
 
+const priceError = ref('');
+
+const accountSeedError = ref('');
+
+const accountSeedInputClass = computed(() => {
+  if (accountSeedError.value) return 'border-rose-500 focus:border-rose-400 focus:ring-rose-400/20';
+  if (listingPreview.value.accountIdHash) return 'border-emerald-500/50';
+  return '';
+});
+
+function validatePrice() {
+  const val = createForm.price_gas.trim();
+  if (!val) {
+    priceError.value = '';
+    return true;
+  }
+  const num = parseFloat(val);
+  if (isNaN(num) || num <= 0) {
+    priceError.value = 'Enter a positive number (e.g. 25 or 25.5)';
+    return false;
+  }
+  if (num > 1000000) {
+    priceError.value = 'Price seems too high - enter a reasonable GAS amount';
+    return false;
+  }
+  priceError.value = '';
+  return true;
+}
+
+const priceInputClass = computed(() => {
+  if (priceError.value) return 'border-rose-500 focus:border-rose-400 focus:ring-rose-400/20';
+  if (createForm.price_gas && !priceError.value) return 'border-emerald-500/50';
+  return '';
+});
+
 const connectedScriptHash = computed(() => {
   try {
     return connectedAccount.value ? getScriptHashFromAddress(connectedAccount.value) : '';
@@ -255,7 +300,13 @@ const listingPreview = computed(() => {
 });
 
 const canSubmitListing = computed(() => {
-  return Boolean(createForm.accountSeed && createForm.price_gas && connectedAccount.value && listingPreview.value.accountIdHash);
+  return Boolean(
+    createForm.accountSeed && 
+    createForm.price_gas && 
+    !priceError.value &&
+    connectedAccount.value && 
+    listingPreview.value.accountIdHash
+  );
 });
 
 function statusBadgeClass(status) {
@@ -391,5 +442,20 @@ async function updatePriceAction(listing) {
 
 onMounted(() => {
   void refreshListings();
+});
+
+watch(() => createForm.accountSeed, (val) => {
+  const trimmed = String(val || '').trim();
+  if (!trimmed) {
+    accountSeedError.value = '';
+    return;
+  }
+  const isValidHex64 = /^[0-9a-fA-F]{64}$/.test(trimmed);
+  const isValidHex40 = /^(0x)?[0-9a-fA-F]{40}$/.test(trimmed);
+  if (!isValidHex64 && !isValidHex40) {
+    accountSeedError.value = 'Enter 64-char hex seed or 40-char accountId hash';
+  } else {
+    accountSeedError.value = '';
+  }
 });
 </script>
