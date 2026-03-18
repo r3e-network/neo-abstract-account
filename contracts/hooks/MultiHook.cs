@@ -83,7 +83,6 @@ namespace AbstractAccount.Hooks
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
             UInt160[] hooks = GetHooks(accountId);
-            // Post execute should probably run in reverse order
             for (int i = hooks.Length - 1; i >= 0; i--)
             {
                 Contract.Call(hooks[i], "postExecute", CallFlags.All, new object[] { accountId, opParams, result });

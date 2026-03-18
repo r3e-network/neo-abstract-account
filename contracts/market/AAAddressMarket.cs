@@ -96,11 +96,11 @@ namespace AbstractAccount.Market
             ExecutionEngine.Assert(listing.Status == StatusActive, "Listing not active");
             ExecutionEngine.Assert(Runtime.CheckWitness(listing.Seller), "Seller witness required");
 
+            Contract.Call(listing.AAContract, "cancelMarketEscrow", CallFlags.All, new object[] { listing.AccountId, listingId });
+
             listing.Status = StatusCancelled;
             listing.UpdatedAt = Runtime.Time;
             PutListing(listing);
-
-            Contract.Call(listing.AAContract, "cancelMarketEscrow", CallFlags.All, new object[] { listing.AccountId, listingId });
         }
 
         public static void SettleListing(BigInteger listingId, UInt160 payer, UInt160 newBackupOwner)
@@ -115,6 +115,10 @@ namespace AbstractAccount.Market
             ExecutionEngine.Assert(pendingPayment == listing.Price, "Pending payment mismatch");
             ClearPendingPayment(listingId, payer);
 
+            ExecutionEngine.Assert(
+                GAS.Transfer(Runtime.ExecutingScriptHash, listing.Seller, listing.Price, null),
+                "Seller payout failed");
+
             Contract.Call(
                 listing.AAContract,
                 "settleMarketEscrow",
@@ -125,10 +129,6 @@ namespace AbstractAccount.Market
             listing.Buyer = payer;
             listing.UpdatedAt = Runtime.Time;
             PutListing(listing);
-
-            ExecutionEngine.Assert(
-                GAS.Transfer(Runtime.ExecutingScriptHash, listing.Seller, listing.Price, null),
-                "Seller payout failed");
         }
 
         public static void RefundPendingPayment(BigInteger listingId, UInt160 payer)

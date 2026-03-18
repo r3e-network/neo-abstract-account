@@ -25,7 +25,7 @@ namespace AbstractAccount
     [ManifestExtra("Description", "ERC-4337 Aligned Minimalist AA Engine for Neo N3")]
     public class UnifiedSmartWallet : SmartContract
     {
-        // 极致收敛的存储前缀
+        // Storage key prefixes
         private static readonly byte[] Prefix_AccountState = new byte[] { 0x01 };
         private static readonly byte[] Prefix_VerifyContext = new byte[] { 0x02 };
         private static readonly byte[] Prefix_Nonce = new byte[] { 0x03 };
@@ -33,35 +33,50 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_HookConfigContext = new byte[] { 0x05 };
         private static readonly byte[] Prefix_MarketEscrowContract = new byte[] { 0x06 };
         private static readonly byte[] Prefix_MarketEscrowListing = new byte[] { 0x07 };
+        private static readonly byte[] Prefix_EscapeLastInitiated = new byte[] { 0x08 };
+        private static readonly byte[] Prefix_PendingVerifierUpdate = new byte[] { 0x09 };
+        private static readonly byte[] Prefix_PendingHookUpdate = new byte[] { 0x0A };
+        private static readonly byte[] Prefix_ExecutionLock = new byte[] { 0x0B };
+        
+        private static readonly BigInteger EscapeCooldownSeconds = 3600;
+        private static readonly BigInteger ConfigUpdateTimelockSeconds = 86400;
         
         // ========================================================================
-        // 1. 数据结构 (对齐 ERC-4337 UserOperation)
+        // 1. Data Structures (aligned with ERC-4337 UserOperation)
         // ========================================================================
         public class AccountState
         {
-            // 对应 ERC-4337 中的 Account 自身的权限验证器 (如 Web3Auth, TEE)
+            // ERC-4337 account-level authorization verifier (e.g., Web3Auth, TEE)
             public UInt160 Verifier;         
-            public UInt160 HookId;           // 策略与风控插件生态 (Hook / Middleware Plugins)
+            public UInt160 HookId;           // Policy and risk control plugin ecosystem
             
-            // --- L1 Native 逃生舱 ---
-            public UInt160 BackupOwner;      // 绑定的底层 N3 EOA 钱包 (必须是合法公钥的Hash)
-            public uint EscapeTimelock;      // 逃生锁定时间(秒)
+            // --- L1 Native Escape Hatch ---
+            public UInt160 BackupOwner;      // Bound underlying N3 EOA wallet (must be valid pubkey hash)
+            public uint EscapeTimelock;      // Escape lock time in seconds
             public BigInteger EscapeTriggeredAt; 
         }
 
-        // 相当于 ERC-4337 的 UserOperation 结构体
+        // ERC-4337 UserOperation struct
         public class UserOperation
         {
-            public UInt160 TargetContract;   // 对应 callData 里的 to
-            public string Method;            // 对应 callData 里的 method
-            public object[] Args;            // 对应 callData 里的 params
+            public UInt160 TargetContract;   // callData target
+            public string Method;            // callData method
+            public object[] Args;            // callData params
             public BigInteger Nonce;         // 2D Nonce or Salt
-            public BigInteger Deadline;      // 防重放过期时间
-            public ByteString Signature;     // EIP-712 / TEE 签名
+            public BigInteger Deadline;      // Replay protection expiry
+            public ByteString Signature;     // EIP-712 / TEE signature
+        }
+
+        public class PendingConfigUpdate
+        {
+            public UInt160 NewVerifier;
+            public UInt160 NewHookId;
+            public ByteString VerifierParams;
+            public BigInteger InitiatedAt;
         }
 
         // ========================================================================
-        // 2. 账户初始化 (Factory 模式的雏形)
+        // 2. Account Initialization
         // ========================================================================
         /// <summary>
         /// Creates a new deterministic AA account and optionally configures its initial verifier and hook.
@@ -100,44 +115,145 @@ namespace AbstractAccount
         }
 
         /// <summary>
-        /// Replaces the hook plugin bound to an account.
+        /// Initiates a hook plugin replacement with a timelock delay for security.
+        /// If no hook is currently set, the hook is updated instantly.
         /// </summary>
         public static void UpdateHook(UInt160 accountId, UInt160 newHookId)
         {
             AssertBackupOwner(accountId);
             AssertNoMarketEscrow(accountId);
+            
             AccountState state = GetAccountState(accountId);
-            state.HookId = newHookId;
-            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
-            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+            
+            if (state.HookId == UInt160.Zero)
+            {
+                state.HookId = newHookId;
+                byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+                Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+                return;
+            }
+            
+            byte[] key2 = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
+            ByteString? existing = Storage.Get(Storage.CurrentContext, key2);
+            if (existing != null)
+            {
+                PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(existing);
+                ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Pending update timelock active");
+            }
+            
+            PendingConfigUpdate update = new PendingConfigUpdate
+            {
+                NewHookId = newHookId,
+                InitiatedAt = Runtime.Time
+            };
+            Storage.Put(Storage.CurrentContext, key2, StdLib.Serialize(update));
         }
 
         /// <summary>
-        /// Replaces the verifier plugin bound to an account and optionally pushes verifier setup data.
+        /// Confirms a pending hook update after the timelock has elapsed.
+        /// </summary>
+        public static void ConfirmHookUpdate(UInt160 accountId)
+        {
+            AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
+            
+            byte[] key = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            ExecutionEngine.Assert(data != null, "No pending hook update");
+            
+            PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
+            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
+            
+            AccountState state = GetAccountState(accountId);
+            state.HookId = pending.NewHookId;
+            byte[] stateKey = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, stateKey, StdLib.Serialize(state));
+            Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        /// <summary>
+        /// Initiates a verifier plugin replacement with a timelock delay for security.
+        /// If no verifier is currently set, the verifier is updated instantly.
         /// </summary>
         public static void UpdateVerifier(UInt160 accountId, UInt160 newVerifier, ByteString verifierParams)
         {
             AssertBackupOwner(accountId);
             AssertNoMarketEscrow(accountId);
-
+            
             AccountState state = GetAccountState(accountId);
-            state.Verifier = newVerifier;
-
-            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
-            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
-
-            if (newVerifier != null && newVerifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
+            
+            if (state.Verifier == UInt160.Zero)
             {
-                SetVerifierConfigContext(accountId, newVerifier);
+                state.Verifier = newVerifier;
+                byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+                Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+                
+                if (newVerifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
+                {
+                    SetVerifierConfigContext(accountId, newVerifier);
+                    try
+                    {
+                        Contract.Call(newVerifier, "setPublicKey", CallFlags.All, new object[] { accountId, verifierParams });
+                    }
+                    finally
+                    {
+                        ClearVerifierConfigContext(accountId);
+                    }
+                }
+                return;
+            }
+            
+            byte[] key2 = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
+            ByteString? existing = Storage.Get(Storage.CurrentContext, key2);
+            if (existing != null)
+            {
+                PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(existing);
+                ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Pending update timelock active");
+            }
+            
+            PendingConfigUpdate update = new PendingConfigUpdate
+            {
+                NewVerifier = newVerifier,
+                VerifierParams = verifierParams,
+                InitiatedAt = Runtime.Time
+            };
+            Storage.Put(Storage.CurrentContext, key2, StdLib.Serialize(update));
+        }
+
+        /// <summary>
+        /// Confirms a pending verifier update after the timelock has elapsed.
+        /// </summary>
+        public static void ConfirmVerifierUpdate(UInt160 accountId)
+        {
+            AssertBackupOwner(accountId);
+            AssertNoMarketEscrow(accountId);
+            
+            byte[] key = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            ExecutionEngine.Assert(data != null, "No pending verifier update");
+            
+            PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
+            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
+            
+            AccountState state = GetAccountState(accountId);
+            state.Verifier = pending.NewVerifier;
+            byte[] stateKey = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, stateKey, StdLib.Serialize(state));
+            
+            if (pending.NewVerifier != UInt160.Zero && pending.VerifierParams != null && pending.VerifierParams.Length > 0)
+            {
+                SetVerifierConfigContext(accountId, pending.NewVerifier);
                 try
                 {
-                    Contract.Call(newVerifier, "setPublicKey", CallFlags.All, new object[] { accountId, verifierParams });
+                    Contract.Call(pending.NewVerifier, "setPublicKey", CallFlags.All, new object[] { accountId, pending.VerifierParams });
                 }
                 finally
                 {
                     ClearVerifierConfigContext(accountId);
                 }
             }
+            
+            Storage.Delete(Storage.CurrentContext, key);
         }
 
         /// <summary>
@@ -269,8 +385,62 @@ namespace AbstractAccount
                 new object[] { serialized });
         }
 
+        [Safe]
+        public static bool HasPendingVerifierUpdate(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
+            return Storage.Get(Storage.CurrentContext, key) != null;
+        }
+
+        [Safe]
+        public static bool HasPendingHookUpdate(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
+            return Storage.Get(Storage.CurrentContext, key) != null;
+        }
+
+        [Safe]
+        public static BigInteger GetPendingVerifierUpdateTime(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            if (data == null) return 0;
+            PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
+            return pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+        }
+
+        [Safe]
+        public static BigInteger GetPendingHookUpdateTime(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            if (data == null) return 0;
+            PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
+            return pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+        }
+
+        /// <summary>
+        /// Cancels a pending verifier update.
+        /// </summary>
+        public static void CancelVerifierUpdate(UInt160 accountId)
+        {
+            AssertBackupOwner(accountId);
+            byte[] key = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        /// <summary>
+        /// Cancels a pending hook update.
+        /// </summary>
+        public static void CancelHookUpdate(UInt160 accountId)
+        {
+            AssertBackupOwner(accountId);
+            byte[] key = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, key);
+        }
+
         // ========================================================================
-        // 3. 核心路由: 验证与执行 (对齐 4337 的 Validate & Call)
+        // 3. Core Routing: Validation and Execution (aligned with 4337 Validate & Call)
         // ========================================================================
         /// <summary>
         /// Canonical execution entrypoint for a single V3 user operation.
@@ -281,65 +451,77 @@ namespace AbstractAccount
         /// </remarks>
         public static object ExecuteUserOp(UInt160 accountId, UserOperation op)
         {
+            ExecutionEngine.Assert(!IsAnyExecutionActive(), "Reentrant call rejected");
+
             AccountState state = GetAccountState(accountId);
             AssertNoMarketEscrow(accountId);
 
-            // [ValidateUserOp 阶段]
-            ExecutionEngine.Assert(Runtime.Time <= op.Deadline, "UserOp expired");
-            ConsumeNonce(accountId, op.Nonce);
+            SetExecutionLock();
 
-            if (state.Verifier != UInt160.Zero)
-            {
-                // 委托给插件验签 (如 ecrecover 或 TEE 硬件验签)
-                bool isValid = (bool)Contract.Call(state.Verifier, "validateSignature", CallFlags.ReadOnly, new object[] { accountId, op });
-                ExecutionEngine.Assert(isValid, "Verifier rejected signature");
-            }
-            else
-            {
-                // 无插件时，退化为备份钱包直接授权。accountId 仍作为虚拟账户身份使用，
-                // 但实际控制权来自 BackupOwner 的原生 N3 见证。
-                ExecutionEngine.Assert(state.BackupOwner != null && state.BackupOwner != UInt160.Zero, "Native fallback requires backup owner");
-                ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Native witness failed");
-            }
-
-            // 安全防御：如果该账户正处于被盗逃生状态，正常主权操作直接打断逃生
-            if (state.EscapeTriggeredAt > 0)
-            {
-                state.EscapeTriggeredAt = 0;
-                byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
-                Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
-            }
-
-            // [Hook 阶段] pre-execution hook
-            if (state.HookId != UInt160.Zero)
-            {
-                Contract.Call(state.HookId, "preExecute", CallFlags.All, new object[] { accountId, op });
-            }
-
-            // [Execution 阶段] 
-            // 写入上下文锁，允许 TargetContract 进行反向 CheckWitness 验证
-            SetVerifyContext(accountId, op.TargetContract);
             try
             {
-                // 动态调用目标合约
-                object result = Contract.Call(op.TargetContract, op.Method, CallFlags.All, op.Args);
-                
-                // [Hook 阶段] post-execution hook
+                // [ValidateUserOp phase]
+                ExecutionEngine.Assert(Runtime.Time <= op.Deadline, "UserOp expired");
+                ConsumeNonce(accountId, op.Nonce);
+
+                if (state.Verifier != UInt160.Zero)
+                {
+                    // Delegate to plugin for signature verification (e.g., ecrecover or TEE hardware)
+                    bool isValid = (bool)Contract.Call(state.Verifier, "validateSignature", CallFlags.ReadOnly, new object[] { accountId, op });
+                    ExecutionEngine.Assert(isValid, "Verifier rejected signature");
+                }
+                else
+                {
+                    // No plugin: fall back to backup owner direct authorization.
+                    // accountId is still used as virtual account identity,
+                    // but actual control comes from BackupOwner's native N3 witness.
+                    ExecutionEngine.Assert(state.BackupOwner != null && state.BackupOwner != UInt160.Zero, "Native fallback requires backup owner");
+                    ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Native witness failed");
+                }
+
+                // Security defense: if account is in stolen escape state, normal operations interrupt escape
+                if (state.EscapeTriggeredAt > 0)
+                {
+                    state.EscapeTriggeredAt = 0;
+                    byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+                    Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+                }
+
+                // [Hook phase] pre-execution hook
                 if (state.HookId != UInt160.Zero)
                 {
-                    Contract.Call(state.HookId, "postExecute", CallFlags.All, new object[] { accountId, op, result });
+                    Contract.Call(state.HookId, "preExecute", CallFlags.All, new object[] { accountId, op });
                 }
-                
-                return result;
+
+                // [Execution phase]
+                // Write context lock to allow TargetContract to do reverse CheckWitness verification
+                SetVerifyContext(accountId, op.TargetContract);
+                try
+                {
+                    // Dynamically call target contract
+                    object result = Contract.Call(op.TargetContract, op.Method, CallFlags.All, op.Args);
+
+                    // [Hook phase] post-execution hook
+                    if (state.HookId != UInt160.Zero)
+                    {
+                        Contract.Call(state.HookId, "postExecute", CallFlags.All, new object[] { accountId, op, result });
+                    }
+
+                    return result;
+                }
+                finally
+                {
+                    ClearVerifyContext(accountId);
+                }
             }
             finally
             {
-                ClearVerifyContext(accountId);
+                ClearExecutionLock();
             }
         }
 
         // ========================================================================
-        // 3.1 意图引擎: 批量执行 (Intent & Batch)
+        // 3.1 Intent Engine: Batch Execution
         // ========================================================================
         /// <summary>
         /// Executes multiple user operations in sequence under the same account context.
@@ -355,7 +537,7 @@ namespace AbstractAccount
         }
 
         // ========================================================================
-        // 4. 防重放机制 (ERC-4337 的 2D Nonce 规范)
+        // 4. Replay Protection (ERC-4337 2D Nonce spec)
         // ========================================================================
         private static void ConsumeNonce(UInt160 accountId, BigInteger nonce)
         {
@@ -363,7 +545,7 @@ namespace AbstractAccount
             
             if (nonce >= MAX_2D_NONCE)
             {
-                // UUID / 随机盐模式
+                // UUID / random salt mode
                 byte[] key = Helper.Concat(Prefix_Nonce, (byte[])accountId);
                 key = Helper.Concat(key, nonce.ToByteArray());
                 ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Salt already used");
@@ -371,7 +553,7 @@ namespace AbstractAccount
             }
             else
             {
-                // 严格遵守 ERC-4337 的通道递增模式 (Key = Channel, Seq = Sequence)
+                // Strictly follow ERC-4337 channel incrementing mode (Key = Channel, Seq = Sequence)
                 BigInteger channel = nonce >> 64;           
                 BigInteger sequence = nonce & 0xFFFFFFFFFFFFFFFF; 
                 
@@ -387,9 +569,9 @@ namespace AbstractAccount
         }
 
         // ========================================================================
-        // 5. N3 魔法：代理验证脚本支持 (保持 N3 特色)
+        // 5. N3 Magic: Proxy Verification Script Support
         // ========================================================================
-        // 允许外部 DeFi 合约在执行 `ExecuteUserOp` 期间，调用 CheckWitness(accountId)
+        // Allows external DeFi contracts to call CheckWitness(accountId) during ExecuteUserOp
         [Safe]
         /// <summary>
         /// Temporary witness bridge that lets the target contract recognize the active AA context.
@@ -437,6 +619,22 @@ namespace AbstractAccount
             Storage.Delete(Storage.CurrentContext, key);
         }
 
+        [Safe]
+        public static bool IsAnyExecutionActive()
+        {
+            return Storage.Get(Storage.CurrentContext, Prefix_ExecutionLock) != null;
+        }
+
+        private static void SetExecutionLock()
+        {
+            Storage.Put(Storage.CurrentContext, Prefix_ExecutionLock, new byte[] { 1 });
+        }
+
+        private static void ClearExecutionLock()
+        {
+            Storage.Delete(Storage.CurrentContext, Prefix_ExecutionLock);
+        }
+
         private static void SetVerifierConfigContext(UInt160 accountId, UInt160 verifierContract)
         {
             byte[] key = Helper.Concat(Prefix_VerifierConfigContext, (byte[])accountId);
@@ -469,7 +667,7 @@ namespace AbstractAccount
         }
 
         // ========================================================================
-        // 6. L1 逃生舱 (Native 兜底)
+        // 6. L1 Escape Hatch (Native Fallback)
         // ========================================================================
         /// <summary>
         /// Starts the backup-owner escape flow for a compromised or unavailable verifier setup.
@@ -481,9 +679,18 @@ namespace AbstractAccount
             ExecutionEngine.Assert(state.BackupOwner != UInt160.Zero, "No backup owner");
             ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Only backup owner can initiate");
             
+            byte[] escapeKey = Helper.Concat(Prefix_EscapeLastInitiated, (byte[])accountId);
+            ByteString? lastInitiated = Storage.Get(Storage.CurrentContext, escapeKey);
+            if (lastInitiated != null)
+            {
+                BigInteger lastTime = (BigInteger)lastInitiated;
+                ExecutionEngine.Assert(Runtime.Time >= lastTime + EscapeCooldownSeconds, "Escape cooldown active");
+            }
+            
             state.EscapeTriggeredAt = Runtime.Time;
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+            Storage.Put(Storage.CurrentContext, escapeKey, Runtime.Time);
         }
 
         /// <summary>
@@ -501,6 +708,9 @@ namespace AbstractAccount
             state.EscapeTriggeredAt = 0;
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+            
+            byte[] escapeKey = Helper.Concat(Prefix_EscapeLastInitiated, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, escapeKey);
         }
 
         /// <summary>

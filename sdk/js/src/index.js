@@ -342,6 +342,206 @@ class AbstractAccountClient {
     };
   }
 
+  createConfirmHookUpdatePayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'ConfirmHookUpdate',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+      ],
+    };
+  }
+
+  createConfirmVerifierUpdatePayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'ConfirmVerifierUpdate',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+      ],
+    };
+  }
+
+  createCancelHookUpdatePayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'CancelHookUpdate',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+      ],
+    };
+  }
+
+  createCancelVerifierUpdatePayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'CancelVerifierUpdate',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+      ],
+    };
+  }
+
+  async getHasPendingVerifierUpdate(accountHashOrAddress) {
+    const normalizeAddress = (addr) => {
+      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+    const accountId = normalizeAddress(accountHashOrAddress);
+
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'HasPendingVerifierUpdate',
+      args: [{ type: 'Hash160', value: accountId }],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`HasPendingVerifierUpdate fault: ${response.exception}`);
+    return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
+  }
+
+  async getHasPendingHookUpdate(accountHashOrAddress) {
+    const normalizeAddress = (addr) => {
+      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+    const accountId = normalizeAddress(accountHashOrAddress);
+
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'HasPendingHookUpdate',
+      args: [{ type: 'Hash160', value: accountId }],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`HasPendingHookUpdate fault: ${response.exception}`);
+    return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
+  }
+
+  async getPendingVerifierUpdateTime(accountHashOrAddress) {
+    const normalizeAddress = (addr) => {
+      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+    const accountId = normalizeAddress(accountHashOrAddress);
+
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'GetPendingVerifierUpdateTime',
+      args: [{ type: 'Hash160', value: accountId }],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`GetPendingVerifierUpdateTime fault: ${response.exception}`);
+    return response?.stack?.[0]?.value || 0;
+  }
+
+  async getPendingHookUpdateTime(accountHashOrAddress) {
+    const normalizeAddress = (addr) => {
+      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+    const accountId = normalizeAddress(accountHashOrAddress);
+
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'GetPendingHookUpdateTime',
+      args: [{ type: 'Hash160', value: accountId }],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`GetPendingHookUpdateTime fault: ${response.exception}`);
+    return response?.stack?.[0]?.value || 0;
+  }
+
+  async getIsAnyExecutionActive() {
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'IsAnyExecutionActive',
+      args: [],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`IsAnyExecutionActive fault: ${response.exception}`);
+    return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
+  }
+
 }
 
 module.exports = {

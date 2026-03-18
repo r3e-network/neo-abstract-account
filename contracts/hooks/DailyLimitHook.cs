@@ -74,13 +74,13 @@ namespace AbstractAccount.Hooks
             byte[] resetKey = Helper.Concat(Helper.Concat(Prefix_LastReset, (byte[])accountId), (byte[])targetContract);
 
             BigInteger currentTime = Runtime.Time;
-            BigInteger oneDayMs = 24 * 60 * 60 * 1000;
+            BigInteger oneDaySeconds = 24 * 60 * 60;
             
             ByteString? lastResetData = Storage.Get(Storage.CurrentContext, resetKey);
             BigInteger lastReset = lastResetData == null ? 0 : (BigInteger)lastResetData;
 
             BigInteger spentToday = 0;
-            if (currentTime >= lastReset + oneDayMs)
+            if (currentTime >= lastReset + oneDaySeconds)
             {
                 // New day, reset spent amount
                 Storage.Put(Storage.CurrentContext, resetKey, currentTime);
