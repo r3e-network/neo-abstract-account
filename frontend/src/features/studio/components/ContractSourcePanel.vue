@@ -3,7 +3,10 @@
     <div class="px-6 py-5 border-b border-biconomy-border bg-biconomy-panel/40 flex items-center justify-between">
       <div>
         <h2 class="text-lg font-bold text-biconomy-text uppercase tracking-widest font-mono">Contract Explorer</h2>
-        <p class="text-xs text-biconomy-muted font-medium font-mono">C# Smart Contract Modules</p>
+        <p class="text-xs text-biconomy-muted font-medium font-mono mt-1">C# Smart Contract Modules</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-biconomy-muted">{{ contractFiles.length }} files</span>
       </div>
     </div>
     <div class="flex flex-col md:flex-row flex-1 min-h-0">
@@ -18,7 +21,7 @@
               'group w-full flex items-center px-3 py-2.5 text-[13px] rounded-lg font-mono text-left transition-all duration-200'
             ]"
           >
-            <svg class="w-4 h-4 mr-2 opacity-70" :class="activeFileIdx === idx ? 'text-biconomy-orange' : 'text-biconomy-muted'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-4 h-4 mr-2 opacity-70 flex-shrink-0" :class="activeFileIdx === idx ? 'text-biconomy-orange' : 'text-biconomy-muted'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span class="truncate" :title="file.name">{{ file.name }}</span>
@@ -26,16 +29,13 @@
         </nav>
       </div>
       <div class="flex-1 bg-biconomy-dark flex flex-col min-w-0">
-        <div class="flex items-center justify-between px-4 py-2 bg-biconomy-panel border-b border-biconomy-border">
-          <div class="flex items-center gap-2">
-            <div class="flex gap-1.5 mr-2">
-              <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-              <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-              <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-            </div>
-            <span class="text-xs font-mono text-biconomy-muted">{{ contractFiles[activeFileIdx]?.name }}</span>
+        <div class="flex items-center justify-between px-4 py-3 bg-biconomy-panel/50 border-b border-biconomy-border">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-mono text-biconomy-muted bg-biconomy-dark/50 px-3 py-1.5 rounded">{{ contractFiles[activeFileIdx]?.name }}</span>
           </div>
-          <button type="button" class="text-xs font-semibold text-biconomy-text hover:text-white px-3 py-1.5 rounded bg-biconomy-panel/5 hover:bg-biconomy-panel/10 transition-colors" @click="copyCode">
+          <button type="button" class="inline-flex items-center gap-2 text-xs font-semibold text-biconomy-text hover:text-white px-3 py-1.5 rounded-lg bg-biconomy-panel/50 hover:bg-biconomy-panel/80 transition-colors" @click="copyCode">
+            <svg v-if="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <svg v-else class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             {{ copied ? 'Copied!' : 'Copy Code' }}
           </button>
         </div>

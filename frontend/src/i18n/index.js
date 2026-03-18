@@ -19,7 +19,7 @@ const MESSAGES = {
       disconnect: 'Disconnect',
       disconnectDid: 'Disconnect Web3Auth',
       language: 'Language',
-      network: 'Neo N3 Network',
+      network: 'Neo N3 Testnet',
     },
     brand: {
       name: 'Abstract Account',
@@ -300,7 +300,7 @@ const MESSAGES = {
       disconnect: '断开连接',
       disconnectDid: '断开 Web3Auth',
       language: '语言',
-      network: 'Neo N3 网络',
+      network: 'Neo N3 测试网',
     },
     brand: {
       name: '抽象账户',

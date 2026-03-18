@@ -90,45 +90,19 @@
       </div>
 
       <div class="rounded-lg border border-biconomy-border/60 bg-biconomy-panel/60 p-5">
-        <h4 class="text-sm font-bold text-white uppercase tracking-widest font-mono mb-3">Common Examples</h4>
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Common Examples</h4>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs text-biconomy-muted font-mono">
-          <div>
-            <p class="text-biconomy-orange mb-1">WhitelistHook</p>
-            <pre class="whitespace-pre-wrap">method: setWhitelist
-args: [
-  { "type": "Hash160", "value": "0x&lt;account&gt;" },
-  { "type": "Hash160", "value": "0x&lt;target&gt;" },
-  { "type": "Boolean", "value": true }
-]</pre>
-          </div>
-          <div>
-            <p class="text-biconomy-orange mb-1">DailyLimitHook</p>
-            <pre class="whitespace-pre-wrap">method: setDailyLimit
-args: [
-  { "type": "Hash160", "value": "0x&lt;account&gt;" },
-  { "type": "Hash160", "value": "0x&lt;token&gt;" },
-  { "type": "Integer", "value": "1000000" }
-]</pre>
-          </div>
-          <div>
-            <p class="text-biconomy-orange mb-1">SessionKeyVerifier</p>
-            <pre class="whitespace-pre-wrap">method: setSessionKey
-args: [
-  { "type": "Hash160", "value": "0x&lt;account&gt;" },
-  { "type": "ByteArray", "value": "0x&lt;pubkey&gt;" },
-  { "type": "Hash160", "value": "0x&lt;target&gt;" },
-  { "type": "String", "value": "*" },
-  { "type": "Integer", "value": "1735689600" }
-]</pre>
-          </div>
-          <div>
-            <p class="text-biconomy-orange mb-1">NeoDIDCredentialHook</p>
-            <pre class="whitespace-pre-wrap">method: requireCredentialForContract
-args: [
-  { "type": "Hash160", "value": "0x&lt;account&gt;" },
-  { "type": "Hash160", "value": "0x&lt;target&gt;" },
-  { "type": "String", "value": "Web3Auth_PrimaryIdentity" }
-]</pre>
+          <div v-for="example in commonExamples" :key="example.label" class="rounded-lg border border-biconomy-border/40 bg-biconomy-dark/30 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-biconomy-orange font-semibold">{{ example.label }}</p>
+              <button @click="applyExample(example)" class="text-xs text-biconomy-muted hover:text-white transition-colors flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Use Template
+              </button>
+            </div>
+            <pre class="whitespace-pre-wrap">{{ example.code }}</pre>
           </div>
         </div>
       </div>
@@ -230,6 +204,73 @@ const hookPresets = [
   },
 ];
 
+const commonExamples = [
+  {
+    label: 'WhitelistHook',
+    code: `method: setWhitelist
+args: [
+  { "type": "Hash160", "value": "0x<account>" },
+  { "type": "Hash160", "value": "0x<target>" },
+  { "type": "Boolean", "value": true }
+]`,
+    method: 'setWhitelist',
+    args: [
+      { type: 'Hash160', value: '0x<account>' },
+      { type: 'Hash160', value: '0x<target>' },
+      { type: 'Boolean', value: true },
+    ],
+  },
+  {
+    label: 'DailyLimitHook',
+    code: `method: setDailyLimit
+args: [
+  { "type": "Hash160", "value": "0x<account>" },
+  { "type": "Hash160", "value": "0x<token>" },
+  { "type": "Integer", "value": "1000000" }
+]`,
+    method: 'setDailyLimit',
+    args: [
+      { type: 'Hash160', value: '0x<account>' },
+      { type: 'Hash160', value: '0x<token>' },
+      { type: 'Integer', value: '1000000' },
+    ],
+  },
+  {
+    label: 'SessionKeyVerifier',
+    code: `method: setSessionKey
+args: [
+  { "type": "Hash160", "value": "0x<account>" },
+  { "type": "ByteArray", "value": "0x<pubkey>" },
+  { "type": "Hash160", "value": "0x<target>" },
+  { "type": "String", "value": "*" },
+  { "type": "Integer", "value": "1735689600" }
+]`,
+    method: 'setSessionKey',
+    args: [
+      { type: 'Hash160', value: '0x<account>' },
+      { type: 'ByteArray', value: '0x<pubkey>' },
+      { type: 'Hash160', value: '0x<target>' },
+      { type: 'String', value: '*' },
+      { type: 'Integer', value: '1735689600' },
+    ],
+  },
+  {
+    label: 'NeoDIDCredentialHook',
+    code: `method: requireCredentialForContract
+args: [
+  { "type": "Hash160", "value": "0x<account>" },
+  { "type": "Hash160", "value": "0x<target>" },
+  { "type": "String", "value": "Web3Auth_PrimaryIdentity" }
+]`,
+    method: 'requireCredentialForContract',
+    args: [
+      { type: 'Hash160', value: '0x<account>' },
+      { type: 'Hash160', value: '0x<target>' },
+      { type: 'String', value: 'Web3Auth_PrimaryIdentity' },
+    ],
+  },
+];
+
 function applyVerifierPreset(preset) {
   permissionsForm.value.verifierMethod = preset.method;
   permissionsForm.value.verifierArgsJson = JSON.stringify(preset.args, null, 2);
@@ -238,5 +279,18 @@ function applyVerifierPreset(preset) {
 function applyHookPreset(preset) {
   permissionsForm.value.hookMethod = preset.method;
   permissionsForm.value.hookArgsJson = JSON.stringify(preset.args, null, 2);
+}
+
+function applyExample(example) {
+  if (example.method.startsWith('set') && example.args[0]?.type === 'Hash160') {
+    const firstArgStr = example.args[0].value;
+    if (firstArgStr.includes('token') || firstArgStr.includes('target')) {
+      permissionsForm.value.hookMethod = example.method;
+      permissionsForm.value.hookArgsJson = JSON.stringify(example.args, null, 2);
+    } else {
+      permissionsForm.value.verifierMethod = example.method;
+      permissionsForm.value.verifierArgsJson = JSON.stringify(example.args, null, 2);
+    }
+  }
 }
 </script>
