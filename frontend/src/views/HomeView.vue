@@ -34,16 +34,30 @@
             </router-link>
           </div>
           <div class="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1">{{ t('home.heroBadgeOne', 'Plugin-based verification') }}</span>
-            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1">{{ t('home.heroBadgeTwo', 'Transferable AA addresses') }}</span>
-            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1">{{ t('home.heroBadgeThree', 'Relay and paymaster ready') }}</span>
+            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1 flex items-center gap-1.5">
+              <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              {{ t('home.heroBadgeOne', 'Plugin-based verification') }}
+            </span>
+            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1 flex items-center gap-1.5">
+              <svg class="w-3 h-3 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+              {{ t('home.heroBadgeTwo', 'Transferable AA addresses') }}
+            </span>
+            <span class="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1 flex items-center gap-1.5">
+              <svg class="w-3 h-3 text-biconomy-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              {{ t('home.heroBadgeThree', 'Relay and paymaster ready') }}
+            </span>
           </div>
           <div class="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-slate-700/50 bg-slate-800/70 px-4 py-2 text-xs font-semibold text-biconomy-text backdrop-blur-md">
-            <span class="text-emerald-400">N3Index</span>
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="text-emerald-400 font-bold">N3Index</span>
             <span>Live testnet</span>
-            <span v-if="testnetSummary">Tip {{ testnetSummary.chain_tip_block }} · Indexed {{ testnetSummary.indexed_tx_count }}</span>
-            <span v-else-if="testnetStatus">Lag {{ testnetStatus.lag_blocks }}</span>
-            <span v-else>Connecting to live network summary…</span>
+            <span v-if="testnetSummary" class="text-slate-300">Tip #{{ testnetSummary.chain_tip_block }}</span>
+            <span v-else-if="testnetStatus" class="text-slate-300">Lag {{ testnetStatus.lag_blocks }}</span>
+            <span v-else-if="loadingStatus" class="text-slate-400">{{ loadingStatus }}</span>
+            <span v-else class="text-rose-400">Network unavailable</span>
           </div>
           <div class="mx-auto mt-6 max-w-4xl rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-5 text-left shadow-[0_0_25px_rgba(16,185,129,0.12)] backdrop-blur-md">
             <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -81,25 +95,34 @@
         <!-- Primary Entry Points -->
         <section class="mb-20 animate-fade-in-up" style="animation-delay: 0.15s">
           <div class="grid gap-6 lg:grid-cols-3">
-            <router-link to="/app" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-emerald-400/50 hover:bg-slate-800/70">
-              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-300">{{ t('home.entryAppLabel', 'App Workspace') }}</p>
+            <router-link to="/app" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-emerald-400/50 hover:bg-slate-800/70 hover:shadow-[0_0_30px_rgba(34,197,94,0.1)]">
+              <div class="flex items-start justify-between">
+                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-300">{{ t('home.entryAppLabel', 'App Workspace') }}</p>
+                <svg class="w-5 h-5 text-emerald-400 opacity-0 group-hover:opacity-100 transform translate-x-[-4px] group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+              </div>
               <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryAppTitle', 'Create and operate AA accounts') }}</h2>
               <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryAppBody', 'Move account creation, ownership changes, mixed signing, relay submission, and recovery actions into one operator-focused workspace.') }}</p>
-              <span class="mt-6 inline-flex items-center text-sm font-semibold text-emerald-300 group-hover:text-emerald-200">{{ t('home.entryAppAction', 'Open App') }}</span>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-emerald-300 group-hover:text-emerald-200">{{ t('home.entryAppAction', 'Open App') }} →</span>
             </router-link>
 
-            <router-link to="/market" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-sky-400/50 hover:bg-slate-800/70">
-              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-sky-300">{{ t('home.entryMarketLabel', 'Address Market') }}</p>
+            <router-link to="/market" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-sky-400/50 hover:bg-slate-800/70 hover:shadow-[0_0_30px_rgba(56,189,248,0.1)]">
+              <div class="flex items-start justify-between">
+                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-sky-300">{{ t('home.entryMarketLabel', 'Address Market') }}</p>
+                <svg class="w-5 h-5 text-sky-400 opacity-0 group-hover:opacity-100 transform translate-x-[-4px] group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+              </div>
               <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryMarketTitle', 'List and acquire AA addresses') }}</h2>
               <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryMarketBody', 'List AA addresses in trustless on-chain escrow, freeze control during sale, and transfer only the AA shell plus backup-owner governance when the buyer settles.') }}</p>
-              <span class="mt-6 inline-flex items-center text-sm font-semibold text-sky-300 group-hover:text-sky-200">{{ t('home.entryMarketAction', 'Open Market') }}</span>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-sky-300 group-hover:text-sky-200">{{ t('home.entryMarketAction', 'Open Market') }} →</span>
             </router-link>
 
-            <router-link :to="{ path: '/docs', query: { doc: 'pluginGuide' } }" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition hover:border-amber-400/50 hover:bg-slate-800/70">
-              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-amber-300">{{ t('home.entryDocsLabel', 'Hooks & Plugins') }}</p>
+            <router-link :to="{ path: '/docs', query: { doc: 'pluginGuide' } }" class="group rounded-2xl border border-slate-700/60 bg-slate-800/50 p-6 backdrop-blur-xl transition-all duration-300 hover:border-amber-400/50 hover:bg-slate-800/70 hover:shadow-[0_0_30px_rgba(251,191,36,0.1)]">
+              <div class="flex items-start justify-between">
+                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-amber-300">{{ t('home.entryDocsLabel', 'Hooks & Plugins') }}</p>
+                <svg class="w-5 h-5 text-amber-400 opacity-0 group-hover:opacity-100 transform translate-x-[-4px] group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+              </div>
               <h2 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryDocsTitle', 'Understand verifier and hook composition') }}</h2>
               <p class="mt-3 text-sm leading-7 text-slate-300">{{ t('home.entryDocsBody', 'Use the new hook and plugin guide to choose the right verifier, policy hook, and recovery setup before you deploy or buy an AA address.') }}</p>
-              <span class="mt-6 inline-flex items-center text-sm font-semibold text-amber-300 group-hover:text-amber-200">{{ t('home.entryDocsAction', 'Read Guide') }}</span>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-amber-300 group-hover:text-amber-200">{{ t('home.entryDocsAction', 'Read Guide') }} →</span>
             </router-link>
           </div>
         </section>
@@ -134,17 +157,21 @@ const ArchitectureDiagram = defineAsyncComponent(() => import('@/components/Arch
 const { t } = useI18n();
 const testnetSummary = ref(null);
 const testnetStatus = ref(null);
+const loadingStatus = ref('Loading network status...');
 const latestPaymasterRelayTxid = '0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4';
 const latestPaymasterRelayExplorerUrl = buildTransactionExplorerUrl(RUNTIME_CONFIG.explorerBaseUrl, latestPaymasterRelayTxid);
 
 onMounted(async () => {
+  loadingStatus.value = 'Connecting to N3Index...';
   try {
     const [summary, status] = await Promise.all([fetchTestnetSummary(), fetchTestnetStatus()]);
     testnetSummary.value = summary?.data || null;
     testnetStatus.value = status?.data || null;
+    loadingStatus.value = null;
   } catch (_error) {
     testnetSummary.value = null;
     testnetStatus.value = null;
+    loadingStatus.value = null;
   }
 });
 </script>
