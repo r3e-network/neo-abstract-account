@@ -37,6 +37,29 @@
 
       <DraftStatusBanner v-if="workspace.operationBody.value || workspace.share.value.draftId || activityItems.length > 0" class="mb-8 rounded-xl border-slate-700/50 shadow-lg" :status="workspace.share.value.status" :activity="activityItems" />
 
+      <div class="mb-8 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4 backdrop-blur-md">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-bold uppercase tracking-widest text-biconomy-muted">Workflow Progress</p>
+          <p class="text-xs text-biconomy-muted">{{ currentStepLabel }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <template v-for="(step, index) in steps" :key="step.id">
+            <button
+              @click="jumpToStep(step.id)"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200"
+              :class="step.state === 'active' ? 'bg-neo-500/20 border border-neo-500/50 text-neo-300' : step.state === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20' : 'bg-slate-700/30 border border-slate-600/30 text-slate-500 hover:bg-slate-700/50'"
+            >
+              <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" :class="step.state === 'active' ? 'bg-neo-500 text-slate-900' : step.state === 'completed' ? 'bg-emerald-500 text-slate-900' : 'bg-slate-600 text-slate-300'">
+                <svg v-if="step.state === 'completed'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                <span v-else>{{ index + 1 }}</span>
+              </div>
+              <span class="text-xs font-medium hidden sm:inline">{{ step.label }}</span>
+            </button>
+            <div v-if="index < steps.length - 1" class="flex-1 h-0.5 rounded" :class="steps[index].state === 'completed' && steps[index + 1].state !== 'locked' ? 'bg-emerald-500/50' : 'bg-slate-700'"></div>
+          </template>
+        </div>
+      </div>
+
       <div class="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-5">
         <div class="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 shadow-inner backdrop-blur-md">
           <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold mb-1">{{ t('operations.didCardLabel', 'Web3Auth') }}</p>
@@ -328,6 +351,45 @@ const isSubmissionPending = computed(() => Boolean(pendingSubmissionAction.value
 const submissionReceiptHistoryItems = computed(() => buildSubmissionReceiptHistoryItems(submissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl, limit: 4 }));
 const activeSubmissionReceipt = computed(() => submissionReceipt.value || resolveLatestSubmissionReceipt(submissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl }));
 const activityActionContext = computed(() => ({ shareUrl: shareUrl.value, collaboratorUrl: collaborationUrl.value, operatorUrl: operatorUrl.value, relayTargetId: 'relay-preflight-panel', explorerBaseUrl: runtime.explorerBaseUrl }));
+
+const currentStepLabel = computed(() => {
+  if (step1Expanded.value) return 'Step 1 of 4: Load Account';
+  if (step2Expanded.value) return 'Step 2 of 4: Compose Operation';
+  if (step3Expanded.value) return 'Step 3 of 4: Collect Signatures';
+  if (step4Expanded.value) return 'Step 4 of 4: Broadcast';
+  return 'Workflow Overview';
+});
+
+const steps = computed(() => [
+  {
+    id: 'step1',
+    label: 'Load Account',
+    state: workspace.account.value.accountIdHash || workspace.account.value.accountAddressScriptHash ? 'completed' : (step1Expanded.value ? 'active' : 'pending'),
+  },
+  {
+    id: 'step2',
+    label: 'Compose',
+    state: workspace.operationBody.value ? 'completed' : (step2Expanded.value ? 'active' : 'pending'),
+  },
+  {
+    id: 'step3',
+    label: 'Sign',
+    state: signerProgress.value.requiredCount > 0 && signerProgress.value.signatureCount >= signerProgress.value.requiredCount ? 'completed' : (step3Expanded.value ? 'active' : 'pending'),
+  },
+  {
+    id: 'step4',
+    label: 'Broadcast',
+    state: step4Expanded.value ? 'active' : 'pending',
+  },
+]);
+
+function jumpToStep(stepId) {
+  step1Expanded.value = stepId === 'step1';
+  step2Expanded.value = stepId === 'step2';
+  step3Expanded.value = stepId === 'step3';
+  step4Expanded.value = stepId === 'step4';
+}
+
 const { copyRelayPayload, copyRelayStack, exportRelayPreflight, handleSummaryAction, handleActivityAction } = createDraftInteractionHandlers({
   getRelayCheck: () => relayCheck.value,
   getRelayRequest: () => relayCheckRequest.value,
