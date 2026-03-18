@@ -241,7 +241,13 @@
       <div v-if="resultJson" class="rounded-xl border border-slate-700/50 bg-slate-950/70 p-4">
         <div class="flex items-center justify-between mb-2">
           <p class="text-xs uppercase tracking-wider text-biconomy-muted font-bold">{{ t('didPanel.latestResult', 'Latest Result') }}</p>
-          <button class="btn-secondary !py-1 !px-3 text-xs" @click="copyResult">{{ t('didPanel.copyJson', 'Copy JSON') }}</button>
+          <button class="btn-secondary !py-1 !px-3 text-xs" @click="copyResult">
+            <span class="flex items-center gap-1.5">
+              <svg v-if="copyResultLabel === 'Copy'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              {{ copyResultLabel }}
+            </span>
+          </button>
         </div>
         <pre class="text-xs text-slate-200 whitespace-pre-wrap break-all">{{ resultJson }}</pre>
       </div>
@@ -302,6 +308,7 @@ const resolvedAccountId = ref('');
 const verifierState = ref(null);
 const busy = ref('');
 const resultJson = ref('');
+const copyResultLabel = ref('Copy');
 const expanded = ref(true);
 
 const vaultAccount = ref('');
@@ -607,6 +614,8 @@ async function revokeSessionAction() {
 async function copyResult() {
   if (!resultJson.value) return;
   await navigator.clipboard.writeText(resultJson.value);
+  copyResultLabel.value = 'Copied!';
+  setTimeout(() => { copyResultLabel.value = 'Copy'; }, 1500);
 }
 
 async function sendEmailNoticeAction() {
