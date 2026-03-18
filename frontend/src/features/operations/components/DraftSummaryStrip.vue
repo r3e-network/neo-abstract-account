@@ -3,22 +3,26 @@
     <div class="mb-4 flex items-center justify-between gap-3">
       <div>
         <h2 class="text-lg font-bold text-white uppercase tracking-widest font-mono">{{ title }}</h2>
-        <p class="text-sm text-biconomy-muted">Quick scan of the account, operation, signer progress, relay mode, and latest activity.</p>
+        <p class="text-xs text-biconomy-muted mt-1">Overview of staged operation and current status</p>
       </div>
     </div>
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <div v-for="item in summaryItems" :key="item.label" class="rounded-lg border border-biconomy-border bg-biconomy-dark/40 p-4 shadow-inner hover:bg-biconomy-dark/60 transition-colors">
-        <div class="mb-2 flex items-start justify-between gap-3">
+        <div class="mb-2 flex items-start justify-between gap-2">
           <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-biconomy-orange">{{ item.label }}</p>
           <button
             v-if="summaryActions[item.label]"
-            class="rounded-lg border border-slate-600 bg-biconomy-panel hover:bg-biconomy-dark hover:text-white px-2.5 py-1 text-[11px] font-semibold text-biconomy-text transition-colors"
+            class="rounded-lg border border-slate-600 bg-biconomy-panel hover:bg-biconomy-dark hover:text-white px-2.5 py-1 text-[11px] font-semibold text-biconomy-text transition-colors whitespace-nowrap"
             @click="emitSummaryAction(item, summaryActions[item.label])"
           >
-            {{ feedbackLabel(summaryActions[item.label], item.label) }}
+            <span class="flex items-center gap-1">
+              <svg v-if="summaryActions[item.label].id === 'open-url'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+              <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              {{ feedbackLabel(summaryActions[item.label], item.label) }}
+            </span>
           </button>
         </div>
-        <div class="text-sm font-semibold text-biconomy-text break-all">{{ item.value }}</div>
+        <div class="text-sm font-semibold text-biconomy-text break-all leading-tight">{{ item.value }}</div>
       </div>
     </div>
   </section>
