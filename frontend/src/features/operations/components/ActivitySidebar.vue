@@ -11,59 +11,75 @@
         {{ shareStatus || 'local' }}
       </span>
     </div>
-    <dl class="space-y-4 text-sm text-biconomy-muted">
-      <div class="border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Draft ID</dt>
-        <dd class="break-all font-mono text-xs text-biconomy-muted mt-1">{{ draftId || 'Not persisted yet' }}</dd>
-      </div>
-      <div class="border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Share URL</dt>
-        <dd class="break-all font-mono text-xs text-biconomy-muted mt-1">{{ shareUrl || sharePath || 'Not generated yet' }}</dd>
-      </div>
-      <div class="border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Collaborator URL</dt>
-        <dd class="break-all font-mono text-xs text-biconomy-muted mt-1">{{ collaborationUrl || 'Read-only viewers should use the Share URL.' }}</dd>
-      </div>
-      <div class="border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Operator URL</dt>
-        <dd class="break-all font-mono text-xs text-biconomy-muted mt-1">{{ operatorUrl || 'Operator link hidden in signer and read-only views.' }}</dd>
-      </div>
-      <div class="flex justify-between items-center border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Access Mode</dt>
-        <dd class="font-semibold text-white bg-biconomy-dark px-2 py-0.5 rounded text-xs">{{ accessModeLabel }}</dd>
-      </div>
-      <div class="flex justify-between items-center border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Signature Progress</dt>
-        <dd class="font-semibold text-white"><span class="text-biconomy-orange">{{ signatureCount }}</span> / {{ requiredSignerCount }}</dd>
-      </div>
-      <div class="flex justify-between items-center border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Pending Signers</dt>
-        <dd class="font-semibold text-white">{{ pendingSignerCount }}</dd>
-      </div>
-      <div class="border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text flex justify-between">Relay Readiness <span class="font-semibold" :class="relayLevelClass">{{ relayReadinessLabel }}</span></dt>
-        <dd>
-          <span class="block text-xs text-biconomy-muted mt-1">{{ relayReadinessDetail }}</span>
-        </dd>
-      </div>
-      <div class="flex justify-between items-center border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Broadcast Mode</dt>
-        <dd class="font-semibold text-white">{{ broadcastMode }}</dd>
-      </div>
-      <div class="border-b border-biconomy-border pb-3">
-        <dt class="font-bold text-biconomy-text">Last Broadcast</dt>
-        <dd class="break-all font-mono text-xs text-biconomy-muted mt-1">{{ lastTxid || 'Not broadcast yet' }}</dd>
-      </div>
-      <div class="pt-2">
-        <dt class="font-bold text-biconomy-text flex items-center gap-2 mb-3">
-          <svg class="w-4 h-4 text-biconomy-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          {{ t('operations.recentActivityTitle', 'Recent Activity') }}
-        </dt>
-        <dd class="mt-2">
+
+    <div class="space-y-3 text-sm">
+      <details class="group rounded-lg border border-biconomy-border bg-biconomy-dark/30" open>
+        <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer list-none font-semibold text-biconomy-text hover:text-white transition-colors">
+          <svg class="w-4 h-4 text-biconomy-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+          Share Links
+          <svg class="w-4 h-4 ml-auto text-biconomy-muted group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </summary>
+        <div class="px-4 pb-4 space-y-3">
+          <div class="rounded bg-slate-800/50 p-3">
+            <p class="text-xs font-medium text-biconomy-muted mb-1">Draft ID</p>
+            <p class="font-mono text-xs text-white truncate">{{ draftId || 'Not persisted yet' }}</p>
+          </div>
+          <div class="rounded bg-slate-800/50 p-3">
+            <p class="text-xs font-medium text-biconomy-muted mb-1">Share URL (read-only)</p>
+            <p class="font-mono text-xs text-white truncate">{{ shareUrl || sharePath || 'Not generated yet' }}</p>
+          </div>
+          <div class="rounded bg-slate-800/50 p-3">
+            <p class="text-xs font-medium text-biconomy-muted mb-1">Collaborator URL (sign)</p>
+            <p class="font-mono text-xs text-white truncate">{{ collaborationUrl || 'Use Share URL for viewers' }}</p>
+          </div>
+          <div class="rounded bg-slate-800/50 p-3">
+            <p class="text-xs font-medium text-biconomy-muted mb-1">Operator URL (operate)</p>
+            <p class="font-mono text-xs text-white truncate">{{ operatorUrl || 'Hidden for read-only' }}</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="group rounded-lg border border-biconomy-border bg-biconomy-dark/30" open>
+        <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer list-none font-semibold text-biconomy-text hover:text-white transition-colors">
+          <svg class="w-4 h-4 text-biconomy-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          Status
+          <svg class="w-4 h-4 ml-auto text-biconomy-muted group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </summary>
+        <div class="px-4 pb-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-biconomy-muted">Access Mode</span>
+            <span class="text-xs font-semibold text-white bg-biconomy-dark px-2 py-0.5 rounded">{{ accessModeLabel }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-biconomy-muted">Broadcast</span>
+            <span class="text-xs font-semibold text-white">{{ broadcastMode }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-biconomy-muted">Signatures</span>
+            <span class="text-xs font-semibold"><span class="text-biconomy-orange">{{ signatureCount }}</span> / {{ requiredSignerCount }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-biconomy-muted">Pending</span>
+            <span class="text-xs font-semibold text-white">{{ pendingSignerCount }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-biconomy-muted">Relay</span>
+            <span class="text-xs font-semibold" :class="relayLevelClass">{{ relayReadinessLabel }}</span>
+          </div>
+        </div>
+      </details>
+
+      <details class="group rounded-lg border border-biconomy-border bg-biconomy-dark/30" open>
+        <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer list-none font-semibold text-biconomy-text hover:text-white transition-colors">
+          <svg class="w-4 h-4 text-biconomy-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Recent Activity
+          <svg class="w-4 h-4 ml-auto text-biconomy-muted group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </summary>
+        <div class="px-4 pb-4">
           <ActivityTimeline :items="activityItems" :action-context="actionContext" :preference-key="timelinePreferenceKey" @activity-action="$emit('activity-action', $event)" />
-        </dd>
-      </div>
-    </dl>
+        </div>
+      </details>
+    </div>
   </aside>
 </template>
 
