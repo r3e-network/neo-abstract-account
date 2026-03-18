@@ -8,19 +8,34 @@
         <aside class="md:w-64 flex-shrink-0">
           <div class="sticky top-24 bg-biconomy-panel/60 p-5 rounded-lg shadow-[0_0_15px_rgba(0,163,255,0.05)] border border-biconomy-border backdrop-blur-xl">
             <h3 class="text-xs font-extrabold text-biconomy-muted uppercase tracking-widest mb-4 px-2 font-mono">{{ t('docs.heading', 'Documentation') }}</h3>
+            <div class="mb-4">
+              <div class="relative">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  class="w-full rounded-lg border border-biconomy-border bg-biconomy-dark px-3 py-2 text-sm text-biconomy-text placeholder:text-biconomy-muted focus:border-biconomy-orange focus:outline-none focus:ring-1 focus:ring-biconomy-orange"
+                  placeholder="Search docs..."
+                />
+                <svg v-if="!searchQuery" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-biconomy-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <button v-else @click="searchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-biconomy-muted hover:text-white">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <p v-if="searchQuery && filteredDocKeys.length === 0" class="mt-2 text-xs text-biconomy-muted px-2">No docs found</p>
+            </div>
             <nav class="space-y-1">
               <button
-                v-for="(doc, key) in docs"
+                v-for="key in (searchQuery ? filteredDocKeys : Object.keys(docs))"
                 :key="key"
-                @click="activeDoc = key"
+                @click="selectDoc(key)"
                 :class="[
                   activeDoc === key
                     ? 'bg-biconomy-orange/20 text-biconomy-orange font-bold border-l-4 border-biconomy-orange shadow-[inset_0_0_10px_rgba(0,255,102,0.1)]'
-                    : 'text-biconomy-muted hover:bg-biconomy-dark hover:text-white border-l-4 border-transparent font-medium',
+                      : 'text-biconomy-muted hover:bg-biconomy-dark hover:text-white border-l-4 border-transparent font-medium',
                   'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left'
                 ]"
               >
-                {{ doc.title }}
+                {{ docs[key]?.title || key }}
               </button>
             </nav>
           </div>
@@ -37,11 +52,22 @@
         </main>
       </div>
     </div>
+
+    <transition name="fade-in-up">
+      <button
+        v-if="showBackToTop"
+        @click="scrollToTop"
+        class="fixed bottom-8 right-8 z-50 w-12 h-12 rounded-full bg-biconomy-orange text-white shadow-lg flex items-center justify-center hover:bg-biconomy-orange/90 transition-all"
+        aria-label="Back to top"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+      </button>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import 'highlight.js/styles/github-dark.css';
 import { DEFAULT_DOC_KEY, getDocsForLocale } from '@/features/docs/registry';
@@ -121,6 +147,39 @@ const docs = computed(() => getDocsForLocale(locale.value));
 const compiledMarkdown = ref('');
 const contentRoot = ref(null);
 const hasInitialMermaidRender = ref(false);
+const searchQuery = ref('');
+const showBackToTop = ref(false);
+
+const filteredDocKeys = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  if (!query) return [];
+  return Object.keys(docs.value).filter(key => {
+    const doc = docs.value[key];
+    return doc?.title?.toLowerCase().includes(query) || doc?.content?.toLowerCase().includes(query);
+  });
+});
+
+function selectDoc(key) {
+  activeDoc.value = key;
+  searchQuery.value = '';
+  scrollToTop();
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function onScroll() {
+  showBackToTop.value = window.scrollY > 400;
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll);
+});
 
 function resolveDocKey(candidate, availableDocs = docs.value) {
   if (typeof candidate === 'string' && Object.prototype.hasOwnProperty.call(availableDocs, candidate)) {
