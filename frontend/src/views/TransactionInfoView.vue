@@ -288,7 +288,7 @@ import { useWalletConnection } from '@/composables/useWalletConnection.js';
 import { OPERATIONS_RUNTIME } from '@/config/operationsRuntime.js';
 import { createDraftStore } from '@/features/operations/drafts.js';
 import { buildRelayPayloadOptions, executeBroadcast, resolveRelayPayloadMode } from '@/features/operations/execution.js';
-import { buildExecuteUnifiedByAddressInvocation, buildExecuteUserOpInvocation, buildMetaTransactionTypedData, buildV3UserOperationTypedData, computeArgsHash, fetchNonceForAddress, fetchV3Nonce, fetchV3Verifier, recoverPublicKeyFromTypedDataSignature, toCompactEcdsaSignature } from '@/features/operations/metaTx.js';
+import { buildExecuteUserOpInvocation, buildV3UserOperationTypedData, computeArgsHash, fetchV3Nonce, fetchV3Verifier, recoverPublicKeyFromTypedDataSignature, toCompactEcdsaSignature } from '@/features/operations/metaTx.js';
 import { summarizeSignerProgress } from '@/features/operations/signatures.js';
 import { createActivityEvent } from '@/features/operations/activity.js';
 import { createOperationsPreferences } from '@/features/operations/preferences.js';
@@ -538,75 +538,49 @@ async function signWithEvmWallet() {
     let nonce;
     let typedData;
 
-    if (draft.value.account?.accountIdHash) {
-      verifierHash = await fetchV3Verifier({
-        rpcUrl,
-        aaContractHash,
-        accountIdHash: draft.value.account.accountIdHash,
-      });
-      if (!verifierHash) {
-        throw new Error('No verifier plugin is configured for this V3 account.');
-      }
-      nonce = await fetchV3Nonce({
-        rpcUrl,
-        aaContractHash,
-        accountIdHash: draft.value.account.accountIdHash,
-        channel: 0n,
-      });
-      typedData = buildV3UserOperationTypedData({
-        chainId: 894710606,
-        verifyingContract: verifierHash,
-        accountIdHash: draft.value.account.accountIdHash,
-        targetContract: draft.value.operation_body?.targetContract,
-        method: draft.value.operation_body?.method,
-        argsHashHex,
-        nonce,
-        deadline,
-      });
-    } else {
-      nonce = await fetchNonceForAddress({
-        rpcUrl,
-        aaContractHash,
-        accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
-        evmSignerAddress: evmAddress.value,
-      });
-      typedData = buildMetaTransactionTypedData({
-        chainId: 894710606,
-        verifyingContract: aaContractHash,
-        targetContract: draft.value.operation_body?.targetContract,
-        method: draft.value.operation_body?.method,
-        argsHashHex,
-        nonce,
-        deadline,
-      });
+    if (!draft.value.account?.accountIdHash) {
+      throw new Error('V3 account required: accountIdHash is missing. This account may not be registered as a V3 Abstract Account.');
     }
 
+    const verifierHash = await fetchV3Verifier({
+      rpcUrl,
+      aaContractHash,
+      accountIdHash: draft.value.account.accountIdHash,
+    });
+    if (!verifierHash) {
+      throw new Error('No verifier plugin is configured for this V3 account.');
+    }
+
+    nonce = await fetchV3Nonce({
+      rpcUrl,
+      aaContractHash,
+      accountIdHash: draft.value.account.accountIdHash,
+      channel: 0n,
+    });
+    typedData = buildV3UserOperationTypedData({
+      chainId: 894710606,
+      verifyingContract: verifierHash,
+      accountIdHash: draft.value.account.accountIdHash,
+      targetContract: draft.value.operation_body?.targetContract,
+      method: draft.value.operation_body?.method,
+      argsHashHex,
+      nonce,
+      deadline,
+    });
+
     const signature = await walletService.signTypedDataWithEvm(typedData);
-    const contractSignature = draft.value.account?.accountIdHash ? toCompactEcdsaSignature(signature) : signature;
+    const contractSignature = toCompactEcdsaSignature(signature);
     const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature });
-    const metaInvocation = draft.value.account?.accountIdHash
-      ? buildExecuteUserOpInvocation({
-          aaContractHash,
-          accountIdHash: draft.value.account.accountIdHash,
-          targetContract: draft.value.operation_body?.targetContract,
-          method: draft.value.operation_body?.method,
-          methodArgs: draft.value.operation_body?.args || [],
-          nonce,
-          deadline,
-          signatureHex: contractSignature,
-        })
-      : buildExecuteUnifiedByAddressInvocation({
-          aaContractHash,
-          accountAddressScriptHash: draft.value.account?.accountAddressScriptHash,
-          evmPublicKeyHex: publicKey,
-          targetContract: draft.value.operation_body?.targetContract,
-          method: draft.value.operation_body?.method,
-          methodArgs: draft.value.operation_body?.args || [],
-          argsHashHex,
-          nonce,
-          deadline,
-          signatureHex: contractSignature,
-        });
+    const metaInvocation = buildExecuteUserOpInvocation({
+      aaContractHash,
+      accountIdHash: draft.value.account.accountIdHash,
+      targetContract: draft.value.operation_body?.targetContract,
+      method: draft.value.operation_body?.method,
+      methodArgs: draft.value.operation_body?.args || [],
+      nonce,
+      deadline,
+      signatureHex: contractSignature,
+    });
     assertSignatureAccess();
     draft.value = await draftStore.appendSignature(draft.value.share_slug, {
       signerId: evmAddress.value,
@@ -627,10 +601,8 @@ async function signWithEvmWallet() {
     }, accessMutationOptions());
     signerKind.value = 'evm';
     signerId.value = evmAddress.value;
-    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: draft.value.account?.accountIdHash ? 'UserOperation signature collected' : 'Legacy relay signature collected' }));
-    statusMessage.value = draft.value.account?.accountIdHash
-      ? 'Contract-aligned EVM UserOperation signature collected and attached to the shared draft.'
-      : 'Contract-aligned legacy relay signature collected and attached to the shared draft.';
+    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: 'UserOperation signature collected' }));
+    statusMessage.value = 'Contract-aligned EVM UserOperation signature collected and attached to the shared draft.';
   } catch (error) {
     statusMessage.value = error?.message || String(error);
   }

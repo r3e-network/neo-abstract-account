@@ -33,35 +33,6 @@ function toArrayParam(args = []) {
   };
 }
 
-function buildExecuteUnifiedByAddressInvocation({ aaContractHash = '', account = {}, operationBody = null, signerAddress = '' } = {}) {
-  const contractHash = sanitizeHex(aaContractHash || '');
-  const accountAddressScriptHash = sanitizeHex(account.accountAddressScriptHash || '');
-  const targetContract = sanitizeHex(operationBody?.targetContract || '');
-  const method = String(operationBody?.method || '').trim();
-  const args = Array.isArray(operationBody?.args) ? cloneImmutable(operationBody.args) : [];
-
-  if (!contractHash || !accountAddressScriptHash || !targetContract || !method) {
-    return null;
-  }
-
-  return {
-    scriptHash: contractHash,
-    operation: 'executeUnifiedByAddress',
-    args: [
-      toHash160Param(accountAddressScriptHash),
-      toHash160Param(targetContract),
-      { type: 'String', value: method },
-      toArrayParam(args),
-      { type: 'Array', value: [] },
-      { type: 'ByteArray', value: '0x' },
-      { type: 'Integer', value: '0' },
-      { type: 'Integer', value: '0' },
-      { type: 'Array', value: [] },
-    ],
-    signers: signerAddress ? [{ account: signerAddress, scopes: 1 }] : [],
-  };
-}
-
 function buildV3UserOperationParam({ operationBody = null, nonce = '0', deadline = '0', signatureHex = '0x' } = {}) {
   const targetContract = sanitizeHex(operationBody?.targetContract || '');
   const method = String(operationBody?.method || '').trim();
@@ -174,12 +145,10 @@ export function buildStagedTransactionBody({
   notes = '',
   createdAt = new Date().toISOString(),
 } = {}) {
-  const clientInvocation = buildExecuteUnifiedByAddressInvocation({
-    aaContractHash,
-    account,
-    operationBody,
-    signerAddress,
-  });
+  if (!account.accountIdHash) {
+    throw new Error('V3 account required: accountIdHash is missing. This account may not be registered as a V3 Abstract Account.');
+  }
+
   const v3Invocation = buildExecuteUserOpInvocation({
     aaContractHash,
     account,
@@ -193,8 +162,7 @@ export function buildStagedTransactionBody({
     accountAddressScriptHash: account.accountAddressScriptHash || '',
     accountIdHash: account.accountIdHash || '',
     kind: operationBody?.kind || 'invoke',
-    clientInvocation: v3Invocation || clientInvocation,
-    legacyInvocation: clientInvocation,
+    clientInvocation: v3Invocation,
     v3Invocation,
     rawTransaction: sanitizeHex(rawTransaction || ''),
     notes: String(notes || '').trim(),

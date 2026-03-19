@@ -220,7 +220,7 @@ import { runRelayPreflight, buildRelayPreflightRequest } from '@/features/operat
 import { createDraftInteractionHandlers } from '@/features/operations/viewActions.js';
 import { summarizeSignerProgress } from '@/features/operations/signatures.js';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from '@/features/operations/shareLinks.js';
-import { assertV3AccountExists, buildExecuteUnifiedByAddressInvocation, buildExecuteUserOpInvocation, buildMetaTransactionTypedData, buildV3UserOperationTypedData, computeArgsHash, fetchNonceForAddress, fetchV3Nonce, fetchV3Verifier, recoverPublicKeyFromTypedDataSignature, toCompactEcdsaSignature } from '@/features/operations/metaTx.js';
+import { assertV3AccountExists, buildExecuteUserOpInvocation, buildV3UserOperationTypedData, computeArgsHash, fetchV3Nonce, fetchV3Verifier, recoverPublicKeyFromTypedDataSignature, toCompactEcdsaSignature } from '@/features/operations/metaTx.js';
 import { createOperationsWorkspace } from '@/features/operations/useOperationsWorkspace.js';
 import { buildSubmissionReceipt, getSubmissionButtonLabel, resolveLatestSubmissionReceipt } from '@/features/operations/submissionFeedback.js';
 import { appendSubmissionReceiptEntries, buildSubmissionReceiptHistoryItems, createSubmissionReceiptEntry } from '@/features/operations/submissionReceipts.js';
@@ -785,67 +785,59 @@ async function signWithEvmWallet() {
     let typedData;
     let metaInvocation;
 
-    if (workspace.account.value.accountIdHash) {
-      verifierHash = await fetchV3Verifier({
-        rpcUrl,
-        aaContractHash,
-        accountIdHash: workspace.account.value.accountIdHash,
-      });
-      if (!verifierHash) {
-        throw new Error('No verifier plugin is configured for this V3 account.');
-      }
-      nonce = await fetchV3Nonce({
-        rpcUrl,
-        aaContractHash,
-        accountIdHash: workspace.account.value.accountIdHash,
-        channel: 0n,
-      });
-      typedData = buildV3UserOperationTypedData({
-        chainId: 894710606,
-        verifyingContract: verifierHash,
-        accountIdHash: workspace.account.value.accountIdHash,
-        targetContract: workspace.operationBody.value?.targetContract,
-        method: workspace.operationBody.value?.method,
-        argsHashHex,
-        nonce,
-        deadline,
-      });
-    } else {
-      nonce = await fetchNonceForAddress({ rpcUrl, aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmSignerAddress: evmAddress.value });
-      typedData = buildMetaTransactionTypedData({ chainId: 894710606, verifyingContract: aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, argsHashHex, nonce, deadline });
+    if (!workspace.account.value.accountIdHash) {
+      throw new Error('V3 account required: accountIdHash is missing. This account may not be registered as a V3 Abstract Account.');
     }
+
+    const verifierHash = await fetchV3Verifier({
+      rpcUrl,
+      aaContractHash,
+      accountIdHash: workspace.account.value.accountIdHash,
+    });
+    if (!verifierHash) {
+      throw new Error('No verifier plugin is configured for this V3 account.');
+    }
+    nonce = await fetchV3Nonce({
+      rpcUrl,
+      aaContractHash,
+      accountIdHash: workspace.account.value.accountIdHash,
+      channel: 0n,
+    });
+    typedData = buildV3UserOperationTypedData({
+      chainId: 894710606,
+      verifyingContract: verifierHash,
+      accountIdHash: workspace.account.value.accountIdHash,
+      targetContract: workspace.operationBody.value?.targetContract,
+      method: workspace.operationBody.value?.method,
+      argsHashHex,
+      nonce,
+      deadline,
+    });
 
     const signature = await walletService.signTypedDataWithEvm(typedData);
-    const contractSignature = workspace.account.value.accountIdHash ? toCompactEcdsaSignature(signature) : signature;
+    const contractSignature = toCompactEcdsaSignature(signature);
     const publicKey = recoverPublicKeyFromTypedDataSignature({ typedData, signature });
 
-    if (workspace.account.value.accountIdHash) {
-      metaInvocation = buildExecuteUserOpInvocation({
-        aaContractHash,
-        accountIdHash: workspace.account.value.accountIdHash,
-        targetContract: workspace.operationBody.value?.targetContract,
-        method: workspace.operationBody.value?.method,
-        methodArgs: workspace.operationBody.value?.args || [],
-        nonce,
-        deadline,
-        signatureHex: contractSignature,
-      });
-      workspace.setTransactionBody({
-        ...workspace.transactionBody.value,
-        clientInvocation: metaInvocation,
-        v3Invocation: metaInvocation,
-      });
-      workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value));
-    } else {
-      metaInvocation = buildExecuteUnifiedByAddressInvocation({ aaContractHash, accountAddressScriptHash: workspace.account.value.accountAddressScriptHash, evmPublicKeyHex: publicKey, targetContract: workspace.operationBody.value?.targetContract, method: workspace.operationBody.value?.method, methodArgs: workspace.operationBody.value?.args || [], argsHashHex, nonce, deadline, signatureHex: contractSignature });
-      workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value));
-    }
+    metaInvocation = buildExecuteUserOpInvocation({
+      aaContractHash,
+      accountIdHash: workspace.account.value.accountIdHash,
+      targetContract: workspace.operationBody.value?.targetContract,
+      method: workspace.operationBody.value?.method,
+      methodArgs: workspace.operationBody.value?.args || [],
+      nonce,
+      deadline,
+      signatureHex: contractSignature,
+    });
+    workspace.setTransactionBody({
+      ...workspace.transactionBody.value,
+      clientInvocation: metaInvocation,
+      v3Invocation: metaInvocation,
+    });
+    workspace.setTransactionBody(applyPaymasterConfig(workspace.transactionBody.value));
 
     await appendSignatureRecordToWorkspace({ signerId: evmAddress.value, kind: 'evm', signatureHex: contractSignature, publicKey, payloadDigest: argsHashHex, metadata: { typedData, verifierHash, argsHashHex, nonce: String(nonce), deadline: String(deadline), metaInvocation, signatureFullHex: signature }, createdAt: new Date().toISOString() });
-    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: workspace.account.value.accountIdHash ? 'UserOperation signature collected' : 'Legacy relay signature collected' }));
-    statusMessage.value = workspace.account.value.accountIdHash
-      ? 'Contract-aligned EVM UserOperation signature collected and attached to the draft.'
-      : 'Contract-aligned legacy relay signature collected and attached to the draft.';
+    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: 'UserOperation signature collected' }));
+    statusMessage.value = 'Contract-aligned EVM UserOperation signature collected and attached to the draft.';
   } catch (error) {
     statusMessage.value = error?.message || String(error);
   }

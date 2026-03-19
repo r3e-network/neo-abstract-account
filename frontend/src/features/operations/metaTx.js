@@ -49,45 +49,6 @@ export function decodeHash160Stack(item) {
   return '';
 }
 
-export function buildMetaTransactionTypedData({
-  chainId,
-  verifyingContract,
-  accountAddressScriptHash,
-  accountAddressHash,
-  targetContract,
-  method,
-  argsHashHex,
-  nonce,
-  deadline,
-}) {
-  return {
-    domain: {
-      name: 'Neo N3 Abstract Account',
-      version: '1',
-      chainId,
-      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
-    },
-    types: {
-      MetaTransaction: [
-        { name: 'accountAddress', type: 'address' },
-        { name: 'targetContract', type: 'address' },
-        { name: 'methodHash', type: 'bytes32' },
-        { name: 'argsHash', type: 'bytes32' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    },
-    message: {
-      accountAddress: `0x${sanitizeHex(accountAddressScriptHash || accountAddressHash)}`,
-      targetContract: `0x${sanitizeHex(targetContract)}`,
-      methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method))),
-      argsHash: `0x${sanitizeHex(argsHashHex)}`,
-      nonce: String(nonce),
-      deadline: String(deadline),
-    },
-  };
-}
-
 export function buildV3UserOperationTypedData({
   chainId,
   verifyingContract,
@@ -144,32 +105,6 @@ export async function computeArgsHash({ rpcUrl, aaContractHash, args = [], fetch
     throw new Error('computeArgsHash returned an empty result');
   }
   return decoded;
-}
-
-export async function fetchNonceForAddress({
-  rpcUrl,
-  aaContractHash,
-  accountAddressScriptHash,
-  accountAddressHash,
-  evmSignerAddress,
-  fetchImpl,
-} = {}) {
-  const result = await invokeRead({
-    rpcUrl,
-    scriptHash: sanitizeHex(aaContractHash),
-    operation: 'getNonceForAddress',
-    args: [
-      { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
-      { type: 'Hash160', value: `0x${sanitizeHex(evmSignerAddress)}` },
-    ],
-    fetchImpl,
-  });
-
-  if (result?.state === 'FAULT') {
-    throw new Error(`getNonceForAddress fault: ${result.exception || 'VM fault'}`);
-  }
-
-  return decodeIntegerStack(result?.stack?.[0]);
 }
 
 export async function fetchV3Nonce({
@@ -241,36 +176,6 @@ export async function assertV3AccountExists({
   }
 
   return decodeHash160Stack(result?.stack?.[0]);
-}
-
-export function buildExecuteUnifiedByAddressInvocation({
-  aaContractHash,
-  accountAddressScriptHash,
-  accountAddressHash,
-  evmPublicKeyHex,
-  targetContract,
-  method,
-  methodArgs = [],
-  argsHashHex,
-  nonce,
-  deadline,
-  signatureHex,
-} = {}) {
-  return {
-    scriptHash: sanitizeHex(aaContractHash),
-    operation: 'executeUnifiedByAddress',
-    args: [
-      { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
-      { type: 'Hash160', value: `0x${sanitizeHex(targetContract)}` },
-      { type: 'String', value: String(method || '') },
-      { type: 'Array', value: methodArgs },
-      { type: 'Array', value: [{ type: 'ByteArray', value: `0x${sanitizeHex(evmPublicKeyHex)}` }] },
-      { type: 'ByteArray', value: `0x${sanitizeHex(argsHashHex)}` },
-      { type: 'Integer', value: String(nonce) },
-      { type: 'Integer', value: String(deadline) },
-      { type: 'Array', value: [{ type: 'ByteArray', value: `0x${sanitizeHex(signatureHex)}` }] },
-    ],
-  };
 }
 
 export function buildExecuteUserOpInvocation({
