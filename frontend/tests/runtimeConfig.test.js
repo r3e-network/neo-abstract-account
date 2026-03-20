@@ -9,6 +9,8 @@ import {
   DEFAULT_DID_PROVIDER,
   DEFAULT_EXPLORER_BASE_URL,
   DEFAULT_MATRIX_CONTRACT_HASH,
+  DEFAULT_MORPHEUS_API_BASE_URL,
+  DEFAULT_MORPHEUS_API_BASE_URL_TESTNET,
   DEFAULT_N3INDEX_API_BASE_URL,
   DEFAULT_RPC_URL,
   DEFAULT_RPC_URL_TESTNET,
@@ -98,6 +100,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
   });
 
   assert.deepEqual(config, {
+    morpheusNetwork: 'mainnet',
     abstractAccountHash: '1111111111111111111111111111111111111111',
     abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://rpc.example.org',
@@ -124,7 +127,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     web3AuthSmsLoginEnabled: true,
     neoDidProvider: DEFAULT_DID_PROVIDER,
     neoDidDomain: 'neodid.morpheus.neo',
-    morpheusApiBaseUrl: 'https://neo-morpheus-oracle-web.vercel.app',
+    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
     morpheusNeoDidServiceDid: 'did:morpheus:neo_n3:service:neodid',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
@@ -133,6 +136,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     morpheusOracleKeyEndpoint: '/api/morpheus-oracle-public-key',
     didNotificationEmailEnabled: true,
     didNotificationSmsEnabled: true,
+    vanityServiceEndpoint: '/api/vanity',
   });
 });
 
@@ -154,6 +158,8 @@ test('getRuntimeConfig uses testnet defaults when the selected runtime network i
   assert.equal(config.relayRpcUrl, DEFAULT_RPC_URL_TESTNET);
   assert.equal(config.n3IndexNetwork, 'testnet');
   assert.equal(config.neoDidDomain, '');
+  assert.equal(config.morpheusNetwork, 'testnet');
+  assert.equal(config.morpheusApiBaseUrl, DEFAULT_MORPHEUS_API_BASE_URL_TESTNET);
 });
 
 test('network defaults keep mainnet and testnet anchors explicit', () => {
@@ -163,6 +169,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
     rpcUrl: 'https://mainnet1.neo.coz.io:443',
     n3IndexNetwork: 'mainnet',
     neoDidDomain: 'neodid.morpheus.neo',
+    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
   });
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.testnet, {
     abstractAccountHash: 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38',
@@ -170,6 +177,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
     rpcUrl: 'https://testnet1.neo.coz.io:443',
     n3IndexNetwork: 'testnet',
     neoDidDomain: '',
+    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL_TESTNET,
   });
 });
 

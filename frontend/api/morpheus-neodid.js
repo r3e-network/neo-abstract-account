@@ -2,14 +2,37 @@ function trim(value) {
   return String(value || '').trim();
 }
 
+function normalizeNetwork(value) {
+  return trim(value).toLowerCase() === 'testnet' ? 'testnet' : 'mainnet';
+}
+
+function resolveNetwork(req) {
+  return normalizeNetwork(
+    req.query?.morpheus_network
+      || req.body?.morpheus_network
+      || req.headers?.['x-morpheus-network']
+      || process.env.MORPHEUS_NETWORK
+      || process.env.VITE_AA_NETWORK
+      || process.env.VITE_MORPHEUS_NETWORK
+  );
+}
+
+function resolveBaseUrl(req) {
+  const network = resolveNetwork(req);
+  const explicit = trim(process.env.MORPHEUS_API_BASE_URL);
+  const baseUrl = (explicit || 'https://morpheus.meshmini.app').replace(/\/$/, '');
+  if (/\/(mainnet|testnet)$/.test(baseUrl)) return baseUrl;
+  return `${baseUrl}/${network}`;
+}
+
 function resolvePath(action) {
   const normalized = trim(action).toLowerCase();
-  if (normalized === 'providers') return { path: '/api/neodid/providers', method: 'GET' };
-  if (normalized === 'runtime') return { path: '/api/neodid/runtime', method: 'GET' };
-  if (normalized === 'resolve') return { path: '/api/neodid/resolve', method: 'GET' };
-  if (normalized === 'bind') return { path: '/api/neodid/bind', method: 'POST' };
-  if (normalized === 'action-ticket') return { path: '/api/neodid/action-ticket', method: 'POST' };
-  if (normalized === 'recovery-ticket') return { path: '/api/neodid/recovery-ticket', method: 'POST' };
+  if (normalized === 'providers') return { path: '/neodid/providers', method: 'GET' };
+  if (normalized === 'runtime') return { path: '/neodid/runtime', method: 'GET' };
+  if (normalized === 'resolve') return { path: '/neodid/resolve', method: 'GET' };
+  if (normalized === 'bind') return { path: '/neodid/bind', method: 'POST' };
+  if (normalized === 'action-ticket') return { path: '/neodid/action-ticket', method: 'POST' };
+  if (normalized === 'recovery-ticket') return { path: '/neodid/recovery-ticket', method: 'POST' };
   return null;
 }
 
@@ -20,10 +43,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Unsupported Morpheus NeoDID action' });
   }
 
-  const baseUrl = trim(process.env.MORPHEUS_API_BASE_URL || 'https://neo-morpheus-oracle-web.vercel.app');
+  const baseUrl = resolveBaseUrl(req);
   const query = route.method === 'GET'
     ? new URLSearchParams(
-        Object.entries(req.query || {}).filter(([key, value]) => key !== 'action' && value != null && value !== '')
+        Object.entries(req.query || {}).filter(([key, value]) => key !== 'action' && key !== 'morpheus_network' && value != null && value !== '')
       ).toString()
     : '';
   const url = `${baseUrl.replace(/\/$/, '')}${route.path}${query ? `?${query}` : ''}`;
@@ -34,6 +57,7 @@ export default async function handler(req, res) {
   if (route.method === 'POST') {
     const body = { ...(req.body || {}) };
     delete body.action;
+    delete body.morpheus_network;
     options.headers['content-type'] = 'application/json';
     options.body = JSON.stringify(body);
   }

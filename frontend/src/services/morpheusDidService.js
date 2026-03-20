@@ -171,10 +171,13 @@ export async function fetchUnifiedVerifierState({ rpcUrl, verifierHash, accountI
 }
 
 async function fetchOraclePublicKey() {
-  const response = await fetch(RUNTIME_CONFIG.morpheusOracleKeyEndpoint, {
-    method: 'GET',
-    headers: { accept: 'application/json' },
-  });
+  const response = await fetch(
+    `${RUNTIME_CONFIG.morpheusOracleKeyEndpoint}?${new URLSearchParams({ morpheus_network: RUNTIME_CONFIG.morpheusNetwork }).toString()}`,
+    {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    }
+  );
   const body = await response.json().catch(() => ({}));
   if (!response.ok || !body?.public_key) {
     throw new Error(body?.error || 'Unable to load Morpheus oracle public key');
@@ -185,9 +188,13 @@ async function fetchOraclePublicKey() {
 async function callNeoDid(action, payload = {}) {
   const normalizedAction = trim(action).toLowerCase();
   const method = normalizedAction === 'resolve' ? 'GET' : 'POST';
+  const requestPayload = {
+    morpheus_network: RUNTIME_CONFIG.morpheusNetwork,
+    ...payload,
+  };
   const url = method === 'GET'
     ? `${RUNTIME_CONFIG.morpheusNeoDidEndpoint}?${new URLSearchParams(
-        Object.entries({ action: normalizedAction, ...payload }).filter(([, value]) => value != null && value !== '')
+        Object.entries({ action: normalizedAction, ...requestPayload }).filter(([, value]) => value != null && value !== '')
       ).toString()}`
     : RUNTIME_CONFIG.morpheusNeoDidEndpoint;
   const response = await fetch(url, method === 'GET'
@@ -195,11 +202,13 @@ async function callNeoDid(action, payload = {}) {
     : {
         method,
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: normalizedAction, ...payload }),
+        body: JSON.stringify({ action: normalizedAction, ...requestPayload }),
       });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.error) {
-    throw new Error(body?.error || body?.message || `NeoDID ${action} failed`);
+    const err = new Error('Morpheus DID service request failed. Please try again.');
+    err.rpcDetail = body?.error || body?.message || null;
+    throw err;
   }
   return body;
 }

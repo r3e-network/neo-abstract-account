@@ -16,6 +16,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
   });
 
   assert.deepEqual(config, {
+    morpheusNetwork: 'mainnet',
     abstractAccountHash: '1111111111111111111111111111111111111111',
     abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://rpc.example.org',
@@ -42,7 +43,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     web3AuthSmsLoginEnabled: true,
     neoDidProvider: 'web3auth',
     neoDidDomain: 'neodid.morpheus.neo',
-    morpheusApiBaseUrl: 'https://neo-morpheus-oracle-web.vercel.app',
+    morpheusApiBaseUrl: 'https://morpheus.meshmini.app/mainnet',
     morpheusNeoDidServiceDid: 'did:morpheus:neo_n3:service:neodid',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
@@ -51,6 +52,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     morpheusOracleKeyEndpoint: '/api/morpheus-oracle-public-key',
     didNotificationEmailEnabled: true,
     didNotificationSmsEnabled: true,
+    vanityServiceEndpoint: '/api/vanity',
   });
 });
 
@@ -67,6 +69,8 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
   assert.equal(config.relayRpcUrl, 'https://testnet1.neo.coz.io:443');
   assert.equal(config.n3IndexNetwork, 'testnet');
   assert.equal(config.neoDidDomain, '');
+  assert.equal(config.morpheusNetwork, 'testnet');
+  assert.equal(config.morpheusApiBaseUrl, 'https://morpheus.meshmini.app/testnet');
 });
 
 test('getOperationsRuntime derives collaboration and relay flags', () => {

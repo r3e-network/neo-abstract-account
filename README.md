@@ -82,10 +82,10 @@ For Morpheus / NeoDID production integration, also set:
 
 - `VITE_WEB3AUTH_CLIENT_ID`
 - `VITE_WEB3AUTH_NETWORK=sapphire_mainnet`
-- `VITE_MORPHEUS_API_BASE_URL=https://neo-morpheus-oracle-web.vercel.app`
+- `VITE_MORPHEUS_API_BASE_URL=https://morpheus.meshmini.app/mainnet`
 - `VITE_MORPHEUS_NEODID_SERVICE_DID=did:morpheus:neo_n3:service:neodid`
 - server-only `WEB3AUTH_CLIENT_SECRET`
-- server-only `MORPHEUS_API_BASE_URL`
+- server-only `MORPHEUS_API_BASE_URL=https://morpheus.meshmini.app`
 
 Shared draft metadata is intentionally bounded: the frontend keeps the latest 100 activity entries and the latest 12 submission receipts per draft so long-lived collaboration records do not grow without limit.
 

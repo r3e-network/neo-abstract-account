@@ -20,7 +20,9 @@ export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
 export const DEFAULT_DID_PROVIDER = 'web3auth';
 export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'smartwallet.neo';
 export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
-export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://neo-morpheus-oracle-web.vercel.app';
+export const DEFAULT_MORPHEUS_EDGE_BASE_URL = 'https://morpheus.meshmini.app';
+export const DEFAULT_MORPHEUS_API_BASE_URL = `${DEFAULT_MORPHEUS_EDGE_BASE_URL}/mainnet`;
+export const DEFAULT_MORPHEUS_API_BASE_URL_TESTNET = `${DEFAULT_MORPHEUS_EDGE_BASE_URL}/testnet`;
 export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
 
 export const MORPHEUS_NETWORK_DEFAULTS = {
@@ -30,6 +32,7 @@ export const MORPHEUS_NETWORK_DEFAULTS = {
     rpcUrl: DEFAULT_RPC_URL,
     n3IndexNetwork: 'mainnet',
     neoDidDomain: DEFAULT_NEODID_DOMAIN,
+    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
   },
   testnet: {
     abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET,
@@ -37,6 +40,7 @@ export const MORPHEUS_NETWORK_DEFAULTS = {
     rpcUrl: DEFAULT_RPC_URL_TESTNET,
     n3IndexNetwork: 'testnet',
     neoDidDomain: '',
+    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL_TESTNET,
   },
 };
 
@@ -96,6 +100,7 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
   const runtimeNetwork = resolveRuntimeNetwork(env);
   const networkDefaults = MORPHEUS_NETWORK_DEFAULTS[runtimeNetwork];
   return {
+    morpheusNetwork: runtimeNetwork,
     abstractAccountHash: resolveAbstractAccountHash(
       env.VITE_AA_HASH || env.VITE_ABSTRACT_ACCOUNT_HASH,
       networkDefaults.abstractAccountHash
@@ -197,7 +202,7 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     ),
     morpheusApiBaseUrl: resolveOptionalUrl(
       env.VITE_MORPHEUS_API_BASE_URL,
-      DEFAULT_MORPHEUS_API_BASE_URL
+      networkDefaults.morpheusApiBaseUrl
     ),
     morpheusNeoDidServiceDid: resolveOptionalUrl(
       env.VITE_MORPHEUS_NEODID_SERVICE_DID,
@@ -230,6 +235,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     didNotificationSmsEnabled: resolveOptionalBoolean(
       env.VITE_DID_NOTIFICATION_SMS_ENABLED,
       true
+    ),
+    vanityServiceEndpoint: resolveOptionalUrl(
+      env.VITE_AA_VANITY_SERVICE_URL,
+      '/api/vanity'
     ),
   };
 }

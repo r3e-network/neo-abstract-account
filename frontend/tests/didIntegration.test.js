@@ -41,7 +41,7 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   assert.match(source, /requestActionSession/);
   assert.match(proxy, /Unsupported Morpheus NeoDID action/);
   assert.match(proxy, /normalized === 'resolve'/);
-  assert.match(keyProxy, /api\/oracle\/public-key/);
+  assert.match(keyProxy, /oracle\/public-key/);
 });
 
 test('notification service supports email and sms webhook delivery', () => {
