@@ -780,7 +780,6 @@ async function signWithEvmWallet() {
     const rpcUrl = walletService.rpcUrl;
     const deadline = Date.now() + (60 * 60 * 1000);
     const argsHashHex = await computeArgsHash({ rpcUrl, aaContractHash, args: workspace.operationBody.value?.args || [] });
-    let verifierHash = '';
     let nonce;
     let typedData;
     let metaInvocation;
