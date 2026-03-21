@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue';
+import { EC } from '../../config/errorCodes.js';
 import { DEFAULT_BROADCAST_MODE, DEFAULT_DRAFT_STATUS, SUPPORTED_BROADCAST_MODES } from './constants.js';
 import { cloneImmutable, deriveAccountForms } from './helpers.js';
 import { buildDraftCollaborationPath, buildDraftSharePath } from './shareLinks.js';
@@ -53,7 +54,7 @@ export function createOperationsWorkspace() {
 
   function setTransactionBody(value) {
     if (isDraftImmutable.value) {
-      throw new Error('immutable draft transaction bodies cannot be changed');
+      throw new Error(`${EC.immutableDraftBody}: immutable draft transaction body cannot be changed after persistence`);
     }
     transactionBody.value = cloneImmutable(value);
   }
@@ -78,7 +79,7 @@ export function createOperationsWorkspace() {
 
   function setBroadcastMode(mode) {
     if (!SUPPORTED_BROADCAST_MODES.includes(mode)) {
-      throw new Error(`unsupported broadcast mode: ${mode}`);
+      throw new Error(EC.broadcastModeUnsupported);
     }
     broadcast.value = { ...broadcast.value, mode };
   }

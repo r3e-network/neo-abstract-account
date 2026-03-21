@@ -5,6 +5,7 @@ import {
   importOperatorPublicKey,
   verifyOperatorMutationSignature,
 } from './operatorMutationHelpers.js';
+import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
 import { checkRateLimit } from './rateLimiter.js';
 
 const OPERATOR_ACTIVITY_TYPES = new Set([
@@ -120,6 +121,13 @@ function assertOperatorActivityAllowed(payload = {}) {
   if (!OPERATOR_ACTIVITY_TYPES.has(type)) {
     throw new Error('draft_activity_scope_not_allowed');
   }
+}
+
+function sendJson(res, statusCode, payload, requestId) {
+  if (requestId) {
+    res.setHeader?.('X-Request-Id', requestId);
+  }
+  res.status(statusCode).json(attachRequestId(payload, requestId));
 }
 
 async function handleClaim({ supabase, shareSlug, accessSlug, publicKeyJwk }) {
@@ -253,32 +261,57 @@ async function handleMutation({ supabase, shareSlug, accessSlug, mutation, paylo
 }
 
 export default async function handler(req, res) {
+  const requestPayload = req.body || {};
+  const durable = await beginDurableRequest({
+    req,
+    routeName: 'draft_operator',
+    payload: requestPayload,
+    fingerprint: {
+      action: requestPayload.action || '',
+      shareSlug: requestPayload.shareSlug || '',
+      accessSlug: requestPayload.accessSlug || '',
+      mutation: requestPayload.mutation || '',
+      counter: requestPayload.counter ?? null,
+      payload: requestPayload.payload || null,
+    },
+  });
+  const requestId = durable.context.requestId;
+
+  if (!durable.ok) {
+    if (durable.replayed) {
+      return sendJson(res, durable.cached.status, durable.cached.body, requestId);
+    }
+    if (durable.inProgress) {
+      return sendJson(res, 409, { error: 'request_in_progress' }, requestId);
+    }
+  }
+
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'method_not_allowed' });
-    return;
+    await failDurableRequest(durable.context, { statusCode: 405, error: 'method_not_allowed', phase: 'method' });
+    return sendJson(res, 405, { error: 'method_not_allowed' }, requestId);
   }
 
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-  const rateLimit = checkRateLimit(clientIp);
+  const rateLimit = await checkRateLimit(clientIp);
   
   if (!rateLimit.allowed) {
     res.setHeader?.('Retry-After', String(rateLimit.retryAfter));
-    res.status(429).json({ 
+    await failDurableRequest(durable.context, { statusCode: 429, error: 'rate_limit_exceeded', phase: 'rate_limit' });
+    return sendJson(res, 429, { 
       error: 'rate_limit_exceeded', 
       retryAfter: rateLimit.retryAfter 
-    });
-    return;
+    }, requestId);
   }
 
   const supabase = getServiceSupabaseClient();
   if (!supabase) {
-    res.status(501).json({ error: 'operator_mutation_not_configured', message: 'Signed operator mutations require SUPABASE_SERVICE_ROLE_KEY on the server.' });
-    return;
+    await failDurableRequest(durable.context, { statusCode: 501, error: 'operator_mutation_not_configured', phase: 'config' });
+    return sendJson(res, 501, { error: 'operator_mutation_not_configured', message: 'Signed operator mutations require SUPABASE_SERVICE_ROLE_KEY on the server.' }, requestId);
   }
 
-  const action = String(req.body?.action || '').trim();
-  const shareSlug = String(req.body?.shareSlug || '').trim();
-  const accessSlug = String(req.body?.accessSlug || '').trim();
+  const action = String(requestPayload?.action || '').trim();
+  const shareSlug = String(requestPayload?.shareSlug || '').trim();
+  const accessSlug = String(requestPayload?.accessSlug || '').trim();
 
   try {
     if (!shareSlug || !accessSlug) {
@@ -290,10 +323,10 @@ export default async function handler(req, res) {
         supabase,
         shareSlug,
         accessSlug,
-        publicKeyJwk: req.body?.publicKeyJwk || null,
+        publicKeyJwk: requestPayload?.publicKeyJwk || null,
       });
-      res.status(200).json(result);
-      return;
+      await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(result, requestId) });
+      return sendJson(res, 200, result, requestId);
     }
 
     if (action === 'mutate') {
@@ -301,16 +334,17 @@ export default async function handler(req, res) {
         supabase,
         shareSlug,
         accessSlug,
-        mutation: String(req.body?.mutation || '').trim(),
-        payload: req.body?.payload || {},
-        counter: req.body?.counter,
-        signature: String(req.body?.signature || ''),
+        mutation: String(requestPayload?.mutation || '').trim(),
+        payload: requestPayload?.payload || {},
+        counter: requestPayload?.counter,
+        signature: String(requestPayload?.signature || ''),
       });
-      res.status(200).json(result);
-      return;
+      await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(result, requestId) });
+      return sendJson(res, 200, result, requestId);
     }
 
-    res.status(400).json({ error: 'unsupported_operator_action' });
+    await failDurableRequest(durable.context, { statusCode: 400, error: 'unsupported_operator_action', phase: 'validation' });
+    return sendJson(res, 400, { error: 'unsupported_operator_action' }, requestId);
   } catch (error) {
     const message = error?.message || String(error);
     const status = /not_configured/.test(message)
@@ -322,9 +356,11 @@ export default async function handler(req, res) {
           : /draft_operator_access_required|invalid_operator_signature|operator_counter_mismatch|operator_key_already_claimed|operator_key_not_claimed|operator_key_claim_failed/.test(message)
             ? 403
             : 500;
-    res.status(status).json({
+    const body = {
       error: message,
       message,
-    });
+    };
+    await failDurableRequest(durable.context, { statusCode: status, error: message, phase: 'handler' });
+    return sendJson(res, status, body, requestId);
   }
 }

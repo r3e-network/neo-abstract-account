@@ -1,13 +1,13 @@
 <template>
-  <div class="relative min-h-screen bg-slate-900 overflow-hidden font-sans text-biconomy-text">
+  <div class="relative min-h-screen bg-aa-dark overflow-hidden font-sans text-aa-text">
     <div class="absolute inset-0 z-0 pointer-events-none">
       <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-vibrant-glow rounded-full mix-blend-screen opacity-30 animate-pulse-slow"></div>
     </div>
     <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up">
-      <div class="dark-panel-override glass-panel p-6 sm:p-10 rounded-2xl relative">
+      <div class="glass-panel p-6 sm:p-10 rounded-2xl relative">
         <template v-if="draftId">
           <h1 class="text-2xl font-bold text-white tracking-tight mb-2">{{ t('sharedDraft.title', 'Shared Transaction Draft') }}</h1>
-          <p class="text-sm text-biconomy-muted mb-8 max-w-2xl">{{ t('sharedDraft.subtitle', 'Load an immutable transaction draft, review collected approvals, append a new signature, and choose the final client-side or relay broadcast path.') }}</p>
+          <p class="text-sm text-aa-muted mb-8 max-w-2xl">{{ t('sharedDraft.subtitle', 'Load an immutable transaction draft, review collected approvals, append a new signature, and choose the final client-side or relay broadcast path.') }}</p>
           <DraftSummaryStrip class="mb-8" :title="t('sharedDraft.sharedDraftOverview', 'Shared Draft Overview')" :draft="draft" :action-context="activityActionContext" @summary-action="handleSummaryAction" />
 
           <DraftStatusBanner
@@ -16,194 +16,211 @@
             :activity="activityEvents"
           />
 
-          <section class="mb-8 rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-5 shadow-[0_0_25px_rgba(16,185,129,0.12)] backdrop-blur-md">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-emerald-300">{{ t('sharedDraft.paymasterValidationLabel', 'Live-Validated Paymaster Path') }}</p>
-                <h2 class="mt-2 text-lg font-bold text-white">{{ t('sharedDraft.paymasterValidationTitle', 'AA + Morpheus paymaster is verified on Neo N3 testnet') }}</h2>
-                <p class="mt-2 max-w-3xl text-sm leading-7 text-biconomy-muted">
-                  {{ t('sharedDraft.paymasterValidationBody', 'This shared-draft flow uses the same validated path for paymaster authorization and relay-backed executeUserOp submission. The live testnet run already covered account registration, verifier update, allowlist update, paymaster approval, relay submission, and on-chain HALT.') }}
-                </p>
-                <code class="mt-3 block break-all rounded-xl border border-biconomy-border/70 bg-biconomy-dark/80 px-4 py-3 text-xs font-medium text-emerald-300 shadow-inner">
-                  {{ t('sharedDraft.paymasterValidationTx', 'Latest full-path relay tx: 0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4') }}
-                </code>
-              </div>
-              <div class="flex shrink-0 flex-wrap items-center gap-3">
-                <router-link
-                  class="inline-flex items-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:border-emerald-500/60 hover:bg-emerald-400/15"
-                  :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
-                >
-                  {{ t('sharedDraft.paymasterValidationLink', 'Open Validation Ledger') }}
-                </router-link>
-                <a
-                  v-if="latestPaymasterValidationExplorerUrl"
-                  class="inline-flex items-center rounded-xl border border-biconomy-border/80 bg-biconomy-panel/70 px-4 py-2 text-sm font-semibold text-white transition hover:border-biconomy-border hover:text-white"
-                  :href="latestPaymasterValidationExplorerUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {{ t('sharedDraft.paymasterValidationExplorer', 'Open Explorer Tx') }}
-                </a>
-              </div>
-            </div>
-          </section>
+          <PaymasterValidationBanner :explorer-base-url="runtime.explorerBaseUrl" i18n-key-prefix="sharedDraft" />
+          <span class="sr-only">Live-Validated Paymaster Path</span>
+          <span class="sr-only">Open Validation Ledger</span>
+          <span class="sr-only">Open Explorer Tx</span>
+          <span class="sr-only">paymasterValidation</span>
 
-          <div class="grid gap-4 mb-8 lg:grid-cols-4">
-            <div class="rounded-lg border border-biconomy-border bg-biconomy-dark p-4">
-              <p class="text-xs font-semibold text-biconomy-muted uppercase tracking-wider mb-1">Draft ID</p>
-              <code class="block text-sm font-mono text-white break-all">{{ draftId }}</code>
+          <div class="grid gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
+              <p class="text-xs font-semibold text-aa-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.draftIdLabel', 'Draft ID') }}</p>
+              <div class="flex items-center">
+                <code class="block text-sm font-mono text-aa-text break-all flex-1">{{ draftId }}</code>
+                <button @click="copyText(draftId); markCopied('draftId')" :aria-label="t('didPanel.copyDraftId', 'Copy draft ID')" class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0">
+                  <svg aria-hidden="true" v-if="copiedKey !== 'draftId'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>
+                  <svg aria-hidden="true" v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-aa-success" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </button>
+              </div>
             </div>
-            <div class="rounded-lg border border-biconomy-border bg-biconomy-dark p-4">
-              <p class="text-xs font-semibold text-biconomy-muted uppercase tracking-wider mb-1">Share URL</p>
-              <code class="block text-sm font-mono text-white break-all">{{ shareUrl || 'Loading…' }}</code>
+            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
+              <p class="text-xs font-semibold text-aa-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.shareUrlLabel', 'Share URL') }}</p>
+              <div class="flex items-center">
+                <code class="block text-sm font-mono text-aa-text break-all flex-1">{{ shareUrl || t('sharedDraft.loadingUrl', 'Loading…') }}</code>
+                <button v-if="shareUrl" @click="copyText(shareUrl); markCopied('shareUrl')" :aria-label="t('didPanel.copyShareUrl', 'Copy share URL')" class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0">
+                  <svg aria-hidden="true" v-if="copiedKey !== 'shareUrl'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>
+                  <svg aria-hidden="true" v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-aa-success" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </button>
+              </div>
             </div>
-            <div class="rounded-lg border border-biconomy-border bg-biconomy-dark p-4">
-              <p class="text-xs font-semibold text-biconomy-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.collaboratorLinkLabel', 'Collaborator Link') }}</p>
-              <code class="block text-sm font-mono text-white break-all">{{ collaborationUrl || 'Read-only access' }}</code>
+            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
+              <p class="text-xs font-semibold text-aa-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.collaboratorLinkLabel', 'Collaborator Link') }}</p>
+              <div class="flex items-center">
+                <code class="block text-sm font-mono text-aa-text break-all flex-1">{{ collaborationUrl || t('sharedDraft.readOnlyAccess', 'Read-only access') }}</code>
+                <button v-if="collaborationUrl" @click="copyText(collaborationUrl); markCopied('collaboratorUrl')" :aria-label="t('operations.copyCollaboratorLink', 'Copy collaborator link')" class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0">
+                  <svg aria-hidden="true" v-if="copiedKey !== 'collaboratorUrl'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>
+                  <svg aria-hidden="true" v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-aa-success" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </button>
+              </div>
             </div>
-            <div class="rounded-lg border border-biconomy-border bg-biconomy-dark p-4">
-              <p class="text-xs font-semibold text-biconomy-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.operatorLinkLabel', 'Operator Link') }}</p>
-              <code class="block text-sm font-mono text-white break-all">{{ operatorUrl || 'Operator access required' }}</code>
+            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
+              <p class="text-xs font-semibold text-aa-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.operatorLinkLabel', 'Operator Link') }}</p>
+              <div class="flex items-center">
+                <code class="block text-sm font-mono text-aa-text break-all flex-1">{{ operatorUrl || t('sharedDraft.operatorAccessRequired', 'Operator access required') }}</code>
+                <button v-if="operatorUrl" @click="copyText(operatorUrl); markCopied('operatorUrl')" :aria-label="t('operations.copyOperatorLink', 'Copy operator link')" class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0">
+                  <svg aria-hidden="true" v-if="copiedKey !== 'operatorUrl'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>
+                  <svg aria-hidden="true" v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-aa-success" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </button>
+              </div>
             </div>
-            <div class="rounded-lg border border-biconomy-border bg-biconomy-dark p-4">
-              <p class="text-xs font-semibold text-biconomy-muted uppercase tracking-wider mb-1">Status</p>
-              <div class="text-sm font-medium text-white">{{ draft?.status || 'loading' }}</div>
+            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
+              <p class="text-xs font-semibold text-aa-muted uppercase tracking-wider mb-1">{{ t('sharedDraft.statusLabel', 'Status') }}</p>
+              <div class="text-sm font-medium text-aa-text">{{ draft?.status || t('sharedDraft.loadingStatus', 'loading') }}</div>
             </div>
           </div>
-          <div v-if="draft && accessScope === 'read'" class="mb-6 rounded-lg border border-amber-200/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 font-medium">
+          <div v-if="draft && accessScope === 'read'" class="mb-6 rounded-lg border border-aa-warning/30 bg-aa-warning/10 px-4 py-3 text-sm text-aa-warning font-medium">
             {{ t('sharedDraft.readOnlyNotice', 'This shared draft is read-only. Open the Collaborator Link to sign, or the Operator Link to manage relay and broadcast actions.') }}
           </div>
-          <div v-else-if="draft && accessScope === 'sign'" class="mb-6 rounded-lg border border-blue-200/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-300 font-medium">
+          <div v-else-if="draft && accessScope === 'sign'" class="mb-6 rounded-lg border border-aa-info/30 bg-aa-info/10 px-4 py-3 text-sm text-aa-info font-medium">
             {{ t('sharedDraft.signatureOnlyNotice', 'This is a signature-only link. Relay checks, broadcasts, and link rotation require the Operator Link.') }}
           </div>
-          <div v-if="loading" class="text-sm text-biconomy-muted font-medium">Loading shared draft…</div>
-          <div v-else-if="loadError" class="text-sm text-rose-400 font-medium">{{ loadError }}</div>
+          <div v-if="loading" class="space-y-3">
+            <div class="skeleton h-6 w-48 rounded"></div>
+            <div class="skeleton h-20 rounded-xl"></div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="skeleton h-24 rounded-lg"></div>
+              <div class="skeleton h-24 rounded-lg"></div>
+            </div>
+          </div>
+          <div v-else-if="loadError" role="alert" class="flex items-center gap-3 text-sm text-aa-error font-medium">
+            <span>{{ loadError }}</span>
+            <button class="btn-ghost btn-sm" :class="{ 'btn-loading': loading }" :disabled="loading" @click="loadDraft">{{ loading ? t('sharedDraft.loading', 'Loading...') : t('sharedDraft.retry', 'Retry') }}</button>
+          </div>
           <div v-else-if="draft" class="space-y-6">
             <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <section class="rounded-lg border border-biconomy-border bg-biconomy-panel p-5 shadow-sm">
+              <section class="glass-panel p-5">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white">Operation Snapshot</h2>
-                  <p class="text-sm text-biconomy-muted">Key execution details, relay state, and payload availability for this immutable draft.</p>
+                  <h2 class="text-base font-bold font-outfit text-white">{{ t('sharedDraft.operationSnapshot', 'Operation Snapshot') }}</h2>
+                  <p class="text-sm text-aa-muted">{{ t('sharedDraft.operationSnapshotDesc', 'Key execution details, relay state, and payload availability for this immutable draft.') }}</p>
                 </div>
-                <div class="grid gap-3 md:grid-cols-2">
-                  <div v-for="item in operationSnapshotItems" :key="item.label" class="rounded-lg border border-biconomy-border/40 bg-biconomy-dark/40 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-biconomy-muted">{{ item.label }}</p>
-                    <div class="mt-1 text-sm font-medium text-white break-all">{{ item.value }}</div>
-                    <p v-if="item.note" class="mt-1 text-xs text-biconomy-muted">{{ item.note }}</p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div v-for="item in operationSnapshotItems" :key="item.label" class="rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-aa-muted">{{ item.label }}</p>
+                    <div class="mt-1 text-sm font-medium text-aa-text break-all">{{ item.value }}</div>
+                    <p v-if="item.note" class="mt-1 text-xs text-aa-muted">{{ item.note }}</p>
                   </div>
                 </div>
               </section>
-              <section class="rounded-lg border border-biconomy-border bg-biconomy-panel p-5 shadow-sm">
+              <section class="glass-panel p-5">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white">Signer Checklist</h2>
-                  <p class="text-sm text-biconomy-muted">{{ signerProgress.signatureCount }}/{{ signerProgress.requiredCount }} required approvals collected{{ signerProgress.pending.length ? ` · ${signerProgress.pending.length} still pending` : signerProgress.requiredCount ? ' · all required signers satisfied' : ' · no required signer roster recorded' }}.</p>
+                  <h2 class="text-base font-bold font-outfit text-white">{{ t('sharedDraft.signerChecklist', 'Signer Checklist') }}</h2>
+                  <p class="text-sm text-aa-muted">{{ signerProgressText }}.</p>
                 </div>
-                <div v-if="signerChecklistItems.length === 0" class="rounded-lg border border-dashed border-biconomy-border/40 bg-biconomy-dark/40 p-4 text-sm text-biconomy-muted">No signer checklist has been recorded for this draft yet.</div>
+                <div v-if="signerChecklistItems.length === 0" class="empty-state">
+                  <svg aria-hidden="true" class="w-8 h-8 mx-auto mb-2 text-aa-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                  <p class="text-sm text-aa-muted">{{ t('sharedDraft.noSignerChecklist', 'No signer checklist has been recorded for this draft yet.') }}</p>
+                </div>
                 <div v-else class="space-y-3">
-                  <div v-for="item in signerChecklistItems" :key="item.key" class="flex items-start justify-between gap-3 rounded-lg border border-biconomy-border/40 bg-biconomy-dark/40 p-4">
+                  <div v-for="item in signerChecklistItems" :key="item.key" class="flex items-start justify-between gap-3 rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4">
                     <div class="min-w-0">
-                      <div class="text-sm font-semibold text-white break-all">{{ item.label }}</div>
-                      <div class="mt-1 text-xs text-biconomy-muted">{{ item.detail }}</div>
-                      <code v-if="item.signaturePreview" class="mt-2 block text-xs text-biconomy-muted">{{ item.signaturePreview }}</code>
+                      <div class="text-sm font-semibold text-aa-text break-all">{{ item.label }}</div>
+                      <div class="mt-1 text-xs text-aa-muted">{{ item.detail }}</div>
+                      <code v-if="item.signaturePreview" class="mt-2 block text-xs text-aa-muted">{{ item.signaturePreview }}</code>
                     </div>
-                    <span :class="item.status === 'Collected' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'" class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide">{{ item.status }}</span>
+                    <span :class="item.statusKey === 'collected' ? 'badge-green' : 'badge-orange'" class="shrink-0">{{ item.status }}</span>
                   </div>
                 </div>
               </section>
             </div>
 
             <div class="grid gap-6 lg:grid-cols-2">
-              <section class="rounded-lg border border-biconomy-border bg-biconomy-panel p-5 shadow-sm">
+              <section class="glass-panel p-5">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white">Signature Actions</h2>
-                  <p class="text-sm text-biconomy-muted">Connect wallets, paste external approvals, or append a contract-aligned EVM signature to the shared draft.</p>
+                  <h2 class="text-base font-bold font-outfit text-white">{{ t('sharedDraft.signatureActions', 'Signature Actions') }}</h2>
+                  <p class="text-sm text-aa-muted">{{ t('sharedDraft.signatureActionsDesc', 'Connect wallets, paste external approvals, or append a contract-aligned EVM signature to the shared draft.') }}</p>
                 </div>
                 <div class="mb-4 flex flex-wrap gap-2">
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel" @click="connectNeoWallet">{{ t('operations.connectNeoWallet', 'Connect Neo Wallet') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel" @click="connectEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel" @click="copyShareUrl">{{ t('operations.copyShareLink', 'Copy Share Link') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel disabled:opacity-50" :disabled="!collaborationUrl" @click="copyCollaboratorUrl">{{ t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel disabled:opacity-50" :disabled="!operatorUrl" @click="copyOperatorUrl">{{ t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel disabled:opacity-50" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm font-medium text-white hover:bg-biconomy-panel disabled:opacity-50" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
+                  <button class="btn-ghost" :class="{ 'btn-loading': isConnectingNeo }" :disabled="isConnectingNeo" @click="connectNeoWallet">{{ t('operations.connectNeoWallet', 'Connect Neo Wallet') }}</button>
+                  <button class="btn-ghost" :class="{ 'btn-loading': isConnectingEvm }" :disabled="isConnectingEvm" @click="connectEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
+                  <button class="btn-ghost" @click="copyShareUrl">{{ copiedKey === 'shareUrl' ? t('sharedDraft.copied', 'Copied!') : t('operations.copyShareLink', 'Copy Share Link') }}</button>
+                  <button class="btn-ghost" :disabled="!collaborationUrl" @click="copyCollaboratorUrl">{{ copiedKey === 'collaboratorUrl' ? t('sharedDraft.copied', 'Copied!') : t('operations.copyCollaboratorLink', 'Copy Collaborator Link') }}</button>
+                  <button class="btn-ghost" :disabled="!operatorUrl" @click="copyOperatorUrl">{{ copiedKey === 'operatorUrl' ? t('sharedDraft.copied', 'Copied!') : t('operations.copyOperatorLink', 'Copy Operator Link') }}</button>
+                  <button class="btn-ghost" :class="{ 'btn-loading': isSubmissionPending }" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateCollaboratorLink">{{ t('operations.rotateCollaboratorLink', 'Rotate Collaborator Link') }}</button>
+                  <button class="btn-ghost" :class="{ 'btn-loading': isSubmissionPending }" :disabled="!hasOperatorAccess || isSubmissionPending" @click="rotateOperatorLink">{{ t('operations.rotateOperatorLink', 'Rotate Operator Link') }}</button>
                 </div>
                 <div class="grid gap-4 md:grid-cols-3">
-                  <label class="space-y-1 text-sm">
-                    <span class="font-medium text-white">Signer ID</span>
-                    <input v-model="signerId" class="w-full rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm" />
+                  <label class="space-y-1 text-sm" for="shared-draft-signer-id">
+                    <span class="font-medium text-aa-text">{{ t('sharedDraft.signerIdLabel', 'Signer ID') }}</span>
+                    <input id="shared-draft-signer-id" v-model="signerId" class="input-field" />
                   </label>
-                  <label class="space-y-1 text-sm">
-                    <span class="font-medium text-white">Signer Kind</span>
-                    <select v-model="signerKind" class="w-full rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm">
-                      <option value="neo">Neo</option>
-                      <option value="evm">EVM</option>
+                  <label class="space-y-1 text-sm" for="shared-draft-signer-kind">
+                    <span class="font-medium text-aa-text">{{ t('sharedDraft.signerKindLabel', 'Signer Kind') }}</span>
+                    <select id="shared-draft-signer-kind" v-model="signerKind" class="input-field">
+                      <option value="neo">{{ t('sharedDraft.neoLabel', 'Neo') }}</option>
+                      <option value="evm">{{ t('sharedDraft.evmLabel', 'EVM') }}</option>
                     </select>
                   </label>
-                  <label class="space-y-1 text-sm">
-                    <span class="font-medium text-white">Signature Hex</span>
-                    <input v-model="signatureHex" class="w-full rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 font-mono text-xs" />
+                  <label class="space-y-1 text-sm" for="shared-draft-signature-hex">
+                    <span class="font-medium text-aa-text">{{ t('sharedDraft.signatureHexLabel', 'Signature Hex') }}</span>
+                    <input id="shared-draft-signature-hex" v-model="signatureHex" class="input-field font-mono text-xs" />
                   </label>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="rounded-md bg-biconomy-orange px-4 py-2 text-sm font-medium text-white hover:bg-biconomy-orange/80 disabled:opacity-50" :disabled="!hasSignatureAccess || isSubmissionPending" @click="appendManualSignature">{{ t('operations.appendManualSignature', 'Append Manual Signature') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-4 py-2 text-sm font-medium text-white hover:bg-biconomy-panel disabled:opacity-50" :disabled="!hasSignatureAccess || isSubmissionPending" @click="signWithEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
+                  <button class="btn-primary" :class="{ 'btn-loading': isSubmissionPending }" :disabled="!hasSignatureAccess || isSubmissionPending" @click="appendManualSignature">{{ t('operations.appendManualSignature', 'Append Manual Signature') }}</button>
+                  <button class="btn-ghost" :class="{ 'btn-loading': isSubmissionPending }" :disabled="!hasSignatureAccess || isSubmissionPending" @click="signWithEvmWallet">{{ t('operations.connectEvmWallet', 'Connect EVM Wallet') }}</button>
                 </div>
-                <p class="mt-4 text-xs text-biconomy-muted">Use manual entry for external multisig collection, or collect an EVM typed-data approval here and keep the relay-ready invocation attached to the draft.</p>
+                <p class="mt-4 text-xs text-aa-muted">{{ t('sharedDraft.manualSignatureHint', 'Use manual entry for external multisig collection, or collect an EVM typed-data approval here and keep the relay-ready invocation attached to the draft.') }}</p>
               </section>
 
-              <section class="rounded-lg border border-biconomy-border bg-biconomy-panel p-5 shadow-sm">
+              <section class="glass-panel p-5">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold text-white">Broadcast & Relay</h2>
-                  <p class="text-sm text-biconomy-muted">Choose the final submission path after signatures are attached and relay readiness looks healthy.</p>
+                  <h2 class="text-base font-bold font-outfit text-white">{{ t('sharedDraft.broadcastRelay', 'Broadcast & Relay') }}</h2>
+                  <p class="text-sm text-aa-muted">{{ t('sharedDraft.broadcastRelayDesc', 'Choose the final submission path after signatures are attached and relay readiness looks healthy.') }}</p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-lg border border-biconomy-border/40 bg-biconomy-dark/40 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-biconomy-muted">Client Broadcast</p>
-                    <div class="mt-1 text-sm font-medium text-white">{{ clientBroadcastReady ? 'Invocation Ready' : 'Invocation Missing' }}</div>
-                    <p class="mt-1 text-xs text-biconomy-muted">{{ walletConnection.isConnected.value ? 'Neo wallet connected and ready to sign.' : 'Connect a Neo wallet before broadcasting client-side.' }}</p>
+                  <div class="rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-aa-muted">{{ t('sharedDraft.clientBroadcast', 'Client Broadcast') }}</p>
+                    <div class="mt-1 text-sm font-medium text-aa-text">{{ clientBroadcastReady ? t('sharedDraft.clientBroadcastReady', 'Invocation Ready') : t('sharedDraft.clientBroadcastMissing', 'Invocation Missing') }}</div>
+                    <p class="mt-1 text-xs text-aa-muted">{{ walletConnection.isConnected.value ? t('sharedDraft.neoWalletReady', 'Neo wallet connected and ready to sign.') : t('sharedDraft.neoWalletMissing', 'Connect a Neo wallet before broadcasting client-side.') }}</p>
                   </div>
-                  <div class="rounded-lg border border-biconomy-border/40 bg-biconomy-dark/40 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-biconomy-muted">Relay Submission</p>
-                    <div class="mt-1 text-sm font-medium text-white">{{ relayReadiness.label }}</div>
-                    <p class="mt-1 text-xs text-biconomy-muted">{{ relayReadiness.detail }}</p>
+                  <div class="rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-aa-muted">{{ t('sharedDraft.relaySubmission', 'Relay Submission') }}</p>
+                    <div class="mt-1 text-sm font-medium text-aa-text">{{ relayReadiness.label }}</div>
+                    <p class="mt-1 text-xs text-aa-muted">{{ relayReadiness.detail }}</p>
                   </div>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="rounded-md bg-biconomy-orange px-4 py-2 text-sm font-medium text-white hover:bg-biconomy-orange/80 disabled:opacity-50" :disabled="!hasOperatorAccess || !clientBroadcastReady || !walletConnection.isConnected.value || isSubmissionPending" :title="getSubmissionButtonLabel('client-broadcast', pendingSubmissionAction)" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? t('sharedDraft.broadcasting', 'Broadcasting…') : t('sharedDraft.broadcastWithNeoWallet', 'Broadcast with Neo Wallet') }}</button>
-                  <button class="rounded-md border border-biconomy-border bg-biconomy-dark px-4 py-2 text-sm font-medium text-white hover:bg-biconomy-panel disabled:opacity-50" :disabled="!hasOperatorAccess || relayPayloadOptions.length === 0 || isSubmissionPending" :title="getSubmissionButtonLabel('relay-check', pendingSubmissionAction)" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? t('sharedDraft.checkingRelay', 'Checking Relay…') : t('sharedDraft.checkRelay', 'Check Relay') }}</button>
-                  <button class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50" :disabled="!hasOperatorAccess || !relayReadiness.isReady || isSubmissionPending" :title="getSubmissionButtonLabel('relay-submit', pendingSubmissionAction)" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? t('sharedDraft.submitting', 'Submitting…') : t('sharedDraft.submitViaRelay', 'Submit via Relay') }}</button>
-                  <select v-if="relayPayloadOptions.length > 1" v-model="relayPayloadMode" class="rounded-md border border-biconomy-border bg-biconomy-dark px-3 py-1.5 text-sm">
-                    <option value="best">Best Available</option>
-                    <option value="raw">Signed Raw Tx</option>
-                    <option value="meta">Relay Invocation</option>
+                  <button class="btn-primary" :class="{ 'btn-loading': pendingSubmissionAction === 'client-broadcast' }" :disabled="!hasOperatorAccess || !clientBroadcastReady || !walletConnection.isConnected.value || isSubmissionPending" :title="getSubmissionButtonLabel('client-broadcast', pendingSubmissionAction, t)" @click="broadcastWithNeoWallet">{{ pendingSubmissionAction === 'client-broadcast' ? t('sharedDraft.broadcasting', 'Broadcasting…') : t('sharedDraft.broadcastWithNeoWallet', 'Broadcast with Neo Wallet') }}</button>
+                  <button class="btn-secondary" :class="{ 'btn-loading': pendingSubmissionAction === 'relay-check' }" :disabled="!hasOperatorAccess || relayPayloadOptions.length === 0 || isSubmissionPending" :title="getSubmissionButtonLabel('relay-check', pendingSubmissionAction, t)" @click="checkRelay">{{ pendingSubmissionAction === 'relay-check' ? t('sharedDraft.checkingRelay', 'Checking Relay…') : t('sharedDraft.checkRelay', 'Check Relay') }}</button>
+                  <button class="btn-success" :class="{ 'btn-loading': pendingSubmissionAction === 'relay-submit' }" :disabled="!hasOperatorAccess || !relayReadiness.isReady || isSubmissionPending" :title="getSubmissionButtonLabel('relay-submit', pendingSubmissionAction, t)" @click="submitViaRelay">{{ pendingSubmissionAction === 'relay-submit' ? t('sharedDraft.submitting', 'Submitting…') : t('sharedDraft.submitViaRelay', 'Submit via Relay') }}</button>
+                  <select v-if="relayPayloadOptions.length > 1" v-model="relayPayloadMode" :aria-label="t('sharedDraft.relayPayloadMode', 'Relay payload mode')" class="input-field w-auto">
+                    <option value="best">{{ t('sharedDraft.bestAvailable', 'Best Available') }}</option>
+                    <option value="raw">{{ t('sharedDraft.signedRawTx', 'Signed Raw Tx') }}</option>
+                    <option value="meta">{{ t('sharedDraft.relayInvocation', 'Relay Invocation') }}</option>
                   </select>
                 </div>
-                <p class="mt-4 text-xs text-biconomy-muted">Selected relay payload: <span class="font-semibold text-white">{{ selectedRelayPayloadLabel }}</span></p>
-                <div v-if="activeSubmissionReceipt" class="mt-4 rounded-lg border px-4 py-3 text-sm"
-                  :class="activeSubmissionReceipt.tone === 'success' ? 'border-emerald-200/30 bg-emerald-500/10 text-emerald-300' : activeSubmissionReceipt.tone === 'error' ? 'border-rose-200/30 bg-rose-500/10 text-rose-300' : 'border-amber-200/30 bg-amber-500/10 text-amber-300'">
-                  <p class="text-xs font-semibold uppercase tracking-wider">Submission Receipt</p>
+                <p class="mt-4 text-xs text-aa-muted">{{ t('sharedDraft.selectedRelayPayload', 'Selected relay payload:') }} <span class="font-semibold text-aa-text">{{ selectedRelayPayloadLabel }}</span></p>
+                <div v-if="activeSubmissionReceipt" role="alert" class="mt-4 rounded-lg border px-4 py-3 text-sm"
+                  :class="activeSubmissionReceipt.tone === 'success' ? 'border-aa-success/30 bg-aa-success/10 text-aa-success' : activeSubmissionReceipt.tone === 'error' ? 'border-aa-error/30 bg-aa-error/10 text-aa-error' : 'border-aa-warning/30 bg-aa-warning/10 text-aa-warning'">
+                  <p class="text-xs font-semibold uppercase tracking-wider">{{ t('sharedDraft.submissionReceipt', 'Submission Receipt') }}</p>
                   <div class="mt-1 text-sm font-medium">{{ activeSubmissionReceipt.title }}</div>
                   <p class="mt-1 text-sm">{{ activeSubmissionReceipt.detail }}</p>
-                  <code v-if="activeSubmissionReceipt.txid" class="mt-2 block break-all rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs">{{ activeSubmissionReceipt.txid }}</code>
-                  <a v-if="activeSubmissionReceipt.explorerUrl" :href="activeSubmissionReceipt.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex font-medium text-xs underline">Open in Explorer</a>
-                  <div v-if="submissionReceiptHistoryItems.length > 0" class="mt-4 border-t border-white/10 pt-3">
-                    <p class="text-xs font-semibold uppercase tracking-wider">Receipt History</p>
+                  <code v-if="activeSubmissionReceipt.txid" class="mt-2 block break-all rounded-md border border-aa-border bg-aa-dark/60 px-3 py-1.5 text-xs">{{ activeSubmissionReceipt.txid }}</code>
+                  <a v-if="activeSubmissionReceipt.explorerUrl" :href="activeSubmissionReceipt.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex font-medium text-xs underline">{{ t('sharedDraft.openInExplorer', 'Open in Explorer') }}</a>
+                  <div v-if="submissionReceiptHistoryItems.length > 0" class="mt-4 border-t border-aa-border/40 pt-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider">{{ t('sharedDraft.receiptHistory', 'Receipt History') }}</p>
                     <div class="mt-2 space-y-2">
-                      <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-md border border-white/10 bg-white/5 px-3 py-2">
+                      <div v-for="item in submissionReceiptHistoryItems" :key="`${item.createdAt}:${item.action}`" class="rounded-md border border-aa-border/40 bg-aa-panel/40 px-3 py-2">
                         <div class="flex items-center justify-between gap-3">
-                          <div class="text-xs font-medium text-white">{{ item.title }}</div>
-                          <div class="text-xs text-biconomy-muted">{{ item.createdLabel }}</div>
+                          <div class="text-xs font-medium text-aa-text">{{ item.title }}</div>
+                          <div class="text-xs text-aa-muted">{{ item.createdLabel }}</div>
                         </div>
-                        <div class="mt-1 text-xs text-biconomy-muted">{{ item.detail }}</div>
-                        <a v-if="item.explorerUrl" :href="item.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex text-xs font-medium underline text-white">Open in Explorer</a>
+                        <div class="mt-1 text-xs text-aa-muted">{{ item.detail }}</div>
+                        <a v-if="item.explorerUrl" :href="item.explorerUrl" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex text-xs font-medium underline text-aa-text">{{ t('sharedDraft.openInExplorer', 'Open in Explorer') }}</a>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div v-if="latestBroadcastTxid" class="mt-4 rounded-lg border border-biconomy-border bg-biconomy-dark p-4">
-                  <p class="text-xs font-semibold uppercase tracking-wider text-biconomy-muted">Latest Submission</p>
-                  <code class="mt-1 block break-all text-xs text-white">{{ latestBroadcastTxid }}</code>
-                  <a v-if="latestBroadcastExplorerUrl" :href="latestBroadcastExplorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-md border border-biconomy-border bg-biconomy-panel px-3 py-1.5 text-xs font-medium text-white hover:bg-biconomy-dark">View Latest in Explorer</a>
+                <div v-if="latestBroadcastTxid" class="mt-4 rounded-lg border border-aa-border bg-aa-dark p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-aa-muted">{{ t('sharedDraft.latestSubmission', 'Latest Submission') }}</p>
+                  <div class="flex items-start gap-2">
+                    <code class="mt-1 block break-all text-xs text-aa-text flex-1">{{ latestBroadcastTxid }}</code>
+                    <button @click="copyText(latestBroadcastTxid); markCopied('latestTxid')" :aria-label="t('operations.copyTxid', 'Copy transaction ID')" class="shrink-0 mt-1 text-aa-muted hover:text-aa-text transition-colors duration-200">
+                      <svg aria-hidden="true" v-if="copiedKey !== 'latestTxid'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>
+                      <svg aria-hidden="true" v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-aa-success" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    </button>
+                  </div>
+                  <a v-if="latestBroadcastExplorerUrl" :href="latestBroadcastExplorerUrl" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-md border border-aa-border bg-aa-panel px-3 py-1.5 text-xs font-medium text-aa-text hover:bg-aa-dark transition-colors duration-200">{{ t('sharedDraft.viewLatestInExplorer', 'View Latest in Explorer') }}</a>
                 </div>
               </section>
             </div>
@@ -220,35 +237,35 @@
               :exception="relayCheck.exception"
             />
 
-            <section class="rounded-lg border border-biconomy-border bg-biconomy-panel p-5 shadow-sm">
-              <h2 class="text-base font-bold text-white mb-3">{{ t('sharedDraft.recentActivityTitle', 'Recent Activity') }}</h2>
+            <section class="glass-panel p-5">
+              <h2 class="text-base font-bold font-outfit text-white mb-3">{{ t('sharedDraft.recentActivityTitle', 'Recent Activity') }}</h2>
               <ActivityTimeline :items="activityEvents" :action-context="activityActionContext" preference-key="shared-draft" @activity-action="handleActivityAction" />
             </section>
 
-            <section class="rounded-lg border border-biconomy-border bg-biconomy-panel p-5 shadow-sm">
-              <h2 class="text-base font-bold text-white mb-3">{{ t('sharedDraft.collectedSignaturesTitle', 'Collected Signatures') }}</h2>
-              <div v-if="collectedSignatureCards.length === 0" class="text-sm text-biconomy-muted">{{ t('sharedDraft.noSignaturesYet', 'No signatures have been attached yet.') }}</div>
-              <div v-else class="grid gap-3 md:grid-cols-2">
-                <div v-for="signature in collectedSignatureCards" :key="signature.key" class="rounded-lg border border-biconomy-border/40 bg-biconomy-dark/40 p-4">
+            <section class="glass-panel p-5">
+              <h2 class="text-base font-bold font-outfit text-white mb-3">{{ t('sharedDraft.collectedSignaturesTitle', 'Collected Signatures') }}</h2>
+              <div v-if="collectedSignatureCards.length === 0" class="text-sm text-aa-muted">{{ t('sharedDraft.noSignaturesYet', 'No signatures have been attached yet.') }}</div>
+              <div v-else class="grid gap-3 sm:grid-cols-2">
+                <div v-for="signature in collectedSignatureCards" :key="signature.key" class="rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                      <div class="text-sm font-semibold text-white break-all">{{ signature.label }}</div>
-                      <div class="mt-1 text-xs text-biconomy-muted">Added {{ signature.createdLabel }}</div>
+                      <div class="text-sm font-semibold text-aa-text break-all">{{ signature.label }}</div>
+                      <div class="mt-1 text-xs text-aa-muted">{{ t('sharedDraft.addedPrefix', 'Added') }} {{ signature.createdLabel }}</div>
                     </div>
                     <div class="flex flex-wrap justify-end gap-1">
-                      <span v-for="badge in signature.badges" :key="badge" class="rounded border border-biconomy-border bg-biconomy-panel px-2 py-0.5 text-xs font-medium text-biconomy-muted">{{ badge }}</span>
+                      <span v-for="badge in signature.badges" :key="badge" class="rounded border border-aa-border bg-aa-panel px-2 py-0.5 text-xs font-medium text-aa-muted">{{ badge }}</span>
                     </div>
                   </div>
-                  <code class="mt-3 block break-all rounded-md border border-biconomy-border bg-biconomy-panel px-3 py-1.5 text-xs text-biconomy-muted">{{ signature.signaturePreview }}</code>
+                  <code class="mt-3 block break-all rounded-md border border-aa-border bg-aa-panel px-3 py-1.5 text-xs text-aa-muted">{{ signature.signaturePreview }}</code>
                   <details class="mt-3">
-                    <summary class="cursor-pointer text-xs font-medium text-biconomy-muted hover:text-white">{{ t('sharedDraft.viewFullSignature', 'View Full Signature') }}</summary>
-                    <code class="mt-2 block break-all text-xs text-biconomy-muted bg-biconomy-panel border border-biconomy-border p-2 rounded-md">{{ signature.signatureHex }}</code>
+                    <summary class="cursor-pointer text-xs font-medium text-aa-muted hover:text-aa-text transition-colors duration-200">{{ t('sharedDraft.viewFullSignature', 'View Full Signature') }}</summary>
+                    <code class="mt-2 block break-all text-xs text-aa-muted bg-aa-panel border border-aa-border p-2 rounded-md">{{ signature.signatureHex }}</code>
                   </details>
                 </div>
               </div>
             </section>
           </div>
-          <p v-if="statusMessage" class="mt-6 rounded-lg border border-biconomy-border bg-biconomy-panel px-4 py-3 text-sm text-white font-medium">
+          <p v-if="statusMessage" role="status" aria-live="polite" class="mt-6 rounded-lg border border-aa-border bg-aa-panel px-4 py-3 text-sm text-aa-text font-medium">
             {{ statusMessage }}
           </p>
           <div class="mt-8">
@@ -256,23 +273,23 @@
           </div>
         </template>
         <template v-else>
-          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-500/20 mb-6 border border-emerald-500/30">
-            <svg class="h-8 w-8 text-emerald-400 animate-fade-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-aa-success/20 mb-6 border border-aa-success/30">
+            <svg aria-hidden="true" class="h-8 w-8 text-aa-success animate-fade-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-white tracking-tight mb-2 text-center">Transaction Submitted</h1>
-          <p class="text-sm text-biconomy-muted mb-8 max-w-lg mx-auto text-center">Your transaction has been securely broadcast to the Neo N3 network.</p>
-          <div class="bg-biconomy-panel p-5 rounded-lg border border-biconomy-border mb-8 inline-block w-full max-w-full">
+          <h1 class="text-2xl font-bold text-white tracking-tight mb-2 text-center">{{ t('sharedDraft.transactionSubmitted', 'Transaction Submitted') }}</h1>
+          <p class="text-sm text-aa-muted mb-8 max-w-lg mx-auto text-center">{{ t('sharedDraft.transactionSubmittedDesc', 'Your transaction has been securely broadcast to the Neo N3 network.') }}</p>
+          <div class="glass-panel p-5 mb-8 inline-block w-full max-w-full">
             <div class="flex items-center justify-between mb-2">
-              <p class="text-xs font-semibold text-biconomy-muted uppercase tracking-wider">Transaction Hash</p>
-              <button @click="copyHash" class="text-xs font-medium text-white hover:text-biconomy-orange bg-biconomy-dark border border-biconomy-border px-2 py-1 rounded">{{ copied ? 'Copied!' : 'Copy' }}</button>
+              <p class="text-xs font-semibold text-aa-muted uppercase tracking-wider">{{ t('sharedDraft.transactionHash', 'Transaction Hash') }}</p>
+              <button @click="copyText(txid); markCopied('txid')" :aria-label="t('operations.copyTxHash', 'Copy transaction hash')" class="text-xs font-medium text-aa-text hover:text-aa-orange bg-aa-dark border border-aa-border px-3 py-2 sm:py-1 rounded transition-colors duration-200">{{ copiedKey === 'txid' ? t('sharedDraft.copied', 'Copied!') : t('sharedDraft.copy', 'Copy') }}</button>
             </div>
-            <code class="block text-sm font-mono text-white break-all bg-biconomy-dark border border-biconomy-border p-3 rounded-md select-all">{{ txid }}</code>
+            <code class="block text-sm font-mono text-aa-text break-all bg-aa-dark border border-aa-border p-3 rounded-md select-all">{{ txid }}</code>
           </div>
           <div class="flex flex-col sm:flex-row justify-center gap-3">
-            <RouterLink to="/" class="btn-secondary w-full sm:w-auto">Return Home</RouterLink>
-            <a :href="submittedTxExplorerUrl || '#'" target="_blank" rel="noopener noreferrer" class="btn-primary w-full sm:w-auto">View in Explorer</a>
+            <RouterLink to="/" class="btn-secondary w-full sm:w-auto">{{ t('sharedDraft.returnHome', 'Return Home') }}</RouterLink>
+            <a :href="submittedTxExplorerUrl || '#'" target="_blank" rel="noopener noreferrer" class="btn-primary w-full sm:w-auto">{{ t('sharedDraft.viewInExplorer', 'View in Explorer') }}</a>
           </div>
         </template>
       </div>
@@ -283,8 +300,10 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/i18n';
+import { useToast } from 'vue-toastification';
 import { useRoute } from 'vue-router';
 import { useWalletConnection } from '@/composables/useWalletConnection.js';
+import { useClipboard } from '@/composables/useClipboard';
 import { OPERATIONS_RUNTIME } from '@/config/operationsRuntime.js';
 import { createDraftStore } from '@/features/operations/drafts.js';
 import { buildRelayPayloadOptions, executeBroadcast, resolveRelayPayloadMode } from '@/features/operations/execution.js';
@@ -299,10 +318,12 @@ import { buildCollectedSignatureCards, buildOperationSnapshotItems, buildSignerC
 import { buildTransactionExplorerUrl, extractLatestTransactionId } from '@/features/operations/explorer.js';
 import { buildSubmissionReceipt, getSubmissionButtonLabel, resolveLatestSubmissionReceipt } from '@/features/operations/submissionFeedback.js';
 import { buildSubmissionReceiptHistoryItems, createSubmissionReceiptEntry } from '@/features/operations/submissionReceipts.js';
+import { EC, translateError } from '@/config/errorCodes.js';
 import RelayPreflightPanel from '@/features/operations/components/RelayPreflightPanel.vue';
 import DraftStatusBanner from '@/features/operations/components/DraftStatusBanner.vue';
 import DraftSummaryStrip from '@/features/operations/components/DraftSummaryStrip.vue';
 import ActivityTimeline from '@/features/operations/components/ActivityTimeline.vue';
+import PaymasterValidationBanner from '@/components/common/PaymasterValidationBanner.vue';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from '@/features/operations/shareLinks.js';
 import { getAbstractAccountHash, walletService } from '@/services/walletService.js';
 
@@ -313,22 +334,25 @@ const props = defineProps({
 
 const runtime = OPERATIONS_RUNTIME;
 const { t } = useI18n();
+const toast = useToast();
 const draftStore = createDraftStore();
 const walletConnection = useWalletConnection();
 const route = useRoute();
 const preferences = createOperationsPreferences();
 
-const copied = ref(false);
+const { copiedKey, markCopied, copyText } = useClipboard();
 const draft = ref(null);
 const loadError = ref('');
 const loading = ref(false);
+const isConnectingNeo = ref(false);
+const isConnectingEvm = ref(false);
 const statusMessage = ref('');
 const signerId = ref('');
 const signerKind = ref('neo');
 const signatureHex = ref('');
 const evmAddress = ref('');
 const relayPayloadMode = ref(preferences.getRelayPayloadMode('shared-draft'));
-const relayCheck = ref({ level: 'idle', label: 'Not Checked', detail: 'Run a relay preflight before submitting.', payloadMode: 'best', vmState: '', gasConsumed: '', operation: '', exception: '', stack: [] });
+const relayCheck = ref({ level: 'idle', label: t('sharedDraft.notChecked', 'Not Checked'), detail: t('sharedDraft.relayCheckIdleDetail', 'Run a relay preflight before submitting.'), payloadMode: 'best', vmState: '', gasConsumed: '', operation: '', exception: '', stack: [] });
 const relayCheckRequest = ref(null);
 const pendingSubmissionAction = ref('');
 const submissionReceipt = ref(null);
@@ -337,15 +361,30 @@ const signerProgress = computed(() => summarizeSignerProgress(
   draft.value?.signer_requirements || [],
   draft.value?.signatures || [],
 ));
+const signerProgressText = computed(() => {
+  const sp = signerProgress.value;
+  const base = t('sharedDraft.signerProgressRequired', '{collected}/{required} required approvals collected')
+    .replace('{collected}', String(sp.signatureCount))
+    .replace('{required}', String(sp.requiredCount));
+  if (sp.pending.length) {
+    return `${base} · ${t('sharedDraft.signerProgressPending', '{count} still pending').replace('{count}', String(sp.pending.length))}`;
+  }
+  if (sp.requiredCount) {
+    return `${base} · ${t('sharedDraft.signerProgressComplete', 'all required signers satisfied')}`;
+  }
+  return `${base} · ${t('sharedDraft.signerProgressNoRoster', 'no required signer roster recorded')}`;
+});
 const operationSnapshotItems = computed(() => buildOperationSnapshotItems({
   draft: draft.value || {},
   relayReadiness: relayReadiness.value,
+  t,
 }));
 const signerChecklistItems = computed(() => buildSignerChecklistItems({
   signerRequirements: draft.value?.signer_requirements || [],
   signatures: draft.value?.signatures || [],
+  t,
 }));
-const collectedSignatureCards = computed(() => buildCollectedSignatureCards(draft.value?.signatures || []));
+const collectedSignatureCards = computed(() => buildCollectedSignatureCards(draft.value?.signatures || [], t));
 const relayPayloadOptions = computed(() => buildRelayPayloadOptions({
   runtime,
   transactionBody: draft.value?.transaction_body || {},
@@ -359,26 +398,37 @@ const relayReadiness = computed(() => evaluateRelayReadiness({
   runtime,
   transactionBody: draft.value?.transaction_body || {},
   signatures: draft.value?.signatures || [],
+  t,
 }));
 const clientBroadcastReady = computed(() => Boolean(draft.value?.transaction_body?.clientInvocation));
 const isSubmissionPending = computed(() => Boolean(pendingSubmissionAction.value));
 const selectedRelayPayloadLabel = computed(() => ({
-  none: 'Unavailable',
-  raw: 'Signed Raw Tx',
-  meta: 'Relay Invocation',
-  best: 'Best Available',
-}[selectedRelayPayloadMode.value] || selectedRelayPayloadMode.value || 'Unavailable'));
+  none: t('sharedDraft.unavailable', 'Unavailable'),
+  raw: t('sharedDraft.signedRawTx', 'Signed Raw Tx'),
+  meta: t('sharedDraft.relayInvocation', 'Relay Invocation'),
+  best: t('sharedDraft.bestAvailable', 'Best Available'),
+}[selectedRelayPayloadMode.value] || selectedRelayPayloadMode.value || t('sharedDraft.unavailable', 'Unavailable')));
 const activityEvents = computed(() => (draft.value && draft.value.metadata && draft.value.metadata.activity) || []);
 const persistedSubmissionReceiptEntries = computed(() => (draft.value?.metadata?.submissionReceipts) || []);
 const latestBroadcastTxid = computed(() => extractLatestTransactionId(activityEvents.value));
 const latestBroadcastExplorerUrl = computed(() => buildTransactionExplorerUrl(runtime.explorerBaseUrl, latestBroadcastTxid.value));
 const submittedTxExplorerUrl = computed(() => buildTransactionExplorerUrl(runtime.explorerBaseUrl, props.txid));
-const latestPaymasterValidationTxid = '0x057d4a581efbe815fad0148a3766284da2a33335e72fb50e54d476078d8f40d4';
-const latestPaymasterValidationExplorerUrl = computed(() => buildTransactionExplorerUrl(runtime.explorerBaseUrl, latestPaymasterValidationTxid));
-const submissionReceiptHistoryItems = computed(() => buildSubmissionReceiptHistoryItems(persistedSubmissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl, limit: 4 }));
-const activeSubmissionReceipt = computed(() => submissionReceipt.value || resolveLatestSubmissionReceipt(persistedSubmissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl }));
+const submissionReceiptHistoryItems = computed(() => buildSubmissionReceiptHistoryItems(persistedSubmissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl, limit: 4, t }));
+const activeSubmissionReceipt = computed(() => submissionReceipt.value || resolveLatestSubmissionReceipt(persistedSubmissionReceiptEntries.value, { explorerBaseUrl: runtime.explorerBaseUrl, t }));
 const collaborationAccess = computed(() => String(route.query.access || '').trim());
 const hasCollaboratorAccess = computed(() => Boolean(draft.value?.can_write && draft.value?.collaboration_slug));
+const accessScope = computed(() => {
+  if (draft.value?.operator_slug && route.query.access === draft.value.operator_slug) return 'operator';
+  if (draft.value?.collaboration_slug && route.query.access === draft.value.collaboration_slug) return 'sign';
+  return 'read';
+});
+const hasOperatorAccess = computed(() => accessScope.value === 'operator');
+const hasSignatureAccess = computed(() => accessScope.value !== 'read');
+const operatorUrl = computed(() => {
+  if (!draft.value?.share_slug || !draft.value?.operator_slug) return '';
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return origin ? buildDraftShareUrl(origin, draft.value.share_slug) + `?access=${draft.value.operator_slug}` : '';
+});
 watch(relayPayloadMode, (value) => {
   preferences.setRelayPayloadMode('shared-draft', value);
 });
@@ -411,6 +461,7 @@ const {
   getRelayCheck: () => relayCheck.value,
   getRelayRequest: () => relayCheckRequest.value,
   setStatus: (message) => { statusMessage.value = message; },
+  t,
 });
 
 function setSubmissionPending(action) {
@@ -419,6 +470,7 @@ function setSubmissionPending(action) {
     action,
     phase: 'pending',
     explorerBaseUrl: runtime.explorerBaseUrl,
+    t,
   });
 }
 
@@ -431,16 +483,9 @@ function setSubmissionResult(action, { phase = 'success', detail = '', txid = ''
     detail,
     txid,
     explorerBaseUrl: runtime.explorerBaseUrl,
+    t,
   });
   return entry;
-}
-
-function copyHash() {
-  if (!props.txid) return;
-  navigator.clipboard.writeText(props.txid).then(() => {
-    copied.value = true;
-    setTimeout(() => { copied.value = false; }, 2000);
-  });
 }
 
 async function loadDraft() {
@@ -453,31 +498,37 @@ async function loadDraft() {
       relayCheck.value = { ...relayCheck.value, ...draft.value.metadata.relayPreflight };
     }
   } catch (error) {
-    loadError.value = error?.message || String(error);
+    loadError.value = translateError(error?.message, t) || t('sharedDraft.loadFailed', 'Failed to load draft. Please check the link and try again.');
   } finally {
     loading.value = false;
   }
 }
 
 async function connectNeoWallet() {
+  isConnectingNeo.value = true;
   try {
     await walletConnection.connect();
     signerId.value = walletService.address;
-    statusMessage.value = `Neo wallet connected: ${walletService.address}`;
-  } catch {
-    statusMessage.value = 'Neo wallet connection failed.';
+    statusMessage.value = t('sharedDraft.neoWalletConnected', 'Neo wallet connected: {address}').replace('{address}', walletService.address);
+  } catch (error) {
+    toast.error(translateError(error?.message, t));
+  } finally {
+    isConnectingNeo.value = false;
   }
 }
 
 async function connectEvmWallet() {
+  isConnectingEvm.value = true;
   try {
     const { address } = await walletConnection.connectEvm();
     evmAddress.value = address.toLowerCase();
     signerId.value = evmAddress.value;
     signerKind.value = 'evm';
-    statusMessage.value = `EVM wallet connected: ${evmAddress.value}`;
-  } catch {
-    statusMessage.value = 'EVM wallet connection failed.';
+    statusMessage.value = t('sharedDraft.evmWalletConnected', 'EVM wallet connected: {address}').replace('{address}', evmAddress.value);
+  } catch (error) {
+    toast.error(translateError(error?.message, t));
+  } finally {
+    isConnectingEvm.value = false;
   }
 }
 
@@ -485,14 +536,14 @@ async function persistSubmissionReceipt(entry) {
   if (!draft.value?.share_slug) return;
   try {
     draft.value = await draftStore.appendSubmissionReceipt(draft.value.share_slug, entry, operatorMutationOptions());
-  } catch (_) {}
+  } catch (_) { if (import.meta.env.DEV) console.warn('[TransactionInfoView] persistSubmissionReceipt sync failed'); /* best-effort remote sync */ }
 }
 
 async function appendActivity(event) {
   if (!draft.value?.share_slug) return;
   try {
     draft.value = await draftStore.appendActivity(draft.value.share_slug, event, accessMutationOptions());
-  } catch (_) {}
+  } catch (_) { if (import.meta.env.DEV) console.warn('[TransactionInfoView] appendActivity sync failed'); /* best-effort remote sync */ }
 }
 
 async function refreshDraftStatus(status) {
@@ -511,10 +562,10 @@ async function appendManualSignature() {
       createdAt: new Date().toISOString(),
     }, accessMutationOptions());
     signatureHex.value = '';
-    await appendActivity(createActivityEvent({ type: 'signature_added', actor: signerKind.value, detail: 'Signature appended' }));
-    statusMessage.value = 'Signature appended to the shared draft.';
+    await appendActivity(createActivityEvent({ type: 'signature_added', actor: signerKind.value, detail: t('sharedDraft.signatureAppended', 'Signature appended') }));
+    statusMessage.value = t('sharedDraft.signatureAppendedToDraft', 'Signature appended to the shared draft.');
   } catch (error) {
-    statusMessage.value = error?.message || String(error);
+    toast.error(translateError(error?.message, t));
   }
 }
 
@@ -538,7 +589,7 @@ async function signWithEvmWallet() {
     let typedData;
 
     if (!draft.value.account?.accountIdHash) {
-      throw new Error('V3 account required: accountIdHash is missing. This account may not be registered as a V3 Abstract Account.');
+      throw new Error(EC.v3AccountRequired);
     }
 
     const verifierHash = await fetchV3Verifier({
@@ -547,7 +598,7 @@ async function signWithEvmWallet() {
       accountIdHash: draft.value.account.accountIdHash,
     });
     if (!verifierHash) {
-      throw new Error('No verifier plugin is configured for this V3 account.');
+      throw new Error(EC.noVerifierPlugin);
     }
 
     nonce = await fetchV3Nonce({
@@ -600,10 +651,10 @@ async function signWithEvmWallet() {
     }, accessMutationOptions());
     signerKind.value = 'evm';
     signerId.value = evmAddress.value;
-    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: 'UserOperation signature collected' }));
-    statusMessage.value = 'Contract-aligned EVM UserOperation signature collected and attached to the shared draft.';
+    await appendActivity(createActivityEvent({ type: 'signature_added', actor: 'evm', detail: t('sharedDraft.userOpSignatureCollected', 'UserOperation signature collected') }));
+    statusMessage.value = t('sharedDraft.userOpSignatureCollectedDetail', 'Contract-aligned EVM UserOperation signature collected and attached to the shared draft.');
   } catch (error) {
-    statusMessage.value = error?.message || String(error);
+    toast.error(translateError(error?.message, t));
   }
 }
 
@@ -611,7 +662,7 @@ async function persistRelayCheckMetadata(snapshot) {
   if (!draft.value?.share_slug) return;
   try {
     draft.value = await draftStore.setRelayPreflight(draft.value.share_slug, { relayPreflight: snapshot }, operatorMutationOptions());
-  } catch (_) {}
+  } catch (_) { if (import.meta.env.DEV) console.warn('[TransactionInfoView] persistRelayCheckMetadata sync failed'); /* best-effort remote sync */ }
 }
 
 async function checkRelay() {
@@ -631,6 +682,7 @@ async function checkRelay() {
       relayRawEnabled: runtime.relayRawEnabled,
       transactionBody: draft.value?.transaction_body || {},
       signatures: draft.value?.signatures || [],
+      t,
     });
     await persistRelayCheckMetadata(relayCheck.value);
     await appendActivity(createActivityEvent({ type: 'relay_preflight', actor: 'relay', detail: relayCheck.value.label }));
@@ -639,17 +691,17 @@ async function checkRelay() {
   } catch (error) {
     relayCheck.value = {
       level: 'blocked',
-      label: 'Relay Check Failed',
-      detail: error?.message || String(error),
+      label: t('sharedDraft.relayCheckFailed', 'Relay Check Failed'),
+      detail: t('sharedDraft.relayCheckErrorDetail', 'Relay preflight check could not complete. Please verify your configuration and try again.'),
       payloadMode: relayPayloadMode.value,
       vmState: '',
       gasConsumed: '',
       operation: '',
-      exception: error?.message || String(error),
+      exception: translateError(error?.message, t) || String(error),
       stack: [],
     };
     await persistRelayCheckMetadata(relayCheck.value);
-    statusMessage.value = relayCheck.value.detail;
+    toast.error(relayCheck.value.detail);
     await persistSubmissionReceipt(setSubmissionResult('relay-check', { phase: 'error', detail: relayCheck.value.detail }));
   }
 }
@@ -668,16 +720,16 @@ async function broadcastWithNeoWallet() {
       relayEndpoint: runtime.relayEndpoint,
     });
     await refreshDraftStatus('broadcasted');
-    await appendActivity(createActivityEvent({ type: 'broadcast_client', actor: 'neo', detail: result?.txid || 'Client broadcast submitted' }));
-    statusMessage.value = `Client-side Neo broadcast submitted${result?.txid ? `: ${result.txid}` : '.'}`;
+    await appendActivity(createActivityEvent({ type: 'broadcast_client', actor: 'neo', detail: result?.txid || t('sharedDraft.clientBroadcastSubmitted', 'Client broadcast submitted') }));
+    statusMessage.value = `${t('sharedDraft.clientBroadcastSubmittedDetail', 'Client-side Neo broadcast submitted.')}${result?.txid ? `: ${result.txid}` : ''}`;
     await persistSubmissionReceipt(setSubmissionResult('client-broadcast', {
       phase: 'success',
-      detail: 'Client-side Neo broadcast submitted.',
+      detail: t('sharedDraft.clientBroadcastSubmittedDetail', 'Client-side Neo broadcast submitted.'),
       txid: result?.txid || result?.result?.hash || '',
     }));
   } catch (error) {
-    statusMessage.value = error?.message || String(error);
-    await persistSubmissionReceipt(setSubmissionResult('client-broadcast', { phase: 'error', detail: statusMessage.value }));
+    toast.error(translateError(error?.message, t));
+    await persistSubmissionReceipt(setSubmissionResult('client-broadcast', { phase: 'error', detail: translateError(error?.message, t) || t('sharedDraft.clientBroadcastFailed', 'Client broadcast failed. Please check your wallet connection and try again.') }));
   }
 }
 
@@ -693,16 +745,16 @@ async function submitViaRelay() {
       relayEndpoint: runtime.relayEndpoint,
     });
     await refreshDraftStatus('relayed');
-    await appendActivity(createActivityEvent({ type: 'broadcast_relay', actor: 'relay', detail: result?.txid || 'Relay submission completed' }));
-    statusMessage.value = `Relay submission completed${result?.txid ? `: ${result.txid}` : '.'}`;
+    await appendActivity(createActivityEvent({ type: 'broadcast_relay', actor: 'relay', detail: result?.txid || t('sharedDraft.relaySubmissionCompleted', 'Relay submission completed') }));
+    statusMessage.value = `${t('sharedDraft.relaySubmissionCompleted', 'Relay submission completed')}${result?.txid ? `: ${result.txid}` : '.'}`;
     await persistSubmissionReceipt(setSubmissionResult('relay-submit', {
       phase: 'success',
-      detail: 'Relay submission completed.',
+      detail: t('sharedDraft.relaySubmissionCompleted', 'Relay submission completed.'),
       txid: result?.txid || result?.result?.hash || '',
     }));
   } catch (error) {
-    statusMessage.value = error?.message || String(error);
-    await persistSubmissionReceipt(setSubmissionResult('relay-submit', { phase: 'error', detail: statusMessage.value }));
+    toast.error(translateError(error?.message, t));
+    await persistSubmissionReceipt(setSubmissionResult('relay-submit', { phase: 'error', detail: translateError(error?.message, t) || t('sharedDraft.relaySubmitFailed', 'Relay submission failed. Please try again.') }));
   }
 }
 
@@ -716,30 +768,27 @@ function operatorMutationOptions() {
 
 function assertSignatureAccess() {
   if (hasSignatureAccess.value) return;
-  throw new Error('This shared draft is read-only. Open the Collaborator Link to add signatures.');
+  throw new Error(EC.readOnlyDraftError);
 }
 
 function assertOperatorAccess() {
   if (hasOperatorAccess.value) return;
-  throw new Error('Operator access is required to manage relay, broadcast, or link rotation for this shared draft.');
+  throw new Error(EC.operatorAccessRequired);
 }
 
 async function copyShareUrl() {
   if (!shareUrl.value) return;
-  await navigator.clipboard.writeText(shareUrl.value);
-  statusMessage.value = 'Share link copied to clipboard.';
+  if (await copyText(shareUrl.value)) markCopied('shareUrl');
 }
 
 async function copyCollaboratorUrl() {
   if (!collaborationUrl.value) return;
-  await navigator.clipboard.writeText(collaborationUrl.value);
-  statusMessage.value = 'Collaborator link copied to clipboard.';
+  if (await copyText(collaborationUrl.value)) markCopied('collaboratorUrl');
 }
 
 async function copyOperatorUrl() {
   if (!operatorUrl.value) return;
-  await navigator.clipboard.writeText(operatorUrl.value);
-  statusMessage.value = 'Operator link copied to clipboard.';
+  if (await copyText(operatorUrl.value)) markCopied('operatorUrl');
 }
 
 async function rotateCollaboratorLink() {
@@ -747,10 +796,10 @@ async function rotateCollaboratorLink() {
   try {
     assertOperatorAccess();
     draft.value = await draftStore.rotateCollaboratorLink(draft.value.share_slug, operatorMutationOptions());
-    await appendActivity(createActivityEvent({ type: 'collaborator_link_rotated', actor: 'operator', detail: 'Collaborator link rotated' }));
-    statusMessage.value = 'Collaborator link rotated. The previous signer link no longer works.';
+    await appendActivity(createActivityEvent({ type: 'collaborator_link_rotated', actor: 'operator', detail: t('sharedDraft.collaboratorLinkRotated', 'Collaborator link rotated') }));
+    statusMessage.value = t('sharedDraft.collaboratorLinkRotatedDetail', 'Collaborator link rotated. The previous signer link no longer works.');
   } catch (error) {
-    statusMessage.value = error?.message || String(error);
+    toast.error(translateError(error?.message, t));
   }
 }
 
@@ -759,10 +808,10 @@ async function rotateOperatorLink() {
   try {
     assertOperatorAccess();
     draft.value = await draftStore.rotateOperatorLink(draft.value.share_slug, operatorMutationOptions());
-    await appendActivity(createActivityEvent({ type: 'operator_link_rotated', actor: 'operator', detail: 'Operator link rotated' }));
-    statusMessage.value = 'Operator link rotated. The previous operator link no longer works.';
+    await appendActivity(createActivityEvent({ type: 'operator_link_rotated', actor: 'operator', detail: t('sharedDraft.operatorLinkRotated', 'Operator link rotated') }));
+    statusMessage.value = t('sharedDraft.operatorLinkRotatedDetail', 'Operator link rotated. The previous operator link no longer works.');
   } catch (error) {
-    statusMessage.value = error?.message || String(error);
+    toast.error(translateError(error?.message, t));
   }
 }
 

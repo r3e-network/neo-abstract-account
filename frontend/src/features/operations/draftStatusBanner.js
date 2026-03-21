@@ -12,7 +12,21 @@ const EVENT_TO_TONE = {
   broadcast_relay: 'relay',
 };
 
-const EVENT_TO_LABEL = {
+const EVENT_TO_LABEL_KEY = {
+  draft_created: 'operations.eventDraftCreated',
+  did_bound: 'operations.eventDidBound',
+  did_notice_sent: 'operations.eventRecoveryNoticeSent',
+  recovery_requested: 'operations.eventRecoveryRequested',
+  recovery_finalized: 'operations.eventRecoveryFinalized',
+  recovery_cancelled: 'operations.eventRecoveryCancelled',
+  proxy_session_requested: 'operations.eventPrivateSessionRequested',
+  proxy_session_revoked: 'operations.eventPrivateSessionRevoked',
+  relay_preflight: 'operations.eventRelayChecked',
+  broadcast_client: 'operations.eventClientBroadcast',
+  broadcast_relay: 'operations.eventRelaySubmitted',
+};
+
+const EVENT_TO_LABEL_FALLBACK = {
   draft_created: 'Draft Created',
   did_bound: 'DID Bound',
   did_notice_sent: 'Recovery Notice Sent',
@@ -32,23 +46,31 @@ function latestActivity(activity = []) {
   return items.slice().sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))[0] || null;
 }
 
-export function buildDraftStatusBanner({ status = 'draft', activity = [] } = {}) {
+export function buildDraftStatusBanner({ status = 'draft', activity = [], t } = {}) {
+  const translate = (key, fallback) => (t ? t(key, fallback) : fallback);
   const latest = latestActivity(activity);
   if (!latest) {
     return {
       tone: status === 'relayed' ? 'relay' : status === 'broadcasted' ? 'client' : 'draft',
-      title: 'Latest Draft State',
-      label: status === 'relayed' ? 'Relay Submitted' : status === 'broadcasted' ? 'Client Broadcast' : 'Draft Ready',
-      detail: 'No activity recorded yet.',
+      title: translate('operations.latestDraftState', 'Latest Draft State'),
+      label: status === 'relayed'
+        ? translate('operations.eventRelaySubmitted', 'Relay Submitted')
+        : status === 'broadcasted'
+          ? translate('operations.eventClientBroadcast', 'Client Broadcast')
+          : translate('operations.draftReady', 'Draft Ready'),
+      detail: translate('operations.noActivityRecorded', 'No activity recorded yet.'),
       timestamp: '',
     };
   }
 
+  const labelKey = EVENT_TO_LABEL_KEY[latest.type];
+  const labelFallback = EVENT_TO_LABEL_FALLBACK[latest.type] || latest.type || translate('operations.draftUpdateFallback', 'Draft Update');
+
   return {
     tone: EVENT_TO_TONE[latest.type] || 'draft',
-    title: 'Latest Draft State',
-    label: EVENT_TO_LABEL[latest.type] || latest.type || 'Draft Update',
-    detail: latest.detail || 'No details available.',
+    title: translate('operations.latestDraftState', 'Latest Draft State'),
+    label: labelKey ? translate(labelKey, labelFallback) : labelFallback,
+    detail: latest.detail || translate('operations.noDetailsAvailable', 'No details available.'),
     timestamp: latest.createdAt || '',
   };
 }

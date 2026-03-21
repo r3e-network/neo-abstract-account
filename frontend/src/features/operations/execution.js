@@ -2,6 +2,11 @@ import { ethers } from 'ethers';
 import { sanitizeHex } from '../../utils/hex.js';
 import { cloneImmutable } from './helpers.js';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from './shareLinks.js';
+import { EC } from '../../config/errorCodes.js';
+import {
+  buildExecuteUnifiedByAddressInvocation,
+  buildExecuteUserOpInvocation as buildV3ExecuteUserOpInvocation,
+} from './metaTx.js';
 
 function buildPayloadDigest(draftRecord = {}) {
   return ethers.id(JSON.stringify({
@@ -56,22 +61,19 @@ function buildV3UserOperationParam({ operationBody = null, nonce = '0', deadline
 }
 
 function buildExecuteUserOpInvocation({ aaContractHash = '', account = {}, operationBody = null, signerAddress = '', nonce = '0', deadline = '' } = {}) {
-  const contractHash = sanitizeHex(aaContractHash || '');
-  const accountIdHash = sanitizeHex(account.accountIdHash || '');
-  const resolvedDeadline = String(deadline || Math.floor(Date.now() / 1000) + 3600);
-  const userOpParam = buildV3UserOperationParam({ operationBody, nonce, deadline: resolvedDeadline, signatureHex: '' });
-
-  if (!contractHash || !accountIdHash || !userOpParam) {
-    return null;
-  }
-
+  const invocation = buildV3ExecuteUserOpInvocation({
+    aaContractHash,
+    accountIdHash: account.accountIdHash || '',
+    targetContract: operationBody?.targetContract,
+    method: operationBody?.method,
+    methodArgs: Array.isArray(operationBody?.args) ? operationBody.args : [],
+    nonce,
+    deadline: String(deadline || Math.floor(Date.now() / 1000) + 3600),
+    signatureHex: '',
+  });
+  if (!invocation) return null;
   return {
-    scriptHash: contractHash,
-    operation: 'executeUserOp',
-    args: [
-      toHash160Param(accountIdHash),
-      userOpParam,
-    ],
+    ...invocation,
     signers: signerAddress ? [{ account: signerAddress, scopes: 1 }] : [],
   };
 }
@@ -145,16 +147,33 @@ export function buildStagedTransactionBody({
   notes = '',
   createdAt = new Date().toISOString(),
 } = {}) {
-  if (!account.accountIdHash) {
-    throw new Error('V3 account required: accountIdHash is missing. This account may not be registered as a V3 Abstract Account.');
-  }
-
+  const legacyInvocationBase = buildExecuteUnifiedByAddressInvocation({
+    aaContractHash,
+    accountAddressScriptHash: account.accountAddressScriptHash || '',
+    targetContract: operationBody?.targetContract,
+    method: operationBody?.method,
+    methodArgs: Array.isArray(operationBody?.args) ? operationBody.args : [],
+    argsHashHex: '',
+    nonce: '0',
+    deadline: '0',
+    signatureHex: '',
+  });
+  const legacyInvocation = legacyInvocationBase
+    ? {
+        ...legacyInvocationBase,
+        signers: signerAddress ? [{ account: signerAddress, scopes: 1 }] : [],
+      }
+    : null;
   const v3Invocation = buildExecuteUserOpInvocation({
     aaContractHash,
     account,
     operationBody,
     signerAddress,
   });
+  const clientInvocation = v3Invocation || legacyInvocation;
+  if (!clientInvocation) {
+    throw new Error(EC.v3AccountRequired);
+  }
 
   return cloneImmutable({
     version: 1,
@@ -162,8 +181,9 @@ export function buildStagedTransactionBody({
     accountAddressScriptHash: account.accountAddressScriptHash || '',
     accountIdHash: account.accountIdHash || '',
     kind: operationBody?.kind || 'invoke',
-    clientInvocation: v3Invocation,
+    clientInvocation,
     v3Invocation,
+    legacyInvocation,
     rawTransaction: sanitizeHex(rawTransaction || ''),
     notes: String(notes || '').trim(),
     createdAt,
@@ -202,12 +222,12 @@ export function buildDraftApprovalTypedData({ draftRecord, chainId = 894710606 }
 export function buildClientBroadcastRequest({ signerAddress = '', transactionBody = {} } = {}) {
   const invocation = cloneImmutable(transactionBody?.clientInvocation || {});
   if (!invocation.scriptHash || !invocation.operation) {
-    throw new Error('Transaction body does not include a client invocation payload.');
+    throw new Error(EC.clientInvocationMissing);
   }
 
   if (!Array.isArray(invocation.signers) || invocation.signers.length === 0) {
     if (!signerAddress) {
-      throw new Error('A connected Neo wallet signer is required for client broadcast.');
+      throw new Error(EC.signerRequired);
     }
     invocation.signers = [{ account: signerAddress, scopes: 1 }];
   }
@@ -217,7 +237,7 @@ export function buildClientBroadcastRequest({ signerAddress = '', transactionBod
 
 export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMode = 'best', relayRawEnabled = true, transactionBody = {}, signatures = [] } = {}) {
   if (!relayEndpoint) {
-    throw new Error('Relay endpoint is not configured.');
+    throw new Error(EC.relayEndpointMissing);
   }
 
   const rawTransaction = sanitizeHex(
@@ -229,15 +249,15 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
       ? cloneImmutable(transactionBody.paymasterRequest)
       : null;
   const metaInvocation = selectMetaInvocation(transactionBody, signatures);
-  if (rawTransaction && !relayRawEnabled && !metaInvocation) {
-    throw new Error('Raw relay forwarding is not enabled for this deployment.');
+  if (rawTransaction && !relayRawEnabled && relayPayloadMode !== 'meta') {
+    throw new Error(`${EC.rawRelayDisabled}: raw relay forwarding is not enabled`);
   }
   const availableModes = buildRelayPayloadOptions({ runtime: { relayRawEnabled }, transactionBody, signatures });
   const resolvedMode = resolveRelayPayloadMode({ relayPayloadMode, availableModes });
 
   if (resolvedMode === 'raw' && rawTransaction) {
     if (!relayRawEnabled) {
-      throw new Error('Raw relay forwarding is not enabled for this deployment.');
+      throw new Error(`${EC.rawRelayDisabled}: raw relay forwarding is not enabled`);
     }
     return {
       relayEndpoint,
@@ -254,7 +274,7 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
     };
   }
 
-  throw new Error('Transaction body does not include a signed raw transaction or relay-ready invocation.');
+  throw new Error(`${EC.signedTxMissing}: signed raw transaction or meta invocation is required`);
 }
 
 export async function executeBroadcast({
@@ -268,7 +288,7 @@ export async function executeBroadcast({
   relayEndpoint = '',
 } = {}) {
   if (!walletService) {
-    throw new Error('Wallet service is required to broadcast transactions.');
+    throw new Error(EC.walletServiceMissing);
   }
 
   if (mode === 'relay') {

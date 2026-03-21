@@ -1,93 +1,107 @@
 import { buildTransactionExplorerUrl, normalizeTransactionId } from './explorer.js';
 
-const PRESET_LABELS = {
-  invoke: 'Generic Invoke',
-  nep17Transfer: 'NEP-17 Transfer',
-  multisigDraft: 'Multisig Draft',
-  transfer: 'NEP-17 Transfer',
-  multisig: 'Multisig Draft',
-};
-
-function resolveOperationLabel(draft = {}) {
-  const preset = draft?.metadata?.preset;
-  if (preset && PRESET_LABELS[preset]) return PRESET_LABELS[preset];
-
-  const kind = draft?.operation_body?.kind || draft?.transaction_body?.kind || '';
-  if (kind && PRESET_LABELS[kind]) return PRESET_LABELS[kind];
-
-  const method = draft?.operation_body?.method || draft?.transaction_body?.clientInvocation?.operation || '';
-  return method || 'Not staged';
+function resolvePresetLabel(preset, t) {
+  const map = {
+    invoke: () => t('draftSummary.presetInvoke', 'Generic Invoke'),
+    nep17Transfer: () => t('draftSummary.presetNep17', 'NEP-17 Transfer'),
+    multisigDraft: () => t('draftSummary.presetMultisig', 'Multisig Draft'),
+    transfer: () => t('draftSummary.presetNep17', 'NEP-17 Transfer'),
+    multisig: () => t('draftSummary.presetMultisig', 'Multisig Draft'),
+  };
+  return map[preset] ? map[preset]() : null;
 }
 
-function resolveLatestActivity(draft = {}) {
+function resolveOperationLabel(draft = {}, t) {
+  const preset = draft?.metadata?.preset;
+  if (preset) {
+    const label = resolvePresetLabel(preset, t);
+    if (label) return label;
+  }
+
+  const kind = draft?.operation_body?.kind || draft?.transaction_body?.kind || '';
+  if (kind) {
+    const label = resolvePresetLabel(kind, t);
+    if (label) return label;
+  }
+
+  const method = draft?.operation_body?.method || draft?.transaction_body?.clientInvocation?.operation || '';
+  return method || t('draftSummary.notStaged', 'Not staged');
+}
+
+function resolveLatestActivity(draft = {}, t) {
   const items = Array.isArray(draft?.metadata?.activity) ? draft.metadata.activity : [];
-  if (items.length === 0) return 'No activity yet';
+  const noActivity = t('draftSummary.noActivity', 'No activity yet');
+  if (items.length === 0) return noActivity;
   const next = items.slice().sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))[0];
-  return next?.detail || next?.type || 'No activity yet';
+  return next?.detail || next?.type || noActivity;
 }
 
 function looksCopyable(value) {
   return Boolean(String(value || '').trim());
 }
 
-export function buildDraftSummaryItems({ draft = {} } = {}) {
+export function buildDraftSummaryItems({ draft = {}, t } = {}) {
+  const fallbackT = typeof t === 'function' ? t : (_key, fb) => fb;
   const signerRequirements = Array.isArray(draft?.signer_requirements) ? draft.signer_requirements : [];
   const signatures = Array.isArray(draft?.signatures) ? draft.signatures : [];
-  const accountReference = draft?.account?.accountIdHash || draft?.account?.accountAddressScriptHash || 'Not available';
+  const accountReference = draft?.account?.accountIdHash || draft?.account?.accountAddressScriptHash || fallbackT('draftSummary.notAvailable', 'Not available');
 
   return [
     {
-      label: 'Account',
+      label: fallbackT('draftSummary.account', 'Account'),
       value: accountReference,
     },
     {
-      label: 'Operation',
-      value: resolveOperationLabel(draft),
+      label: fallbackT('draftSummary.operation', 'Operation'),
+      value: resolveOperationLabel(draft, fallbackT),
     },
     {
-      label: 'Signers',
-      value: `${signatures.length}/${signerRequirements.length} collected`,
+      label: fallbackT('draftSummary.signers', 'Signers'),
+      value: `${signatures.length}/${signerRequirements.length} ${fallbackT('draftSummary.collected', 'collected')}`,
     },
     {
-      label: 'Relay Mode',
+      label: fallbackT('draftSummary.relayMode', 'Relay Mode'),
       value: draft?.broadcast_mode || 'client',
     },
     {
-      label: 'Latest Activity',
-      value: resolveLatestActivity(draft),
+      label: fallbackT('draftSummary.latestActivity', 'Latest Activity'),
+      value: resolveLatestActivity(draft, fallbackT),
     },
   ];
 }
 
-export function buildDraftSummaryActions({ draft = {}, shareUrl = '', collaboratorUrl = '', operatorUrl = '', explorerBaseUrl = '' } = {}) {
+export function buildDraftSummaryActions({ draft = {}, shareUrl = '', collaboratorUrl = '', operatorUrl = '', explorerBaseUrl = '', t } = {}) {
+  const fallbackT = typeof t === 'function' ? t : (_key, fb) => fb;
   const actions = {};
+  const notAvailable = fallbackT('draftSummary.notAvailable', 'Not available');
   const accountValue = draft?.account?.accountIdHash || draft?.account?.accountAddressScriptHash || '';
-  const latestActivity = resolveLatestActivity(draft);
+  const latestActivity = resolveLatestActivity(draft, fallbackT);
+  const noActivity = fallbackT('draftSummary.noActivity', 'No activity yet');
 
-  if (looksCopyable(accountValue) && accountValue !== 'Not available') {
+  if (looksCopyable(accountValue) && accountValue !== notAvailable) {
     actions.Account = {
-      label: 'Copy Account',
+      label: fallbackT('draftSummary.copyAccount', 'Copy Account'),
       value: accountValue,
     };
   }
 
   if (looksCopyable(shareUrl)) {
     actions['Share URL'] = {
-      label: 'Copy Share URL',
+      label: fallbackT('draftSummary.copyShareUrl', 'Copy Share URL'),
       value: shareUrl,
     };
   }
 
   if (looksCopyable(collaboratorUrl)) {
     actions['Collaborator URL'] = {
-      label: 'Copy Collaborator URL',
+      label: fallbackT('draftSummary.copyCollaboratorUrl', 'Copy Collaborator URL'),
       value: collaboratorUrl,
     };
   }
 
   if (looksCopyable(operatorUrl)) {
     actions['Operator URL'] = {
-      label: 'Copy Operator URL',
+      label: fallbackT('draftSummary.copyOperatorUrl', 'Copy Operator URL'),
       value: operatorUrl,
     };
   }
@@ -96,12 +110,12 @@ export function buildDraftSummaryActions({ draft = {}, shareUrl = '', collaborat
   if (latestActivityTxid && explorerBaseUrl) {
     actions['Latest Activity'] = {
       id: 'open-url',
-      label: 'View Explorer',
+      label: fallbackT('draftSummary.viewExplorer', 'View Explorer'),
       url: buildTransactionExplorerUrl(explorerBaseUrl, latestActivityTxid),
     };
-  } else if (looksCopyable(latestActivity) && latestActivity !== 'No activity yet') {
+  } else if (looksCopyable(latestActivity) && latestActivity !== noActivity) {
     actions['Latest Activity'] = {
-      label: 'Copy Latest Value',
+      label: fallbackT('draftSummary.copyLatestValue', 'Copy Latest Value'),
       value: latestActivity,
     };
   }

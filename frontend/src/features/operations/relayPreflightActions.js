@@ -10,13 +10,14 @@ export function serializeRelayPreflightStack(stack = []) {
   return JSON.stringify(Array.isArray(stack) ? stack : [], null, 2);
 }
 
-export function buildRelayPreflightExport({ relayCheck = {}, relayRequest = null } = {}) {
+export function buildRelayPreflightExport({ relayCheck = {}, relayRequest = null, t } = {}) {
+  const fallbackT = typeof t === 'function' ? t : (_key, fb) => fb;
   return {
     exportedAt: new Date().toISOString(),
     summary: {
       ok: Boolean(relayCheck.ok),
       level: relayCheck.level || 'idle',
-      label: relayCheck.label || 'Not Checked',
+      label: relayCheck.label || fallbackT('operations.notChecked', 'Not Checked'),
       detail: relayCheck.detail || '',
       payloadMode: relayCheck.payloadMode || 'best',
       vmState: relayCheck.vmState || '',

@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { EC } from '../../config/errorCodes.js';
 import { sanitizeHex } from '../../utils/hex.js';
 
 function decodeBase64ToHex(value) {
@@ -27,7 +28,9 @@ async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl 
 
   const payload = await response.json();
   if (payload.error) {
-    throw new Error(payload.error.message || 'RPC error');
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = payload.error.message || null;
+    throw err;
   }
   return payload.result;
 }
@@ -87,6 +90,44 @@ export function buildV3UserOperationTypedData({
   };
 }
 
+export function buildMetaTransactionTypedData({
+  chainId,
+  verifyingContract,
+  accountAddressScriptHash,
+  targetContract,
+  method,
+  argsHashHex,
+  nonce,
+  deadline,
+}) {
+  return {
+    domain: {
+      name: 'Neo N3 Abstract Account',
+      version: '1',
+      chainId,
+      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
+    },
+    types: {
+      MetaTransaction: [
+        { name: 'accountAddress', type: 'address' },
+        { name: 'targetContract', type: 'address' },
+        { name: 'methodHash', type: 'bytes32' },
+        { name: 'argsHash', type: 'bytes32' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' },
+      ],
+    },
+    message: {
+      accountAddress: `0x${sanitizeHex(accountAddressScriptHash)}`,
+      targetContract: `0x${sanitizeHex(targetContract)}`,
+      methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method || ''))),
+      argsHash: `0x${sanitizeHex(argsHashHex)}`,
+      nonce: String(nonce),
+      deadline: String(deadline),
+    },
+  };
+}
+
 export async function computeArgsHash({ rpcUrl, aaContractHash, args = [], fetchImpl } = {}) {
   const result = await invokeRead({
     rpcUrl,
@@ -97,12 +138,14 @@ export async function computeArgsHash({ rpcUrl, aaContractHash, args = [], fetch
   });
 
   if (result?.state === 'FAULT') {
-    throw new Error(`computeArgsHash fault: ${result.exception || 'VM fault'}`);
+    const err = new Error(EC.metaTxArgsHashFailed);
+    err.rpcDetail = result.exception;
+    throw err;
   }
 
   const decoded = decodeByteStringStackHex(result?.stack?.[0]);
   if (!decoded) {
-    throw new Error('computeArgsHash returned an empty result');
+    throw new Error(EC.metaTxArgsHashFailed);
   }
   return decoded;
 }
@@ -126,7 +169,36 @@ export async function fetchV3Nonce({
   });
 
   if (result?.state === 'FAULT') {
-    throw new Error(`getNonce fault: ${result.exception || 'VM fault'}`);
+    const err = new Error(EC.metaTxNonceFailed);
+    err.rpcDetail = result.exception;
+    throw err;
+  }
+
+  return decodeIntegerStack(result?.stack?.[0]);
+}
+
+export async function fetchNonceForAddress({
+  rpcUrl,
+  aaContractHash,
+  accountAddressScriptHash,
+  evmSignerAddress,
+  fetchImpl,
+} = {}) {
+  const result = await invokeRead({
+    rpcUrl,
+    scriptHash: sanitizeHex(aaContractHash),
+    operation: 'getNonceForAccount',
+    args: [
+      { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
+      { type: 'String', value: String(evmSignerAddress || '') },
+    ],
+    fetchImpl,
+  });
+
+  if (result?.state === 'FAULT') {
+    const err = new Error(EC.metaTxNonceFailed);
+    err.rpcDetail = result.exception;
+    throw err;
   }
 
   return decodeIntegerStack(result?.stack?.[0]);
@@ -149,7 +221,9 @@ export async function fetchV3Verifier({
   });
 
   if (result?.state === 'FAULT') {
-    throw new Error(`getVerifier fault: ${result.exception || 'VM fault'}`);
+    const err = new Error(EC.metaTxVerifierFailed);
+    err.rpcDetail = result.exception;
+    throw err;
   }
 
   return decodeHash160Stack(result?.stack?.[0]);
@@ -172,7 +246,9 @@ export async function assertV3AccountExists({
   });
 
   if (result?.state === 'FAULT') {
-    throw new Error(`getBackupOwner fault: ${result.exception || 'VM fault'}`);
+    const err = new Error(EC.metaTxBackupOwnerFailed);
+    err.rpcDetail = result.exception;
+    throw err;
   }
 
   return decodeHash160Stack(result?.stack?.[0]);
@@ -188,22 +264,58 @@ export function buildExecuteUserOpInvocation({
   deadline,
   signatureHex = '',
 } = {}) {
+  const normalizedContractHash = sanitizeHex(aaContractHash);
+  const normalizedAccountIdHash = sanitizeHex(accountIdHash);
+  const normalizedTargetContract = sanitizeHex(targetContract);
+  const normalizedMethod = String(method || '').trim();
+  if (!normalizedContractHash || !normalizedAccountIdHash || !normalizedTargetContract || !normalizedMethod) {
+    return null;
+  }
   return {
-    scriptHash: sanitizeHex(aaContractHash),
+    scriptHash: normalizedContractHash,
     operation: 'executeUserOp',
     args: [
-      { type: 'Hash160', value: `0x${sanitizeHex(accountIdHash)}` },
+      { type: 'Hash160', value: `0x${normalizedAccountIdHash}` },
       {
         type: 'Struct',
         value: [
-          { type: 'Hash160', value: `0x${sanitizeHex(targetContract)}` },
-          { type: 'String', value: String(method || '') },
+          { type: 'Hash160', value: `0x${normalizedTargetContract}` },
+          { type: 'String', value: normalizedMethod },
           { type: 'Array', value: methodArgs },
           { type: 'Integer', value: String(nonce) },
           { type: 'Integer', value: String(deadline) },
           { type: 'ByteArray', value: `0x${sanitizeHex(signatureHex)}` },
         ],
       },
+    ],
+  };
+}
+
+export function buildExecuteUnifiedByAddressInvocation({
+  aaContractHash,
+  accountAddressScriptHash,
+  evmPublicKeyHex = '',
+  targetContract,
+  method,
+  methodArgs = [],
+  argsHashHex = '',
+  nonce = 0n,
+  deadline = 0n,
+  signatureHex = '',
+} = {}) {
+  return {
+    scriptHash: sanitizeHex(aaContractHash),
+    operation: 'executeUnifiedByAddress',
+    args: [
+      { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
+      { type: 'Hash160', value: `0x${sanitizeHex(targetContract)}` },
+      { type: 'String', value: String(method || '') },
+      { type: 'Array', value: methodArgs },
+      { type: 'Array', value: sanitizeHex(evmPublicKeyHex) ? [{ type: 'ByteArray', value: `0x${sanitizeHex(evmPublicKeyHex)}` }] : [] },
+      { type: 'ByteArray', value: `0x${sanitizeHex(argsHashHex)}` },
+      { type: 'Integer', value: String(nonce) },
+      { type: 'Integer', value: String(deadline) },
+      { type: 'Array', value: sanitizeHex(signatureHex) ? [{ type: 'ByteArray', value: `0x${sanitizeHex(signatureHex)}` }] : [] },
     ],
   };
 }

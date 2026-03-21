@@ -12,6 +12,7 @@ function resolvePath(action) {
   if (normalized === 'bind') return { path: '/neodid/bind', method: 'POST' };
   if (normalized === 'action-ticket') return { path: '/neodid/action-ticket', method: 'POST' };
   if (normalized === 'recovery-ticket') return { path: '/neodid/recovery-ticket', method: 'POST' };
+  if (normalized === 'zklogin-ticket') return { path: '/neodid/zklogin-ticket', method: 'POST' };
   return null;
 }
 

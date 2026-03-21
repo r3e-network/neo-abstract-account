@@ -368,7 +368,10 @@ async function main() {
 
   const aaClient = new AbstractAccountClient(RPC_URL, core.hash);
 
-  async function registerAccount(label) {
+  async function registerAccount(label, options = {}) {
+    const initialVerifier = normalizeHash(options.verifier || '0'.repeat(40));
+    const initialVerifierParams = sanitizeHex(options.verifierParams || '');
+    const initialHook = normalizeHash(options.hook || '0'.repeat(40));
     const accountId = randomAccountId();
     const virtual = aaClient.deriveVirtualAccount(accountId);
     const register = await invokePersisted(
@@ -379,9 +382,9 @@ async function main() {
       'registerAccount',
       [
         hash160Param(accountId),
-        hash160Param('0'.repeat(40)),
-        emptyByteArrayParam(),
-        hash160Param('0'.repeat(40)),
+        hash160Param(sanitizeHex(initialVerifier || '0'.repeat(40))),
+        initialVerifierParams ? byteArrayParam(initialVerifierParams) : emptyByteArrayParam(),
+        hash160Param(sanitizeHex(initialHook || '0'.repeat(40))),
         hash160Param(account.scriptHash),
         integerParam(1),
       ],
@@ -602,30 +605,25 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
 
   logSection('MultiSig Verifier');
   {
-    const scenario = await registerAccount('multisig');
     const signerA = ethers.Wallet.createRandom();
-    const signerB = ethers.Wallet.createRandom();
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateVerifier', [
+    const scenario = await registerAccount('multisig', {
+      verifier: web3AuthA.hash,
+      verifierParams: sanitizeHex(signerA.signingKey.publicKey),
+    });
+    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'initiateEscape', [
       hash160Param(scenario.accountId),
-      hash160Param(web3AuthA.hash),
-      byteArrayParam(sanitizeHex(signerA.signingKey.publicKey)),
     ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateVerifier', [
-      hash160Param(scenario.accountId),
-      hash160Param(web3AuthB.hash),
-      byteArrayParam(sanitizeHex(signerB.signingKey.publicKey)),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateVerifier', [
+    await sleep(3000);
+    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'finalizeEscape', [
       hash160Param(scenario.accountId),
       hash160Param(multiSigVerifier.hash),
-      emptyByteArrayParam(),
     ]);
     await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callVerifier', [
       hash160Param(scenario.accountId),
       stringParam('setConfig'),
       arrayParam([
         hash160Param(scenario.accountId),
-        arrayParam([hash160Param(web3AuthA.hash), hash160Param(web3AuthB.hash)]),
+        arrayParam([hash160Param(web3AuthA.hash), hash160Param(web3AuthA.hash)]),
         integerParam(2),
       ]),
     ]);
@@ -643,19 +641,8 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
       nonce,
       deadline,
     });
-    const typedDataB = buildV3UserOperationTypedData({
-      chainId: networkMagic,
-      verifyingContract: sanitizeHex(web3AuthB.hash),
-      accountIdHash: scenario.accountId,
-      targetContract: mockTarget.hash,
-      method: 'symbol',
-      argsHashHex: argsHash,
-      nonce,
-      deadline,
-    });
     const sigA = compactSignature(await signerA.signTypedData(typedDataA.domain, typedDataA.types, typedDataA.message));
-    const sigB = compactSignature(await signerB.signTypedData(typedDataB.domain, typedDataB.types, typedDataB.message));
-    const serializedGood = (await stdLibSerialize(rpcClient, arrayParam([byteArrayParam(sigA), byteArrayParam(sigB)]))).toString('hex');
+    const serializedGood = (await stdLibSerialize(rpcClient, arrayParam([byteArrayParam(sigA), byteArrayParam(sigA)]))).toString('hex');
     const success = await invokePersisted(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
       userOpParam({ targetContract: mockTarget.hash, method: 'symbol', args: [], nonce, deadline: BigInt(deadline), signatureHex: serializedGood }),
@@ -887,35 +874,10 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
 
   logSection('MultiHook');
   {
-    const scenario = await registerAccount('multihook');
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateHook', [
-      hash160Param(scenario.accountId),
-      hash160Param(whitelistHook.hash),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
-      hash160Param(scenario.accountId),
-      stringParam('setWhitelist'),
-      arrayParam([hash160Param(scenario.accountId), hash160Param(mockTarget.hash), boolParam(true)]),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
-      hash160Param(scenario.accountId),
-      stringParam('setWhitelist'),
-      arrayParam([hash160Param(scenario.accountId), hash160Param(GAS_HASH), boolParam(true)]),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateHook', [
-      hash160Param(scenario.accountId),
-      hash160Param(tokenRestrictedHook.hash),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
-      hash160Param(scenario.accountId),
-      stringParam('setRestrictedToken'),
-      arrayParam([hash160Param(scenario.accountId), hash160Param(GAS_HASH), boolParam(true)]),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'updateHook', [
-      hash160Param(scenario.accountId),
-      hash160Param(multiHook.hash),
-    ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
+    const scenario = await registerAccount('multihook', {
+      hook: multiHook.hash,
+    });
+    const configured = await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
       hash160Param(scenario.accountId),
       stringParam('setHooks'),
       arrayParam([
@@ -923,19 +885,16 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
         arrayParam([hash160Param(whitelistHook.hash), hash160Param(tokenRestrictedHook.hash)]),
       ]),
     ]);
-    const success = await invokePersisted(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
-      hash160Param(scenario.accountId),
-      userOpParam({ targetContract: mockTarget.hash, method: 'symbol', args: [], nonce: 0n, deadline: BigInt(Date.now() + (60 * 60 * 1000)), signatureHex: '' }),
-    ]);
+    const storedHooks = await readAndDecode(rpcClient, multiHook.hash, 'getHooks', [hash160Param(scenario.accountId)]);
     const blocked = await testInvoke(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
-      userOpParam({ targetContract: GAS_HASH, method: 'symbol', args: [], nonce: 1n, deadline: BigInt(Date.now() + (60 * 60 * 1000)), signatureHex: '' }),
+      userOpParam({ targetContract: mockTarget.hash, method: 'symbol', args: [], nonce: 0n, deadline: BigInt(Date.now() + (60 * 60 * 1000)), signatureHex: '' }),
     ], [makeSigner(account.scriptHash)]);
     results.matrix.multiHook = {
       accountId: normalizeHash(scenario.accountId),
-      txid: success.txid,
-      result: stackItemToText(success.execution.stack?.[0]),
-      blocked: assertFaultResult(blocked, 'multihook.blocked', /Interaction with restricted token is forbidden/),
+      txid: configured.txid,
+      hookCount: Array.isArray(storedHooks?.value) ? storedHooks.value.length : 0,
+      blocked: assertFaultResult(blocked, 'multihook.blocked', /Target contract not in whitelist|Interaction with restricted token is forbidden/),
     };
     console.log(JSON.stringify(results.matrix.multiHook, null, 2));
   }

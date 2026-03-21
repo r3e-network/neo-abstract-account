@@ -15,7 +15,8 @@ function decodeUtf8(bytes) {
   try {
     const decoder = new TextDecoder('utf-8', { fatal: false });
     return decoder.decode(bytes);
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[relayStackFormatter] TextDecoder failed:', err?.message);
     return '';
   }
 }

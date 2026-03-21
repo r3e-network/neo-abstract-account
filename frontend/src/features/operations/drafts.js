@@ -4,6 +4,13 @@ import { buildDraftCollaborationPath, buildDraftSharePath } from './shareLinks.j
 import { appendSignatureEntries } from './signatures.js';
 import { appendActivityEntries } from './activity.js';
 import { appendSubmissionReceiptEntries } from './submissionReceipts.js';
+import { EC } from '../../config/errorCodes.js';
+
+function createScopedError(code, message) {
+  const error = new Error(`${code}: ${message}`);
+  error.code = code;
+  return error;
+}
 
 export const DRAFTS_TABLE = 'aa_transaction_drafts';
 export const LOCAL_DRAFTS_STORAGE_KEY = 'aa_transaction_drafts_local_v1';
@@ -43,27 +50,30 @@ function unwrapRpcResult(data) {
 }
 
 function normalizeDraftStoreError(error) {
-  const message = String(error?.message || error || 'Draft request failed.');
+  const message = String(error?.message || error || '');
   if (/draft_operator_access_required/i.test(message)) {
-    return new Error('Operator access is required to manage or broadcast this shared draft.');
+    return new Error(EC.operatorAccessRequired);
   }
   if (/draft_collaboration_access_required/i.test(message)) {
-    return new Error('Collaborator access is required to sign or annotate this shared draft.');
+    return new Error(EC.collaboratorAccessRequired);
   }
   if (/draft_not_found/i.test(message)) {
-    return new Error('Draft not found.');
+    return new Error(EC.draftNotFound);
   }
   if (/draft_activity_scope_not_allowed/i.test(message)) {
-    return new Error('This link cannot record that activity type on the shared draft.');
+    return new Error(EC.activityScopeDenied);
   }
-  return error instanceof Error ? error : new Error(message);
+  const err = new Error(EC.draftRequestFailed);
+  err.apiDetail = message || null;
+  return err;
 }
 
 function getBrowserStorage(storage) {
   if (storage) return storage;
   try {
     return globalThis.localStorage || null;
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[drafts] localStorage access denied:', err?.message);
     return null;
   }
 }
@@ -71,7 +81,7 @@ function getBrowserStorage(storage) {
 function readLocalDraftMap(storage) {
   const backend = getBrowserStorage(storage);
   if (!backend) {
-    throw new Error('Draft storage is not available in this environment.');
+    throw new Error(EC.draftStorageUnavailable);
   }
 
   const raw = backend.getItem(LOCAL_DRAFTS_STORAGE_KEY);
@@ -80,7 +90,8 @@ function readLocalDraftMap(storage) {
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[drafts] Malformed draft JSON:', err?.message);
     return {};
   }
 }
@@ -88,7 +99,7 @@ function readLocalDraftMap(storage) {
 function writeLocalDraftMap(storage, value) {
   const backend = getBrowserStorage(storage);
   if (!backend) {
-    throw new Error('Draft storage is not available in this environment.');
+    throw new Error(EC.draftStorageUnavailable);
   }
   backend.setItem(LOCAL_DRAFTS_STORAGE_KEY, JSON.stringify(value));
 }
@@ -172,7 +183,7 @@ function requireLocalCollaboratorAccess(record, options = {}) {
   if (accessScope === 'sign' || accessScope === 'operate') {
     return { accessSlug, accessScope };
   }
-  throw new Error('Collaborator access is required to sign or annotate this shared draft.');
+  throw createScopedError(EC.collaboratorAccessRequired, 'collaborator access required');
 }
 
 function requireLocalOperatorAccess(record, options = {}) {
@@ -180,7 +191,7 @@ function requireLocalOperatorAccess(record, options = {}) {
   if (accessScope === 'operate') {
     return accessSlug;
   }
-  throw new Error('Operator access is required to manage or broadcast this shared draft.');
+  throw createScopedError(EC.operatorAccessRequired, 'operator access required');
 }
 
 function sanitizeDraftActivityEvent(event = {}, { accessScope = 'read' } = {}) {
@@ -188,7 +199,7 @@ function sanitizeDraftActivityEvent(event = {}, { accessScope = 'read' } = {}) {
   const type = String(nextEvent?.type || '').trim();
 
   if (!type) {
-    throw new Error('This link cannot record that activity type on the shared draft.');
+    throw createScopedError(EC.activityScopeDenied, 'cannot record that activity');
   }
 
   const allowedTypes = accessScope === 'operate'
@@ -198,7 +209,7 @@ function sanitizeDraftActivityEvent(event = {}, { accessScope = 'read' } = {}) {
       : null;
 
   if (!allowedTypes || !allowedTypes.has(type)) {
-    throw new Error('This link cannot record that activity type on the shared draft.');
+    throw createScopedError(EC.activityScopeDenied, 'cannot record that activity');
   }
 
   return nextEvent;
@@ -217,7 +228,7 @@ function mergeDraftMetadata(record, metadataPatch = {}) {
 function createLocalDraftStore(storage) {
   const runOperatorMutation = async ({ shareSlug, accessSlug, mutation, payload }) => {
     if (!operatorMutationTransport?.run) {
-      throw new Error('Signed operator mutations are not configured for this deployment.');
+      throw new Error(EC.operatorMutationsUnavailable);
     }
     return operatorMutationTransport.run({ shareSlug, accessSlug, mutation, payload });
   };
@@ -234,7 +245,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       return withDraftAccess(record, options);
     },
@@ -242,7 +253,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       const { accessSlug } = requireLocalCollaboratorAccess(record, options);
       const next = appendSignatureRecord(record, signature);
@@ -254,7 +265,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       const accessSlug = requireLocalOperatorAccess(record, options);
       const next = {
@@ -269,7 +280,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       const accessSlug = requireLocalOperatorAccess(record, options);
       const next = mergeDraftMetadata(record, { relayPreflight: cloneImmutable(relayPreflight || null) });
@@ -281,7 +292,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       const { accessSlug, accessScope } = requireLocalCollaboratorAccess(record, options);
       const next = mergeDraftMetadata(record, {
@@ -298,7 +309,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       const accessSlug = requireLocalOperatorAccess(record, options);
       const next = mergeDraftMetadata(record, {
@@ -312,7 +323,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       const accessSlug = requireLocalOperatorAccess(record, options);
       const nextCollaboration = nextScopedSlug(record.share_slug, record.collaboration_slug, record.operator_slug);
@@ -329,7 +340,7 @@ function createLocalDraftStore(storage) {
       const current = readLocalDraftMap(storage);
       const record = current[shareSlug];
       if (!record) {
-        throw new Error('Draft not found in local storage.');
+        throw new Error(EC.draftNotFound);
       }
       requireLocalOperatorAccess(record, options);
       const nextOperator = nextScopedSlug(record.share_slug, record.operator_slug, record.collaboration_slug);
@@ -394,7 +405,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
 
   async function runOperatorMutation({ shareSlug, accessSlug, mutation, payload }) {
     if (!operatorMutationTransport?.run) {
-      throw new Error('Signed operator mutations are not configured for this deployment.');
+      throw new Error(EC.operatorMutationsUnavailable);
     }
     return operatorMutationTransport.run({ shareSlug, accessSlug, mutation, payload });
   }
@@ -406,7 +417,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
         const { data, error } = await supabase.rpc('create_aa_draft', {
           p_payload: payload,
         });
-        if (error) throw error;
+        if (error) throw normalizeDraftStoreError(error);
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -418,7 +429,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
           p_share_slug: shareSlug,
           p_access_slug: resolveAccessSlug(options) || null,
         });
-        if (error) throw error;
+        if (error) throw normalizeDraftStoreError(error);
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -427,7 +438,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async appendSignature(shareSlug, signature, options = {}) {
       const accessSlug = resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Collaborator access is required to sign or annotate this shared draft.');
+        throw new Error(EC.collaboratorAccessRequired);
       }
       try {
         const { data, error } = await supabase.rpc('append_aa_draft_signature', {
@@ -435,7 +446,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
           p_access_slug: accessSlug,
           p_signature: cloneImmutable(signature),
         });
-        if (error) throw error;
+        if (error) throw normalizeDraftStoreError(error);
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -444,7 +455,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async updateStatus(shareSlug, status, options = {}) {
       const accessSlug = resolveOperatorSlug(options) || resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Operator access is required to manage or broadcast this shared draft.');
+        throw new Error(EC.operatorAccessRequired);
       }
       try {
         return await runOperatorMutation({
@@ -460,7 +471,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async setRelayPreflight(shareSlug, relayPreflight, options = {}) {
       const accessSlug = resolveOperatorSlug(options) || resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Operator access is required to manage or broadcast this shared draft.');
+        throw new Error(EC.operatorAccessRequired);
       }
       try {
         return await runOperatorMutation({
@@ -476,7 +487,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async appendActivity(shareSlug, event, options = {}) {
       const accessSlug = resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Collaborator access is required to sign or annotate this shared draft.');
+        throw new Error(EC.collaboratorAccessRequired);
       }
       const accessScope = resolveOperatorSlug(options) ? 'operate' : resolveCollaborationSlug(options) ? 'sign' : 'read';
       try {
@@ -494,7 +505,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
           p_access_slug: accessSlug,
           p_event: nextEvent,
         });
-        if (error) throw error;
+        if (error) throw normalizeDraftStoreError(error);
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -503,7 +514,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async appendSubmissionReceipt(shareSlug, receipt, options = {}) {
       const accessSlug = resolveOperatorSlug(options) || resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Operator access is required to manage or broadcast this shared draft.');
+        throw new Error(EC.operatorAccessRequired);
       }
       try {
         return await runOperatorMutation({
@@ -519,7 +530,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async rotateCollaboratorLink(shareSlug, options = {}) {
       const accessSlug = resolveOperatorSlug(options) || resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Operator access is required to manage or broadcast this shared draft.');
+        throw new Error(EC.operatorAccessRequired);
       }
       try {
         return await runOperatorMutation({
@@ -535,7 +546,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
     async rotateOperatorLink(shareSlug, options = {}) {
       const accessSlug = resolveOperatorSlug(options) || resolveAccessSlug(options);
       if (!accessSlug) {
-        throw new Error('Operator access is required to manage or broadcast this shared draft.');
+        throw new Error(EC.operatorAccessRequired);
       }
       try {
         return await runOperatorMutation({

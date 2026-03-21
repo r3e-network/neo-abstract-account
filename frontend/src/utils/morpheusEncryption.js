@@ -1,3 +1,5 @@
+import { EC } from '../config/errorCodes.js';
+
 const ENVELOPE_VERSION = 2;
 const ENVELOPE_ALGORITHM = 'X25519-HKDF-SHA256-AES-256-GCM';
 const ENVELOPE_INFO = 'morpheus-confidential-payload-v2';
@@ -66,7 +68,7 @@ async function deriveAesKey(sharedSecret, senderPublicKey, recipientPublicKey) {
 export async function encryptJsonWithMorpheusOracleKey(publicKeyBase64, jsonText) {
   const parsed = JSON.parse(jsonText);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('confidential payload must be a JSON object');
+    throw new Error(EC.confidentialPayloadInvalid);
   }
 
   const plaintext = JSON.stringify(parsed);

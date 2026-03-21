@@ -38,7 +38,7 @@ export function resolveLatestSubmissionReceiptEntry(entries = []) {
 
 export function buildSubmissionReceiptHistoryItems(
   entries = [],
-  { explorerBaseUrl = '', limit = 4, now = new Date(), useUtc = false } = {},
+  { explorerBaseUrl = '', limit = 4, now = new Date(), useUtc = false, t } = {},
 ) {
   return (Array.isArray(entries) ? entries : [])
     .slice()
@@ -48,13 +48,14 @@ export function buildSubmissionReceiptHistoryItems(
       const normalized = createSubmissionReceiptEntry(entry);
       return {
         ...normalized,
-        createdLabel: `${formatActivityDateLabel(normalized.createdAt, { now, useUtc })} · ${formatActivityTimeLabel(normalized.createdAt, { useUtc })}`,
+        createdLabel: `${formatActivityDateLabel(normalized.createdAt, { now, useUtc, t })} · ${formatActivityTimeLabel(normalized.createdAt, { useUtc, t })}`,
         ...buildSubmissionReceipt({
           action: normalized.action,
           phase: normalized.phase,
           detail: normalized.detail,
           txid: normalized.txid,
           explorerBaseUrl,
+          t,
         }),
       };
     });

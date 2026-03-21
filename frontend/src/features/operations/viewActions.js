@@ -44,6 +44,7 @@ export async function runDraftSummaryAction(
     clipboard = globalThis.navigator?.clipboard,
     windowRef = globalThis.window,
     setStatus,
+    t,
   } = {},
 ) {
   if (!action) return false;
@@ -51,7 +52,7 @@ export async function runDraftSummaryAction(
   if (action.id === 'open-url' && action.url) {
     const opened = openExternalUrl(action.url, { windowRef });
     if (!opened) return false;
-    setStatus?.('Opened explorer link.');
+    setStatus?.(t ? t('operations.openedExplorerLink', 'Opened explorer link.') : 'Opened explorer link.');
     return true;
   }
 
@@ -59,7 +60,7 @@ export async function runDraftSummaryAction(
   const copied = await copyTextToClipboard(action.value, { clipboard });
   if (!copied) return false;
 
-  setStatus?.(`${action.label} copied to clipboard.`);
+  setStatus?.(t ? `${action.label} ${t('operations.copiedToClipboard', 'copied to clipboard.')}` : `${action.label} copied to clipboard.`);
   return true;
 }
 
@@ -70,6 +71,7 @@ export async function runDraftActivityAction(
     documentRef = globalThis.document,
     windowRef = globalThis.window,
     setStatus,
+    t,
   } = {},
 ) {
   if (!action) return false;
@@ -77,28 +79,28 @@ export async function runDraftActivityAction(
   if (action.id === 'copy-share' && action.value) {
     const copied = await copyTextToClipboard(action.value, { clipboard });
     if (!copied) return false;
-    setStatus?.('Share link copied to clipboard.');
+    setStatus?.(t ? t('operations.shareLinkCopied', 'Share link copied to clipboard.') : 'Share link copied to clipboard.');
     return true;
   }
 
   if (action.id === 'copy-txid' && action.value) {
     const copied = await copyTextToClipboard(action.value, { clipboard });
     if (!copied) return false;
-    setStatus?.('Transaction ID copied to clipboard.');
+    setStatus?.(t ? t('operations.txidCopied', 'Transaction ID copied to clipboard.') : 'Transaction ID copied to clipboard.');
     return true;
   }
 
   if (action.id === 'open-url' && action.url) {
     const opened = openExternalUrl(action.url, { windowRef });
     if (!opened) return false;
-    setStatus?.('Opened explorer link.');
+    setStatus?.(t ? t('operations.openedExplorerLink', 'Opened explorer link.') : 'Opened explorer link.');
     return true;
   }
 
   if (action.id === 'jump-relay' && action.targetId) {
     const target = documentRef?.getElementById?.(action.targetId);
     target?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    setStatus?.('Jumped to relay preflight.');
+    setStatus?.(t ? t('operations.jumpedToRelay', 'Jumped to relay preflight.') : 'Jumped to relay preflight.');
     return true;
   }
 
@@ -109,6 +111,7 @@ export function createDraftInteractionHandlers({
   getRelayCheck,
   getRelayRequest,
   setStatus,
+  t,
   clipboard = globalThis.navigator?.clipboard,
   documentRef = globalThis.document,
   urlApi = globalThis.URL,
@@ -119,7 +122,7 @@ export function createDraftInteractionHandlers({
       const payload = serializeRelayPreflightPayload(getRelayRequest?.());
       const copied = await copyTextToClipboard(payload, { clipboard });
       if (!copied) return false;
-      setStatus?.('Relay payload copied to clipboard.');
+      setStatus?.(t ? t('operations.relayPayloadCopied', 'Relay payload copied to clipboard.') : 'Relay payload copied to clipboard.');
       return true;
     },
     async copyRelayStack() {
@@ -128,7 +131,7 @@ export function createDraftInteractionHandlers({
       const stack = serializeRelayPreflightStack(stackItems);
       const copied = await copyTextToClipboard(stack, { clipboard });
       if (!copied) return false;
-      setStatus?.('Decoded relay stack copied to clipboard.');
+      setStatus?.(t ? t('operations.relayStackCopied', 'Decoded relay stack copied to clipboard.') : 'Decoded relay stack copied to clipboard.');
       return true;
     },
     exportRelayPreflight() {
@@ -146,14 +149,14 @@ export function createDraftInteractionHandlers({
         urlApi,
       });
       if (!exported) return false;
-      setStatus?.('Relay preflight JSON exported.');
+      setStatus?.(t ? t('operations.relayPreflightExported', 'Relay preflight JSON exported.') : 'Relay preflight JSON exported.');
       return true;
     },
     async handleSummaryAction({ action } = {}) {
-      return runDraftSummaryAction(action, { clipboard, windowRef, setStatus });
+      return runDraftSummaryAction(action, { clipboard, windowRef, setStatus, t });
     },
     async handleActivityAction({ action } = {}) {
-      return runDraftActivityAction(action, { clipboard, documentRef, windowRef, setStatus });
+      return runDraftActivityAction(action, { clipboard, documentRef, windowRef, setStatus, t });
     },
   };
 }

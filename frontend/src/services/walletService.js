@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { connectedAccount, setConnectedAccount } from '@/utils/wallet';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { EC } from '../config/errorCodes.js';
 
 export function getAbstractAccountHash() {
   return RUNTIME_CONFIG.abstractAccountHash;
@@ -135,13 +136,13 @@ class WalletService {
   async connect() {
     const provider = this.getConnectProvider();
     if (!provider) {
-      throw new Error('No supported Neo wallet provider detected in browser.');
+      throw new Error(EC.walletProviderMissing);
     }
 
     const result = await provider.getAccount();
     const address = result?.address || result?.account?.address || '';
     if (!address) {
-      throw new Error('Wallet did not return an account address.');
+      throw new Error(EC.walletAddressMissing);
     }
 
     this.setConnected(address);
@@ -163,7 +164,7 @@ class WalletService {
   async connectEvm() {
     const provider = this.getEvmProvider();
     if (!provider) {
-      throw new Error('No EVM wallet provider detected in browser.');
+      throw new Error(EC.evmProviderMissing);
     }
 
     const browserProvider = new ethers.BrowserProvider(provider);
@@ -176,7 +177,7 @@ class WalletService {
   async signTypedDataWithEvm({ domain, types, message }) {
     const provider = this.getEvmProvider();
     if (!provider) {
-      throw new Error('No EVM wallet provider detected in browser.');
+      throw new Error(EC.evmProviderMissing);
     }
 
     const browserProvider = new ethers.BrowserProvider(provider);
@@ -194,19 +195,21 @@ class WalletService {
     });
     const responsePayload = await response.json();
     if (!response.ok || responsePayload?.error) {
-      throw new Error(responsePayload?.message || responsePayload?.error || 'Relay submission failed.');
+      const err = new Error(EC.walletRequestFailed);
+      err.rpcDetail = responsePayload?.message || responsePayload?.error || null;
+      throw err;
     }
     return responsePayload;
   }
 
   async invokeMultiple({ invokeArgs = [], signers = [] } = {}) {
     if (!this.isConnected) {
-      throw new Error('Wallet not connected. Connect a Neo wallet integration first.');
+      throw new Error(EC.walletNotConnected);
     }
 
     const provider = this.getBatchInvokeProvider();
     if (!provider) {
-      throw new Error('Connected Neo wallet does not support invokeMultiple for batched transactions.');
+      throw new Error(EC.invokeMultipleUnsupported);
     }
 
     return provider.invokeMultiple({ invokeArgs, signers });
@@ -214,12 +217,12 @@ class WalletService {
 
   async invoke(params) {
     if (!this.isConnected) {
-      throw new Error('Wallet not connected. Connect a Neo wallet integration first.');
+      throw new Error(EC.walletNotConnected);
     }
 
     const provider = this.getInvokeProvider();
     if (!provider) {
-      throw new Error('No browser wallet provider found (neo3Dapi / NEOLine / aaWallet).');
+      throw new Error(EC.walletProviderMissing);
     }
 
     return provider.invoke(params);

@@ -1,149 +1,181 @@
 <template>
-  <section class="bg-biconomy-panel/60 backdrop-blur-xl shadow-[0_0_15px_rgba(0,163,255,0.05)] rounded-lg overflow-hidden border border-biconomy-border p-6 sm:p-8 dark-panel-override">
+  <section class="card">
     <div class="flex items-start justify-between mb-2">
       <div>
-        <h2 class="text-xl font-bold text-white uppercase tracking-widest font-mono">{{ t('studioPanels.createTitle', 'Create Abstract Account') }}</h2>
-        <p class="text-sm text-biconomy-muted mt-1">Register a V3 account with one verifier plugin, one hook plugin, and one backup owner escape hatch.</p>
+        <h2 class="text-lg font-bold text-white">{{ t('studioPanels.createTitle', 'Create Abstract Account') }}</h2>
+        <p class="text-sm text-aa-muted mt-1">{{ t('studioPanels.createSubtitleLong', 'Register a V3 account with one verifier plugin, one hook plugin, and one backup owner escape hatch.') }}</p>
       </div>
-      <div v-if="computedAddress" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-xs font-semibold text-emerald-300">Ready</span>
-      </div>
+      <span v-if="canCreate" class="badge-green">
+        <span class="w-1.5 h-1.5 rounded-full bg-aa-success animate-pulse"></span>
+        {{ t('studioPanels.ready', 'Ready') }}
+      </span>
+      <span v-else-if="computedAddress" class="badge-amber">
+        <span class="w-1.5 h-1.5 rounded-full bg-aa-warning"></span>
+        {{ t('studioPanels.addressDerived', 'Address Derived') }}
+      </span>
     </div>
 
     <div class="space-y-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div>
+        <div class="section-label">{{ t('studioPanels.identitySection', 'Identity') }}</div>
+        <div class="bg-aa-panel rounded-lg border border-aa-border/60 p-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="space-y-2">
-          <label class="flex items-center gap-2 text-sm font-semibold text-biconomy-text">
-            .matrix Domain
-            <span class="text-xs font-normal text-biconomy-muted">(optional)</span>
+          <label for="matrix-domain-input" class="flex items-center gap-2 text-sm font-semibold text-aa-text">
+            {{ t('studioPanels.matrixDomain', '.matrix Domain') }}
+            <span class="text-xs font-normal text-aa-muted">{{ t('studioPanels.optional', '(optional)') }}</span>
           </label>
-          <div class="flex rounded-lg border border-biconomy-border overflow-hidden bg-biconomy-dark focus-within:border-biconomy-orange focus-within:ring-1 focus-within:ring-biconomy-orange transition-all">
-            <input v-model="createForm.matrixDomain" type="text" class="flex-1 bg-transparent py-2.5 px-4 text-sm text-biconomy-text border-none focus:ring-0" placeholder="alice" />
-            <span class="flex items-center px-3 bg-biconomy-panel border-l border-biconomy-border text-biconomy-muted text-sm font-mono select-none">.matrix</span>
-            <button type="button" @click="checkMatrixDomain" class="bg-biconomy-lightOrange/10 hover:bg-biconomy-lightOrange/20 text-biconomy-lightOrange px-4 text-xs font-bold uppercase tracking-wider transition-colors border-l border-biconomy-border" :disabled="!createForm.matrixDomain || matrixCheckResult?.checking">
-              <svg v-if="matrixCheckResult?.checking" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              <span v-else>Check</span>
+          <div class="flex rounded-lg border border-aa-border overflow-hidden bg-aa-dark focus-within:border-aa-orange focus-within:ring-1 focus-within:ring-aa-orange transition-all duration-200">
+            <input id="matrix-domain-input" v-model="createForm.matrixDomain" type="text" class="flex-1 bg-transparent py-2.5 px-4 text-sm text-aa-text border-none focus:ring-0" :placeholder="t('studioPanels.matrixDomainPlaceholder', 'alice')" />
+            <span class="flex items-center px-3 bg-aa-panel border-l border-aa-border text-aa-muted text-sm font-mono select-none">.matrix</span>
+            <button type="button" :aria-label="t('studioPanels.check', 'Check')" @click="checkMatrixDomain" class="bg-aa-lightOrange/10 hover:bg-aa-lightOrange/20 text-aa-lightOrange px-4 text-xs font-bold uppercase tracking-wider transition-colors duration-200 border-l border-aa-border" :class="{ 'btn-loading': matrixCheckResult?.checking }" :disabled="!createForm.matrixDomain || matrixCheckResult?.checking">
+              <svg aria-hidden="true" v-if="matrixCheckResult?.checking" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span v-else>{{ t('studioPanels.check', 'Check') }}</span>
             </button>
           </div>
-          <p class="mt-1 text-xs" :class="matrixCheckResult?.available ? 'text-biconomy-orange' : (matrixCheckResult?.error ? 'text-rose-400' : 'text-biconomy-muted')">
-            {{ matrixCheckResult?.message || 'Register a memorable name in the same transaction.' }}
+          <p class="mt-1 text-xs" :class="matrixCheckResult?.available ? 'text-aa-success' : (matrixCheckResult?.error ? 'text-aa-error-light' : 'text-aa-muted')">
+            {{ matrixCheckResult?.message || t('studioPanels.matrixHint', 'Register a memorable name in the same transaction.') }}
           </p>
         </div>
 
         <div class="space-y-2">
-          <label class="flex items-center gap-2 text-sm font-semibold text-biconomy-text">
-            Virtual Account Address
-            <span v-if="!computedAddress" class="text-xs font-normal text-slate-500">(derives from seed)</span>
+          <label class="flex items-center gap-2 text-sm font-semibold text-aa-text">
+            {{ t('studioPanels.virtualAccountAddress', 'Virtual Account Address') }}
+            <span v-if="!computedAddress" class="text-xs font-normal text-aa-muted">{{ t('studioPanels.derivesFromSeed', '(derives from seed)') }}</span>
           </label>
           <div class="relative">
-            <div v-if="computedAddress" class="w-full bg-biconomy-panel border border-emerald-500/30 rounded-lg py-2.5 px-4 font-mono text-sm text-emerald-300">
-              {{ computedAddress }}
+            <div v-if="computedAddress" class="w-full bg-aa-panel border border-aa-success/30 rounded-lg py-2.5 px-4 font-mono text-sm text-aa-success-light flex items-center">
+              <span class="flex-1 break-all">{{ computedAddress }}</span>
+              <button :aria-label="t('studioPanels.copyAddress', 'Copy address')" @click="copyText(computedAddress); markCopied('computedAddress')" class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0">
+                <svg aria-hidden="true" v-if="copiedKey !== 'computedAddress'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/></svg>
+                <svg aria-hidden="true" v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-aa-success" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              </button>
             </div>
-            <div v-else class="w-full bg-biconomy-dark/50 border border-slate-700/50 rounded-lg py-3 px-4 text-sm text-slate-500 text-center">
-              Enter a seed below to derive address
+            <div v-else class="w-full bg-aa-dark/50 border border-aa-border rounded-lg py-3 px-4 text-sm text-aa-muted text-center">
+              {{ t('studioPanels.enterSeedToDerive', 'Enter a seed below to derive address') }}
             </div>
             <div v-if="computedAddress" class="absolute right-3 top-1/2 -translate-y-1/2">
               <span class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-success opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-aa-success"></span>
               </span>
             </div>
           </div>
         </div>
+        </div>
+        </div>
       </div>
 
-      <details class="rounded-lg border border-biconomy-border bg-biconomy-panel/80 p-4">
-        <summary class="cursor-pointer text-sm font-semibold text-biconomy-muted uppercase tracking-widest font-mono hover:text-white transition-colors flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-          Advanced: Custom Account Seed
+      <details class="rounded-lg border border-aa-border bg-aa-panel/80 p-4">
+        <summary class="cursor-pointer text-sm font-semibold text-aa-muted hover:text-aa-text transition-colors duration-200 flex items-center gap-2">
+          <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+          {{ t('studioPanels.advancedCustomSeed', 'Advanced: Custom Account Seed') }}
         </summary>
         <div class="mt-4 space-y-2">
-          <label class="block text-sm font-semibold text-biconomy-text">Account Seed (UUID)</label>
-          <div class="flex rounded-lg shadow-sm ring-1 ring-ata-border focus-within:ring-2 focus-within:ring-biconomy-orange transition-shadow">
+          <label for="account-seed-input" class="block text-sm font-semibold text-aa-text">{{ t('studioPanels.accountSeedUuid', 'Account Seed (UUID)') }}</label>
+          <div class="flex rounded-lg shadow-sm ring-1 ring-aa-border focus-within:ring-2 focus-within:ring-aa-orange transition-shadow duration-200">
             <input
+              id="account-seed-input"
               v-model="createForm.accountId"
               type="text"
-              class="flex-1 bg-transparent border-0 rounded-l-lg py-2.5 px-4 font-mono text-sm text-biconomy-text focus:ring-0 placeholder:text-slate-600"
+              class="flex-1 bg-transparent border-0 rounded-l-lg py-2.5 px-4 font-mono text-sm text-aa-text focus:ring-0 placeholder:text-aa-muted"
               :readonly="isEvmWallet"
-              placeholder="Auto-generated if left empty"
+              :placeholder="t('studioPanels.autoGeneratedIfEmpty', 'Auto-generated if left empty')"
             />
             <button
               type="button"
-              class="inline-flex items-center gap-2 px-4 py-2.5 border-l border-biconomy-border rounded-r-lg bg-biconomy-panel text-biconomy-muted text-sm font-semibold hover:bg-biconomy-panel/80 disabled:opacity-50 transition-colors"
+              class="inline-flex items-center gap-2 px-4 py-2.5 border-l border-aa-border rounded-r-lg bg-aa-panel text-aa-muted text-sm font-semibold hover:bg-aa-panel/80 disabled:opacity-50 transition-colors duration-200"
               @click="generateUUID"
               :disabled="isEvmWallet"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              Generate
+              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              {{ t('studioPanels.generate', 'Generate') }}
             </button>
           </div>
-          <p class="mt-2 text-xs text-biconomy-muted">The seed derives the virtual account address via hash160. Only the hash160 account id is stored on-chain during V3 registration.</p>
+          <p class="mt-2 text-xs text-aa-muted">{{ t('studioPanels.seedDerivesAddress', 'The seed derives the virtual account address via hash160. Only the hash160 account id is stored on-chain during V3 registration.') }}</p>
         </div>
       </details>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div>
+        <div class="section-label">{{ t('studioPanels.pluginsSection', 'Plugins') }}</div>
+        <div class="bg-aa-panel rounded-lg border border-aa-border/60 p-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-semibold text-biconomy-text mb-1">Verifier Plugin</label>
-            <input v-model="createForm.verifierContract" type="text" class="input-field font-mono text-sm py-2 px-3 bg-biconomy-dark" placeholder="0x... (optional)" />
-            <p class="mt-1 text-xs text-biconomy-muted">Examples: Web3AuthVerifier, TEEVerifier, SessionKeyVerifier.</p>
+            <label for="verifier-contract-input" class="block text-sm font-semibold text-aa-text mb-1">{{ t('studioPanels.verifierPlugin', 'Verifier Plugin') }}</label>
+            <input id="verifier-contract-input" v-model="createForm.verifierContract" type="text" class="input-field font-mono text-sm py-2 px-3 bg-aa-dark" :placeholder="t('studioPanels.verifierContractOptionalPlaceholder', '0x... (optional)')" />
+            <p class="mt-1 text-xs text-aa-muted">{{ t('studioPanels.verifierPluginExamples', 'Examples: Web3AuthVerifier, TEEVerifier, SessionKeyVerifier, ZkLoginVerifier.') }}</p>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-biconomy-text mb-1">Verifier Params (hex)</label>
-            <textarea v-model="createForm.verifierParams" class="input-field font-mono text-xs py-2 px-3 bg-biconomy-dark min-h-24" placeholder="Uncompressed pubkey or verifier-specific config hex."></textarea>
+            <label for="verifier-params-input" class="block text-sm font-semibold text-aa-text mb-1">{{ t('studioPanels.verifierParamsHex', 'Verifier Params (hex)') }}</label>
+            <textarea id="verifier-params-input" v-model="createForm.verifierParams" class="input-field font-mono text-xs py-2 px-3 bg-aa-dark min-h-24" :placeholder="t('studioPanels.verifierParamsPlaceholder', 'Uncompressed pubkey or verifier-specific config hex.')"></textarea>
           </div>
         </div>
 
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-semibold text-biconomy-text mb-1">Hook Plugin</label>
-            <input v-model="createForm.hookContract" type="text" class="input-field font-mono text-sm py-2 px-3 bg-biconomy-dark" placeholder="0x... (optional)" />
-            <p class="mt-1 text-xs text-biconomy-muted">Examples: WhitelistHook, DailyLimitHook, NeoDIDCredentialHook, MultiHook.</p>
+            <label for="hook-contract-input" class="block text-sm font-semibold text-aa-text mb-1">{{ t('studioPanels.hookPlugin', 'Hook Plugin') }}</label>
+            <input id="hook-contract-input" v-model="createForm.hookContract" type="text" class="input-field font-mono text-sm py-2 px-3 bg-aa-dark" :placeholder="t('studioPanels.hookContractOptionalPlaceholder', '0x... (optional)')" />
+            <p class="mt-1 text-xs text-aa-muted">{{ t('studioPanels.hookPluginExamples', 'Examples: WhitelistHook, DailyLimitHook, NeoDIDCredentialHook, MultiHook.') }}</p>
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-biconomy-text mb-1">Backup Owner</label>
-            <input v-model="createForm.backupOwner" type="text" class="input-field font-mono text-sm py-2 px-3 bg-biconomy-dark" :class="backupOwnerInputClass" placeholder="N... or 0x..." />
-            <p v-if="backupOwnerError" class="mt-1 text-xs text-rose-400">{{ backupOwnerError }}</p>
-            <p v-else class="mt-1 text-xs text-biconomy-muted">Neo address (N...) or EVM address (0x...)</p>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-biconomy-text mb-1">Escape Timelock (days)</label>
-            <input v-model.number="createForm.escapeTimelockDays" type="number" min="1" max="365" class="input-field w-32 text-sm py-2 px-3 bg-biconomy-dark" />
-            <p class="mt-1 text-xs text-biconomy-muted">Countdown before escape hatch activates (1-365 days)</p>
-          </div>
+        </div>
+        </div>
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label class="flex items-center justify-between text-sm font-semibold text-biconomy-text">
-          Verification Script (Hex)
-          <button v-if="computedScriptHex" type="button" @click="copyScript" class="text-xs text-biconomy-orange hover:text-biconomy-lightOrange transition-colors flex items-center gap-1">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            {{ copyLabel }}
+      <div>
+        <div class="section-label">{{ t('studioPanels.backupSection', 'Backup & Recovery') }}</div>
+        <div class="bg-aa-panel rounded-lg border border-aa-border/60 p-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="space-y-2">
+            <label for="backup-owner-input" class="block text-sm font-semibold text-aa-text mb-1">{{ t('studioPanels.backupOwner', 'Backup Owner') }}</label>
+            <input id="backup-owner-input" v-model="createForm.backupOwner" type="text" class="input-field font-mono text-sm py-2 px-3 bg-aa-dark" :class="backupOwnerInputClass" :placeholder="t('studioPanels.backupOwnerPlaceholder', 'N... or 0x...')" />
+            <p v-if="backupOwnerError" role="alert" class="mt-1 text-xs text-aa-error-light">{{ backupOwnerError }}</p>
+            <p v-else class="mt-1 text-xs text-aa-muted">{{ t('studioPanels.backupOwnerHint', 'Neo address (N...) or EVM address (0x...)') }}</p>
+          </div>
+          <div class="space-y-2">
+            <label for="escape-timelock-days" class="block text-sm font-semibold text-aa-text mb-1">{{ t('studioPanels.escapeTimelockDays', 'Escape Timelock (days)') }}</label>
+            <input id="escape-timelock-days" v-model.number="createForm.escapeTimelockDays" type="number" min="1" max="365" class="input-field w-32 text-sm py-2 px-3 bg-aa-dark" placeholder="30" />
+            <p class="mt-1 text-xs text-aa-muted">{{ t('studioPanels.escapeTimelockHint', 'Countdown before escape hatch activates (1-365 days)') }}</p>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">{{ t('studioPanels.scriptSection', 'Verification Script') }}</div>
+        <div class="space-y-2">
+        <label for="verificationScriptHex" class="flex items-center justify-between text-sm font-semibold text-aa-text">
+          {{ t('studioPanels.verificationScriptHex', 'Verification Script (Hex)') }}
+          <button v-if="computedScriptHex" type="button" @click="copyScript" class="text-xs text-aa-orange hover:text-aa-lightOrange transition-colors duration-200 flex items-center gap-1">
+            <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            {{ copiedKey === 'script' ? t('studioPanels.copied', 'Copied!') : t('studioPanels.copy', 'Copy') }}
           </button>
         </label>
-        <div class="relative rounded-lg overflow-hidden border border-biconomy-border">
-          <textarea :value="computedScriptHex || ''" readonly class="w-full bg-biconomy-dark border-0 p-4 font-mono text-xs text-biconomy-text placeholder:text-biconomy-muted focus:ring-0 resize-none h-24" :placeholder="computedAddress ? 'Computing script...' : 'Enter seed and account parameters above...'"></textarea>
+        <div class="relative rounded-lg overflow-hidden border border-aa-border">
+          <textarea id="verificationScriptHex" :value="computedScriptHex || ''" readonly class="w-full bg-aa-dark border-0 p-4 font-mono text-xs text-aa-text placeholder:text-aa-muted focus:ring-0 resize-none h-24" :placeholder="computedAddress ? t('studioPanels.computingPlaceholder', 'Computing script...') : t('studioPanels.enterSeedPlaceholder', 'Enter seed and account parameters above...')"></textarea>
+        </div>
         </div>
       </div>
 
-      <div class="pt-6 border-t border-biconomy-border/60 flex flex-col sm:flex-row items-center gap-4">
-        <button type="button" class="btn-primary w-full sm:w-auto" :disabled="isCreating || !canCreate" @click="createAccount">
-          <svg v-if="isCreating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          {{ isCreating ? 'Submitting Transaction...' : 'Register V3 Account' }}
+      <div class="pt-6 border-t border-aa-border/60 flex flex-col sm:flex-row items-center gap-4">
+        <button type="button" class="btn-primary w-full sm:w-auto" :class="{ 'btn-loading': isCreating }" :disabled="isCreating || !canCreate" @click="createAccount">
+          <svg aria-hidden="true" v-if="isCreating" class="animate-spin -ml-1 mr-2 h-4 w-4 text-aa-text" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          {{ isCreating ? t('studioPanels.submittingTransaction', 'Submitting Transaction...') : t('studioPanels.registerV3Account', 'Register V3 Account') }}
         </button>
-        <span class="text-xs text-biconomy-muted font-medium text-center sm:text-left">Creates a V3 account with one verifier, one hook, and one backup-owner escape hatch.</span>
+        <span class="text-xs text-aa-muted font-medium text-center sm:text-left">{{ t('studioPanels.registerHint', 'Creates a V3 account with one verifier, one hook, and one backup-owner escape hatch.') }}</span>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { inject, ref, computed } from 'vue';
+import { inject, computed } from 'vue';
 import { useI18n } from '@/i18n';
+import { useClipboard } from '@/composables/useClipboard';
 
 const { t } = useI18n();
+const { copiedKey, markCopied, copyText } = useClipboard();
 
 const studio = inject('studio');
 const {
@@ -159,13 +191,9 @@ const {
   matrixCheckResult
 } = studio;
 
-const copyLabel = ref('Copy');
-
-function copyScript() {
+async function copyScript() {
   if (!computedScriptHex) return;
-  navigator.clipboard.writeText(computedScriptHex);
-  copyLabel.value = 'Copied!';
-  setTimeout(() => { copyLabel.value = 'Copy'; }, 1500);
+  if (await copyText(computedScriptHex)) markCopied('script');
 }
 
 const backupOwnerError = computed(() => {
@@ -173,13 +201,13 @@ const backupOwnerError = computed(() => {
   if (!val) return '';
   const isNeo = val.startsWith('N') && val.length === 34;
   const isEvm = /^0x[0-9a-fA-F]{40}$/.test(val);
-  if (!isNeo && !isEvm) return 'Invalid address format (expect N... or 0x...)';
+  if (!isNeo && !isEvm) return t('studioPanels.invalidAddressFormat', 'Invalid address format (expect N... or 0x...)');
   return '';
 });
 
 const backupOwnerInputClass = computed(() => {
   const val = createForm.backupOwner?.trim() || '';
   if (!val) return '';
-  return backupOwnerError.value ? 'border-rose-500 focus:border-rose-400' : 'border-emerald-500/50';
+  return backupOwnerError.value ? 'border-aa-error focus:border-aa-error-light' : 'border-aa-success/50';
 });
 </script>

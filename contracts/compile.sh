@@ -12,25 +12,34 @@ echo "Compiling UnifiedSmartWallet V3 Core..."
 ~/.dotnet/tools/nccs UnifiedSmartWallet.csproj -o bin/v3
 
 echo "Compiling Verifiers..."
-~/.dotnet/tools/nccs verifiers/Web3AuthVerifier.csproj -o bin/v3/verifiers
-~/.dotnet/tools/nccs verifiers/TEEVerifier.csproj -o bin/v3/verifiers
-~/.dotnet/tools/nccs verifiers/SessionKeyVerifier.csproj -o bin/v3/verifiers
-~/.dotnet/tools/nccs verifiers/WebAuthnVerifier.csproj -o bin/v3/verifiers
-~/.dotnet/tools/nccs verifiers/ZKEmailVerifier.csproj -o bin/v3/verifiers
-~/.dotnet/tools/nccs verifiers/MultiSigVerifier.csproj -o bin/v3/verifiers
-~/.dotnet/tools/nccs verifiers/SubscriptionVerifier.csproj -o bin/v3/verifiers
+pushd verifiers >/dev/null
+~/.dotnet/tools/nccs ./Web3AuthVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./TEEVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./SessionKeyVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./WebAuthnVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./ZKEmailVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./ZkLoginVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./MultiSigVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./SubscriptionVerifier.csproj -o ../bin/v3/verifiers
+popd >/dev/null
 
 echo "Compiling Hooks..."
-~/.dotnet/tools/nccs hooks/DailyLimitHook.csproj -o bin/v3/hooks
-~/.dotnet/tools/nccs hooks/NeoDIDCredentialHook.csproj -o bin/v3/hooks
-~/.dotnet/tools/nccs hooks/WhitelistHook.csproj -o bin/v3/hooks
-~/.dotnet/tools/nccs hooks/MultiHook.csproj -o bin/v3/hooks
-~/.dotnet/tools/nccs hooks/TokenRestrictedHook.csproj -o bin/v3/hooks
+pushd hooks >/dev/null
+~/.dotnet/tools/nccs ./DailyLimitHook.csproj -o ../bin/v3/hooks
+~/.dotnet/tools/nccs ./NeoDIDCredentialHook.csproj -o ../bin/v3/hooks
+~/.dotnet/tools/nccs ./WhitelistHook.csproj -o ../bin/v3/hooks
+~/.dotnet/tools/nccs ./MultiHook.csproj -o ../bin/v3/hooks
+~/.dotnet/tools/nccs ./TokenRestrictedHook.csproj -o ../bin/v3/hooks
+popd >/dev/null
 
 echo "Compiling Mock Targets..."
-~/.dotnet/tools/nccs mocks/MockTransferTarget.csproj -o bin/v3
+pushd mocks >/dev/null
+~/.dotnet/tools/nccs ./MockTransferTarget.csproj -o ../bin/v3
+popd >/dev/null
 
 echo "Compiling Market Contracts..."
-~/.dotnet/tools/nccs market/AAAddressMarket.csproj -o bin/v3
+pushd market >/dev/null
+~/.dotnet/tools/nccs ./AAAddressMarket.csproj -o ../bin/v3
+popd >/dev/null
 
 echo "Compilation completed successfully."

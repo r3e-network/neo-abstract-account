@@ -1,75 +1,195 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up relative z-10 dark-panel-override">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up relative z-10">
     <div class="mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-biconomy-orange/20 text-biconomy-orange text-sm font-semibold border border-biconomy-orange/40 shadow-sm backdrop-blur-sm mb-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-aa-orange/20 text-aa-orange text-sm font-semibold border border-aa-orange/40 shadow-sm backdrop-blur-sm mb-4">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-biconomy-orange opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-biconomy-orange"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-orange opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-aa-orange"></span>
             </span>
             {{ t('studio.powered', 'Neo N3 Powered') }}
           </div>
           <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-2 drop-shadow-lg uppercase font-outfit">{{ t('studio.title', 'Abstract Account Workspace') }}</h1>
-          <p class="text-base md:text-lg text-biconomy-muted max-w-3xl leading-relaxed">
-            {{ t('studio.subtitle', 'Construct transactions, execute operations, and manage deterministic smart-contract accounts with ease.') }}
+          <p class="text-base md:text-lg text-aa-muted max-w-3xl leading-relaxed">
+            {{ t('studio.subtitle', 'Create programmable wallets with built-in recovery, plugin permissions, and gasless transactions.') }}
           </p>
         </div>
       </div>
 
-      <nav class="flex space-x-2 bg-biconomy-panel/60 p-1.5 rounded-xl shadow-lg border border-biconomy-border backdrop-blur-xl w-fit" aria-label="Tabs">
+      <nav class="flex space-x-1 bg-aa-panel/60 p-1.5 rounded-xl shadow-lg border border-aa-border backdrop-blur-xl w-fit max-w-full overflow-x-auto" role="tablist" :aria-label="t('studio.tabsAriaLabel', 'Tabs')">
         <button
-          v-for="tab in studio.tabs"
+          v-for="(tab, tabIndex) in studio.tabs"
           :key="tab.key"
-          @click="studio.activePanel.value = tab.key"
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 transform active:scale-95"
+          :ref="el => { if (el) tabRefs[tabIndex] = el }"
+          @click="selectTab(tab.key)"
+          @keydown="handleTabKeydown($event, tabIndex)"
+          :tabindex="studio.activePanel.value === tab.key ? 0 : -1"
+          :role="'tab'"
+          :aria-selected="studio.activePanel.value === tab.key"
+          :id="'tab-' + tab.key"
+          :aria-controls="'panel-' + tab.key"
+          class="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 transform active:scale-95 whitespace-nowrap"
           :class="[
             studio.activePanel.value === tab.key
-              ? 'bg-biconomy-orange/20 text-biconomy-orange shadow-[inset_0_0_10px_rgba(0,255,102,0.1)] ring-1 ring-biconomy-orange/50'
-              : 'text-biconomy-muted hover:text-white hover:bg-biconomy-dark'
+              ? 'bg-aa-orange/15 text-aa-orange shadow-glow-orange-inset'
+              : 'text-aa-muted hover:text-aa-text hover:bg-aa-dark/60',
+            !studio.walletConnected.value ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
           ]"
         >
           <component :is="getTabIcon(tab.key)" class="w-4 h-4" />
           {{ tabLabel(tab) }}
+          <span v-if="studio.activePanel.value === tab.key" class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-aa-orange shadow-glow-orange-hot"></span>
         </button>
       </nav>
     </div>
 
-    <div v-if="studio.activePanel.value === 'operations'" class="w-full">
-      <transition name="fade-slide" mode="out-in">
-        <HomeOperationsWorkspace />
-      </transition>
+    <!-- Tab description line -->
+    <transition name="desc-fade" mode="out-in">
+      <p :key="studio.activePanel.value" class="text-sm text-aa-muted mb-6 pl-1">{{ activeTabDescription }}</p>
+    </transition>
+
+    <!-- Guided onboarding state when wallet not connected -->
+    <div v-if="!studio.walletConnected.value" class="animate-fade-in-up relative">
+      <div class="absolute inset-0 bg-mesh pointer-events-none opacity-50"></div>
+      <div class="relative max-w-3xl mx-auto py-12">
+        <div class="text-center mb-10">
+          <div class="w-16 h-16 gradient-border-card bg-aa-orange/10 flex items-center justify-center mx-auto mb-6">
+            <svg aria-hidden="true" class="w-8 h-8 text-aa-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </div>
+          <h2 class="text-2xl font-bold text-white mb-3 font-outfit">{{ t('studio.onboardingTitle', 'Connect your wallet to get started') }}</h2>
+          <p class="text-aa-muted max-w-lg mx-auto leading-relaxed">{{ t('studio.onboardingBody', 'The Abstract Account workspace lets you create, configure, and operate programmable smart-contract accounts on Neo N3.') }}</p>
+        </div>
+
+        <!-- AA Pipeline Steps -->
+        <div class="flex items-center justify-center gap-2 mb-10 stagger-children">
+          <template v-for="(step, i) in pipelineSteps" :key="i">
+            <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-aa-panel/60 border border-aa-border hover:border-aa-orange/30 hover:bg-aa-panel/80 transition-all duration-200 cursor-default group">
+              <div class="w-7 h-7 rounded-full bg-aa-orange/10 border border-aa-orange/30 flex items-center justify-center text-xs font-bold text-aa-orange font-mono group-hover:bg-aa-orange/15 group-hover:border-aa-orange/40 transition-all duration-200">{{ i + 1 }}</div>
+              <span class="text-xs font-semibold text-aa-text">{{ step }}</span>
+            </div>
+            <svg v-if="i < pipelineSteps.length - 1" aria-hidden="true" class="w-4 h-4 text-aa-border shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </template>
+        </div>
+
+        <!-- CTA -->
+        <div class="text-center mb-10">
+          <button @click="connectWallet" :class="{ 'btn-loading': isWalletConnecting }" :disabled="isWalletConnecting" class="btn-primary btn-lg font-bold shadow-glow-orange hover:shadow-glow-orange-lg transition-all duration-200">{{ isWalletConnecting ? t('studio.connecting', 'Connecting…') : t('studio.onboardingAction', 'Connect Wallet') }}</button>
+        </div>
+
+        <!-- What happens expandable -->
+        <div class="rounded-xl border border-aa-border bg-aa-panel/40 backdrop-blur-xl overflow-hidden">
+          <button @click="showWhatHappens = !showWhatHappens" :aria-expanded="showWhatHappens" aria-controls="what-happens-content" class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-aa-dark/30 transition-colors duration-200">
+            <span class="text-sm font-semibold text-aa-text">{{ t('studio.whatHappens', 'What happens when I connect?') }}</span>
+            <svg aria-hidden="true" class="w-4 h-4 text-aa-muted transition-transform duration-200" :class="showWhatHappens ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <div id="what-happens-content" v-show="showWhatHappens" class="px-6 pb-5 border-t border-aa-border/60 animate-fade-in">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+              <div v-for="(hint, i) in onboardingHints" :key="i" class="p-4 rounded-lg bg-aa-dark/30 border border-aa-border/40 group hover:border-aa-border transition-all duration-200">
+                <div class="w-9 h-9 rounded-lg bg-neo-500/10 border border-neo-500/20 flex items-center justify-center mb-3 group-hover:bg-neo-500/15 transition-all duration-200">
+                  <svg aria-hidden="true" class="w-4 h-4 text-neo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" v-html="hint.icon"></svg>
+                </div>
+                <p class="text-sm font-semibold text-aa-text">{{ hint.label }}</p>
+                <p class="text-xs text-aa-muted mt-1">{{ hint.desc }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-else class="lg:grid lg:grid-cols-12 lg:gap-8">
-      <main class="lg:col-span-8 xl:col-span-9 space-y-6 relative">
+    <!-- Normal workspace when wallet connected -->
+    <template v-else>
+      <div v-if="studio.activePanel.value === 'operations'" id="panel-operations" role="tabpanel" aria-labelledby="tab-operations" class="w-full">
         <transition name="fade-slide" mode="out-in">
-          <CreateAccountPanel v-if="studio.activePanel.value === 'create'" />
-          <ManageGovernancePanel v-else-if="studio.activePanel.value === 'manage'" />
-          <PermissionsLimitsPanel v-else-if="studio.activePanel.value === 'permissions'" />
-          <ContractSourcePanel v-else-if="studio.activePanel.value === 'source'" />
+          <HomeOperationsWorkspace />
         </transition>
-      </main>
+      </div>
 
-      <StudioSidebar />
-    </div>
+      <div v-else class="lg:grid lg:grid-cols-12 lg:gap-8">
+        <main class="lg:col-span-8 xl:col-span-9 space-y-6 relative">
+          <transition name="fade-slide" mode="out-in">
+            <CreateAccountPanel v-if="studio.activePanel.value === 'create'" :id="'panel-create'" role="tabpanel" :aria-labelledby="'tab-create'" />
+            <ManageGovernancePanel v-else-if="studio.activePanel.value === 'manage'" :id="'panel-manage'" role="tabpanel" :aria-labelledby="'tab-manage'" />
+            <PermissionsLimitsPanel v-else-if="studio.activePanel.value === 'permissions'" :id="'panel-permissions'" role="tabpanel" :aria-labelledby="'tab-permissions'" />
+            <ContractSourcePanel v-else-if="studio.activePanel.value === 'source'" :id="'panel-source'" role="tabpanel" :aria-labelledby="'tab-source'" />
+          </transition>
+        </main>
+
+        <StudioSidebar />
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { defineAsyncComponent, provide, h } from 'vue';
+import { computed, defineAsyncComponent, provide, h, ref } from 'vue';
 import { useI18n } from '@/i18n';
 import { useStudioController } from '@/features/studio/useStudioController';
+import { useWalletConnection } from '@/composables/useWalletConnection';
 
-const HomeOperationsWorkspace = defineAsyncComponent(() => import('@/features/operations/components/HomeOperationsWorkspace.vue'));
-const CreateAccountPanel = defineAsyncComponent(() => import('@/features/studio/components/CreateAccountPanel.vue'));
-const ManageGovernancePanel = defineAsyncComponent(() => import('@/features/studio/components/ManageGovernancePanel.vue'));
-const PermissionsLimitsPanel = defineAsyncComponent(() => import('@/features/studio/components/PermissionsLimitsPanel.vue'));
-const ContractSourcePanel = defineAsyncComponent(() => import('@/features/studio/components/ContractSourcePanel.vue'));
-const StudioSidebar = defineAsyncComponent(() => import('@/features/studio/components/StudioSidebar.vue'));
+const PanelSkeleton = { template: '<div class="skeleton h-64 w-full"></div>' };
+const panelErrorMsg = t('studio.panelLoadError', 'Failed to load panel. Please refresh.');
+const PanelError = { template: `<div class="glass-panel p-6 text-center"><p class="text-aa-error-light text-sm font-medium">${panelErrorMsg}</p></div>` };
+const asyncErr = { loadingComponent: PanelSkeleton, errorComponent: PanelError, timeout: 8000 };
+const HomeOperationsWorkspace = defineAsyncComponent({ loader: () => import('@/features/operations/components/HomeOperationsWorkspace.vue'), ...asyncErr });
+const CreateAccountPanel = defineAsyncComponent({ loader: () => import('@/features/studio/components/CreateAccountPanel.vue'), ...asyncErr });
+const ManageGovernancePanel = defineAsyncComponent({ loader: () => import('@/features/studio/components/ManageGovernancePanel.vue'), ...asyncErr });
+const PermissionsLimitsPanel = defineAsyncComponent({ loader: () => import('@/features/studio/components/PermissionsLimitsPanel.vue'), ...asyncErr });
+const ContractSourcePanel = defineAsyncComponent({ loader: () => import('@/features/studio/components/ContractSourcePanel.vue'), ...asyncErr });
+const StudioSidebar = defineAsyncComponent({ loader: () => import('@/features/studio/components/StudioSidebar.vue'), ...asyncErr });
 
 const studio = useStudioController();
 const { t } = useI18n();
+const { connect: connectWallet, isConnecting: isWalletConnecting } = useWalletConnection();
+
+const showWhatHappens = ref(false);
+const tabRefs = {};
+
+function selectTab(key) {
+  if (!studio.walletConnected.value) return;
+  studio.activePanel.value = key;
+}
+
+function handleTabKeydown(event, currentIndex) {
+  if (!studio.walletConnected.value) return;
+  const len = studio.tabs.length;
+  let nextIndex = -1;
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextIndex = (currentIndex + 1) % len;
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextIndex = (currentIndex - 1 + len) % len;
+  } else if (event.key === 'Home') {
+    nextIndex = 0;
+  } else if (event.key === 'End') {
+    nextIndex = len - 1;
+  }
+  if (nextIndex >= 0) {
+    event.preventDefault();
+    const key = studio.tabs[nextIndex].key;
+    studio.activePanel.value = key;
+    tabRefs[nextIndex]?.focus();
+  }
+}
+
+const pipelineSteps = [
+  t('studio.pipelineConnect', 'Connect'),
+  t('studio.pipelineCreate', 'Create AA'),
+  t('studio.pipelineConfigure', 'Configure'),
+  t('studio.pipelineOperate', 'Operate'),
+];
+
+const onboardingHints = [
+  { label: t('studio.onboardingHint1', 'Create AA accounts'), desc: t('studio.onboardingHint1Desc', 'Deploy programmable wallets'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>' },
+  { label: t('studio.onboardingHint2', 'Manage governance'), desc: t('studio.onboardingHint2Desc', 'Set verifiers and hooks'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>' },
+  { label: t('studio.onboardingHint3', 'Set permissions'), desc: t('studio.onboardingHint3Desc', 'Configure spending limits'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>' },
+];
+
+const activeTabDescription = computed(() => {
+  const active = studio.tabs.find(tab => tab.key === studio.activePanel.value);
+  if (!active) return '';
+  return t(`studio.tabs.desc.${active.key}`, active.description || '');
+});
 
 function tabLabel(tab = {}) {
   return t(`studio.tabs.${tab.key}`, tab.label || tab.key || 'Tab');
@@ -77,11 +197,11 @@ function tabLabel(tab = {}) {
 
 function getTabIcon(key) {
   const icons = {
-    operations: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' }),
-    create: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>' }),
-    manage: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>' }),
-    permissions: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>' }),
-    source: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>' }),
+    operations: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'aria-hidden': 'true', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>' }),
+    create: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'aria-hidden': 'true', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>' }),
+    manage: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'aria-hidden': 'true', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>' }),
+    permissions: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'aria-hidden': 'true', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>' }),
+    source: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', 'aria-hidden': 'true', innerHTML: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>' }),
   };
   return icons[key] || icons.operations;
 }
@@ -92,7 +212,7 @@ provide('studio', studio);
 <style scoped>
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .fade-slide-enter-from {
@@ -103,5 +223,36 @@ provide('studio', studio);
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateX(15px);
+}
+
+.desc-fade-enter-active,
+.desc-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.desc-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.desc-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-slide-enter-active,
+  .fade-slide-leave-active,
+  .desc-fade-enter-active,
+  .desc-fade-leave-active {
+    transition: none;
+  }
+  .fade-slide-enter-from,
+  .fade-slide-leave-to,
+  .desc-fade-enter-from,
+  .desc-fade-leave-to {
+    opacity: 1;
+    transform: none;
+  }
 }
 </style>

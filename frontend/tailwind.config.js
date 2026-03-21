@@ -7,22 +7,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        biconomy: {
+        aa: {
           orange: '#FF4400',
           darkOrange: '#CC3600',
           lightOrange: '#FF6A33',
           dark: '#0A0A0A',
           panel: '#141414',
-          border: '#292929',
+          border: '#3a3a3a',
           text: '#FAFAFA',
-          muted: '#A3A3A3'
-        },
-        ata: {
-          blue: '#00A3FF',
-          green: '#00FF66',
-          dark: '#0B0D11',
-          panel: '#15181E',
-          border: '#2A2E37',
+          muted: '#A3A3A3',
+          success: '#10b981',
+          'success-light': '#6ee7b7',
+          info: '#0ea5e9',
+          'info-light': '#7dd3fc',
+          warning: '#f59e0b',
+          'warning-light': '#fcd34d',
+          error: '#f43f5e',
+          'error-light': '#fda4af',
+          purple: '#a855f7',
+          'purple-light': '#c084fc',
         },
         neo: {
           50: '#f0fdf4',
@@ -45,19 +48,23 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        outfit: ['Outfit', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       backgroundImage: {
-        'gradient-radial': 'radial-gradient(ellipse at top, var(--tw-gradient-stops))',
         'subtle-glass': 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.00) 100%)',
         'vibrant-glow': 'radial-gradient(circle at center, rgba(0, 255, 102, 0.1) 0%, transparent 60%)',
-        'blue-glow': 'radial-gradient(circle at center, rgba(0, 163, 255, 0.1) 0%, transparent 60%)',
+        'orange-glow': 'radial-gradient(circle at center, rgba(255, 68, 0, 0.15) 0%, transparent 60%)',
+        'hero-gradient': 'linear-gradient(160deg, rgba(10, 10, 10, 1) 0%, rgba(20, 20, 20, 0.8) 50%, rgba(10, 10, 10, 1) 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
         'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'float': 'float 6s ease-in-out infinite',
+        'float-slow': 'floatSlow 8s ease-in-out infinite',
+        'gradient-shift': 'gradientShift 8s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -71,8 +78,40 @@ export default {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
-        }
-      }
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '50%': { transform: 'translateY(-20px) scale(1.02)' },
+        },
+        gradientShift: {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
+      boxShadow: {
+        'glow-orange': '0 0 15px rgba(255, 68, 0, 0.15)',
+        'glow-orange-sm': '0 0 8px rgba(255, 68, 0, 0.1)',
+        'glow-orange-lg': '0 0 25px rgba(255, 68, 0, 0.2)',
+        'glow-green': '0 0 15px rgba(34, 197, 94, 0.15)',
+        'glow-green-sm': '0 0 8px rgba(34, 197, 94, 0.1)',
+        'glow-green-lg': '0 0 25px rgba(34, 197, 94, 0.2)',
+        'glow-blue': '0 0 15px rgba(0, 163, 255, 0.1)',
+        'glow-blue-sm': '0 0 8px rgba(0, 163, 255, 0.08)',
+        'glow-blue-lg': '0 0 25px rgba(0, 163, 255, 0.2)',
+        'glow-sky': '0 0 15px rgba(14, 165, 233, 0.15)',
+        'glow-emerald': '0 0 15px rgba(16, 185, 129, 0.15)',
+        'glow-emerald-sm': '0 0 8px rgba(16, 185, 129, 0.1)',
+        'glow-panel': '0 4px 20px rgba(0, 0, 0, 0.2)',
+        'glow-orange-inset': 'inset 0 0 12px rgba(255, 68, 0, 0.08)',
+        'glow-neo-sm': '0 0 12px rgba(0, 255, 102, 0.1)',
+        'glow-green-diffuse': '0 4px 30px rgba(34, 197, 94, 0.05)',
+        'glow-orange-hot': '0 0 6px rgba(249, 115, 22, 0.5)',
+        'glow-error-sm': '0 0 6px var(--aa-error)',
+      },
     },
   },
   plugins: [

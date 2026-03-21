@@ -14,6 +14,7 @@ Treat an AA policy stack as three layers:
    - `MultiSigVerifier`
    - `SubscriptionVerifier`
    - `TEEVerifier`
+   - `ZkLoginVerifier`
 
 2. **Hook plugin**
    Use this to decide **what the account is allowed to do** after a verifier accepts the signature.
@@ -164,6 +165,23 @@ Input shape:
 - receiver / target
 - cadence
 - expiry / max usage
+
+### ZkLoginVerifier
+
+Purpose:
+bind an AA account to a privacy-preserving Morpheus NeoDID identity root and authorize each `executeUserOp` with an operation-bound zklogin ticket.
+
+Input shape:
+
+- Morpheus / NeoDID verifier public key
+- provider id, typically `web3auth`
+- `master_nullifier` derived inside the TEE from the verified Web2 identity root
+
+Operational notes:
+
+- Google / Twitter / GitHub style Web2 login can flow through Web3Auth while the TEE keeps the raw provider identity private.
+- Each signature is a compact proof blob containing the provider id, `master_nullifier`, `action_nullifier`, and Morpheus signer signature.
+- The account still relies on AA nonce + deadline replay protection; the verifier only binds the private identity root to each operation payload.
 
 ## Market Readiness
 

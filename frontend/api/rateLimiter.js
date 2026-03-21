@@ -13,35 +13,48 @@ async function rateLimitWithRedis(identifier) {
   if (!client) return null;
 
   const key = `ratelimit:${identifier}`;
-  const now = Date.now();
-  const windowStart = now - WINDOW_MS;
 
   try {
-    const response = await fetch(`${client.url}/zrangebyscore/${key}/${windowStart}/${now}`, {
-      headers: { Authorization: `Bearer ${client.token}` },
+    const response = await fetch(`${client.url}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${client.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', key],
+        ['PTTL', key],
+      ]),
     });
-    const currentCount = response.ok ? parseInt(await response.text(), 10) : 0;
+    if (!response.ok) return null;
 
-    if (currentCount >= MAX_REQUESTS) {
-      const oldest = await fetch(`${client.url}/zrange/${key}/0/0`, {
-        headers: { Authorization: `Bearer ${client.token}` },
+    const result = await response.json();
+    const count = Number(result?.[0]?.result || 0);
+    let ttl = Number(result?.[1]?.result || -1);
+
+    if (count <= 1 || ttl < 0) {
+      await fetch(`${client.url}/pipeline`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${client.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([
+          ['PEXPIRE', key, String(WINDOW_MS)],
+        ]),
       });
-      const oldestTime = oldest.ok ? parseInt(await oldest.text(), 10) : now;
+      ttl = WINDOW_MS;
+    }
+
+    if (count > MAX_REQUESTS) {
       return {
         allowed: false,
         remaining: 0,
-        retryAfter: Math.ceil((oldestTime + WINDOW_MS - now) / 1000),
+        retryAfter: Math.max(Math.ceil(ttl / 1000), 1),
       };
     }
 
-    await fetch(`${client.url}/zadd/${key}/${now}/${now}:${Math.random()}`, {
-      headers: { Authorization: `Bearer ${client.token}` },
-    });
-    await fetch(`${client.url}/expire/${key}/120`, {
-      headers: { Authorization: `Bearer ${client.token}` },
-    });
-
-    return { allowed: true, remaining: MAX_REQUESTS - currentCount - 1 };
+    return { allowed: true, remaining: Math.max(MAX_REQUESTS - count, 0) };
   } catch {
     return null;
   }

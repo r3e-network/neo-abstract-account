@@ -30,11 +30,13 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   assert.match(source, /resolveDid/);
   assert.match(source, /previewRecoveryTicket/);
   assert.match(source, /previewActionTicket/);
+  assert.match(source, /previewZkLoginTicket/);
   assert.match(source, /invokeRecoveryRequest/);
   assert.match(source, /invokeProxySessionRequest/);
   assert.match(source, /finalizeRecovery/);
   assert.match(source, /cancelRecovery/);
   assert.match(source, /revokeProxySession/);
+  assert.match(source, /zklogin_verifier_params_hex/);
   assert.match(source, /fetchVerifierContractByAddress/);
   assert.match(source, /fetchUnifiedVerifierState/);
   assert.match(source, /requestRecoveryTicket/);
@@ -82,5 +84,6 @@ test('main layout and home workspace expose a DID connection path', () => {
   assert.match(panel, /Finalize Recovery/);
   assert.match(panel, /Cancel Recovery/);
   assert.match(panel, /Revoke Session/);
+  assert.match(panel, /ZK Login Verifier Params/);
   assert.match(panel, /notificationService/);
 });

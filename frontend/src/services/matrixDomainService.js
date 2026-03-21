@@ -1,4 +1,5 @@
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { EC } from '../config/errorCodes.js';
 import { invokeReadFunction, getAddressFromScriptHash, getScriptHashFromAddress, reverseHex } from '@/utils/neo.js';
 import { sanitizeHex } from '@/utils/hex.js';
 
@@ -37,7 +38,8 @@ function decodeAddressArray(item) {
     if (!rawHex) return null;
     try {
       return getAddressFromScriptHash(sanitizeHex(reverseHex(rawHex)));
-    } catch {
+    } catch (e) {
+      if (import.meta.env.DEV) console.error('[matrixDomainService] getAddressFromScriptHash failed:', e?.message);
       return null;
     }
   }).filter(Boolean);
@@ -46,7 +48,9 @@ function decodeAddressArray(item) {
 async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl } = {}) {
   const result = await invokeReadFunction(rpcUrl, scriptHash, operation, args, fetchImpl);
   if (result?.state === 'FAULT') {
-    throw new Error(`${operation} fault: ${result.exception || 'VM fault'}`);
+    const err = new Error(EC.rpcFault);
+    err.rpcDetail = result.exception || null;
+    throw err;
   }
   return result;
 }

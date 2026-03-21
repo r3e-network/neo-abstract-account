@@ -72,6 +72,7 @@ test('operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(presetsPath, 'utf8'), /NEP-17 Transfer/);
   assert.match(fs.readFileSync(presetsPath, 'utf8'), /Multisig Draft/);
   assert.match(fs.readFileSync(signaturePath, 'utf8'), /Signature Workflow/);
+  assert.match(fs.readFileSync(signaturePath, 'utf8'), /ZK Login - Sign with Morpheus NeoDID/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Broadcast Options/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Best Available/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Signed Raw Tx/);
@@ -80,6 +81,7 @@ test('operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /DApp ID/);
   assert.match(fs.readFileSync(broadcastPath, 'utf8'), /Open Paymaster Live Validation/);
   assert.match(fs.readFileSync(workspacePath, 'utf8'), /Check Relay/);
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Sign with ZK Login/);
   assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Relay Readiness/);
   assert.match(fs.readFileSync(sidebarPath, 'utf8'), /Recent Activity/);
   assert.match(fs.readFileSync(activityTimelinePath, 'utf8'), /All Events/);

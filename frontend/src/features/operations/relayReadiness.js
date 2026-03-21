@@ -11,14 +11,14 @@ function findMetaInvocation(signatures = [], transactionBody = {}) {
     : null;
 }
 
-export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, signatures = [] } = {}) {
+export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, signatures = [], t } = {}) {
   if (!runtime?.relayEnabled) {
     return {
       level: 'blocked',
       mode: 'none',
       isReady: false,
-      label: 'Relay Blocked',
-      detail: 'Relay endpoint is not configured.',
+      label: t ? t('sharedDraft.relayBlocked', 'Relay Blocked') : 'Relay Blocked',
+      detail: t ? t('sharedDraft.relayEndpointNotConfigured', 'Relay endpoint is not configured.') : 'Relay endpoint is not configured.',
     };
   }
 
@@ -28,8 +28,8 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
         level: 'ready',
         mode: 'raw',
         isReady: true,
-        label: 'Relay Ready',
-        detail: 'Signed raw transaction is ready for relay submission.',
+        label: t ? t('sharedDraft.relayReady', 'Relay Ready') : 'Relay Ready',
+        detail: t ? t('sharedDraft.rawTxReady', 'Signed raw transaction is ready for relay submission.') : 'Signed raw transaction is ready for relay submission.',
       };
     }
 
@@ -37,8 +37,8 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
       level: 'warning',
       mode: 'raw',
       isReady: false,
-      label: 'Relay Pending',
-      detail: 'Signed raw transaction is collected; enable raw relay forwarding to submit it through the relay.',
+      label: t ? t('sharedDraft.relayPending', 'Relay Pending') : 'Relay Pending',
+      detail: t ? t('sharedDraft.rawTxPending', 'Signed raw transaction is collected; enable raw relay forwarding to submit it through the relay.') : 'Signed raw transaction is collected; enable raw relay forwarding to submit it through the relay.',
     };
   }
 
@@ -49,8 +49,8 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
         level: 'ready',
         mode: 'meta',
         isReady: true,
-        label: 'Relay Ready',
-        detail: 'Relay-ready invocation is available for submission.',
+        label: t ? t('sharedDraft.relayReady', 'Relay Ready') : 'Relay Ready',
+        detail: t ? t('sharedDraft.metaReady', 'Relay-ready invocation is available for submission.') : 'Relay-ready invocation is available for submission.',
       };
     }
 
@@ -58,8 +58,8 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
       level: 'warning',
       mode: 'meta',
       isReady: false,
-      label: 'Relay Pending',
-        detail: 'Relay invocation is collected; enable relay invocation mode to submit it directly.',
+      label: t ? t('sharedDraft.relayPending', 'Relay Pending') : 'Relay Pending',
+      detail: t ? t('sharedDraft.metaPending', 'Relay invocation is collected; enable relay invocation mode to submit it directly.') : 'Relay invocation is collected; enable relay invocation mode to submit it directly.',
     };
   }
 
@@ -67,7 +67,7 @@ export function evaluateRelayReadiness({ runtime = {}, transactionBody = {}, sig
     level: 'blocked',
     mode: 'none',
     isReady: false,
-    label: 'Relay Blocked',
-    detail: 'No signed raw transaction or relay-ready invocation is available yet.',
+    label: t ? t('sharedDraft.relayBlocked', 'Relay Blocked') : 'Relay Blocked',
+    detail: t ? t('sharedDraft.noSignedTransaction', 'No signed raw transaction or relay-ready invocation is available yet.') : 'No signed raw transaction or relay-ready invocation is available yet.',
   };
 }

@@ -1,89 +1,167 @@
 <template>
-  <section class="rounded-lg border border-biconomy-border bg-biconomy-panel/80 p-6 shadow-sm backdrop-blur-sm">
-    <div class="mb-4">
-      <h2 class="text-lg font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2 tracking-widest">
-        <svg class="w-5 h-5 text-biconomy-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        Discover Your Accounts
-      </h2>
-      <p class="text-sm text-biconomy-muted mt-1">Find all accounts where you are a signer</p>
+  <section class="glass-panel p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <svg aria-hidden="true" class="w-5 h-5 text-aa-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          {{ t('operations.discoverTitle', 'Discover Your Accounts') }}
+        </h2>
+        <p class="text-sm text-aa-muted mt-1">{{ t('operations.discoverSubtitle', 'Find all accounts where you are a signer') }}</p>
+      </div>
+      <button class="btn-secondary btn-xs" :class="{ 'btn-loading': searching }" :disabled="!canSearch || searching" @click="discoverAccounts">
+        <svg v-if="searching" aria-hidden="true" class="animate-spin -ml-1 mr-1.5 h-3 w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        {{ searching ? t('operations.searching', 'Searching…') : t('operations.discoverAction', 'Discover') }}
+      </button>
     </div>
 
-    <div class="space-y-3">
-      <label class="space-y-1.5 text-sm">
-        <span class="font-medium text-biconomy-text">Your Address</span>
-        <div class="flex gap-2">
-          <input v-model="searchAddress" class="flex-1 rounded-lg border border-biconomy-border px-3 py-2.5 focus:border-biconomy-orange focus:ring-2 focus:ring-biconomy-orange transition-all bg-biconomy-dark text-white" placeholder="N... or 0x..." />
-          <button class="rounded-lg bg-biconomy-orange px-4 py-2.5 text-sm font-semibold text-white hover:bg-biconomy-orange/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!searchAddress || loading" @click="discover">
-            <span v-if="loading">Searching...</span>
-            <span v-else>Search</span>
+    <div v-if="!isConfigured" class="empty-state">
+      <svg aria-hidden="true" class="w-10 h-10 mx-auto mb-3 text-aa-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <p class="text-sm font-semibold text-aa-text mb-1">{{ t('operations.discoverNotConfigured', 'Address Market Not Configured') }}</p>
+      <p class="text-xs text-aa-muted max-w-sm mx-auto">{{ t('operations.discoverNotConfiguredHint', 'Account discovery requires the address market contract to be configured. Use direct account lookup below instead.') }}</p>
+    </div>
+
+    <div v-else-if="error" role="alert" class="mb-4 rounded-xl border border-aa-error/30 bg-aa-error/10 p-4 flex items-center gap-3">
+      <p class="text-sm text-aa-error font-medium flex-1">{{ error }}</p>
+      <button class="btn-ghost btn-sm" :class="{ 'btn-loading': searching }" :disabled="searching" @click="discoverAccounts">{{ searching ? t('operations.searching', 'Searching…') : t('operations.retry', 'Retry') }}</button>
+    </div>
+
+    <div v-else-if="searched && discoveredListings.length === 0" class="empty-state">
+      <svg aria-hidden="true" class="w-10 h-10 mx-auto mb-3 text-aa-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <p class="text-sm font-semibold text-aa-text mb-1">{{ t('operations.noAccountsFound', 'No accounts found') }}</p>
+      <p class="text-xs text-aa-muted max-w-sm mx-auto">{{ t('operations.noAccountsHint', 'No market listings or owned accounts were found for your connected wallet.') }}</p>
+    </div>
+
+    <div v-else-if="discoveredListings.length > 0" class="space-y-3 mb-6">
+      <p class="text-xs font-bold uppercase tracking-widest text-aa-muted">{{ t('operations.discoveredListings', 'Market Listings') }}</p>
+      <div v-for="listing in discoveredListings" :key="listing.id" class="rounded-xl border border-aa-border bg-aa-panel/40 p-4 hover:border-aa-orange/30 transition-colors duration-200">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="text-sm font-semibold text-aa-text truncate">{{ listing.title || t('operations.untitledListing', 'Untitled Listing') }}</p>
+              <span class="badge" :class="statusBadgeClass(listing.status)">{{ translateStatus(listing.status) }}</span>
+            </div>
+            <p class="text-xs text-aa-muted font-mono truncate">{{ listing.account_address }}</p>
+            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+              <span v-if="listing.price_gas" class="text-xs text-aa-text">{{ listing.price_gas }} GAS</span>
+              <span v-if="listing.backup_owner" class="text-xs text-aa-muted">{{ t('operations.backupOwnerShort', 'Backup') }}: {{ truncateHash(listing.backup_owner) }}</span>
+            </div>
+          </div>
+          <button class="btn-primary btn-xs shrink-0" @click="$emit('select', listing.accountIdHash)">
+            {{ t('operations.loadThisAccount', 'Load') }}
           </button>
         </div>
-      </label>
-
-      <div v-if="error" class="rounded-lg bg-rose-500/10 border border-rose-500/30 p-3 flex items-start gap-2">
-        <svg class="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <p class="text-sm text-rose-400">{{ error }}</p>
       </div>
+    </div>
 
-      <div v-if="results" class="space-y-3 mt-4">
-        <div v-if="results.signerAccounts.length > 0" class="rounded-lg border border-biconomy-border bg-biconomy-panel p-4">
-          <h3 class="text-sm font-mono font-semibold text-white uppercase tracking-wider mb-3 flex items-center gap-2 tracking-widest">
-            <svg class="w-4 h-4 text-biconomy-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-            Signer Accounts ({{ results.signerAccounts.length }})
-          </h3>
-          <div class="space-y-2">
-            <button v-for="(account, idx) in results.signerAccounts" :key="idx" class="w-full text-left rounded-lg border border-biconomy-border bg-biconomy-panel px-3 py-2.5 hover:border-biconomy-orange hover:bg-biconomy-orange/10 transition-all group" @click="$emit('select', account)">
-              <div class="flex items-center justify-between">
-                <span class="font-mono text-sm text-white group-hover:text-biconomy-orange">{{ account }}</span>
-                <svg class="w-4 h-4 text-biconomy-muted group-hover:text-biconomy-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        
-
-        <div v-if="results.signerAccounts.length === 0" class="rounded-lg border border-biconomy-border bg-biconomy-panel p-6 text-center">
-          <svg class="w-12 h-12 text-biconomy-text mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-          <p class="text-sm font-medium text-biconomy-muted">No accounts found</p>
-          <p class="text-xs text-biconomy-muted mt-1">This address is not a signer of any accounts</p>
-        </div>
+    <div class="border-t border-aa-border pt-4">
+      <p class="text-xs font-bold uppercase tracking-widest text-aa-muted mb-3">{{ t('operations.directLookup', 'Direct Lookup') }}</p>
+      <div class="flex gap-3">
+        <label class="flex-1 block space-y-1 text-sm" for="discovery-direct-lookup">
+          <input
+            id="discovery-direct-lookup"
+            v-model="directLookupValue"
+            class="input-field w-full font-mono"
+            :aria-label="t('operations.directLookupLabel', 'Account seed or accountId hash')"
+            :placeholder="t('operations.directLookupPlaceholder', 'Account seed or 40-char accountId hash')"
+            @keydown.enter="loadDirect"
+          />
+        </label>
+        <button class="btn-secondary btn-xs self-end" :disabled="!directLookupValue.trim()" @click="loadDirect">
+          {{ t('operations.loadAction', 'Load') }}
+        </button>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useI18n } from '@/i18n';
+import { sanitizeHex } from '@/utils/hex.js';
+import { getScriptHashFromAddress } from '@/utils/neo.js';
+import { findListingsForWallet, isAddressMarketConfigured } from '@/services/addressMarketService.js';
+import { translateError } from '@/config/errorCodes.js';
 
-defineEmits(['select']);
+const props = defineProps({
+  walletAddress: { type: String, default: '' },
+});
 
-const searchAddress = ref('');
-const loading = ref(false);
+const emit = defineEmits(['select']);
+
+const { t } = useI18n();
+
+const searching = ref(false);
+const searched = ref(false);
+const discoveredListings = ref([]);
 const error = ref('');
-const results = ref(null);
+const directLookupValue = ref('');
 
-async function discover() {
-  if (!searchAddress.value) return;
-  
-  loading.value = true;
-  error.value = '';
-  results.value = null;
+const isConfigured = computed(() => isAddressMarketConfigured());
 
+const canSearch = computed(() => {
+  if (!isConfigured.value) return false;
+  const addr = String(props.walletAddress || '').trim();
+  return addr.length > 0;
+});
+
+function walletScriptHash() {
+  const addr = String(props.walletAddress || '').trim();
+  if (!addr) return '';
   try {
-    // TODO: Integrate with SDK
-    // const client = new AbstractAccountClient(rpcUrl, contractHash);
-    // const signerAccounts = await client.getAccountsBySigner(searchAddress.value);
-    
-    // Mock implementation for now
-    await new Promise(resolve => setTimeout(resolve, 500));
-    results.value = {
-      signerAccounts: [],
-    };
+    if (addr.startsWith('N') && addr.length === 34) {
+      return getScriptHashFromAddress(addr);
+    }
+    return sanitizeHex(addr);
   } catch (e) {
-    error.value = e.message || 'Failed to discover accounts';
-  } finally {
-    loading.value = false;
+    if (import.meta.env.DEV) console.warn('[AccountDiscoveryPanel] walletScriptHash parse failed:', addr, e?.message);
+    return '';
   }
+}
+
+async function discoverAccounts() {
+  const scriptHash = walletScriptHash();
+  if (!scriptHash) {
+    error.value = t('operations.noWalletConnected', 'Connect a wallet first to discover accounts.');
+    return;
+  }
+  searching.value = true;
+  error.value = '';
+  try {
+    discoveredListings.value = await findListingsForWallet(scriptHash);
+    searched.value = true;
+  } catch (err) {
+    error.value = translateError(err?.message, t) || t('operations.errorDiscoverAccounts', 'Failed to discover accounts. Please try again.');
+  } finally {
+    searching.value = false;
+  }
+}
+
+function loadDirect() {
+  const value = directLookupValue.value.trim();
+  if (value) {
+    emit('select', value);
+  }
+}
+
+function statusBadgeClass(status) {
+  if (status === 'active') return 'badge-green';
+  if (status === 'sold') return 'badge-blue';
+  if (status === 'cancelled') return 'badge-amber';
+  return '';
+}
+
+function translateStatus(status) {
+  const map = {
+    active: t('operations.statusActive', 'active'),
+    sold: t('operations.statusSold', 'sold'),
+    cancelled: t('operations.statusCancelled', 'cancelled'),
+  };
+  return map[status] || status;
+}
+
+function truncateHash(value) {
+  const hex = sanitizeHex(value || '');
+  if (hex.length <= 12) return `0x${hex}`;
+  return `0x${hex.slice(0, 6)}…${hex.slice(-4)}`;
 }
 </script>

@@ -1,4 +1,5 @@
 import { DEFAULT_N3INDEX_API_BASE_URL, DEFAULT_N3INDEX_NETWORK, RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { EC } from '../config/errorCodes.js';
 import { sanitizeHex } from '@/utils/hex.js';
 import { getScriptHashFromAddress, invokeReadFunction } from '@/utils/neo.js';
 import { resolveMatrixDomain } from '@/services/matrixDomainService.js';
@@ -26,7 +27,9 @@ async function fetchJson(url, fetchImpl = globalThis.fetch) {
   const response = await fetchImpl(url, { headers: { accept: 'application/json' } });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload?.message || payload?.error || `HTTP ${response.status}`);
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = payload?.message || payload?.error || `HTTP ${response.status}`;
+    throw err;
   }
   return payload;
 }
@@ -45,7 +48,9 @@ async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpc
 
   const payload = await response.json();
   if (payload.error) {
-    throw new Error(payload.error.message || 'getcontractstate RPC error');
+    const err = new Error(EC.contractLookupFailed);
+    err.rpcDetail = payload.error.message || null;
+    throw err;
   }
   return payload.result || null;
 }
@@ -151,7 +156,8 @@ function parseBoolean(value) {
 function safeParseJson(value, fallback) {
   try {
     return JSON.parse(String(value || '').trim());
-  } catch {
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn('[contractLookupService] safeParseJson failed:', e?.message);
     return fallback;
   }
 }
@@ -169,7 +175,8 @@ export function buildContractParamFromDefinition(definition, rawValue = '') {
     try {
       const hash = normalized.startsWith('N') ? sanitizeHex(getScriptHashFromAddress(normalized)) : sanitizeHex(normalized);
       return { type: 'Hash160', value: `0x${hash}` };
-    } catch {
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn('[contractLookupService] Hash160 address parse failed:', normalized, e?.message);
       return { type: 'Hash160', value: normalized };
     }
   }
@@ -238,7 +245,6 @@ export async function searchContractsByName(query, { apiBaseUrl = RUNTIME_CONFIG
     merged.set(sanitizeHex(item.contract_hash), {
       contractHash: sanitizeHex(item.contract_hash),
       displayName: item.manifest_name || 'Unknown Contract',
-      detail: `Manifest name · block ${item.last_seen_block ?? 'n/a'}`,
       source: 'name',
     });
   }
@@ -248,7 +254,6 @@ export async function searchContractsByName(query, { apiBaseUrl = RUNTIME_CONFIG
     merged.set(hash, {
       ...existing,
       displayName: item.display_name || existing.displayName || 'Unknown Contract',
-      detail: existing.detail || 'Metadata cache match',
     });
   }
 
@@ -266,6 +271,7 @@ export async function loadContractMethodsByHash(contractHash, { apiBaseUrl = RUN
     const contractEntries = await fetchJson(buildContractManifestUrl(normalizedHash, { apiBaseUrl, network }), fetchImpl);
     manifest = Array.isArray(contractEntries) ? contractEntries[0]?.manifest || null : null;
   } catch (_error) {
+    if (import.meta.env.DEV) console.error('[contractLookupService] manifest REST fetch failed:', _error?.message);
     manifest = null;
   }
 
@@ -318,11 +324,9 @@ export async function searchContractsByDomain(domain, { apiBaseUrl = RUNTIME_CON
   const byHash = new Map((overviews || []).map((item) => [sanitizeHex(item.contract_hash), item]));
   const candidates = contractHashes.map((hash) => {
     const overview = byHash.get(hash);
-    const interaction = (interactions || []).find((item) => sanitizeHex(item.contract_hash) === hash);
     return {
       contractHash: hash,
       displayName: overview?.manifest_name || hash,
-      detail: `Domain match · ${interaction?.tx_count || 0} interactions`,
       source: 'domain',
     };
   });

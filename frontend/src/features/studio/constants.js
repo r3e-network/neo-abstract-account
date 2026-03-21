@@ -1,9 +1,9 @@
 export const STUDIO_TABS = [
-  { key: 'operations', label: 'Operations Workspace' },
-  { key: 'create', label: 'Create Account' },
-  { key: 'manage', label: 'Manage Governance' },
-  { key: 'permissions', label: 'Permissions & Limits' },
-  { key: 'source', label: 'View Source' }
+  { key: 'operations', label: 'Operations Workspace', description: 'Load, compose, sign, share, and broadcast AA transactions' },
+  { key: 'create', label: 'Create Account', description: 'Deploy a new deterministic smart-contract account' },
+  { key: 'manage', label: 'Manage Governance', description: 'Update verifier, hook, backup owner, and escape settings' },
+  { key: 'permissions', label: 'Permissions & Limits', description: 'Call verifier and hook plugin methods directly' },
+  { key: 'source', label: 'View Source', description: 'Browse the on-chain contract source files' }
 ];
 
 export const RECENT_TRANSACTIONS_STORAGE_KEY = 'aa_recent_transactions';
@@ -65,5 +65,20 @@ export function createPermissionsBusyState() {
 export function createManageSnapshotState() {
   return {
     loadedAt: '',
+  };
+}
+
+export function createMetadataFormState() {
+  return {
+    metadataUri: '',
+    description: '',
+    logoUrl: '',
+  };
+}
+
+export function createMetadataBusyState() {
+  return {
+    load: false,
+    save: false,
   };
 }

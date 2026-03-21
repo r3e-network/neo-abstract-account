@@ -4,6 +4,7 @@ import code_TEEVerifier from '@repo/contracts/verifiers/TEEVerifier.cs?raw';
 import code_SessionKeyVerifier from '@repo/contracts/verifiers/SessionKeyVerifier.cs?raw';
 import code_WebAuthnVerifier from '@repo/contracts/verifiers/WebAuthnVerifier.cs?raw';
 import code_ZKEmailVerifier from '@repo/contracts/verifiers/ZKEmailVerifier.cs?raw';
+import code_ZkLoginVerifier from '@repo/contracts/verifiers/ZkLoginVerifier.cs?raw';
 import code_MultiSigVerifier from '@repo/contracts/verifiers/MultiSigVerifier.cs?raw';
 import code_SubscriptionVerifier from '@repo/contracts/verifiers/SubscriptionVerifier.cs?raw';
 import code_MultiHook from '@repo/contracts/hooks/MultiHook.cs?raw';
@@ -19,6 +20,7 @@ export const CONTRACT_SOURCE_FILES = [
   { name: 'verifiers/SessionKeyVerifier.cs', content: code_SessionKeyVerifier },
   { name: 'verifiers/WebAuthnVerifier.cs', content: code_WebAuthnVerifier },
   { name: 'verifiers/ZKEmailVerifier.cs', content: code_ZKEmailVerifier },
+  { name: 'verifiers/ZkLoginVerifier.cs', content: code_ZkLoginVerifier },
   { name: 'verifiers/MultiSigVerifier.cs', content: code_MultiSigVerifier },
   { name: 'verifiers/SubscriptionVerifier.cs', content: code_SubscriptionVerifier },
   { name: 'hooks/MultiHook.cs', content: code_MultiHook },

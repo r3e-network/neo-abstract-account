@@ -172,6 +172,36 @@ class AbstractAccountClient {
     };
   }
 
+  createSetMetadataUriPayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+      metadataUri = '',
+    } = options || {};
+
+    const normalizeAddress = (addr) => {
+      if (!addr) return '00'.repeat(20);
+      if (addr.startsWith('N') && addr.length === 34) {
+        return wallet.getScriptHashFromAddress(addr);
+      }
+      if (addr.startsWith('0x')) return addr.slice(2);
+      return addr;
+    };
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'SetMetadataUri',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+        sc.ContractParam.string(metadataUri),
+      ],
+    };
+  }
+
   async computeArgsHash(args = []) {
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
@@ -322,13 +352,25 @@ class AbstractAccountClient {
       return response?.stack?.[0] || null;
     };
 
-    const [verifier, hook, backupOwner, escapeTimelock, escapeTriggeredAt, escapeActive] = await Promise.all([
+    const invokeOptional = async (operation) => {
+      try {
+        return await invokeSafe(operation);
+      } catch (error) {
+        if (/method not found/i.test(String(error?.message || ''))) {
+          return null;
+        }
+        throw error;
+      }
+    };
+
+    const [verifier, hook, backupOwner, escapeTimelock, escapeTriggeredAt, escapeActive, metadataUri] = await Promise.all([
       invokeSafe('getVerifier'),
       invokeSafe('getHook'),
       invokeSafe('getBackupOwner'),
       invokeSafe('getEscapeTimelock'),
       invokeSafe('getEscapeTriggeredAt'),
       invokeSafe('isEscapeActive'),
+      invokeOptional('getMetadataUri'),
     ]);
 
     return {
@@ -339,6 +381,7 @@ class AbstractAccountClient {
       escapeTimelock: escapeTimelock?.value || '0',
       escapeTriggeredAt: escapeTriggeredAt?.value || '0',
       escapeActive: Boolean(escapeActive?.value),
+      metadataUri: metadataUri?.value || '',
     };
   }
 

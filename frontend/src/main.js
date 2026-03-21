@@ -6,6 +6,11 @@ import router from './router';
 import './style.css';
 
 const app = createApp(App);
+
+app.config.errorHandler = (err, instance, info) => {
+  console.error('[App Error]', err, info);
+};
+
 app.use(router);
 app.use(Toast, {
   timeout: 3500,

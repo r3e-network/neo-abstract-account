@@ -50,6 +50,20 @@ test('relay API returns Retry-After header when rate limited', async () => {
   assert.equal(String(response.headers['retry-after']), String(response.payload?.retryAfter));
 });
 
+test('relay API does not rate limit the first request for a fresh client IP', async () => {
+  const ip = `relay-first-${Date.now()}`;
+  const response = createResponse();
+  await relayHandler({
+    method: 'POST',
+    headers: { 'x-forwarded-for': ip },
+    socket: { remoteAddress: ip },
+    body: {},
+  }, response);
+
+  assert.notEqual(response.statusCode, 429);
+  assert.notEqual(response.payload?.error, 'rate_limit_exceeded');
+});
+
 test('draft operator API returns Retry-After header when rate limited', async () => {
   const ip = `operator-test-${Date.now()}`;
   for (let i = 0; i < 10; i += 1) {
@@ -73,6 +87,20 @@ test('draft operator API returns Retry-After header when rate limited', async ()
   assert.equal(response.payload?.error, 'rate_limit_exceeded');
   assert.ok(Number(response.payload?.retryAfter) > 0);
   assert.equal(String(response.headers['retry-after']), String(response.payload?.retryAfter));
+});
+
+test('draft operator API does not rate limit the first request for a fresh client IP', async () => {
+  const ip = `operator-first-${Date.now()}`;
+  const response = createResponse();
+  await draftOperatorHandler({
+    method: 'POST',
+    headers: { 'x-forwarded-for': ip },
+    socket: { remoteAddress: ip },
+    body: {},
+  }, response);
+
+  assert.notEqual(response.statusCode, 429);
+  assert.notEqual(response.payload?.error, 'rate_limit_exceeded');
 });
 
 

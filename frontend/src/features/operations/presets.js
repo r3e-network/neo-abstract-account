@@ -19,12 +19,21 @@ export const OPERATION_PRESETS = [
   },
 ];
 
+export const EXPERIMENTAL_OPERATION_PRESETS = [
+  {
+    id: 'batchCreate',
+    label: 'Batch Create',
+    description: 'Deploy multiple abstract accounts in a single transaction.',
+  },
+];
+
 function parseJson(text, fallback) {
   const value = String(text || '').trim();
   if (!value) return fallback;
   try {
     return JSON.parse(value);
-  } catch {
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn('[presets] parseJson failed:', e?.message);
     return fallback;
   }
 }
@@ -40,7 +49,8 @@ function normalizeHash160(value) {
 
   try {
     return sanitizeHex(getScriptHashFromAddress(address));
-  } catch {
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn('[presets] normalizeHash160 address parse failed:', address, e?.message);
     return hex;
   }
 }
@@ -113,6 +123,27 @@ export function buildOperationFromPreset({
     };
   }
 
+  if (preset === 'batchCreate') {
+    const accountIds = parseJson(batch.accountIds, []);
+    const signers = parseJson(batch.signers, []);
+    const threshold = Number(batch.threshold) || 1;
+    return {
+      kind: 'batchCreate',
+      targetContract: normalizedTargetContract,
+      method: normalizedMethod || 'create',
+      args: [
+        toArrayArg(accountIds),
+        toArrayArg(signers.map(s => normalizeHash160(s))),
+        toIntegerArg(threshold),
+      ],
+      metadata: {
+        accountCount: accountIds.length,
+        signerCount: signers.length,
+        threshold,
+      },
+    };
+  }
+
   return {
     kind: 'invoke',
     targetContract: normalizedTargetContract,
@@ -123,29 +154,22 @@ export function buildOperationFromPreset({
 }
 
 export function buildPresetSummary(operation = {}) {
-  if (!operation || !operation.kind) {
-    return {
-      title: 'No operation staged',
-      detail: 'Choose a preset and stage an operation to generate a transaction body.',
-    };
-  }
-
-  if (operation.kind === 'transfer') {
+  const kind = String(operation.kind || '').trim();
+  if (kind === 'transfer') {
+    const amount = operation.args?.[2]?.value || '0';
     return {
       title: 'NEP-17 Transfer',
-      detail: `Amount ${operation.args?.[2]?.value || '0'} via ${operation.targetContract || 'token contract pending'}`,
+      detail: `Amount: ${amount}`,
     };
   }
-
-  if (operation.kind === 'multisig') {
+  if (kind === 'multisig') {
     return {
-      title: operation.metadata?.title || 'Multisig Draft',
-      detail: operation.metadata?.description || `${operation.method || 'method pending'} requires additional co-signers`,
+      title: 'Multisig Draft',
+      detail: String(operation.metadata?.description || operation.method || '').trim(),
     };
   }
-
   return {
-    title: 'Generic Invoke',
-    detail: `${operation.method || 'method pending'} on ${operation.targetContract || 'target contract pending'}`,
+    title: String(operation.method || 'Generic Invoke'),
+    detail: String(operation.targetContract || '').trim(),
   };
 }

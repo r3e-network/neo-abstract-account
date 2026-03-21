@@ -1,3 +1,4 @@
+import { EC } from '../../config/errorCodes.js';
 import { sanitizeHex } from '../../utils/hex.js';
 import { getScriptHashFromAddress } from '../../utils/neo.js';
 
@@ -55,7 +56,7 @@ export function normalizeAddress(input) {
 export function hash160Param(value) {
   const normalized = normalizeAddress(value);
   if (!/^[0-9a-fA-F]{40}$/.test(normalized)) {
-    throw new Error(`Invalid address format: ${value}`);
+    throw new Error(EC.addressValidationFailed);
   }
   return normalized;
 }
@@ -75,6 +76,7 @@ export function base64ToHex(base64Value) {
     }
     return hex.toLowerCase();
   } catch (_) {
+    if (import.meta.env.DEV) console.warn('[helpers] base64ToHex decode failed');
     return '';
   }
 }
@@ -136,12 +138,6 @@ export function resolveRpcUrl(walletService) {
   return fromWalletService || 'https://testnet1.neo.coz.io:443';
 }
 
-export function formatErrorMessage(err) {
-  if (!err) return 'Unknown error';
-  if (typeof err === 'string') return err;
-  return err.description || err.message || err.error?.message || JSON.stringify(err);
-}
-
 export function isPositiveNumber(value) {
   const num = Number(value);
   return Number.isFinite(num) && num > 0;
@@ -161,6 +157,7 @@ export function parseRecentTransactions(raw, fallback = []) {
         when: String(item.when || new Date().toLocaleString())
       }));
   } catch (_) {
+    if (import.meta.env.DEV) console.warn('[helpers] parseTransactionHistory failed:', _?.message);
     return fallback;
   }
 }

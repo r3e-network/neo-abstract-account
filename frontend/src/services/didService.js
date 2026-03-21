@@ -1,5 +1,6 @@
 import { connectedDidProfile, setConnectedDidProfile } from '@/utils/did';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { EC } from '../config/errorCodes.js';
 
 const DID_STORAGE_KEY = 'aa_connected_did_profile';
 
@@ -50,7 +51,8 @@ function decodeJwtClaims(token) {
     const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
     const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
     return JSON.parse(window.atob(padded));
-  } catch {
+  } catch (e) {
+    if (import.meta.env.DEV) console.error('[didService] JWT decode failed:', e?.message);
     return {};
   }
 }
@@ -100,7 +102,9 @@ async function verifyDidProfile(idToken) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || payload?.message || 'Web3Auth DID verification failed.');
+    const err = new Error(EC.didRequestFailed);
+    err.rpcDetail = payload?.error || payload?.message || null;
+    throw err;
   }
   return payload;
 }
@@ -129,7 +133,8 @@ class DidService {
       const cached = window.localStorage.getItem(DID_STORAGE_KEY);
       if (!cached) return;
       setConnectedDidProfile(JSON.parse(cached));
-    } catch {
+    } catch (e) {
+      if (import.meta.env.DEV) console.error('[didService] bootstrap localStorage parse failed:', e?.message);
       setConnectedDidProfile(null);
     }
   }
@@ -198,15 +203,17 @@ class DidService {
     let idToken = '';
     try {
       userInfo = await client.getUserInfo();
-    } catch {
+    } catch (e) {
+      if (import.meta.env.DEV) console.error('[didService] getUserInfo failed:', e?.message);
       userInfo = null;
     }
     try {
       idToken = typeof client.authenticateUser === 'function' ? await client.authenticateUser() : '';
-    } catch {
+    } catch (e) {
+      if (import.meta.env.DEV) console.error('[didService] authenticateUser failed:', e?.message);
       idToken = '';
     }
-    const verified = idToken ? await verifyDidProfile(idToken).catch(() => null) : null;
+    const verified = idToken ? await verifyDidProfile(idToken).catch((e) => { if (import.meta.env.DEV) console.error('[didService] verifyDidProfile failed:', e?.message); return null; }) : null;
     const tokenClaims = verified?.claims || decodeJwtClaims(idToken);
     const profile = verified?.profile
       ? { ...verified.profile, rawUserInfo: userInfo || {}, tokenClaims, idToken: trim(idToken || '') }
@@ -218,7 +225,7 @@ class DidService {
   async connect({ loginProvider } = {}) {
     const client = await this.ensureClient();
     if (!client) {
-      throw new Error('Web3Auth DID is not configured.');
+      throw new Error(EC.web3AuthDidNotConfigured);
     }
 
     if (loginProvider && typeof client.connectTo === 'function') {
@@ -231,7 +238,7 @@ class DidService {
 
     const profile = await this.refreshProfile({ loginProvider });
     if (!profile?.did) {
-      throw new Error('Web3Auth login succeeded but no stable DID could be derived.');
+      throw new Error(EC.web3AuthNoDidDerived);
     }
     return profile;
   }

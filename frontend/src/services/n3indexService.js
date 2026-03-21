@@ -1,3 +1,4 @@
+import { EC } from '../config/errorCodes.js';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 
 export const TESTNET_SUMMARY_PATH = '/indexer/v1/networks/testnet/summary';
@@ -20,7 +21,7 @@ async function fetchJson(url, { fetchImpl = globalThis.fetch } = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`N3Index request failed with HTTP ${response.status}`);
+    throw new Error(EC.rpcRequestFailed);
   }
 
   return response.json();

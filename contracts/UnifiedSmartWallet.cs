@@ -37,6 +37,9 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_PendingVerifierUpdate = new byte[] { 0x09 };
         private static readonly byte[] Prefix_PendingHookUpdate = new byte[] { 0x0A };
         private static readonly byte[] Prefix_ExecutionLock = new byte[] { 0x0B };
+        private static readonly byte[] Prefix_MetadataUri = new byte[] { 0x0C };
+
+        private static readonly BigInteger MaxMetadataUriLength = 240;
         
         private static readonly BigInteger EscapeCooldownSeconds = 3600;
         private static readonly BigInteger ConfigUpdateTimelockSeconds = 86400;
@@ -437,6 +440,33 @@ namespace AbstractAccount
             AssertBackupOwner(accountId);
             byte[] key = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        /// <summary>
+        /// Sets the off-chain metadata URI for an account. Deletes the key if cleared.
+        /// </summary>
+        public static void SetMetadataUri(UInt160 accountId, string metadataUri)
+        {
+            AssertBackupOwner(accountId);
+            byte[] key = Helper.Concat(Prefix_MetadataUri, (byte[])accountId);
+            if (metadataUri == null || metadataUri.Length == 0)
+            {
+                Storage.Delete(Storage.CurrentContext, key);
+                return;
+            }
+            ExecutionEngine.Assert(metadataUri.Length <= MaxMetadataUriLength, "MetadataUri too long");
+            Storage.Put(Storage.CurrentContext, key, metadataUri);
+        }
+
+        /// <summary>
+        /// Returns the off-chain metadata URI for an account, or empty string if unset.
+        /// </summary>
+        [Safe]
+        public static string GetMetadataUri(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_MetadataUri, (byte[])accountId);
+            ByteString? uri = Storage.Get(Storage.CurrentContext, key);
+            return uri == null ? "" : (string)uri;
         }
 
         // ========================================================================

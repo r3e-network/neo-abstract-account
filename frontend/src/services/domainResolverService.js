@@ -1,3 +1,4 @@
+import { EC } from '../config/errorCodes.js';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { getScriptHashFromAddress, invokeReadFunction } from '@/utils/neo.js';
 import { sanitizeHex } from '@/utils/hex.js';
@@ -47,7 +48,9 @@ export async function resolveNeoDomain(
   );
 
   if (result?.state === 'FAULT') {
-    throw new Error(result.exception || 'NNS resolve fault');
+    const err = new Error(EC.nnsResolveFault);
+    err.rpcDetail = result.exception || null;
+    throw err;
   }
 
   const item = result?.stack?.[0];

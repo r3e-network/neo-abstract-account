@@ -6,13 +6,14 @@ export const DEFAULT_OPERATIONS_PREFERENCES = {
 export const OPERATIONS_PREFERENCES_STORAGE_KEY = 'aa_operations_preferences_v1';
 
 const VALID_RELAY_PAYLOAD_MODES = new Set(['best', 'raw', 'meta']);
-const VALID_ACTIVITY_FILTERS = new Set(['all', 'workflow', 'signatures', 'relay', 'broadcast']);
+const VALID_ACTIVITY_FILTERS = new Set(['all', 'workflow', 'identity', 'signatures', 'relay', 'broadcast']);
 
 function getStorageBackend(storage) {
   if (storage) return storage;
   try {
     return globalThis.localStorage || null;
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[preferences] localStorage access denied:', err?.message);
     return null;
   }
 }
@@ -33,7 +34,8 @@ function readPreferences(storage) {
       relayPayloadMode: { ...(parsed?.relayPayloadMode || {}) },
       activityFilter: { ...(parsed?.activityFilter || {}) },
     };
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[preferences] Malformed preferences JSON:', err?.message);
     return clone(DEFAULT_OPERATIONS_PREFERENCES);
   }
 }

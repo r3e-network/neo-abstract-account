@@ -1,3 +1,4 @@
+import { EC } from '../config/errorCodes.js';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig.js';
 import { walletService } from '@/services/walletService.js';
 import { connectedAccount } from '@/utils/wallet.js';
@@ -23,17 +24,17 @@ const LISTING_STATUS = {
 function requireMarketHash() {
   const hash = sanitizeHex(RUNTIME_CONFIG.addressMarketHash || '');
   if (!/^[0-9a-f]{40}$/.test(hash)) {
-    throw new Error('AA address market is not configured for this deployment.');
+    throw new Error(EC.addressMarketNotConfigured);
   }
   return hash;
 }
 
-function normalizeHash160Input(value, label) {
+function normalizeHash160Input(value) {
   const raw = String(value || '').trim();
   if (!raw) return ZERO_HASH160;
   const normalized = raw.startsWith('N') ? getScriptHashFromAddress(raw) : sanitizeHex(raw);
   if (!/^[0-9a-f]{40}$/.test(normalized)) {
-    throw new Error(`${label} must be a Neo address or 20-byte hash.`);
+    throw new Error(EC.addressValidationFailed);
   }
   return normalized;
 }
@@ -57,10 +58,10 @@ function encodeAccountSeed(value = '') {
 export function resolveListedAccountId(input = '') {
   const raw = String(input || '').trim();
   if (!raw) {
-    throw new Error('Account seed or accountId hash is required.');
+    throw new Error(EC.accountSeedOrHashRequired);
   }
   if (raw.startsWith('N') && raw.length === 34) {
-    throw new Error('AA market listing requires the account seed or accountId hash, not only the virtual address.');
+    throw new Error(EC.accountSeedRequiredForListing);
   }
 
   const normalized = sanitizeHex(raw);
@@ -82,14 +83,14 @@ export function deriveVirtualAddressFromListing({ aaContractHash, accountIdHash 
 function parseGasToFractions(value) {
   const raw = String(value || '').trim();
   if (!/^\d+(\.\d{1,8})?$/.test(raw)) {
-    throw new Error('Price must be a positive GAS amount with up to 8 decimals.');
+    throw new Error(EC.invalidPrice);
   }
   const [wholePart, fractionPart = ''] = raw.split('.');
   const whole = BigInt(wholePart || '0');
   const fraction = BigInt((fractionPart + '00000000').slice(0, 8));
   const total = whole * 100000000n + fraction;
   if (total <= 0n) {
-    throw new Error('Price must be positive.');
+    throw new Error(EC.invalidPrice);
   }
   return total.toString();
 }
@@ -184,7 +185,9 @@ async function invokeMarketRead(operation, args = []) {
   const marketHash = requireMarketHash();
   const result = await invokeReadFunction(RUNTIME_CONFIG.rpcUrl, marketHash, operation, args);
   if (String(result?.state || '').includes('FAULT')) {
-    throw new Error(result?.exception || `${operation} faulted`);
+    const err = new Error(EC.rpcFault);
+    err.rpcDetail = result?.exception || null;
+    throw err;
   }
   return result;
 }
@@ -195,7 +198,7 @@ async function fetchAccountSnapshot(aaContractHash, accountIdHash) {
       invokeReadFunction(RUNTIME_CONFIG.rpcUrl, aaContractHash, 'getVerifier', [{ type: 'Hash160', value: `0x${accountIdHash}` }]),
       invokeReadFunction(RUNTIME_CONFIG.rpcUrl, aaContractHash, 'getHook', [{ type: 'Hash160', value: `0x${accountIdHash}` }]),
       invokeReadFunction(RUNTIME_CONFIG.rpcUrl, aaContractHash, 'getBackupOwner', [{ type: 'Hash160', value: `0x${accountIdHash}` }]),
-      invokeReadFunction(RUNTIME_CONFIG.rpcUrl, aaContractHash, 'isMarketEscrowActive', [{ type: 'Hash160', value: `0x${accountIdHash}` }]).catch(() => null),
+      invokeReadFunction(RUNTIME_CONFIG.rpcUrl, aaContractHash, 'isMarketEscrowActive', [{ type: 'Hash160', value: `0x${accountIdHash}` }]).catch((error) => { if (import.meta.env.DEV) console.error('[addressMarketService] isMarketEscrowActive failed:', error?.message); return null; }),
     ]);
 
     return {
@@ -204,7 +207,8 @@ async function fetchAccountSnapshot(aaContractHash, accountIdHash) {
       backupOwnerHash: decodeHash160(backupOwner?.stack?.[0]),
       escrowActive: escrowActive?.stack?.[0]?.type === 'Boolean' ? Boolean(escrowActive.stack[0].value) : null,
     };
-  } catch {
+  } catch (error) {
+    if (import.meta.env.DEV) console.error('[addressMarketService] fetchAccountSnapshot failed:', error?.message);
     return {
       verifierHash: '',
       hookHash: '',
@@ -225,8 +229,8 @@ async function enrichListing(listing) {
     account_address: accountAddress,
     seller_address: listing.sellerScriptHash ? `0x${listing.sellerScriptHash}` : '',
     buyer_address: listing.buyerScriptHash ? `0x${listing.buyerScriptHash}` : '',
-    verifier_profile: snapshot.verifierHash ? `0x${snapshot.verifierHash}` : 'Native backup owner only',
-    hook_profile: snapshot.hookHash ? `0x${snapshot.hookHash}` : 'No hook bound',
+    verifier_profile: snapshot.verifierHash ? `0x${snapshot.verifierHash}` : '',
+    hook_profile: snapshot.hookHash ? `0x${snapshot.hookHash}` : '',
     backup_owner: snapshot.backupOwnerHash ? `0x${snapshot.backupOwnerHash}` : '',
     escrow_active: snapshot.escrowActive,
   };
@@ -236,10 +240,22 @@ export function isAddressMarketConfigured() {
   return /^[0-9a-f]{40}$/.test(sanitizeHex(RUNTIME_CONFIG.addressMarketHash || ''));
 }
 
+export async function findListingsForWallet(walletScriptHash) {
+  const normalized = sanitizeHex(walletScriptHash || '');
+  if (!/^[0-9a-f]{40}$/.test(normalized)) return [];
+  const all = await listAddressListings();
+  return all.filter((listing) => {
+    if (listing.sellerScriptHash === normalized) return true;
+    if (listing.status === 'sold' && listing.buyerScriptHash === normalized) return true;
+    if (listing.backup_owner && sanitizeHex(listing.backup_owner) === normalized) return true;
+    return false;
+  });
+}
+
 export async function readAddressListing(id) {
   const result = await invokeMarketRead('getListing', [{ type: 'Integer', value: String(id) }]);
   const decoded = decodeListing(result?.stack?.[0]);
-  if (!decoded) throw new Error('Listing not found.');
+  if (!decoded) throw new Error(EC.listingNotFound);
   return enrichListing(decoded);
 }
 
@@ -250,7 +266,7 @@ export async function listAddressListings() {
   const count = Number(decodeInteger(countResult?.stack?.[0]));
   const reads = [];
   for (let id = 1; id <= count; id += 1) {
-    reads.push(invokeMarketRead('getListing', [{ type: 'Integer', value: String(id) }]).catch(() => null));
+    reads.push(invokeMarketRead('getListing', [{ type: 'Integer', value: String(id) }]).catch((error) => { if (import.meta.env.DEV) console.error('[addressMarketService] getListing failed:', error?.message); return null; }));
   }
 
   const decoded = (await Promise.all(reads))
@@ -264,10 +280,10 @@ export async function listAddressListings() {
 export async function createAddressListing(input = {}) {
   const marketHash = requireMarketHash();
   if (!walletService.isConnected || !connectedAccount.value) {
-    throw new Error('Connect a Neo wallet before creating a listing.');
+    throw new Error(EC.walletRequiredForListing);
   }
 
-  const aaContractHash = normalizeHash160Input(input.aaContractHash || RUNTIME_CONFIG.abstractAccountHash, 'AA contract');
+  const aaContractHash = normalizeHash160Input(input.aaContractHash || RUNTIME_CONFIG.abstractAccountHash);
   const accountIdHash = resolveListedAccountId(input.accountSeed || input.accountId || '');
   const priceFractions = parseGasToFractions(input.price_gas);
   const title = String(input.title || '').trim();
@@ -296,7 +312,7 @@ export async function createAddressListing(input = {}) {
 export async function cancelAddressListing(id) {
   const marketHash = requireMarketHash();
   if (!walletService.isConnected || !connectedAccount.value) {
-    throw new Error('Connect a Neo wallet before cancelling a listing.');
+    throw new Error(EC.walletRequiredForListing);
   }
 
   const result = await walletService.invoke({
@@ -312,7 +328,7 @@ export async function cancelAddressListing(id) {
 export async function updateAddressListingPrice(id, priceGas) {
   const marketHash = requireMarketHash();
   if (!walletService.isConnected || !connectedAccount.value) {
-    throw new Error('Connect a Neo wallet before updating a listing.');
+    throw new Error(EC.walletRequiredForListing);
   }
 
   const result = await walletService.invoke({
@@ -331,7 +347,7 @@ export async function updateAddressListingPrice(id, priceGas) {
 export async function refundPendingAddressPurchase(id) {
   const marketHash = requireMarketHash();
   if (!walletService.isConnected || !connectedAccount.value) {
-    throw new Error('Connect a Neo wallet before refunding a pending payment.');
+    throw new Error(EC.walletRequiredForListing);
   }
 
   const payerScriptHash = getScriptHashFromAddress(connectedAccount.value);
@@ -351,16 +367,16 @@ export async function refundPendingAddressPurchase(id) {
 export async function buyAddressListing(id, options = {}) {
   const marketHash = requireMarketHash();
   if (!walletService.isConnected || !connectedAccount.value) {
-    throw new Error('Connect a Neo wallet before buying a listing.');
+    throw new Error(EC.walletRequiredForListing);
   }
 
   const listing = await readAddressListing(id);
   if (listing.status !== 'active') {
-    throw new Error('Listing is not active.');
+    throw new Error(EC.listingNotActive);
   }
 
   const payerScriptHash = getScriptHashFromAddress(connectedAccount.value);
-  const backupOwnerHash = normalizeHash160Input(options.newBackupOwner || connectedAccount.value, 'New backup owner');
+  const backupOwnerHash = normalizeHash160Input(options.newBackupOwner || connectedAccount.value);
 
   const result = await walletService.invokeMultiple({
     invokeArgs: [
@@ -388,4 +404,43 @@ export async function buyAddressListing(id, options = {}) {
   });
 
   return { txid: result?.txid || '' };
+}
+
+function getVanityEndpoint() {
+  return RUNTIME_CONFIG.vanityServiceEndpoint || '/api/vanity';
+}
+
+export async function createVanityOrder({ pattern, patternType, gasAmount, buyerAddress }) {
+  const endpoint = getVanityEndpoint();
+  const response = await fetch(`${endpoint}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pattern, patternType, gasAmount, buyerAddress }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    const err = new Error(EC.vanityOrderFailed);
+    err.apiDetail = body || null;
+    throw err;
+  }
+  return response.json();
+}
+
+export async function getVanityOrder(orderId) {
+  const endpoint = getVanityEndpoint();
+  const response = await fetch(`${endpoint}/orders/${encodeURIComponent(orderId)}`);
+  if (!response.ok) {
+    throw new Error(EC.vanityOrdersFetchFailed);
+  }
+  return response.json();
+}
+
+export async function listVanityOrders(buyerAddress) {
+  const endpoint = getVanityEndpoint();
+  const qs = buyerAddress ? `?buyer=${encodeURIComponent(buyerAddress)}` : '';
+  const response = await fetch(`${endpoint}/orders${qs}`);
+  if (!response.ok) {
+    throw new Error(EC.vanityOrdersListFailed);
+  }
+  return response.json();
 }

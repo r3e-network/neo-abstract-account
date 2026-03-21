@@ -1,3 +1,4 @@
+import { EC } from '../../config/errorCodes.js';
 import {
   canonicalizeOperatorMutationPayload,
   importOperatorPrivateKey,
@@ -11,7 +12,8 @@ function getStorage(storage) {
   if (storage) return storage;
   try {
     return globalThis.localStorage || null;
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[operatorMutationTransport] localStorage access denied:', err?.message);
     return null;
   }
 }
@@ -27,7 +29,8 @@ function readSession(shareSlug, storage) {
   if (!raw) return null;
   try {
     return JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[operatorMutationTransport] Malformed session JSON:', err?.message);
     return null;
   }
 }
@@ -67,7 +70,9 @@ async function postJson(url, body, fetchImpl) {
   });
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload?.message || payload?.error || 'Operator mutation request failed.');
+    const err = new Error(EC.mutationTransportFailed);
+    err.rpcDetail = payload?.message || payload?.error || null;
+    throw err;
   }
   return payload;
 }
@@ -84,7 +89,7 @@ export function createOperatorMutationTransport({
   return {
     async run({ shareSlug = '', accessSlug = '', mutation = '', payload = {} } = {}) {
       if (!shareSlug || !accessSlug || !mutation) {
-        throw new Error('Signed operator mutations require a share slug, operator access slug, and mutation type.');
+        throw new Error(EC.operatorMutationMissingParams);
       }
 
       const session = await ensureKeyMaterial(shareSlug, storage);

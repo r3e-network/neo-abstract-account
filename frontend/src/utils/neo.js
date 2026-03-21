@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { EC } from '../config/errorCodes.js';
 import { sanitizeHex } from './hex.js';
 
 export const DEFAULT_NEO_ADDRESS_VERSION = 53;
@@ -8,7 +9,7 @@ const BASE58_INDEX = new Map([...BASE58_ALPHABET].map((char, index) => [char, in
 function hexToBytes(hexValue) {
   const hex = sanitizeHex(hexValue);
   if (hex.length % 2 !== 0) {
-    throw new Error(`Invalid hex length: ${hex.length}`);
+    throw new Error(EC.invalidHexLength);
   }
   const bytes = new Uint8Array(hex.length / 2);
   for (let index = 0; index < hex.length; index += 2) {
@@ -71,7 +72,7 @@ function decodeBase58(value) {
   for (const char of value) {
     const digit = BASE58_INDEX.get(char);
     if (digit == null) {
-      throw new Error(`Invalid base58 character: ${char}`);
+      throw new Error(EC.invalidBase58Char);
     }
     result = result * 58n + BigInt(digit);
   }
@@ -101,12 +102,12 @@ function emitPushData(hexValue) {
     const sizeHex = `${(length & 0xff).toString(16).padStart(2, '0')}${((length >> 8) & 0xff).toString(16).padStart(2, '0')}`;
     return `0d${sizeHex}${hex}`;
   }
-  throw new Error(`Data too large to push: ${length} bytes`);
+  throw new Error(EC.dataTooLargeToPush);
 }
 
 function emitSmallInteger(value) {
   if (value < 0 || value > 16) {
-    throw new Error(`Unsupported small integer: ${value}`);
+    throw new Error(EC.unsupportedSmallInteger);
   }
   return (0x10 + value).toString(16).padStart(2, '0');
 }
@@ -127,7 +128,7 @@ export function hash160(hexValue) {
 export function deriveAccountIdHash(accountIdHexOrSeed) {
   const normalized = sanitizeHex(accountIdHexOrSeed || '');
   if (!normalized) {
-    throw new Error('Account seed is required');
+    throw new Error(EC.accountSeedRequired);
   }
   if (/^[0-9a-f]{40}$/i.test(normalized)) {
     return normalized;
@@ -147,13 +148,13 @@ export function getAddressFromScriptHash(scriptHash, addressVersion = DEFAULT_NE
 export function getScriptHashFromAddress(address) {
   const decoded = decodeBase58(String(address || '').trim());
   if (decoded.length !== 25) {
-    throw new Error(`Invalid Neo address length: ${decoded.length}`);
+    throw new Error(EC.invalidNeoAddressLength);
   }
   const payload = decoded.slice(0, 21);
   const checksum = decoded.slice(21);
   const expectedChecksum = doubleSha256Bytes(payload).slice(0, 4);
   if (bytesToHex(checksum) !== bytesToHex(expectedChecksum)) {
-    throw new Error('Invalid Neo address checksum');
+    throw new Error(EC.invalidAddressChecksum);
   }
   return reverseHex(bytesToHex(payload.slice(1)));
 }
@@ -190,7 +191,9 @@ export async function invokeReadFunction(rpcUrl, scriptHash, operation, args = [
 
   const payload = await response.json();
   if (payload.error) {
-    throw new Error(payload.error.message || 'RPC error');
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = payload.error.message || null;
+    throw err;
   }
   return payload.result;
 }

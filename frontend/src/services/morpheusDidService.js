@@ -1,10 +1,12 @@
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { EC } from '../config/errorCodes.js';
 import { didService } from '@/services/didService';
 import { notificationService } from '@/services/notificationService';
 import { invokeReadFunction, getScriptHashFromAddress } from '@/utils/neo';
 import { sanitizeHex } from '@/utils/hex';
 import { encryptJsonWithMorpheusOracleKey } from '@/utils/morpheusEncryption';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
+import { buildZkLoginVerifierParamsHex, formatZkLoginTicket, normalizeZkLoginProvider } from '@/services/zkLoginVerifierService.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -73,8 +75,8 @@ function decodeStackItem(item) {
         if (typeof Buffer !== 'undefined') {
           return Buffer.from(item.value || '', 'base64').toString('utf8');
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        if (import.meta.env.DEV) console.error('[morpheusDidService] Buffer decode failed:', e?.message);
       }
       return `0x${hex}`;
     }
@@ -91,11 +93,13 @@ export async function fetchAccountIdByAddress({ rpcUrl, aaContractHash, accountA
     { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
   ]);
   if (result?.state === 'FAULT') {
-    throw new Error(result?.exception || 'getAccountIdByAddress fault');
+    const err = new Error(EC.rpcFault);
+    err.rpcDetail = result?.exception || null;
+    throw err;
   }
   const top = result?.stack?.[0];
   if (!top || top.type !== 'ByteString' || !top.value) {
-    throw new Error('getAccountIdByAddress returned no account id');
+    throw new Error(EC.accountSeedOrHashRequired);
   }
   return decodeBase64ToHex(top.value);
 }
@@ -105,7 +109,9 @@ export async function fetchVerifierContractByAddress({ rpcUrl, aaContractHash, a
     { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
   ]);
   if (result?.state === 'FAULT') {
-    throw new Error(result?.exception || 'getVerifierContractByAddress fault');
+    const err = new Error(EC.rpcFault);
+    err.rpcDetail = result?.exception || null;
+    throw err;
   }
   const top = result?.stack?.[0];
   const value = String(top?.value || '').trim();
@@ -116,7 +122,9 @@ export async function fetchVerifierContractByAddress({ rpcUrl, aaContractHash, a
 async function readVerifierMethod({ rpcUrl, verifierHash, operation, args = [] } = {}) {
   const result = await invokeReadFunction(rpcUrl, sanitizeHex(verifierHash), operation, args);
   if (result?.state === 'FAULT') {
-    throw new Error(result?.exception || `${operation} fault`);
+    const err = new Error(EC.rpcFault);
+    err.rpcDetail = result?.exception || null;
+    throw err;
   }
   return decodeStackItem(result?.stack?.[0]);
 }
@@ -135,13 +143,13 @@ export async function fetchUnifiedVerifierState({ rpcUrl, verifierHash, accountI
     activeSession,
   ] = await Promise.all([
     readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getOwner', args: [accountIdParam] }),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getMorpheusOracle', args: [accountIdParam] }).catch(() => ''),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getRecoveryNonce', args: [accountIdParam] }).catch(() => '0'),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getSessionNonce', args: [accountIdParam] }).catch(() => '0'),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getThreshold', args: [accountIdParam] }).catch(() => '0'),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getTimelock', args: [accountIdParam] }).catch(() => '0'),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getPendingRecovery', args: [accountIdParam] }).catch(() => []),
-    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getActiveSession', args: [accountIdParam] }).catch(() => []),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getMorpheusOracle', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getMorpheusOracle failed:', error?.message); return ''; }),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getRecoveryNonce', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getRecoveryNonce failed:', error?.message); return '0'; }),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getSessionNonce', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getSessionNonce failed:', error?.message); return '0'; }),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getThreshold', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getThreshold failed:', error?.message); return '0'; }),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getTimelock', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getTimelock failed:', error?.message); return '0'; }),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getPendingRecovery', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getPendingRecovery failed:', error?.message); return []; }),
+    readVerifierMethod({ rpcUrl, verifierHash: normalizedVerifier, operation: 'getActiveSession', args: [accountIdParam] }).catch((error) => { if (import.meta.env.DEV) console.error('[morpheusDidService] getActiveSession failed:', error?.message); return []; }),
   ]);
 
   return {
@@ -180,7 +188,9 @@ async function fetchOraclePublicKey() {
   );
   const body = await response.json().catch(() => ({}));
   if (!response.ok || !body?.public_key) {
-    throw new Error(body?.error || 'Unable to load Morpheus oracle public key');
+    const err = new Error(EC.oracleKeyLoadFailed);
+    err.rpcDetail = body?.error || null;
+    throw err;
   }
   return body;
 }
@@ -206,7 +216,7 @@ async function callNeoDid(action, payload = {}) {
       });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.error) {
-    const err = new Error('Morpheus DID service request failed. Please try again.');
+    const err = new Error(EC.morpheusDidRequestFailed);
     err.rpcDetail = body?.error || body?.message || null;
     throw err;
   }
@@ -216,7 +226,7 @@ async function callNeoDid(action, payload = {}) {
 async function buildEncryptedSubjectPatch(extra = {}) {
   const subject = didService.buildNeoDidSubject();
   if (!subject?.provider || !subject?.id_token) {
-    throw new Error('A connected Web3Auth identity with id_token is required.');
+    throw new Error(EC.web3AuthTokenRequired);
   }
   const oracleKey = await fetchOraclePublicKey();
   const confidentialPatch = {
@@ -243,9 +253,9 @@ class MorpheusDidService {
       phone: didService.profile?.phone || undefined,
     });
     if (!subjectPatch?.provider || !subjectPatch?.encrypted_params) {
-      throw new Error('Connect DID first.');
+      throw new Error(EC.walletNotConnected);
     }
-    return callNeoDid('bind', {
+    const response = await callNeoDid('bind', {
       vault_account: `0x${normalizeScriptHash(vaultAccount)}`,
       provider: subjectPatch.provider,
       claim_type: claimType,
@@ -258,6 +268,14 @@ class MorpheusDidService {
         ...metadata,
       },
     });
+    return {
+      ...response,
+      zklogin_verifier_params_hex: buildZkLoginVerifierParamsHex({
+        publicKey: response.public_key,
+        provider: response.provider || subjectPatch.provider,
+        masterNullifier: response.master_nullifier,
+      }),
+    };
   }
 
   async resolveDid({ did = RUNTIME_CONFIG.morpheusNeoDidServiceDid, format = '' } = {}) {
@@ -297,6 +315,42 @@ class MorpheusDidService {
     });
   }
 
+  async previewZkLoginTicket({
+    verifierContract,
+    accountIdHash,
+    targetContract,
+    method,
+    argsHashHex,
+    nonce,
+    deadline,
+    provider = 'web3auth',
+  } = {}) {
+    const subjectPatch = await buildEncryptedSubjectPatch({
+      linked_accounts: didService.profile?.linkedAccounts || [],
+      email: didService.profile?.email || undefined,
+      phone: didService.profile?.phone || undefined,
+    });
+    const response = await callNeoDid('zklogin-ticket', {
+      ...subjectPatch,
+      network: 'neo_n3',
+      verifier_contract: `0x${sanitizeHex(verifierContract)}`,
+      account_id_hash: `0x${sanitizeHex(accountIdHash)}`,
+      target_contract: `0x${sanitizeHex(targetContract)}`,
+      method: trim(method),
+      args_hash: `0x${sanitizeHex(argsHashHex)}`,
+      nonce: String(nonce ?? '0'),
+      deadline: String(deadline ?? '0'),
+      provider: normalizeZkLoginProvider(provider),
+    });
+    const ticket = formatZkLoginTicket(response);
+    return {
+      ...response,
+      verifier_params_hex: ticket.verifierParamsHex,
+      proof_hex: ticket.proofHex,
+      ticket,
+    };
+  }
+
   async invokeRecoveryRequest({ verifierHash, accountIdHex, newOwner, expiresAt, provider = 'web3auth' } = {}) {
     const subjectPatch = await buildEncryptedSubjectPatch({
       linked_accounts: didService.profile?.linkedAccounts || [],
@@ -329,14 +383,14 @@ class MorpheusDidService {
         did: profile.did,
         email: profile.email,
         payload: notificationPayload,
-      }).catch(() => {});
+      }).catch((err) => { if (import.meta.env.DEV) console.error('[morpheusDidService] recovery email failed:', err?.message); });
     }
     if (profile?.phone && notificationService.canSms) {
       await notificationService.sendRecoverySms({
         did: profile.did,
         phone: profile.phone,
         payload: notificationPayload,
-      }).catch(() => {});
+      }).catch((err) => { if (import.meta.env.DEV) console.error('[morpheusDidService] recovery sms failed:', err?.message); });
     }
     return result;
   }

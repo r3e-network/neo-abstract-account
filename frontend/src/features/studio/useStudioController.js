@@ -3,8 +3,11 @@ import { createVerifyScript, deriveAccountIdHash, getAddressFromScriptHash, hash
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
-import { buildMatrixRegistrationInvocation, normalizeMatrixDomain, isMatrixDomain } from '@/services/matrixDomainService.js';
+import { buildMatrixRegistrationInvocation, isMatrixDomain } from '@/services/matrixDomainService.js';
 import { CONTRACT_SOURCE_FILES } from './contractSources';
+import { useI18n } from '@/i18n';
+import { useClipboard } from '@/composables/useClipboard';
+import { fetchAccountMetadata, upsertAccountMetadata } from '@/services/accountMetadataService';
 import {
   STUDIO_TABS,
   DEFAULT_RECENT_TRANSACTIONS_LIMIT,
@@ -14,35 +17,35 @@ import {
   createPermissionsFormState,
   createManageBusyState,
   createPermissionsBusyState,
-  createManageSnapshotState
+  createManageSnapshotState,
+  createMetadataFormState,
+  createMetadataBusyState
 } from './constants';
 import {
   addListRow,
   createGeneratedAccountId,
   decodeStackBoolean,
   decodeStackByteStringHex,
-  decodeStackHashArray,
+  decodeStackHash160,
   decodeStackInteger,
-  formatErrorMessage,
   hash160Param,
-  isPositiveNumber,
   normalizeAccountId,
-  normalizeThreshold,
   parseRecentTransactions,
   removeListRow,
   resolveRpcUrl,
-  sanitizeList,
-  toHashArray
+  sanitizeHex
 } from './helpers';
+import { EC, translateError } from '../../config/errorCodes.js';
 
 export function useStudioController() {
   const toast = useToast();
+  const { t } = useI18n();
 
   const tabs = STUDIO_TABS;
   const activePanel = ref('operations');
 
   const isCreating = ref(false);
-  const copied = ref(false);
+  const { copiedKey, markCopied, copyText } = useClipboard();
   const activeFileIdx = ref(0);
 
   const recentTransactions = ref([]);
@@ -56,6 +59,8 @@ export function useStudioController() {
   const manageBusy = ref(createManageBusyState());
   const permissionsBusy = ref(createPermissionsBusyState());
   const manageSnapshot = ref(createManageSnapshotState());
+  const metadataForm = ref(createMetadataFormState());
+  const metadataBusy = ref(createMetadataBusyState());
 
   const autoLoadedAccounts = ref([]);
 
@@ -78,6 +83,11 @@ export function useStudioController() {
 
   const canManageTarget = computed(() => !!manageForm.value.accountAddress && walletConnected.value);
   const canManagePermissions = computed(() => !!permissionsForm.value.accountAddress && walletConnected.value);
+
+  const validCreateAdmins = computed(() => {
+    const owner = createForm.value.backupOwner;
+    return owner && owner.trim() ? [owner.trim()] : [];
+  });
 
   watch(connectedAccount, async () => {
     if (isEvmWallet.value && walletService.account?.pubKey) {
@@ -129,12 +139,12 @@ export function useStudioController() {
   async function invokeReadOperation(operation, args = []) {
     const aaHash = getAbstractAccountHash();
     if (!aaHash) {
-      throw new Error('Master Abstract Account contract not found in environment config.');
+      throw new Error(EC.contractNotFound);
     }
 
     const response = await invokeReadFunction(resolveRpcUrl(walletService), aaHash, operation, args);
     if (response?.state === 'FAULT') {
-      throw new Error(`${operation} failed: ${response.exception || 'VM fault'}`);
+      throw new Error(EC.operationFailed);
     }
     return response;
   }
@@ -170,7 +180,7 @@ export function useStudioController() {
       const scriptHash = reverseHex(hash160(script));
       computedAddress.value = getAddressFromScriptHash(scriptHash);
     } catch (err) {
-      console.error(err);
+      if (import.meta.env.DEV) console.error('[useStudioController] computeAA failed:', err?.message);
       computedScriptHex.value = '';
       computedAddress.value = '';
     }
@@ -178,7 +188,7 @@ export function useStudioController() {
 
   function requireWallet() {
     if (!walletConnected.value || !walletService.isConnected) {
-      toast.error('Please connect your wallet first.');
+      toast.error(t('studio.toast.connectWallet', 'Please connect your wallet first.'));
       return false;
     }
     return true;
@@ -193,20 +203,20 @@ export function useStudioController() {
       ]);
       const ownerHash = decodeStackByteStringHex(owner.stack?.[0]);
       if (ownerHash) {
-        matrixCheckResult.value = { available: false, error: true, message: `Domain is already taken.` };
+        matrixCheckResult.value = { available: false, error: true, message: t('studio.toast.domainTaken', 'Domain is already taken.') };
       } else {
-        matrixCheckResult.value = { available: true, error: false, message: `Domain is available!` };
+        matrixCheckResult.value = { available: true, error: false, message: t('studio.toast.domainAvailable', 'Domain is available!') };
       }
     } catch (e) {
-      console.warn('Matrix check error', e);
-      matrixCheckResult.value = { available: true, error: false, message: `Domain appears available.` };
+      if (import.meta.env.DEV) console.error('[useStudioController] checkMatrixDomain failed:', e?.message);
+      matrixCheckResult.value = { available: false, error: true, message: t('studioPanels.domainCheckFailed', 'Could not verify domain availability. Please try again.') };
     }
   }
 
   async function invokeOperation(label, operation, args) {
     const aaHash = getAbstractAccountHash();
     if (!aaHash) {
-      throw new Error('Master Abstract Account contract not found in environment config.');
+      throw new Error(EC.contractNotFound);
     }
 
     const result = await walletService.invoke({
@@ -218,11 +228,11 @@ export function useStudioController() {
 
     const txid = result?.txid || '';
     if (!txid) {
-      throw new Error('No transaction ID returned by wallet provider.');
+      throw new Error(EC.noTxId);
     }
 
     pushTransaction(label, txid);
-    toast.success(`${label} transaction submitted.`);
+    toast.success(t('studio.toast.txSubmitted', '{label} transaction submitted.').replace('{label}', label));
   }
 
   async function loadAccountConfiguration() {
@@ -263,6 +273,19 @@ export function useStudioController() {
       manageForm.value.escapeActive = escapeActive;
       permissionsForm.value.accountAddress = manageForm.value.accountAddress;
 
+      // Fetch off-chain metadata
+      try {
+        const meta = await fetchAccountMetadata(accountHash);
+        metadataForm.value = {
+          metadataUri: meta?.metadata_uri || '',
+          description: meta?.description || '',
+          logoUrl: meta?.logo_url || '',
+        };
+      } catch (e) {
+        if (import.meta.env.DEV) console.warn('[useStudioController] fetchAccountMetadata failed:', e?.message);
+        metadataForm.value = createMetadataFormState();
+      }
+
       manageSnapshot.value = {
         loadedAt: new Date().toLocaleString(),
         accountId: accountHash,
@@ -274,10 +297,9 @@ export function useStudioController() {
         escapeActive,
       };
 
-      toast.success('Current account configuration loaded.');
+      toast.success(t('studio.toast.accountLoaded', 'Current account configuration loaded.'));
     } catch (err) {
-      console.error(err);
-      toast.error(`Load failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       manageBusy.value.load = false;
     }
@@ -286,7 +308,7 @@ export function useStudioController() {
   async function createAccount() {
     if (!requireWallet()) return;
     if (!canCreate.value) {
-      toast.error('Please complete required account configuration fields.');
+      toast.error(t('studio.toast.completeFields', 'Please complete required account configuration fields.'));
       return;
     }
 
@@ -320,11 +342,11 @@ export function useStudioController() {
       const matrixDomain = baseDomain ? `${baseDomain}.matrix` : '';
       if (matrixDomain) {
         if (!isMatrixDomain(matrixDomain)) {
-          throw new Error('Matrix domain must end with .matrix');
+          throw new Error(EC.matrixDomainInvalid);
         }
         const ownerAddress = connectedAccount.value;
         if (!ownerAddress) {
-          throw new Error('Connect a Neo wallet before registering a .matrix domain.');
+          throw new Error(EC.connectWalletMatrix);
         }
         const matrixInvocation = buildMatrixRegistrationInvocation(matrixDomain, ownerAddress);
         const result = await walletService.invokeMultiple({
@@ -332,15 +354,14 @@ export function useStudioController() {
           signers: [{ account: connectedAccount.value, scopes: 1 }]
         });
         const txid = result?.txid || result?.transaction || '';
-        if (!txid) throw new Error('No transaction ID returned by wallet provider.');
+        if (!txid) throw new Error(EC.noTxId);
         pushTransaction(`Register V3 account + register ${matrixDomain}`, txid);
-        toast.success(`Register V3 account + ${matrixDomain} registration submitted.`);
+        toast.success(t('studio.toast.registerAccountMatrix', 'Register V3 account + {domain} registration submitted.').replace('{domain}', matrixDomain));
       } else {
         await invokeOperation('Register V3 account', 'registerAccount', createInvocation.args);
       }
     } catch (err) {
-      console.error(err);
-      toast.error(`Creation failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       isCreating.value = false;
     }
@@ -361,8 +382,7 @@ export function useStudioController() {
         { type: 'ByteArray', value: verifierParamsHex ? `0x${verifierParamsHex}` : '0x' }
       ]);
     } catch (err) {
-      console.error(err);
-      toast.error(`Verifier update failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       manageBusy.value.verifier = false;
     }
@@ -381,8 +401,7 @@ export function useStudioController() {
         { type: 'Hash160', value: hookHash }
       ]);
     } catch (err) {
-      console.error(err);
-      toast.error(`Hook update failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       manageBusy.value.hook = false;
     }
@@ -397,8 +416,7 @@ export function useStudioController() {
         { type: 'Hash160', value: accountIdHash },
       ]);
     } catch (err) {
-      console.error(err);
-      toast.error(`Escape initiation failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       manageBusy.value.initiateEscape = false;
     }
@@ -407,7 +425,7 @@ export function useStudioController() {
   async function finalizeEscape() {
     if (!requireWallet() || !canManageTarget.value) return;
     if (!manageForm.value.escapeNewVerifier) {
-      toast.error('Provide the new verifier hash to finalize escape.');
+      toast.error(t('studio.toast.provideNewVerifier', 'Provide the new verifier hash to finalize escape.'));
       return;
     }
     manageBusy.value.finalizeEscape = true;
@@ -418,19 +436,53 @@ export function useStudioController() {
         { type: 'Hash160', value: hash160Param(manageForm.value.escapeNewVerifier) },
       ]);
     } catch (err) {
-      console.error(err);
-      toast.error(`Escape finalization failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       manageBusy.value.finalizeEscape = false;
+    }
+  }
+
+  async function saveMetadata() {
+    if (!requireWallet() || !canManageTarget.value) return;
+    metadataBusy.value.save = true;
+    try {
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+
+      // On-chain: set MetadataUri
+      const metadataUri = metadataForm.value.metadataUri.trim();
+      await invokeOperation('Set metadata URI', 'SetMetadataUri', [
+        { type: 'Hash160', value: accountIdHash },
+        { type: 'String', value: metadataUri },
+      ]);
+
+      // Off-chain: save description + logo
+      await upsertAccountMetadata({
+        accountIdHash,
+        description: metadataForm.value.description.trim(),
+        logoUrl: metadataForm.value.logoUrl.trim(),
+        metadataUri,
+      });
+
+      toast.success(t('studio.toast.metadataSaved', 'Account metadata saved.'));
+    } catch (err) {
+      toast.error(translateError(err?.message, t));
+    } finally {
+      metadataBusy.value.save = false;
     }
   }
 
   function parseTypedArgsJson(text) {
     const raw = String(text || '').trim();
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[useStudioController] parseArgsJson failed:', err?.message);
+      throw new Error(EC.invalidJsonSyntax);
+    }
     if (!Array.isArray(parsed)) {
-      throw new Error('Arguments JSON must be an array of Neo RPC params.');
+      throw new Error(EC.invalidArgsJson);
     }
     return parsed;
   }
@@ -438,7 +490,7 @@ export function useStudioController() {
   async function callVerifier() {
     if (!requireWallet() || !canManagePermissions.value) return;
     if (!permissionsForm.value.verifierMethod.trim()) {
-      toast.error('Provide a verifier method name.');
+      toast.error(t('studio.toast.provideVerifierMethod', 'Provide a verifier method name.'));
       return;
     }
     permissionsBusy.value.verifierCall = true;
@@ -450,8 +502,7 @@ export function useStudioController() {
         { type: 'Array', value: parseTypedArgsJson(permissionsForm.value.verifierArgsJson) },
       ]);
     } catch (err) {
-      console.error(err);
-      toast.error(`Verifier call failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       permissionsBusy.value.verifierCall = false;
     }
@@ -460,7 +511,7 @@ export function useStudioController() {
   async function callHook() {
     if (!requireWallet() || !canManagePermissions.value) return;
     if (!permissionsForm.value.hookMethod.trim()) {
-      toast.error('Provide a hook method name.');
+      toast.error(t('studio.toast.provideHookMethod', 'Provide a hook method name.'));
       return;
     }
     permissionsBusy.value.hookCall = true;
@@ -472,33 +523,23 @@ export function useStudioController() {
         { type: 'Array', value: parseTypedArgsJson(permissionsForm.value.hookArgsJson) },
       ]);
     } catch (err) {
-      console.error(err);
-      toast.error(`Hook call failed: ${formatErrorMessage(err)}`);
+      toast.error(translateError(err?.message, t));
     } finally {
       permissionsBusy.value.hookCall = false;
     }
   }
 
-  function copyCode() {
+  async function copyCode() {
     const content = contractFiles[activeFileIdx.value]?.content;
     if (!content) return;
-
-    navigator.clipboard.writeText(content).then(() => {
-      copied.value = true;
-      setTimeout(() => {
-        copied.value = false;
-      }, 1800);
-    }).catch((err) => {
-      console.error(err);
-      toast.error('Failed to copy source to clipboard.');
-    });
+    if (await copyText(content)) markCopied('code');
   }
 
   return {
     tabs,
     activePanel,
     isCreating,
-    copied,
+    copiedKey,
     activeFileIdx,
     recentTransactions,
     createForm,
@@ -507,6 +548,8 @@ export function useStudioController() {
     manageBusy,
     permissionsBusy,
     manageSnapshot,
+    metadataForm,
+    metadataBusy,
     computedScriptHex,
     computedAddress,
     contractFiles,
@@ -516,6 +559,7 @@ export function useStudioController() {
     canCreate,
     canManageTarget,
     canManagePermissions,
+    validCreateAdmins,
     addRow,
     removeRow,
     generateUUID,
@@ -528,6 +572,7 @@ export function useStudioController() {
     updateHook,
     initiateEscape,
     finalizeEscape,
+    saveMetadata,
     callVerifier,
     callHook,
     copyCode

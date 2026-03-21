@@ -82,7 +82,7 @@ V3 supports several authorization modes, but they all converge on `executeUserOp
 
 - **Backup-owner native witness** when no verifier plugin is configured.
 - **Web3Auth / EIP-712 verifier** for secp256k1 typed-data approvals.
-- **TEE / WebAuthn / SessionKey / MultiSig / ZKEmail** verifier plugins.
+- **TEE / WebAuthn / SessionKey / MultiSig / ZKEmail / ZkLogin** verifier plugins.
 - **Custom hooks** for policy enforcement or post-execution bookkeeping.
 
 This is the critical boundary: verifier plugins decide **who may authorize**, while hook plugins decide **what extra policy runs around execution**.
@@ -118,6 +118,7 @@ Legacy `executeUnifiedByAddress` handling remains compatibility-only and should 
 | `contracts/verifiers/TEEVerifier.cs` | TEE-signed authorization |
 | `contracts/verifiers/WebAuthnVerifier.cs` | Passkey / WebAuthn authorization |
 | `contracts/verifiers/SessionKeyVerifier.cs` | Short-lived delegated execution keys |
+| `contracts/verifiers/ZkLoginVerifier.cs` | Morpheus NeoDID / Web2 identity-root authorization with operation-bound zklogin tickets |
 | `contracts/verifiers/MultiSigVerifier.cs` | Plugin-based multisig authorization |
 | `contracts/hooks/*.cs` | Optional execution policies such as daily limits, token restrictions, credential gating, and hook composition |
 
