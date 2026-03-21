@@ -1,28 +1,7 @@
+import { resolveMorpheusRuntimeBase } from './morpheus-base.js';
+
 function trim(value) {
   return String(value || '').trim();
-}
-
-function normalizeNetwork(value) {
-  return trim(value).toLowerCase() === 'testnet' ? 'testnet' : 'mainnet';
-}
-
-function resolveNetwork(req) {
-  return normalizeNetwork(
-    req.query?.morpheus_network
-      || req.body?.morpheus_network
-      || req.headers?.['x-morpheus-network']
-      || process.env.MORPHEUS_NETWORK
-      || process.env.VITE_AA_NETWORK
-      || process.env.VITE_MORPHEUS_NETWORK
-  );
-}
-
-function resolveBaseUrl(req) {
-  const network = resolveNetwork(req);
-  const explicit = trim(process.env.MORPHEUS_API_BASE_URL);
-  const baseUrl = (explicit || 'https://morpheus.meshmini.app').replace(/\/$/, '');
-  if (/\/(mainnet|testnet)$/.test(baseUrl)) return baseUrl;
-  return `${baseUrl}/${network}`;
 }
 
 function resolvePath(action) {
@@ -43,7 +22,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Unsupported Morpheus NeoDID action' });
   }
 
-  const baseUrl = resolveBaseUrl(req);
+  const baseUrl = resolveMorpheusRuntimeBase(req);
   const query = route.method === 'GET'
     ? new URLSearchParams(
         Object.entries(req.query || {}).filter(([key, value]) => key !== 'action' && key !== 'morpheus_network' && value != null && value !== '')

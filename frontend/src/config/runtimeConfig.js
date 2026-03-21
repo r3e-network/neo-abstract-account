@@ -20,9 +20,10 @@ export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
 export const DEFAULT_DID_PROVIDER = 'web3auth';
 export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'smartwallet.neo';
 export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
-export const DEFAULT_MORPHEUS_EDGE_BASE_URL = 'https://morpheus.meshmini.app';
-export const DEFAULT_MORPHEUS_API_BASE_URL = `${DEFAULT_MORPHEUS_EDGE_BASE_URL}/mainnet`;
-export const DEFAULT_MORPHEUS_API_BASE_URL_TESTNET = `${DEFAULT_MORPHEUS_EDGE_BASE_URL}/testnet`;
+export const DEFAULT_MORPHEUS_EDGE_BASE_URL = 'https://edge.meshmini.app';
+export const DEFAULT_MORPHEUS_CONTROL_PLANE_BASE_URL = 'https://control.meshmini.app';
+export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://morpheus-mainnet.meshmini.app';
+export const DEFAULT_MORPHEUS_API_BASE_URL_TESTNET = 'https://morpheus-testnet.meshmini.app';
 export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
 
 export const MORPHEUS_NETWORK_DEFAULTS = {
@@ -201,7 +202,7 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
       networkDefaults.neoDidDomain
     ),
     morpheusApiBaseUrl: resolveOptionalUrl(
-      env.VITE_MORPHEUS_API_BASE_URL,
+      env[`VITE_MORPHEUS_${runtimeNetwork === 'testnet' ? 'TESTNET' : 'MAINNET'}_RUNTIME_URL`] || env.VITE_MORPHEUS_RUNTIME_URL || env.VITE_MORPHEUS_API_BASE_URL,
       networkDefaults.morpheusApiBaseUrl
     ),
     morpheusNeoDidServiceDid: resolveOptionalUrl(

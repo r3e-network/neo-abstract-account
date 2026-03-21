@@ -90,6 +90,8 @@ test('frontend ships a runtime env example for browser and server routes', () =>
   assert.match(example, /DID_EMAIL_WEBHOOK_URL=/);
   assert.match(example, /DID_SMS_WEBHOOK_URL=/);
   assert.match(example, /MORPHEUS_API_BASE_URL=/);
+  assert.match(example, /MORPHEUS_RUNTIME_URL=/);
+  assert.match(example, /VITE_MORPHEUS_RUNTIME_URL=/);
   assert.match(example, /server-only/i);
 });
 

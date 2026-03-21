@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { DEFAULT_ABSTRACT_ACCOUNT_HASH, resolveAbstractAccountHash, resolveOptionalBoolean } from '../src/config/runtimeConfig.js';
 import { sanitizeHex } from '../src/utils/hex.js';
 import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvocationForRelay } from './relayHelpers.js';
+import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
 import { checkRateLimit, sanitizeError } from './rateLimiter.js';
+import { resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeToken } from './morpheus-base.js';
 
 const RAW_TRANSACTION_PATTERN = /^(0x)?[0-9a-fA-F]+$/;
 const MAX_RAW_TRANSACTION_LENGTH = 200000;
@@ -52,6 +54,24 @@ function sha256Hex(value) {
   return createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
 }
 
+function relayFingerprint({ payload = {}, normalized = {}, simulate = false, paymaster = null } = {}) {
+  return {
+    mode: normalized.mode || '',
+    rawTransaction: normalized.rawTransaction || '',
+    metaInvocation: normalized.metaInvocation || null,
+    simulate: Boolean(simulate),
+    paymaster: paymaster || null,
+    relayPayloadMode: payload?.relayPayloadMode || '',
+  };
+}
+
+function sendJson(res, statusCode, payload, requestId) {
+  if (requestId) {
+    res.setHeader?.('X-Request-Id', requestId);
+  }
+  res.status(statusCode).json(attachRequestId(payload, requestId));
+}
+
 function resolvePaymasterNetwork() {
   const normalized = trimString(
     process.env.MORPHEUS_NETWORK
@@ -64,17 +84,12 @@ function resolvePaymasterNetwork() {
 
 function resolvePaymasterConfig() {
   const network = resolvePaymasterNetwork();
-  const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
-  const endpoint = trimString(
-    process.env[`MORPHEUS_PAYMASTER_${upper}_ENDPOINT`]
-      || process.env.MORPHEUS_PAYMASTER_ENDPOINT
-      || process.env.AA_PAYMASTER_ENDPOINT
-      || ''
-  );
+  const endpoint = trimString(resolveMorpheusPaymasterEndpoint(network));
   const apiToken = trimString(
-    process.env[`MORPHEUS_PAYMASTER_${upper}_API_TOKEN`]
+    process.env[`MORPHEUS_PAYMASTER_${network === 'testnet' ? 'TESTNET' : 'MAINNET'}_API_TOKEN`]
       || process.env.MORPHEUS_PAYMASTER_API_TOKEN
       || process.env.AA_PAYMASTER_API_TOKEN
+      || resolveMorpheusRuntimeToken()
       || ''
   );
   return { network, endpoint, apiToken, enabled: Boolean(endpoint) };
@@ -221,32 +236,50 @@ async function relayMetaInvocation({ rpcUrl, relayWif, invocation }) {
 }
 
 export default async function handler(req, res) {
+  const requestPayload = req.body || {};
+  const normalized = normalizeRelayPayload(requestPayload);
+  const simulate = Boolean(requestPayload?.simulate);
+  const paymasterInput = requestPayload?.paymaster && typeof requestPayload.paymaster === 'object' ? requestPayload.paymaster : null;
+  const durable = await beginDurableRequest({
+    req,
+    routeName: 'relay_transaction',
+    payload: requestPayload,
+    fingerprint: relayFingerprint({ payload: requestPayload, normalized, simulate, paymaster: paymasterInput }),
+  });
+  const requestId = durable.context.requestId;
+
+  if (!durable.ok) {
+    if (durable.replayed) {
+      return sendJson(res, durable.cached.status, durable.cached.body, requestId);
+    }
+    if (durable.inProgress) {
+      return sendJson(res, 409, { error: 'request_in_progress' }, requestId);
+    }
+  }
+
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'method_not_allowed' });
-    return;
+    await failDurableRequest(durable.context, { statusCode: 405, error: 'method_not_allowed', phase: 'method' });
+    return sendJson(res, 405, { error: 'method_not_allowed' }, requestId);
   }
 
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-  const rateLimit = checkRateLimit(clientIp);
+  const rateLimit = await checkRateLimit(clientIp);
   
   if (!rateLimit.allowed) {
     res.setHeader?.('Retry-After', String(rateLimit.retryAfter));
-    res.status(429).json({ 
+    await failDurableRequest(durable.context, { statusCode: 429, error: 'rate_limit_exceeded', phase: 'rate_limit' });
+    return sendJson(res, 429, { 
       error: 'rate_limit_exceeded', 
       retryAfter: rateLimit.retryAfter 
-    });
-    return;
+    }, requestId);
   }
 
   const rpcUrl = process.env.AA_RELAY_RPC_URL || process.env.VITE_AA_RELAY_RPC_URL || process.env.VITE_NEO_RPC_URL || '';
   if (!rpcUrl) {
-    res.status(501).json({ error: 'relay_not_configured' });
-    return;
+    await failDurableRequest(durable.context, { statusCode: 501, error: 'relay_not_configured', phase: 'config' });
+    return sendJson(res, 501, { error: 'relay_not_configured' }, requestId);
   }
 
-  const normalized = normalizeRelayPayload(req.body || {});
-  const simulate = Boolean(req.body?.simulate);
-  const paymasterInput = req.body?.paymaster && typeof req.body.paymaster === 'object' ? req.body.paymaster : null;
   const allowRawRelayForwarding = resolveOptionalBoolean(
     process.env.AA_RELAY_ALLOW_RAW_FORWARD || process.env.VITE_AA_RELAY_RAW_ENABLED,
     false,
@@ -262,29 +295,30 @@ export default async function handler(req, res) {
 
   if (normalized.mode === 'raw') {
     if (!allowRawRelayForwarding) {
-      res.status(403).json({ error: 'raw_relay_not_enabled' });
-      return;
+      await failDurableRequest(durable.context, { statusCode: 403, error: 'raw_relay_not_enabled', phase: 'validation' });
+      return sendJson(res, 403, { error: 'raw_relay_not_enabled' }, requestId);
     }
 
     if (!normalized.rawTransaction) {
-      res.status(400).json({ error: 'missing_raw_transaction' });
-      return;
+      await failDurableRequest(durable.context, { statusCode: 400, error: 'missing_raw_transaction', phase: 'validation' });
+      return sendJson(res, 400, { error: 'missing_raw_transaction' }, requestId);
     }
 
     if (!RAW_TRANSACTION_PATTERN.test(normalized.rawTransaction) || normalized.rawTransaction.length > MAX_RAW_TRANSACTION_LENGTH) {
-      res.status(400).json({ error: 'invalid_raw_transaction' });
-      return;
+      await failDurableRequest(durable.context, { statusCode: 400, error: 'invalid_raw_transaction', phase: 'validation' });
+      return sendJson(res, 400, { error: 'invalid_raw_transaction' }, requestId);
     }
 
     if (simulate) {
-      res.status(200).json({
+      const body = {
         simulate: true,
         ok: false,
         supported: false,
         code: 'simulation_not_supported_for_raw',
         message: 'Simulation is only available for relay-ready meta invocations.',
-      });
-      return;
+      };
+      await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(body, requestId) });
+      return sendJson(res, 200, body, requestId);
     }
 
     try {
@@ -300,8 +334,8 @@ export default async function handler(req, res) {
       });
       const payload = await response.json();
       if (payload?.error) {
-        res.status(502).json({ error: 'relay_rpc_error', details: payload.error });
-        return;
+        await failDurableRequest(durable.context, { statusCode: 502, error: 'relay_rpc_error', phase: 'raw_relay' });
+        return sendJson(res, 502, { error: 'relay_rpc_error', details: payload.error }, requestId);
       }
 
       const result = payload?.result;
@@ -309,34 +343,37 @@ export default async function handler(req, res) {
         ? result
         : result?.hash || result?.txid || null;
 
-      res.status(200).json({ txid, result: result ?? null });
+      const body = { txid, result: result ?? null };
+      await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(body, requestId) });
+      return sendJson(res, 200, body, requestId);
     } catch (error) {
-      res.status(502).json({
+      const body = {
         error: 'relay_network_error',
         message: sanitizeError(error),
-      });
+      };
+      await failDurableRequest(durable.context, { statusCode: 502, error: body.error, phase: 'raw_relay' });
+      return sendJson(res, 502, body, requestId);
     }
-    return;
   }
 
-  if (!req.body?.metaInvocation && !req.body?.meta_invocation) {
-    res.status(400).json({ error: 'missing_meta_invocation' });
-    return;
+  if (!requestPayload?.metaInvocation && !requestPayload?.meta_invocation) {
+    await failDurableRequest(durable.context, { statusCode: 400, error: 'missing_meta_invocation', phase: 'validation' });
+    return sendJson(res, 400, { error: 'missing_meta_invocation' }, requestId);
   }
 
-  const metaInvocation = req.body?.metaInvocation || req.body?.meta_invocation;
+  const metaInvocation = requestPayload?.metaInvocation || requestPayload?.meta_invocation;
   const sanitizedMetaInvocation = sanitizeMetaInvocationForRelay(metaInvocation, {
     aaContractHash: allowedAaContractHash,
   });
   if (!sanitizedMetaInvocation) {
-    res.status(400).json({ error: 'relay_meta_invocation_not_allowed' });
-    return;
+    await failDurableRequest(durable.context, { statusCode: 400, error: 'relay_meta_invocation_not_allowed', phase: 'validation' });
+    return sendJson(res, 400, { error: 'relay_meta_invocation_not_allowed' }, requestId);
   }
 
   const relayWif = process.env.AA_RELAY_WIF || '';
   if (!relayWif) {
-    res.status(501).json({ error: 'relay_signer_not_configured' });
-    return;
+    await failDurableRequest(durable.context, { statusCode: 501, error: 'relay_signer_not_configured', phase: 'config' });
+    return sendJson(res, 501, { error: 'relay_signer_not_configured' }, requestId);
   }
 
   let failurePhase = simulate ? 'simulation' : 'preview';
@@ -353,21 +390,23 @@ export default async function handler(req, res) {
         estimatedGasUnits: Number(result?.gasConsumed || 0),
       });
       if (paymaster && paymaster.approved === false) {
-        res.status(200).json({
+        const body = {
           ...result,
           ok: false,
           code: 'paymaster_denied',
           exception: paymaster.reason || 'Paymaster denied sponsorship.',
           paymaster,
-        });
-        return;
+        };
+        await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(body, requestId) });
+        return sendJson(res, 200, body, requestId);
       }
       if (paymaster) {
-        res.status(200).json({ ...result, paymaster });
-        return;
+        const body = { ...result, paymaster };
+        await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(body, requestId) });
+        return sendJson(res, 200, body, requestId);
       }
-      res.status(200).json(result);
-      return;
+      await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(result, requestId) });
+      return sendJson(res, 200, result, requestId);
     }
 
     const preview = await simulateMetaInvocation({
@@ -376,8 +415,8 @@ export default async function handler(req, res) {
       invocation: sanitizedMetaInvocation,
     });
     if (!preview.ok) {
-      res.status(200).json(preview);
-      return;
+      await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(preview, requestId) });
+      return sendJson(res, 200, preview, requestId);
     }
     failurePhase = 'paymaster';
     const paymaster = await maybeAuthorizePaymaster({
@@ -386,12 +425,13 @@ export default async function handler(req, res) {
       estimatedGasUnits: Number(preview?.gasConsumed || 0),
     });
     if (paymaster && paymaster.approved === false) {
-      res.status(402).json({
+      const body = {
         error: 'paymaster_denied',
         message: paymaster.reason || 'Paymaster denied sponsorship.',
         paymaster,
-      });
-      return;
+      };
+      await failDurableRequest(durable.context, { statusCode: 402, error: 'paymaster_denied', phase: 'paymaster' });
+      return sendJson(res, 402, body, requestId);
     }
 
     failurePhase = 'relay';
@@ -401,7 +441,9 @@ export default async function handler(req, res) {
       invocation: sanitizedMetaInvocation,
     });
     failurePhase = 'response';
-    res.status(200).json(paymaster ? { ...result, paymaster } : result);
+    const body = paymaster ? { ...result, paymaster } : result;
+    await completeDurableRequest(durable.context, { statusCode: 200, body: attachRequestId(body, requestId) });
+    return sendJson(res, 200, body, requestId);
   } catch (error) {
     const rawMessage = String(error?.message || error || 'Unknown error');
     const payload = {
@@ -417,6 +459,7 @@ export default async function handler(req, res) {
       payload.rawMessage = rawMessage;
       payload.stack = typeof error?.stack === 'string' ? error.stack : undefined;
     }
-    res.status(502).json(payload);
+    await failDurableRequest(durable.context, { statusCode: 502, error: payload.error, phase: failurePhase });
+    return sendJson(res, 502, payload, requestId);
   }
 }

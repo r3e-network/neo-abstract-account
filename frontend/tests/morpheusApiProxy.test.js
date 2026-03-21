@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { resolveMorpheusRuntimeBase } from '../api/morpheus-base.js';
 import morpheusNeoDidHandler from '../api/morpheus-neodid.js';
 import morpheusOracleKeyHandler from '../api/morpheus-oracle-public-key.js';
 
@@ -24,9 +25,25 @@ function createResponse() {
   };
 }
 
-test('morpheus neodid proxy routes GET requests through the unified edge path', async () => {
+test('morpheus runtime base prefers direct testnet runtime domains', async () => {
+  const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+  process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://morpheus-testnet.meshmini.app';
+
+  try {
+    assert.equal(
+      resolveMorpheusRuntimeBase({ query: { morpheus_network: 'testnet' }, headers: {} }),
+      'https://morpheus-testnet.meshmini.app'
+    );
+  } finally {
+    if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+    else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+  }
+});
+
+test('morpheus neodid proxy routes GET requests through the resolved runtime path', async () => {
   const originalFetch = global.fetch;
   const originalBaseUrl = process.env.MORPHEUS_API_BASE_URL;
+  const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
   const calls = [];
 
   global.fetch = async (url, options) => {
@@ -36,7 +53,8 @@ test('morpheus neodid proxy routes GET requests through the unified edge path', 
       text: async () => JSON.stringify({ providers: [{ id: 'google' }] }),
     };
   };
-  process.env.MORPHEUS_API_BASE_URL = 'https://morpheus.meshmini.app';
+  delete process.env.MORPHEUS_API_BASE_URL;
+  process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://morpheus-testnet.meshmini.app';
 
   try {
     const res = createResponse();
@@ -50,19 +68,22 @@ test('morpheus neodid proxy routes GET requests through the unified edge path', 
     }, res);
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, 'https://morpheus.meshmini.app/testnet/neodid/providers');
+    assert.equal(calls[0].url, 'https://morpheus-testnet.meshmini.app/neodid/providers');
     assert.equal(calls[0].options.method, 'GET');
     assert.deepEqual(res.payload, { providers: [{ id: 'google' }] });
   } finally {
     global.fetch = originalFetch;
     if (originalBaseUrl == null) delete process.env.MORPHEUS_API_BASE_URL;
     else process.env.MORPHEUS_API_BASE_URL = originalBaseUrl;
+    if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+    else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
   }
 });
 
 test('morpheus neodid proxy strips morpheus routing metadata but preserves payload fields', async () => {
   const originalFetch = global.fetch;
   const originalBaseUrl = process.env.MORPHEUS_API_BASE_URL;
+  const originalRuntimeUrl = process.env.MORPHEUS_MAINNET_RUNTIME_URL;
   const calls = [];
 
   global.fetch = async (url, options) => {
@@ -72,7 +93,8 @@ test('morpheus neodid proxy strips morpheus routing metadata but preserves paylo
       text: async () => JSON.stringify({ ok: true }),
     };
   };
-  process.env.MORPHEUS_API_BASE_URL = 'https://morpheus.meshmini.app';
+  delete process.env.MORPHEUS_API_BASE_URL;
+  process.env.MORPHEUS_MAINNET_RUNTIME_URL = 'https://morpheus-mainnet.meshmini.app';
 
   try {
     const res = createResponse();
@@ -89,7 +111,7 @@ test('morpheus neodid proxy strips morpheus routing metadata but preserves paylo
     }, res);
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, 'https://morpheus.meshmini.app/mainnet/neodid/recovery-ticket');
+    assert.equal(calls[0].url, 'https://morpheus-mainnet.meshmini.app/neodid/recovery-ticket');
     assert.equal(calls[0].options.method, 'POST');
     const forwardedBody = JSON.parse(calls[0].options.body);
     assert.equal(forwardedBody.morpheus_network, undefined);
@@ -100,12 +122,15 @@ test('morpheus neodid proxy strips morpheus routing metadata but preserves paylo
     global.fetch = originalFetch;
     if (originalBaseUrl == null) delete process.env.MORPHEUS_API_BASE_URL;
     else process.env.MORPHEUS_API_BASE_URL = originalBaseUrl;
+    if (originalRuntimeUrl == null) delete process.env.MORPHEUS_MAINNET_RUNTIME_URL;
+    else process.env.MORPHEUS_MAINNET_RUNTIME_URL = originalRuntimeUrl;
   }
 });
 
 test('morpheus oracle key proxy routes GET requests through the unified edge path', async () => {
   const originalFetch = global.fetch;
   const originalBaseUrl = process.env.MORPHEUS_API_BASE_URL;
+  const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
   const calls = [];
 
   global.fetch = async (url, options) => {
@@ -115,7 +140,8 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
       text: async () => JSON.stringify({ public_key: 'demo-public-key' }),
     };
   };
-  process.env.MORPHEUS_API_BASE_URL = 'https://morpheus.meshmini.app';
+  delete process.env.MORPHEUS_API_BASE_URL;
+  process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://morpheus-testnet.meshmini.app';
 
   try {
     const res = createResponse();
@@ -128,12 +154,14 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
     }, res);
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, 'https://morpheus.meshmini.app/testnet/oracle/public-key');
+    assert.equal(calls[0].url, 'https://morpheus-testnet.meshmini.app/oracle/public-key');
     assert.equal(calls[0].options.method, 'GET');
     assert.deepEqual(res.payload, { public_key: 'demo-public-key' });
   } finally {
     global.fetch = originalFetch;
     if (originalBaseUrl == null) delete process.env.MORPHEUS_API_BASE_URL;
     else process.env.MORPHEUS_API_BASE_URL = originalBaseUrl;
+    if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+    else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
   }
 });

@@ -43,7 +43,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     web3AuthSmsLoginEnabled: true,
     neoDidProvider: 'web3auth',
     neoDidDomain: 'neodid.morpheus.neo',
-    morpheusApiBaseUrl: 'https://morpheus.meshmini.app/mainnet',
+    morpheusApiBaseUrl: 'https://morpheus-mainnet.meshmini.app',
     morpheusNeoDidServiceDid: 'did:morpheus:neo_n3:service:neodid',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
@@ -70,7 +70,7 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
   assert.equal(config.n3IndexNetwork, 'testnet');
   assert.equal(config.neoDidDomain, '');
   assert.equal(config.morpheusNetwork, 'testnet');
-  assert.equal(config.morpheusApiBaseUrl, 'https://morpheus.meshmini.app/testnet');
+  assert.equal(config.morpheusApiBaseUrl, 'https://morpheus-testnet.meshmini.app');
 });
 
 test('getOperationsRuntime derives collaboration and relay flags', () => {
