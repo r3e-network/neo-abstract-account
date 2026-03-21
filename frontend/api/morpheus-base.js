@@ -30,7 +30,6 @@ function isGatewayHost(hostname) {
   const host = trim(hostname).toLowerCase();
   return host === 'edge.meshmini.app'
     || host === 'control.meshmini.app'
-    || host === 'morpheus.meshmini.app'
     || host.endsWith('.workers.dev');
 }
 
@@ -94,4 +93,3 @@ export function resolveMorpheusRuntimeToken() {
       || ''
   );
 }
-
