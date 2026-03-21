@@ -163,8 +163,8 @@ The runner now executes the current V3 live testnet flow in order:
 
 - `v3_testnet_smoke.js`
 - `v3_testnet_plugin_matrix.js`
-- `v3_testnet_paymaster_policy.mjs` when `PHALA_API_TOKEN` is available
-- `v3_testnet_paymaster_relay.mjs` when `PHALA_API_TOKEN` is available
+- `v3_testnet_paymaster_policy.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is available
+- `v3_testnet_paymaster_relay.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is available
 
 You can also run the stages individually with:
 
