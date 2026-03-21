@@ -25,7 +25,22 @@ const RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
 const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56";
-const PAYMASTER_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
+const PAYMASTER_API_TOKEN =
+  process.env.MORPHEUS_RUNTIME_TOKEN
+  || process.env.PHALA_API_TOKEN
+  || process.env.PHALA_SHARED_SECRET
+  || "";
+const PHALA_API_URL = (
+  process.env.MORPHEUS_TESTNET_RUNTIME_URL
+  || process.env.MORPHEUS_RUNTIME_URL
+  || process.env.PHALA_API_URL
+  || "https://morpheus-testnet.meshmini.app"
+).trim().replace(/\/$/, "");
+const PAYMASTER_ENDPOINT = (
+  process.env.MORPHEUS_PAYMASTER_TESTNET_ENDPOINT
+  || (PHALA_API_URL ? `${PHALA_API_URL}/paymaster/authorize` : "")
+).trim();
+const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const DEFAULT_PAYMASTER_ACCOUNT_ID = "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56";
 const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || DEFAULT_PAYMASTER_ACCOUNT_ID;
@@ -41,7 +56,7 @@ if (!TEST_WIF) {
 }
 
 if (!PAYMASTER_API_TOKEN) {
-  console.error("PHALA_API_TOKEN or PHALA_SHARED_SECRET is required.");
+  console.error("MORPHEUS_RUNTIME_TOKEN, PHALA_API_TOKEN, or PHALA_SHARED_SECRET is required.");
   process.exit(1);
 }
 
@@ -210,6 +225,47 @@ async function callRemotePaymaster(payload) {
   const remoteOverrides = (!SKIP_PAYMASTER_ALLOWLIST_UPDATE && PAYMASTER_ACCOUNT_ID)
     ? buildRemotePaymasterOverrides(PAYMASTER_ACCOUNT_ID)
     : null;
+  if (LOCAL_PAYMASTER_HANDLER_PATH) {
+    const snapshot = new Map();
+    if (remoteOverrides) {
+      for (const [key, value] of Object.entries(remoteOverrides)) {
+        snapshot.set(key, process.env[key]);
+        process.env[key] = value;
+      }
+    }
+    try {
+      process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
+      const { default: handler } = await import(`file://${LOCAL_PAYMASTER_HANDLER_PATH}`);
+      const req = new Request("http://local/paymaster/authorize", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${PAYMASTER_API_TOKEN}`,
+          "content-type": "application/json",
+        },
+        body: Buffer.from(bodyBase64, "base64").toString("utf8"),
+      });
+      const res = await handler(req);
+      const body = await res.json().catch(() => ({}));
+      return { status: res.status, body };
+    } finally {
+      for (const [key, value] of snapshot.entries()) {
+        if (value == null) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  }
+  if (!remoteOverrides && PAYMASTER_ENDPOINT) {
+    const response = await fetch(PAYMASTER_ENDPOINT, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${PAYMASTER_API_TOKEN}`,
+        "content-type": "application/json",
+      },
+      body: Buffer.from(bodyBase64, "base64").toString("utf8"),
+    });
+    const body = await response.json().catch(() => ({}));
+    return { status: response.status, body };
+  }
   const overrideAssignments = remoteOverrides
     ? Object.entries(remoteOverrides)
         .map(([key, value]) => `process.env.${key} = ${JSON.stringify(value)};`)
@@ -220,7 +276,7 @@ set -e
 cd /dstack
 docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T phala-worker node --input-type=module - <<'JS'
 ${overrideAssignments}
-process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
+process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
 const { default: handler } = await import('/app/workers/phala-worker/src/worker.js');
 const req = new Request('http://local/paymaster/authorize', {

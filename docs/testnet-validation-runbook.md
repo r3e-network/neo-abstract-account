@@ -9,7 +9,8 @@ This runbook executes the current V3 SDK testnet validation scripts in the safes
 ## Optional environment
 
 - `TESTNET_RPC_URL` or `NEO_RPC_URL` to override the default Neo N3 testnet RPC
-- `PHALA_API_TOKEN` to enable the live Morpheus paymaster relay validator
+- `MORPHEUS_RUNTIME_TOKEN` preferred, or `PHALA_API_TOKEN` / `PHALA_SHARED_SECRET`, to enable the live Morpheus paymaster relay validator
+- `MORPHEUS_TESTNET_RUNTIME_URL` or `MORPHEUS_RUNTIME_URL` to override the default Morpheus testnet runtime URL
 - `MORPHEUS_PAYMASTER_APP_ID` if the paymaster validator should target a non-default CVM app
 - `PAYMASTER_ACCOUNT_ID` if you want to replay against a fixed existing account instead of using a fresh one
 - `SKIP_PAYMASTER_ALLOWLIST_UPDATE=1` if you already manually allowlisted the account on the Morpheus worker
@@ -40,8 +41,8 @@ The suite writes:
 
 1. `tests/v3_testnet_smoke.js`
 2. `tests/v3_testnet_plugin_matrix.js`
-3. `tests/v3_testnet_paymaster_policy.mjs` when `PHALA_API_TOKEN` is present
-4. `tests/v3_testnet_paymaster_relay.mjs` when `PHALA_API_TOKEN` is present
+3. `tests/v3_testnet_paymaster_policy.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is present
+4. `tests/v3_testnet_paymaster_relay.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is present
 
 ## Individual commands
 

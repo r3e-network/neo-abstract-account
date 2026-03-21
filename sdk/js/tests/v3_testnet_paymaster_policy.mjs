@@ -8,7 +8,7 @@ import os from "node:os";
 
 const execFileAsync = promisify(execFile);
 
-const PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
+const PHALA_API_TOKEN = process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56";
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56";
@@ -20,7 +20,7 @@ const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3)
 const REPORT_DIR = path.resolve(import.meta.dirname, "..", "..", "docs", "reports");
 
 if (!PHALA_API_TOKEN) {
-  console.error("PHALA_API_TOKEN or PHALA_SHARED_SECRET is required.");
+  console.error("MORPHEUS_RUNTIME_TOKEN, PHALA_API_TOKEN, or PHALA_SHARED_SECRET is required.");
   process.exit(1);
 }
 
@@ -86,7 +86,7 @@ set -e
 cd /dstack
 docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T phala-worker node --input-type=module - <<'JS'
 ${overrideAssignments}
-process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
+process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
 const { default: handler } = await import('/app/workers/phala-worker/src/worker.js');
 const req = new Request('http://local/paymaster/authorize', {

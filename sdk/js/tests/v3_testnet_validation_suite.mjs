@@ -28,14 +28,15 @@ const STAGES = [
     id: "paymaster_policy",
     title: "V3 Paymaster Policy",
     command: ["node", "tests/v3_testnet_paymaster_policy.mjs"],
-    requiredEnv: ["PHALA_API_TOKEN"],
+    requiredEnvAny: [["MORPHEUS_RUNTIME_TOKEN", "PHALA_API_TOKEN", "PHALA_SHARED_SECRET"]],
     optional: true,
   },
   {
     id: "paymaster",
     title: "V3 Paymaster Relay",
     command: ["node", "tests/v3_testnet_paymaster_relay.mjs"],
-    requiredEnv: ["TEST_WIF", "PHALA_API_TOKEN"],
+    requiredEnv: ["TEST_WIF"],
+    requiredEnvAny: [["MORPHEUS_RUNTIME_TOKEN", "PHALA_API_TOKEN", "PHALA_SHARED_SECRET"]],
     optional: true,
   },
 ];
@@ -58,7 +59,7 @@ function envSnapshot() {
   return {
     TESTNET_RPC_URL: process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https://testnet1.neo.coz.io:443",
     hasTestWif: Boolean(process.env.TEST_WIF),
-    hasPhalaApiToken: Boolean(process.env.PHALA_API_TOKEN),
+    hasMorpheusRuntimeToken: Boolean(process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET),
     morpheusPaymasterAppId: process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56",
     paymasterAccountId: process.env.PAYMASTER_ACCOUNT_ID || null,
     skipPaymasterAllowlistUpdate: process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1",
@@ -259,7 +260,13 @@ async function runStage(stage) {
 }
 
 function missingRequiredEnv(stage) {
-  return (stage.requiredEnv || []).filter((key) => !process.env[key]);
+  const missing = (stage.requiredEnv || []).filter((key) => !process.env[key]);
+  for (const group of (stage.requiredEnvAny || [])) {
+    if (!group.some((key) => process.env[key])) {
+      missing.push(group.join(" | "));
+    }
+  }
+  return missing;
 }
 
 function markdownList(items = []) {
@@ -285,7 +292,7 @@ function buildMarkdownReport(report) {
     markdownList([
       `RPC: \`${report.environment.TESTNET_RPC_URL}\``,
       `Has TEST_WIF: \`${report.environment.hasTestWif}\``,
-      `Has PHALA_API_TOKEN: \`${report.environment.hasPhalaApiToken}\``,
+      `Has Morpheus runtime token: \`${report.environment.hasMorpheusRuntimeToken}\``,
       `Paymaster app id: \`${report.environment.morpheusPaymasterAppId}\``,
       `Paymaster account override: \`${report.environment.paymasterAccountId || "none"}\``,
       `Skip allowlist update: \`${report.environment.skipPaymasterAllowlistUpdate}\``,
