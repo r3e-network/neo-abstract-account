@@ -534,7 +534,6 @@ async function signWithEvmWallet() {
       aaContractHash,
       args: draft.value.operation_body?.args || [],
     });
-    let verifierHash = '';
     let nonce;
     let typedData;
 
