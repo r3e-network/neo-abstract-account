@@ -49,6 +49,30 @@ const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
   || (process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0" && !process.env.PAYMASTER_ACCOUNT_ID);
 const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3));
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
+const LOCAL_PAYMASTER_SIGNER_ENV_KEYS = [
+  "NEO_TESTNET_WIF",
+  "NEO_N3_WIF",
+  "PHALA_NEO_N3_WIF",
+  "PHALA_NEO_N3_PRIVATE_KEY",
+  "PHALA_NEO_N3_WIF_TESTNET",
+  "PHALA_NEO_N3_PRIVATE_KEY_TESTNET",
+  "MORPHEUS_RELAYER_NEO_N3_WIF",
+  "MORPHEUS_RELAYER_NEO_N3_PRIVATE_KEY",
+  "MORPHEUS_RELAYER_NEO_N3_WIF_TESTNET",
+  "MORPHEUS_RELAYER_NEO_N3_PRIVATE_KEY_TESTNET",
+  "MORPHEUS_UPDATER_NEO_N3_WIF",
+  "MORPHEUS_UPDATER_NEO_N3_PRIVATE_KEY",
+  "MORPHEUS_UPDATER_NEO_N3_WIF_TESTNET",
+  "MORPHEUS_UPDATER_NEO_N3_PRIVATE_KEY_TESTNET",
+  "MORPHEUS_ORACLE_VERIFIER_WIF",
+  "MORPHEUS_ORACLE_VERIFIER_PRIVATE_KEY",
+  "MORPHEUS_ORACLE_VERIFIER_WIF_TESTNET",
+  "MORPHEUS_ORACLE_VERIFIER_PRIVATE_KEY_TESTNET",
+  "PHALA_ORACLE_VERIFIER_WIF",
+  "PHALA_ORACLE_VERIFIER_PRIVATE_KEY",
+  "PHALA_ORACLE_VERIFIER_WIF_TESTNET",
+  "PHALA_ORACLE_VERIFIER_PRIVATE_KEY_TESTNET",
+];
 
 if (!TEST_WIF) {
   console.error("TEST_WIF or NEO_TESTNET_WIF is required.");
@@ -220,6 +244,16 @@ function buildRemotePaymasterOverrides(accountId) {
   };
 }
 
+function buildLocalPaymasterOverrides(accountId) {
+  const normalized = normalizeHash(accountId).toLowerCase();
+  return {
+    MORPHEUS_PAYMASTER_TESTNET_ENABLED: "true",
+    MORPHEUS_PAYMASTER_TESTNET_POLICY_ID: "testnet-aa",
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS: PAYMASTER_DAPP_ID,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS: normalized,
+  };
+}
+
 async function callRemotePaymaster(payload) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
   const remoteOverrides = (!SKIP_PAYMASTER_ALLOWLIST_UPDATE && PAYMASTER_ACCOUNT_ID)
@@ -227,11 +261,18 @@ async function callRemotePaymaster(payload) {
     : null;
   if (LOCAL_PAYMASTER_HANDLER_PATH) {
     const snapshot = new Map();
-    if (remoteOverrides) {
-      for (const [key, value] of Object.entries(remoteOverrides)) {
+    const localOverrides = buildLocalPaymasterOverrides(PAYMASTER_ACCOUNT_ID);
+    if (localOverrides) {
+      for (const [key, value] of Object.entries(localOverrides)) {
         snapshot.set(key, process.env[key]);
         process.env[key] = value;
       }
+    }
+    for (const key of LOCAL_PAYMASTER_SIGNER_ENV_KEYS) {
+      if (!snapshot.has(key)) {
+        snapshot.set(key, process.env[key]);
+      }
+      delete process.env[key];
     }
     try {
       process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";

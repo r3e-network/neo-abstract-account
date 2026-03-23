@@ -4,8 +4,10 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
-const ROOT_DIR = path.resolve(import.meta.dirname, "..");
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(MODULE_DIR, "..");
 const SDK_REPORT_DIR = path.resolve(ROOT_DIR, "..", "docs", "reports");
 const REPO_REPORT_DIR = path.resolve(ROOT_DIR, "..", "..", "docs", "reports");
 const REPO_ROOT = path.resolve(ROOT_DIR, "..", "..");

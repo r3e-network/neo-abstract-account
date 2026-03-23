@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 
@@ -17,7 +18,8 @@ const PAYMASTER_METHOD = process.env.MORPHEUS_PAYMASTER_METHOD || "executeUserOp
 const PAYMASTER_MAX_GAS_UNITS = Number(process.env.MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS || 5_000_000);
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE = process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1";
 const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3));
-const REPORT_DIR = path.resolve(import.meta.dirname, "..", "..", "docs", "reports");
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPORT_DIR = path.resolve(MODULE_DIR, "..", "..", "docs", "reports");
 
 if (!PHALA_API_TOKEN) {
   console.error("MORPHEUS_RUNTIME_TOKEN, PHALA_API_TOKEN, or PHALA_SHARED_SECRET is required.");
