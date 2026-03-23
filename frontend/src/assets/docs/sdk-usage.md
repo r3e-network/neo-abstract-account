@@ -5,7 +5,7 @@ The JavaScript SDK exposes the current Abstract Account client surface used by t
 ## Installation
 
 ```bash
-npm install @r3e/neo-js-sdk ethers
+npm install @cityofzion/neon-js ethers
 ```
 
 ## 1. Initialize the Client

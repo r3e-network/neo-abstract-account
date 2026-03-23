@@ -1,4 +1,4 @@
-const { rpc, sc, u, wallet } = require('./neonCompat');
+const { rpc, sc, u, wallet } = require('@cityofzion/neon-js');
 const {
   buildMetaTransactionTypedData,
   buildV3UserOperationTypedData,

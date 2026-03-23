@@ -28,7 +28,7 @@
     "testnet:validate:paymaster": "node tests/v3_testnet_paymaster_relay.mjs"
   },
   "dependencies": {
-    "@r3e/neo-js-sdk": "https://codeload.github.com/r3e-network/neo-js-sdk/tar.gz/refs/tags/v0.3.7-r3e.1",
+    "@cityofzion/neon-js": "^5.4.0",
     "ethers": "^6.11.1"
   }
 }

@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { rpc, sc, wallet, experimental, tx, u, CONST } = require('../src/neonCompat');
+const { rpc, sc, wallet, experimental, tx, u, CONST } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
 
 const { extractDeployedContractHash } = require('../src/deployLog');
