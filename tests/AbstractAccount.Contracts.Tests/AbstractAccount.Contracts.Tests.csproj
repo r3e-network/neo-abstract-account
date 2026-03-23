@@ -11,10 +11,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.10.4" />
     <PackageReference Include="MSTest.TestFramework" Version="3.10.4" />
-    <PackageReference Include="Neo.SmartContract.Testing" Version="3.9.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\contracts\AbstractAccount.csproj" />
+    <ProjectReference Include="..\..\contracts\UnifiedSmartWallet.csproj" />
   </ItemGroup>
 </Project>

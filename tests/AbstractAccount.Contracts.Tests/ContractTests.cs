@@ -1,366 +1,135 @@
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
-using System.Numerics;
+using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neo;
-using Neo.Extensions;
-using Neo.Network.P2P.Payloads;
-using Neo.SmartContract;
-using Neo.SmartContract.Testing;
-using Neo.SmartContract.Testing.TestingStandards;
-using Neo.VM;
 
 namespace AbstractAccount.Contracts.Tests;
 
 [TestClass]
-public class ContractTests : TestBase<UnifiedSmartWalletV2>
+public class ContractTests
 {
-    protected override TestEngine CreateTestEngine()
+    private static readonly string RepoRoot =
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
+
+    private static readonly string ContractsDir = Path.Combine(RepoRoot, "contracts");
+
+    private static readonly string[] UnifiedSmartWalletFiles =
     {
-        var engine = base.CreateTestEngine();
-        engine.SetTransactionSigners(WitnessScope.Global, engine.ValidatorsAddress);
-        engine.Fee = 1_000_000_000_000;
-        engine.Transaction.SystemFee = 1_000_000_000_000;
-        return engine;
+        "UnifiedSmartWallet.cs",
+        "UnifiedSmartWallet.Models.cs",
+        "UnifiedSmartWallet.Internal.cs",
+        "UnifiedSmartWallet.Accounts.cs",
+        "UnifiedSmartWallet.State.cs",
+        "UnifiedSmartWallet.Execution.cs",
+        "UnifiedSmartWallet.VerifyContext.cs",
+        "UnifiedSmartWallet.Escape.cs",
+        "UnifiedSmartWallet.MarketEscrow.cs"
+    };
+
+    private static Type ContractType => typeof(global::AbstractAccount.UnifiedSmartWallet);
+
+    private static string ReadContractFile(string fileName) =>
+        File.ReadAllText(Path.Combine(ContractsDir, fileName));
+
+    private static string ReadCombinedSource() =>
+        string.Join("\n\n", UnifiedSmartWalletFiles.Select(ReadContractFile));
+
+    [TestMethod]
+    public void ContractAssemblyExposesUnifiedSmartWalletV3Metadata()
+    {
+        Assert.AreEqual("UnifiedSmartWallet", ContractType.Name);
+
+        DisplayNameAttribute? displayName = ContractType.GetCustomAttribute<DisplayNameAttribute>();
+        Assert.IsNotNull(displayName);
+        Assert.AreEqual("UnifiedSmartWalletV3", displayName.DisplayName);
+
+        CustomAttributeData? manifestExtra = ContractType.CustomAttributes
+            .FirstOrDefault(attribute => attribute.AttributeType.Name == "ManifestExtraAttribute");
+
+        Assert.IsNotNull(manifestExtra);
+        Assert.AreEqual(2, manifestExtra!.ConstructorArguments.Count);
+        Assert.AreEqual("Description", manifestExtra.ConstructorArguments[0].Value);
+        Assert.AreEqual(
+            "ERC-4337 Aligned Minimalist AA Engine for Neo N3",
+            manifestExtra.ConstructorArguments[1].Value);
     }
 
     [TestMethod]
-    public void ContractHarnessBootstraps()
+    public void ContractExposesCanonicalV3Entrypoints()
     {
-        Assert.IsNotNull(Contract);
-        Assert.IsNotNull(Manifest);
-        Assert.AreEqual("UnifiedSmartWalletV2", Manifest.Name);
-    }
-
-    [TestMethod]
-    public void CreateAccountStoresAdminThresholdForAuthorizedSigner()
-    {
-        var accountId = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-
-        Engine.SetTransactionSigners(Alice);
-        Contract.CreateAccount(accountId, new List<object> { Alice.Account }, 1, new List<object>(), 0);
-
-        Assert.AreEqual(1, Contract.GetAdminThreshold(accountId));
-        Assert.AreEqual(1, Contract.GetAdmins(accountId)?.Count);
-    }
-
-    [TestMethod]
-    public void CreateAccountWithAddressRejectsNonDeterministicProxyAddress()
-    {
-        var lifecycleSource = ReadRepoFile("contracts/AbstractAccount.AccountLifecycle.cs");
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.Contains(lifecycleSource, "BindAccountAddressInternal(accountId, accountAddress)");
-        StringAssert.Contains(storageSource, "AssertDeterministicAccountAddress(accountId, accountAddress)");
-        StringAssert.Contains(storageSource, "Account address must match deterministic verify proxy");
-    }
-
-    [TestMethod]
-    public void CreateAccountWithAddressAcceptsDerivedVerifyProxyAddress()
-    {
-        var accountId = new byte[] { 0x50, 0x60, 0x70, 0x80 };
-        var expectedAddress = BuildVerifyProxyHash(accountId);
-
-        Engine.SetTransactionSigners(Alice);
-        Contract.CreateAccountWithAddress(accountId, expectedAddress, new List<object> { Alice.Account }, 1, new List<object>(), 0);
-
-        Assert.AreEqual(expectedAddress, Contract.GetAccountAddress(accountId));
-        CollectionAssert.AreEqual(accountId, Contract.GetAccountIdByAddress(expectedAddress));
-    }
-
-    [TestMethod]
-    public void CreateAccountWithAddressIndexesBoundAddressForManagers()
-    {
-        var accountId = new byte[] { 0x11, 0x22, 0x33, 0x44 };
-        var expectedAddress = BuildVerifyProxyHash(accountId);
-
-        Engine.SetTransactionSigners(Alice);
-        Contract.CreateAccountWithAddress(accountId, expectedAddress, new List<object> { Alice.Account }, 1, new List<object> { Alice.Account }, 1);
-
-        var managerAddresses = Contract.GetAccountAddressesByManager(Alice.Account);
-
-        Assert.IsNotNull(managerAddresses);
-        Assert.AreEqual(1, managerAddresses.Count);
-
-        var managerAddress = managerAddresses[0] switch
+        string[] requiredMethods =
         {
-            UInt160 hash => hash,
-            Neo.VM.Types.ByteString bytes => new UInt160(bytes.GetSpan().ToArray()),
-            byte[] bytes => new UInt160(bytes),
-            _ => throw new AssertFailedException($"Unexpected manager address payload: {managerAddresses[0]?.GetType().FullName}")
+            "RegisterAccount",
+            "UpdateHook",
+            "ConfirmHookUpdate",
+            "UpdateVerifier",
+            "ConfirmVerifierUpdate",
+            "CallVerifier",
+            "CallHook",
+            "ExecuteUserOp",
+            "ExecuteUserOps",
+            "InitiateEscape",
+            "FinalizeEscape",
+            "EnterMarketEscrow",
+            "CancelMarketEscrow",
+            "SettleMarketEscrow"
         };
 
-        Assert.AreEqual(expectedAddress, managerAddress);
+        string[] exportedMethods = ContractType
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Select(method => method.Name)
+            .Distinct()
+            .ToArray();
+
+        CollectionAssert.IsSubsetOf(requiredMethods, exportedMethods);
     }
 
     [TestMethod]
-    public void BindAccountAddressRejectsNonDeterministicProxyAddress()
+    public void UnifiedSmartWalletProjectCompilesAllPartialModules()
     {
-        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.Contains(adminSource, "BindAccountAddressInternal(accountId, accountAddress)");
-        StringAssert.Contains(storageSource, "GetDeterministicAccountAddress(accountId)");
-        StringAssert.Contains(storageSource, "ByteArrayEquals((byte[])accountAddress, (byte[])expectedAddress)");
-    }
-
-    [TestMethod]
-    public void ManualVerifyProxyHashMatchesDeterministicProxyHelper()
-    {
-        var accountId = new byte[] { 0x10, 0x20, 0x30, 0x40 };
-
-        var expectedAddress = BuildVerifyProxyHash(accountId);
-        var actualAddress = BuildManualVerifyProxyHash(accountId);
-
-        Assert.AreEqual(expectedAddress, actualAddress);
-    }
-
-
-    [TestMethod]
-    public void DeterministicProxyScriptBuilderUsesRawAccountIdBytes()
-    {
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.DoesNotMatch(storageSource, new System.Text.RegularExpressions.Regex(@"ReverseBytes\(accountIdBytes\)"));
-        StringAssert.Contains(storageSource, "accountIdBytes,");
-    }
-
-
-    [TestMethod]
-    public void DeterministicProxyAddressReversesRawScriptHashBytes()
-    {
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.Contains(storageSource, "ReverseBytes(scriptHash)");
-    }
-
-
-    [TestMethod]
-    public void ProxyWitnessScriptGateRejectsDirectExternalContractCall()
-    {
-        var externalContract = UInt160.Parse("0x1111111111111111111111111111111111111111");
-        var from = UInt160.Parse("0x2222222222222222222222222222222222222222");
-        var to = UInt160.Parse("0x3333333333333333333333333333333333333333");
-
-        var script = BuildTransferScript(externalContract, from, to, 100);
-
-        Assert.IsFalse(global::AbstractAccount.UnifiedSmartWallet.IsSingleSelfCallScript(script, Contract.Hash.ToArray()));
-    }
-
-    [TestMethod]
-    public void ProxyWitnessScriptGateAllowsSingleWalletSelfCall()
-    {
-        var script = BuildSelfCallScript(Contract.Hash, "getAdminThreshold", new byte[] { 0x50, 0x60, 0x70, 0x80 });
-
-        Assert.IsTrue(global::AbstractAccount.UnifiedSmartWallet.IsSingleSelfCallScript(script, Contract.Hash.ToArray()));
-    }
-
-    [TestMethod]
-    public void ProxyWitnessScriptGateIgnoresSyscallBytesInsidePushData()
-    {
-        var embeddedSyscallBytes = new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 };
-        var script = BuildSelfCallScript(Contract.Hash, "getAdminThreshold", embeddedSyscallBytes);
-
-        Assert.IsTrue(global::AbstractAccount.UnifiedSmartWallet.IsSingleSelfCallScript(script, Contract.Hash.ToArray()));
-    }
-
-    [TestMethod]
-    public void StorageKeyPrefixesShortIdsToAvoidLegacyCollisions()
-    {
-        var shortAccountId = new byte[] { 0xAA, 0xBB, 0xCC, 0xDD };
-        var storageKey = global::AbstractAccount.UnifiedSmartWallet.GetCanonicalStorageKeyBytes(shortAccountId);
-
-        CollectionAssert.AreNotEqual(shortAccountId, storageKey);
-        Assert.AreEqual(shortAccountId.Length + 1, storageKey.Length);
-    }
-
-
-    [TestMethod]
-    public void AddressIndexSourceIncludesBoundAccountAddressGetters()
-    {
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.Contains(storageSource, "GetAccountAddressesByAdmin");
-        StringAssert.Contains(storageSource, "GetAccountAddressesByManager");
-    }
-
-    [TestMethod]
-    public void MetaTransactionStructHashUsesAccountAddressAsIdentity()
-    {
-        var source = ReadRepoFile("contracts/AbstractAccount.MetaTx.cs");
-
-        StringAssert.Contains(source, "accountAddress");
-        StringAssert.DoesNotMatch(source, new System.Text.RegularExpressions.Regex(@"accountIdHash\s*=\s*\(byte\[\]\)CryptoLib.Keccak256\(accountId\)"));
-    }
-
-    [TestMethod]
-    public void CustomVerifierMetaTxPathUsesDedicatedVerifierMethod()
-    {
-        var executionSource = ReadRepoFile("contracts/AbstractAccount.ExecutionAndPermissions.cs");
-
-        StringAssert.Contains(executionSource, "\"verifyExecution\"");
-        StringAssert.Contains(executionSource, "\"verifyExecutionMetaTx\"");
-    }
-
-    [TestMethod]
-    public void MorpheusVerifierSeparatesExecutionAndAdminAuthorization()
-    {
-        var verifierSource = ReadRepoFile("contracts/recovery/MorpheusSocialRecoveryVerifier.Fixed.cs");
-        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
-
-        StringAssert.Contains(verifierSource, "public static bool VerifyExecution(ByteString accountId)");
-        StringAssert.Contains(verifierSource, "public static bool VerifyAdmin(ByteString accountId)");
-        StringAssert.Contains(verifierSource, "if (owner != UInt160.Zero && Runtime.CheckWitness(owner)) return true;");
-        StringAssert.Contains(verifierSource, "if (signerHashes[i] == session.Executor) return true;");
-        StringAssert.Contains(adminSource, "\"verifyAdmin\"");
-        StringAssert.Contains(adminSource, "\"verifyAdminMetaTx\"");
-    }
-
-    [TestMethod]
-    public void SetManagersInternalMaintainsManagerReverseIndexes()
-    {
-        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
-
-        StringAssert.Contains(adminSource, "RemoveFromManagerIndex");
-        StringAssert.Contains(adminSource, "AddToManagerIndex");
-    }
-
-    [TestMethod]
-    public void SelfCallAuthorizationUsesMixedSignatureChecks()
-    {
-        var adminSource = ReadRepoFile("contracts/AbstractAccount.Admin.cs");
-        var oracleSource = ReadRepoFile("contracts/AbstractAccount.Oracle.cs");
-
-        StringAssert.Contains(adminSource, "CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)");
-        StringAssert.Contains(adminSource, "CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners)");
-        StringAssert.DoesNotMatch(adminSource, new System.Text.RegularExpressions.Regex("CheckExplicitSignatures\\(GetAdmins\\(accountId\\), GetAdminThreshold\\(accountId\\), explicitSigners\\)"));
-
-        StringAssert.Contains(oracleSource, "CheckMixedSignatures(GetAdmins(accountId), GetAdminThreshold(accountId), explicitSigners)");
-        StringAssert.Contains(oracleSource, "CheckMixedSignatures(GetManagers(accountId), GetManagerThreshold(accountId), explicitSigners)");
-        StringAssert.Contains(oracleSource, "CheckMixedSignatures(GetDomeAccounts(accountId), GetDomeThreshold(accountId), explicitSigners)");
-    }
-
-
-    [TestMethod]
-    public void RequestDomeActivationBlocksExternalMutationDuringExecute()
-    {
-        var oracleSource = ReadRepoFile("contracts/AbstractAccount.Oracle.cs");
-
-        StringAssert.Contains(oracleSource, "AssertNoExternalMutationDuringExecution(accountId)");
-    }
-
-    [TestMethod]
-    public void UpdateRequiresDirectSelfCallScript()
-    {
-        var upgradeSource = ReadRepoFile("contracts/AbstractAccount.Upgrade.cs");
-
-        StringAssert.Contains(upgradeSource, "IsSingleSelfCallScript");
-    }
-
-
-    [TestMethod]
-    public void DispatchContractCallUsesReadOnlyFlagsForReadMethods()
-    {
-        var executionSource = ReadRepoFile("contracts/AbstractAccount.ExecutionAndPermissions.cs");
-
-        StringAssert.Contains(executionSource, "ResolveCallFlags(method)");
-        StringAssert.Contains(executionSource, "CallFlags.ReadOnly");
-    }
-
-    [TestMethod]
-    public void ExternalTransferAndApproveRequireExplicitWhitelist()
-    {
-        var executionSource = ReadRepoFile("contracts/AbstractAccount.ExecutionAndPermissions.cs");
-
-        StringAssert.Contains(executionSource, "Asset-moving target is not in whitelist");
-        StringAssert.Contains(executionSource, "targetContract != Runtime.ExecutingScriptHash");
-    }
-
-
-    [TestMethod]
-    public void BootstrapAuthorizationRequiresManagerSignersWhenProvided()
-    {
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.Contains(storageSource, "Unauthorized manager initialization");
-    }
-
-    [TestMethod]
-    public void ExecutionLockIncludesGlobalGuard()
-    {
-        var rootSource = ReadRepoFile("contracts/AbstractAccount.cs");
-        var storageSource = ReadRepoFile("contracts/AbstractAccount.StorageAndContext.cs");
-
-        StringAssert.Contains(rootSource, "GlobalExecutionLockKey");
-        StringAssert.Contains(storageSource, "IsAnyExecutionActive");
-    }
-
-    [TestMethod]
-    public void UpdateBlocksExternalMutationDuringExecute()
-    {
-        var upgradeSource = ReadRepoFile("contracts/AbstractAccount.Upgrade.cs");
-
-        StringAssert.Contains(upgradeSource, "AssertNoExternalMutationDuringAnyExecution");
-    }
-
-    private static byte[] BuildTransferScript(UInt160 targetContract, UInt160 from, UInt160 to, BigInteger amount)
-    {
-        using var sb = new ScriptBuilder();
-        sb.EmitDynamicCall(targetContract, "transfer", CallFlags.All, from, to, amount, null);
-        return sb.ToArray();
-    }
-
-    private UInt160 BuildVerifyProxyHash(byte[] accountId)
-    {
-        return BuildManualVerifyProxyHash(accountId);
-    }
-
-    private UInt160 BuildManualVerifyProxyHash(byte[] accountId)
-    {
-        var script = ConcatBytes(
-            new byte[] { 0x0C, (byte)accountId.Length },
-            accountId,
-            new byte[] { 0x11, 0xC0, 0x1F, 0x0C, 0x06 },
-            new byte[] { (byte)'v', (byte)'e', (byte)'r', (byte)'i', (byte)'f', (byte)'y' },
-            new byte[] { 0x0C, 0x14 },
-            Contract.Hash.ToArray(),
-            new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 });
-
-        var scriptHash = Neo.Cryptography.Crypto.Hash160(script);
-        Array.Reverse(scriptHash);
-        return new UInt160(scriptHash);
-    }
-
-    private static byte[] BuildSelfCallScript(UInt160 walletHash, string method, params object[] args)
-    {
-        using var sb = new ScriptBuilder();
-        sb.EmitDynamicCall(walletHash, method, CallFlags.All, args);
-        return sb.ToArray();
-    }
-
-    private static byte[] ConcatBytes(params byte[][] chunks)
-    {
-        var total = 0;
-        foreach (var chunk in chunks)
+        string projectFile = File.ReadAllText(Path.Combine(ContractsDir, "UnifiedSmartWallet.csproj"));
+        foreach (string fileName in UnifiedSmartWalletFiles)
         {
-            total += chunk.Length;
+            StringAssert.Contains(projectFile, $"<Compile Include=\"{fileName}\" />");
+            Assert.IsTrue(File.Exists(Path.Combine(ContractsDir, fileName)), $"Missing source file: {fileName}");
         }
-
-        var result = new byte[total];
-        var offset = 0;
-        foreach (var chunk in chunks)
-        {
-            Buffer.BlockCopy(chunk, 0, result, offset, chunk.Length);
-            offset += chunk.Length;
-        }
-
-        return result;
     }
 
-    private static string ReadRepoFile(string relativePath)
+    [TestMethod]
+    public void ExecutionPathKeepsFixedCallFlagsAll()
     {
-        var fullPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../", relativePath));
-        return File.ReadAllText(fullPath);
+        string executionSource = ReadContractFile("UnifiedSmartWallet.Execution.cs");
+
+        StringAssert.Contains(
+            executionSource,
+            "object result = Contract.Call(op.TargetContract, op.Method, CallFlags.All, op.Args);");
+        Assert.IsFalse(executionSource.Contains("op.CallFlags", StringComparison.Ordinal));
+        StringAssert.Contains(executionSource, "ConsumeNonce(accountId, op.Nonce);");
+        StringAssert.Contains(executionSource, "Contract.Call(state.Verifier, \"validateSignature\", CallFlags.ReadOnly, new object[] { accountId, op });");
     }
 
+    [TestMethod]
+    public void MarketEscrowSettlementWipesInheritedVerifierAndHookState()
+    {
+        string marketSource = ReadContractFile("UnifiedSmartWallet.MarketEscrow.cs");
+
+        StringAssert.Contains(marketSource, "state.Verifier = UInt160.Zero;");
+        StringAssert.Contains(marketSource, "state.HookId = UInt160.Zero;");
+        StringAssert.Contains(marketSource, "state.EscapeTriggeredAt = 0;");
+        StringAssert.Contains(marketSource, "Account locked in market escrow");
+        StringAssert.Contains(marketSource, "Only escrow market");
+    }
+
+    [TestMethod]
+    public void CombinedSourceDocumentsV3RegistrationAndExecutionFlow()
+    {
+        string source = ReadCombinedSource();
+
+        StringAssert.Contains(source, "RegisterAccount");
+        StringAssert.Contains(source, "ExecuteUserOp");
+        StringAssert.Contains(source, "Backup owner required");
+        StringAssert.Contains(source, "Verifier rejected signature");
+        StringAssert.Contains(source, "Native witness failed");
+    }
 }
