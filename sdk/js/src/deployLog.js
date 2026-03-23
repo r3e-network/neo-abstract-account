@@ -1,4 +1,4 @@
-const { u } = require('@cityofzion/neon-js');
+const { u } = require('./neonCompat');
 
 function decodeContractHash(byteStringBase64) {
   if (!byteStringBase64) return null;

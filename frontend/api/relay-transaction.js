@@ -27,7 +27,7 @@ async function getNetworkMagic(rpcClient, rpc) {
 
 function loadRelayInvocationContext({ rpcUrl, relayWif }) {
   const sdkRequire = getSdkRequire();
-  const { rpc, tx, wallet, sc, u } = sdkRequire('@cityofzion/neon-js');
+  const { rpc, tx, wallet, sc, u } = sdkRequire('./src/neonCompat.js');
   const rpcClient = new rpc.RPCClient(rpcUrl);
   const account = new wallet.Account(relayWif);
   return { rpc, tx, wallet, sc, u, rpcClient, account };

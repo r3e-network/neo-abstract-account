@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the hardened contract unchanged unless the validations expose a real contract bug. Use dedicated, isolated testnet validator scripts for each remaining scenario so failures stay local, and promote only stable scripts into the shared validation runner after they pass repeatedly.
 
-**Tech Stack:** Node.js, `@cityofzion/neon-js`, ethers, Neo N3 testnet, existing SDK shared helpers, GitHub Actions, Markdown docs
+**Tech Stack:** Node.js, `@r3e/neo-js-sdk`, ethers, Neo N3 testnet, existing SDK shared helpers, GitHub Actions, Markdown docs
 
 ### Task 1: Prove threshold `> 1` mixed multisig on testnet
 
