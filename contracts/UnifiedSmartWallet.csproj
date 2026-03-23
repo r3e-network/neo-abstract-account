@@ -14,6 +14,14 @@
 
   <ItemGroup>
     <Compile Include="UnifiedSmartWallet.cs" />
+    <Compile Include="UnifiedSmartWallet.Models.cs" />
+    <Compile Include="UnifiedSmartWallet.Internal.cs" />
+    <Compile Include="UnifiedSmartWallet.Accounts.cs" />
+    <Compile Include="UnifiedSmartWallet.State.cs" />
+    <Compile Include="UnifiedSmartWallet.Execution.cs" />
+    <Compile Include="UnifiedSmartWallet.VerifyContext.cs" />
+    <Compile Include="UnifiedSmartWallet.Escape.cs" />
+    <Compile Include="UnifiedSmartWallet.MarketEscrow.cs" />
   </ItemGroup>
 
   <Target Name="CompileSmartContract" AfterTargets="Build" Condition="'$(RunNccsAfterBuild)' == 'true'">

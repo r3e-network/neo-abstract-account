@@ -6,8 +6,15 @@ import path from 'node:path';
 const marketViewPath = path.resolve('src/views/AddressMarketView.vue');
 const marketServicePath = path.resolve('src/services/addressMarketService.js');
 const marketDocPath = path.resolve('src/assets/docs/address-market.md');
-const coreContractPath = path.resolve('..', 'contracts', 'UnifiedSmartWallet.cs');
 const marketContractPath = path.resolve('..', 'contracts', 'market', 'AAAddressMarket.cs');
+
+function readUnifiedSmartWalletSource() {
+  const contractsDir = path.resolve('..', 'contracts');
+  const files = fs.readdirSync(contractsDir)
+    .filter((name) => name.startsWith('UnifiedSmartWallet') && name.endsWith('.cs'))
+    .sort();
+  return files.map((name) => fs.readFileSync(path.join(contractsDir, name), 'utf8')).join('\n\n');
+}
 
 test('address market UI and docs describe trustless escrow semantics', () => {
   const view = fs.readFileSync(marketViewPath, 'utf8');
@@ -26,7 +33,7 @@ test('address market UI and docs describe trustless escrow semantics', () => {
 });
 
 test('AA core and market contract expose escrow transfer primitives', () => {
-  const core = fs.readFileSync(coreContractPath, 'utf8');
+  const core = readUnifiedSmartWalletSource();
   const market = fs.readFileSync(marketContractPath, 'utf8');
 
   assert.match(core, /EnterMarketEscrow/);
