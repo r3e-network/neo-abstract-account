@@ -13,7 +13,7 @@ dotnet test neo-abstract-account.sln -c Release --nologo
 cd frontend
 npm test
 npm run build
-npm audit --omit=dev
+npm audit --omit=dev --audit-level=high
 
 cd ../sdk/js
 npm test
