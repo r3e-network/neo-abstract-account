@@ -128,6 +128,7 @@ import { useI18n } from '@/i18n';
 import { useStudioController } from '@/features/studio/useStudioController';
 import { useWalletConnection } from '@/composables/useWalletConnection';
 
+const { t } = useI18n();
 const PanelSkeleton = { template: '<div class="skeleton h-64 w-full"></div>' };
 const panelErrorMsg = t('studio.panelLoadError', 'Failed to load panel. Please refresh.');
 const PanelError = { template: `<div class="glass-panel p-6 text-center"><p class="text-aa-error-light text-sm font-medium">${panelErrorMsg}</p></div>` };
@@ -140,7 +141,6 @@ const ContractSourcePanel = defineAsyncComponent({ loader: () => import('@/featu
 const StudioSidebar = defineAsyncComponent({ loader: () => import('@/features/studio/components/StudioSidebar.vue'), ...asyncErr });
 
 const studio = useStudioController();
-const { t } = useI18n();
 const { connect: connectWallet, isConnecting: isWalletConnecting } = useWalletConnection();
 
 const showWhatHappens = ref(false);
