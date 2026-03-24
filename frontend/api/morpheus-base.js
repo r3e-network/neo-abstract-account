@@ -23,7 +23,11 @@ function normalizeUrl(value) {
 
 function isNetworkScopedHost(hostname) {
   const host = trim(hostname).toLowerCase();
-  return host === 'morpheus-mainnet.meshmini.app' || host === 'morpheus-testnet.meshmini.app';
+  return (
+    host === 'morpheus-mainnet.meshmini.app' ||
+    host === 'morpheus-testnet.meshmini.app' ||
+    host === 'oracle.meshmini.app'
+  );
 }
 
 function isGatewayHost(hostname) {
@@ -59,8 +63,8 @@ export function resolveMorpheusRuntimeBase(req) {
     process.env[`MORPHEUS_${upper}_EDGE_BASE_URL`],
     process.env.MORPHEUS_EDGE_BASE_URL,
     network === 'testnet'
-      ? 'https://morpheus-testnet.meshmini.app'
-      : 'https://morpheus-mainnet.meshmini.app',
+      ? 'https://oracle.meshmini.app/testnet'
+      : 'https://oracle.meshmini.app/mainnet',
     `https://edge.meshmini.app/${network}`,
   ];
 
