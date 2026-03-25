@@ -13,6 +13,12 @@ export default defineConfig({
     }
   },
   build: {
+    chunkSizeWarningLimit: 800,
+    modulePreload: {
+      resolveDependencies(_filename, deps) {
+        return deps.filter((dep) => !dep.includes('identity-runtime'));
+      }
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

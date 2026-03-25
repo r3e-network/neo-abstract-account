@@ -89,11 +89,12 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import 'highlight.js/styles/github-dark.css';
-import { DEFAULT_DOC_KEY, getDocsForLocale } from '@/features/docs/registry';
+import { DEFAULT_DOC_KEY, getDocsForLocale, loadDocContent } from '@/features/docs/registry';
 import { sanitizeRenderedHtml } from '@/features/docs/rendering';
 import { useI18n } from '@/i18n';
 
 let docsRuntimePromise;
+let renderVersion = 0;
 
 async function getDocsRuntime() {
   if (!docsRuntimePromise) {
@@ -165,7 +166,7 @@ const filteredDocKeys = computed(() => {
   if (!query) return [];
   return Object.keys(docs.value).filter(key => {
     const doc = docs.value[key];
-    return doc?.title?.toLowerCase().includes(query) || doc?.content?.toLowerCase().includes(query);
+    return doc?.title?.toLowerCase().includes(query) || key.toLowerCase().includes(query);
   });
 });
 
@@ -209,22 +210,30 @@ async function renderMermaidDiagrams() {
 }
 
 const renderMarkdown = async (key) => {
+  const currentRender = ++renderVersion;
   isLoading.value = true;
   try {
     const { marked } = await getDocsRuntime();
-    const rawContent = docs.value[key]?.content || t('docs.notFoundHeading', '# 404 Not Found');
+    const rawContent = await loadDocContent(key, locale.value);
+    if (currentRender !== renderVersion) return;
     const rendered = await marked.parse(rawContent);
+    if (currentRender !== renderVersion) return;
     compiledMarkdown.value = sanitizeRenderedHtml(rendered);
     await nextTick();
+    if (currentRender !== renderVersion) return;
     if (!hasInitialMermaidRender.value) {
       hasInitialMermaidRender.value = true;
       await renderMermaidDiagrams();
     }
   } catch (err) {
     if (import.meta.env.DEV) console.error('[DocsView] Markdown render failed:', err?.message);
-    compiledMarkdown.value = `<p class="text-aa-error-light">${t('docs.failedToLoad', 'Documentation failed to load.')}</p>`;
+    if (currentRender === renderVersion) {
+      compiledMarkdown.value = `<p class="text-aa-error-light">${t('docs.failedToLoad', 'Documentation failed to load.')}</p>`;
+    }
   } finally {
-    isLoading.value = false;
+    if (currentRender === renderVersion) {
+      isLoading.value = false;
+    }
   }
 };
 

@@ -4,7 +4,7 @@ import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
 import { buildMatrixRegistrationInvocation, isMatrixDomain } from '@/services/matrixDomainService.js';
-import { CONTRACT_SOURCE_FILES } from './contractSources';
+import { loadContractSourceFiles } from './contractSources';
 import { useI18n } from '@/i18n';
 import { useClipboard } from '@/composables/useClipboard';
 import { fetchAccountMetadata, upsertAccountMetadata } from '@/services/accountMetadataService';
@@ -49,6 +49,8 @@ export function useStudioController() {
   const activeFileIdx = ref(0);
 
   const recentTransactions = ref([]);
+  const contractFiles = ref([]);
+  const isContractFilesLoading = ref(false);
 
   const matrixCheckResult = ref(null);
 
@@ -67,8 +69,7 @@ export function useStudioController() {
   const computedScriptHex = ref('');
   const computedAddress = ref('');
 
-
-  const contractFiles = CONTRACT_SOURCE_FILES;
+  let contractFilesPromise = null;
 
   const isEvmWallet = computed(() => walletService.provider === walletService.PROVIDERS.EVM_WALLET);
   const walletConnected = computed(() => !!connectedAccount.value);
@@ -106,6 +107,12 @@ export function useStudioController() {
 
   watch(() => createForm.value.accountId, computeAA);
 
+  watch(activePanel, (panel) => {
+    if (panel === 'source') {
+      void ensureContractFilesLoaded();
+    }
+  }, { immediate: true });
+
   onMounted(() => {
     restoreRecentTransactions();
     if (!isEvmWallet.value) {
@@ -133,6 +140,24 @@ export function useStudioController() {
 
   function generateUUID() {
     createForm.value.accountId = createGeneratedAccountId();
+  }
+
+  async function ensureContractFilesLoaded() {
+    if (contractFiles.value.length > 0) return contractFiles.value;
+    if (contractFilesPromise) return contractFilesPromise;
+
+    isContractFilesLoading.value = true;
+    contractFilesPromise = loadContractSourceFiles()
+      .then((files) => {
+        contractFiles.value = files;
+        return files;
+      })
+      .finally(() => {
+        isContractFilesLoading.value = false;
+        contractFilesPromise = null;
+      });
+
+    return contractFilesPromise;
   }
 
 
@@ -530,7 +555,8 @@ export function useStudioController() {
   }
 
   async function copyCode() {
-    const content = contractFiles[activeFileIdx.value]?.content;
+    await ensureContractFilesLoaded();
+    const content = contractFiles.value[activeFileIdx.value]?.content;
     if (!content) return;
     if (await copyText(content)) markCopied('code');
   }
@@ -553,6 +579,7 @@ export function useStudioController() {
     computedScriptHex,
     computedAddress,
     contractFiles,
+    isContractFilesLoading,
     isEvmWallet,
     walletConnected,
     autoLoadedAccounts,
@@ -575,6 +602,7 @@ export function useStudioController() {
     saveMetadata,
     callVerifier,
     callHook,
+    loadContractFiles: ensureContractFilesLoaded,
     copyCode
   };
 }

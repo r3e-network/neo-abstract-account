@@ -1,9 +1,18 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { connectedDidProfile } from '@/utils/did';
-import { didService } from '@/services/didService';
 import { useI18n } from '@/i18n';
 import { translateError } from '@/config/errorCodes.js';
+import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+
+let didServicePromise;
+
+async function getDidService() {
+  if (!didServicePromise) {
+    didServicePromise = import('@/services/didService').then((mod) => mod.didService);
+  }
+  return didServicePromise;
+}
 
 export function useDidConnection() {
   const toast = useToast();
@@ -17,11 +26,12 @@ export function useDidConnection() {
     if (!did) return '';
     return did.length > 26 ? `${did.slice(0, 18)}...${did.slice(-6)}` : did;
   });
-  const isConfigured = computed(() => didService.isConfigured);
+  const isConfigured = computed(() => Boolean(String(RUNTIME_CONFIG.web3AuthClientId || '').trim()));
 
   async function connectDid(options = {}) {
     isConnecting.value = true;
     try {
+      const didService = await getDidService();
       const profile = await didService.connect(options);
       toast.success(`${t('nav.connectDid', 'Connect Web3Auth')}: ${profile.did}`);
       return profile;
@@ -34,6 +44,7 @@ export function useDidConnection() {
   }
 
   async function disconnectDid() {
+    const didService = await getDidService();
     await didService.disconnect();
     toast.info(`${t('nav.disconnectDid', 'Disconnect Web3Auth')}.`);
   }
@@ -49,8 +60,9 @@ export function useDidConnection() {
 
   // Auto-reconnect on page load
   onMounted(async () => {
-    if (localStorage.getItem('aa_did_connected') && !connectedDidProfile.value?.did && didService.isConfigured) {
+    if (localStorage.getItem('aa_did_connected') && !connectedDidProfile.value?.did && isConfigured.value) {
       try {
+        const didService = await getDidService();
         await didService.connect();
       } catch (error) {
         if (import.meta.env.DEV) console.error('[useDidConnection] Auto-reconnect failed:', error?.message);

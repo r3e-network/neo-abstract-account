@@ -9,7 +9,12 @@
         <span class="text-xs text-aa-muted">{{ contractFiles.length }} {{ t('studioPanels.filesLabel', 'files') }}</span>
       </div>
     </div>
-    <div v-if="contractFiles.length === 0" class="flex flex-col items-center justify-center flex-1 text-center py-16">
+    <div v-if="isContractFilesLoading && contractFiles.length === 0" class="flex flex-col items-center justify-center flex-1 text-center py-16">
+      <div class="skeleton h-24 w-24 rounded-2xl mb-5"></div>
+      <p class="text-sm font-semibold text-aa-muted">{{ t('studioPanels.loadingContractFiles', 'Loading contract files…') }}</p>
+      <p class="text-xs text-aa-muted/60 mt-1">{{ t('studioPanels.loadingContractFilesHint', 'Source modules are fetched only when the explorer tab is opened') }}</p>
+    </div>
+    <div v-else-if="contractFiles.length === 0" class="flex flex-col items-center justify-center flex-1 text-center py-16">
       <svg aria-hidden="true" class="w-12 h-12 text-aa-muted/40 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
       <p class="text-sm font-semibold text-aa-muted">{{ t('studioPanels.noContractFiles', 'No contract files loaded') }}</p>
       <p class="text-xs text-aa-muted/60 mt-1">{{ t('studioPanels.noContractFilesHint', 'Contract source will appear here once available') }}</p>
@@ -81,11 +86,12 @@ const studio = inject('studio');
 const {
   activeFileIdx,
   contractFiles,
+  isContractFilesLoading,
   copiedKey,
   copyCode
 } = studio;
 
-watch(() => contractFiles.length, (len) => {
+watch(() => contractFiles.value.length, (len) => {
   if (len > 0 && activeFileIdx.value > len - 1) {
     activeFileIdx.value = len - 1;
   }

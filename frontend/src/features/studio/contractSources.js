@@ -1,47 +1,44 @@
-import code_UnifiedSmartWallet from '@repo/contracts/UnifiedSmartWallet.cs?raw';
-import code_UnifiedSmartWalletModels from '@repo/contracts/UnifiedSmartWallet.Models.cs?raw';
-import code_UnifiedSmartWalletInternal from '@repo/contracts/UnifiedSmartWallet.Internal.cs?raw';
-import code_UnifiedSmartWalletAccounts from '@repo/contracts/UnifiedSmartWallet.Accounts.cs?raw';
-import code_UnifiedSmartWalletState from '@repo/contracts/UnifiedSmartWallet.State.cs?raw';
-import code_UnifiedSmartWalletExecution from '@repo/contracts/UnifiedSmartWallet.Execution.cs?raw';
-import code_UnifiedSmartWalletVerifyContext from '@repo/contracts/UnifiedSmartWallet.VerifyContext.cs?raw';
-import code_UnifiedSmartWalletEscape from '@repo/contracts/UnifiedSmartWallet.Escape.cs?raw';
-import code_UnifiedSmartWalletMarketEscrow from '@repo/contracts/UnifiedSmartWallet.MarketEscrow.cs?raw';
-import code_Web3AuthVerifier from '@repo/contracts/verifiers/Web3AuthVerifier.cs?raw';
-import code_TEEVerifier from '@repo/contracts/verifiers/TEEVerifier.cs?raw';
-import code_SessionKeyVerifier from '@repo/contracts/verifiers/SessionKeyVerifier.cs?raw';
-import code_WebAuthnVerifier from '@repo/contracts/verifiers/WebAuthnVerifier.cs?raw';
-import code_ZKEmailVerifier from '@repo/contracts/verifiers/ZKEmailVerifier.cs?raw';
-import code_ZkLoginVerifier from '@repo/contracts/verifiers/ZkLoginVerifier.cs?raw';
-import code_MultiSigVerifier from '@repo/contracts/verifiers/MultiSigVerifier.cs?raw';
-import code_SubscriptionVerifier from '@repo/contracts/verifiers/SubscriptionVerifier.cs?raw';
-import code_MultiHook from '@repo/contracts/hooks/MultiHook.cs?raw';
-import code_DailyLimitHook from '@repo/contracts/hooks/DailyLimitHook.cs?raw';
-import code_WhitelistHook from '@repo/contracts/hooks/WhitelistHook.cs?raw';
-import code_TokenRestrictedHook from '@repo/contracts/hooks/TokenRestrictedHook.cs?raw';
-import code_NeoDIDCredentialHook from '@repo/contracts/hooks/NeoDIDCredentialHook.cs?raw';
-
-export const CONTRACT_SOURCE_FILES = [
-  { name: 'UnifiedSmartWallet.cs', content: code_UnifiedSmartWallet },
-  { name: 'UnifiedSmartWallet.Models.cs', content: code_UnifiedSmartWalletModels },
-  { name: 'UnifiedSmartWallet.Internal.cs', content: code_UnifiedSmartWalletInternal },
-  { name: 'UnifiedSmartWallet.Accounts.cs', content: code_UnifiedSmartWalletAccounts },
-  { name: 'UnifiedSmartWallet.State.cs', content: code_UnifiedSmartWalletState },
-  { name: 'UnifiedSmartWallet.Execution.cs', content: code_UnifiedSmartWalletExecution },
-  { name: 'UnifiedSmartWallet.VerifyContext.cs', content: code_UnifiedSmartWalletVerifyContext },
-  { name: 'UnifiedSmartWallet.Escape.cs', content: code_UnifiedSmartWalletEscape },
-  { name: 'UnifiedSmartWallet.MarketEscrow.cs', content: code_UnifiedSmartWalletMarketEscrow },
-  { name: 'verifiers/Web3AuthVerifier.cs', content: code_Web3AuthVerifier },
-  { name: 'verifiers/TEEVerifier.cs', content: code_TEEVerifier },
-  { name: 'verifiers/SessionKeyVerifier.cs', content: code_SessionKeyVerifier },
-  { name: 'verifiers/WebAuthnVerifier.cs', content: code_WebAuthnVerifier },
-  { name: 'verifiers/ZKEmailVerifier.cs', content: code_ZKEmailVerifier },
-  { name: 'verifiers/ZkLoginVerifier.cs', content: code_ZkLoginVerifier },
-  { name: 'verifiers/MultiSigVerifier.cs', content: code_MultiSigVerifier },
-  { name: 'verifiers/SubscriptionVerifier.cs', content: code_SubscriptionVerifier },
-  { name: 'hooks/MultiHook.cs', content: code_MultiHook },
-  { name: 'hooks/DailyLimitHook.cs', content: code_DailyLimitHook },
-  { name: 'hooks/WhitelistHook.cs', content: code_WhitelistHook },
-  { name: 'hooks/TokenRestrictedHook.cs', content: code_TokenRestrictedHook },
-  { name: 'hooks/NeoDIDCredentialHook.cs', content: code_NeoDIDCredentialHook }
+const CONTRACT_SOURCE_DEFINITIONS = [
+  { name: 'UnifiedSmartWallet.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.cs?raw') },
+  { name: 'UnifiedSmartWallet.Models.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.Models.cs?raw') },
+  { name: 'UnifiedSmartWallet.Internal.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.Internal.cs?raw') },
+  { name: 'UnifiedSmartWallet.Accounts.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.Accounts.cs?raw') },
+  { name: 'UnifiedSmartWallet.State.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.State.cs?raw') },
+  { name: 'UnifiedSmartWallet.Execution.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.Execution.cs?raw') },
+  { name: 'UnifiedSmartWallet.VerifyContext.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.VerifyContext.cs?raw') },
+  { name: 'UnifiedSmartWallet.Escape.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.Escape.cs?raw') },
+  { name: 'UnifiedSmartWallet.MarketEscrow.cs', loader: () => import('@repo/contracts/UnifiedSmartWallet.MarketEscrow.cs?raw') },
+  { name: 'verifiers/Web3AuthVerifier.cs', loader: () => import('@repo/contracts/verifiers/Web3AuthVerifier.cs?raw') },
+  { name: 'verifiers/TEEVerifier.cs', loader: () => import('@repo/contracts/verifiers/TEEVerifier.cs?raw') },
+  { name: 'verifiers/SessionKeyVerifier.cs', loader: () => import('@repo/contracts/verifiers/SessionKeyVerifier.cs?raw') },
+  { name: 'verifiers/WebAuthnVerifier.cs', loader: () => import('@repo/contracts/verifiers/WebAuthnVerifier.cs?raw') },
+  { name: 'verifiers/ZKEmailVerifier.cs', loader: () => import('@repo/contracts/verifiers/ZKEmailVerifier.cs?raw') },
+  { name: 'verifiers/ZkLoginVerifier.cs', loader: () => import('@repo/contracts/verifiers/ZkLoginVerifier.cs?raw') },
+  { name: 'verifiers/MultiSigVerifier.cs', loader: () => import('@repo/contracts/verifiers/MultiSigVerifier.cs?raw') },
+  { name: 'verifiers/SubscriptionVerifier.cs', loader: () => import('@repo/contracts/verifiers/SubscriptionVerifier.cs?raw') },
+  { name: 'hooks/MultiHook.cs', loader: () => import('@repo/contracts/hooks/MultiHook.cs?raw') },
+  { name: 'hooks/DailyLimitHook.cs', loader: () => import('@repo/contracts/hooks/DailyLimitHook.cs?raw') },
+  { name: 'hooks/WhitelistHook.cs', loader: () => import('@repo/contracts/hooks/WhitelistHook.cs?raw') },
+  { name: 'hooks/TokenRestrictedHook.cs', loader: () => import('@repo/contracts/hooks/TokenRestrictedHook.cs?raw') },
+  { name: 'hooks/NeoDIDCredentialHook.cs', loader: () => import('@repo/contracts/hooks/NeoDIDCredentialHook.cs?raw') },
 ];
+
+const contractSourceCache = new Map();
+
+export async function loadContractSourceFiles() {
+  return Promise.all(
+    CONTRACT_SOURCE_DEFINITIONS.map(async ({ name, loader }) => {
+      if (!contractSourceCache.has(name)) {
+        contractSourceCache.set(
+          name,
+          Promise.resolve(loader()).then((module) => module?.default || module || ''),
+        );
+      }
+
+      return {
+        name,
+        content: await contractSourceCache.get(name),
+      };
+    }),
+  );
+}
