@@ -24,7 +24,7 @@ const TEST_WIF = process.env.TEST_WIF || process.env.NEO_TESTNET_WIF || "";
 const RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https://testnet1.neo.coz.io:443";
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
 const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d";
-const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56";
+const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
 const PAYMASTER_API_TOKEN =
   process.env.MORPHEUS_RUNTIME_TOKEN
   || process.env.PHALA_API_TOKEN
@@ -34,7 +34,7 @@ const PHALA_API_URL = (
   process.env.MORPHEUS_TESTNET_RUNTIME_URL
   || process.env.MORPHEUS_RUNTIME_URL
   || process.env.PHALA_API_URL
-  || "https://morpheus-testnet.meshmini.app"
+  || "https://oracle.meshmini.app/testnet"
 ).trim().replace(/\/$/, "");
 const PAYMASTER_ENDPOINT = (
   process.env.MORPHEUS_PAYMASTER_TESTNET_ENDPOINT
@@ -48,6 +48,10 @@ const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
   process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1"
   || (process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0" && !process.env.PAYMASTER_ACCOUNT_ID);
 const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3));
+const REMOTE_WORKER_SERVICE =
+  process.env.MORPHEUS_REMOTE_WORKER_SERVICE
+  || process.env.MORPHEUS_PAYMASTER_REMOTE_WORKER_SERVICE
+  || "testnet-request-worker";
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const LOCAL_PAYMASTER_SIGNER_ENV_KEYS = [
   "NEO_TESTNET_WIF",
@@ -315,7 +319,7 @@ async function callRemotePaymaster(payload) {
   const shellScript = `
 set -e
 cd /dstack
-docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T phala-worker node --input-type=module - <<'JS'
+docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T ${REMOTE_WORKER_SERVICE} node --input-type=module - <<'JS'
 ${overrideAssignments}
 process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));

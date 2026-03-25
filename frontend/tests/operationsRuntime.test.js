@@ -44,6 +44,14 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     neoDidProvider: 'web3auth',
     neoDidDomain: 'neodid.morpheus.neo',
     morpheusApiBaseUrl: 'https://oracle.meshmini.app/mainnet',
+    morpheusOracleCvmId: 'ddff154546fe22d15b65667156dd4b7c611e6093',
+    morpheusOracleCvmName: 'oracle-morpheus-neo-r3e',
+    morpheusOracleAttestationExplorerUrl:
+      'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093',
+    morpheusDatafeedCvmId: '28294e89d490924b79c85cdee057ce55723b3d56',
+    morpheusDatafeedCvmName: 'datafeed-morpheus-neo-r3e',
+    morpheusDatafeedAttestationExplorerUrl:
+      'https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56',
     morpheusNeoDidServiceDid: 'did:morpheus:neo_n3:service:neodid',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
@@ -71,6 +79,14 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
   assert.equal(config.neoDidDomain, '');
   assert.equal(config.morpheusNetwork, 'testnet');
   assert.equal(config.morpheusApiBaseUrl, 'https://oracle.meshmini.app/testnet');
+  assert.equal(
+    config.morpheusOracleAttestationExplorerUrl,
+    'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093'
+  );
+  assert.equal(
+    config.morpheusDatafeedAttestationExplorerUrl,
+    'https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56'
+  );
 });
 
 test('getOperationsRuntime derives collaboration and relay flags', () => {

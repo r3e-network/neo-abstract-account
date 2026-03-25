@@ -23,11 +23,7 @@ function normalizeUrl(value) {
 
 function isNetworkScopedHost(hostname) {
   const host = trim(hostname).toLowerCase();
-  return (
-    host === 'morpheus-mainnet.meshmini.app' ||
-    host === 'morpheus-testnet.meshmini.app' ||
-    host === 'oracle.meshmini.app'
-  );
+  return host === 'oracle.meshmini.app';
 }
 
 function isGatewayHost(hostname) {

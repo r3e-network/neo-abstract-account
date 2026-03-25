@@ -4,12 +4,10 @@ This project contains the comprehensive standard, smart contract implementation,
 
 Current status note:
 
-- The latest `main` branch is migrating to `UnifiedSmartWalletV3`.
+- The current `main` branch runs `UnifiedSmartWalletV3`.
 - V3 removes the old role-heavy / dome-heavy core wallet model and replaces it with a minimalist account core plus verifier and hook plugins.
 - The canonical mainnet AA anchor now points to the clean deploy `0x9742b4ed62a84a886f404d36149da6147528ee33` and resolves from `smartwallet.neo`.
-- The older mainnet hash `0x0466fa7e8fe548480d7978d2652625d4a22589a6` was updated in place to a V3-compatible runtime on 2026-03-15 and is now retained as a legacy compatibility deployment, not the canonical public anchor.
 - The canonical shared testnet AA anchor now points to the clean deployment `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38`, with shared `Web3AuthVerifier` `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`.
-- Older role / dome / `executeUnifiedByAddress` materials below are historical unless explicitly updated to mention V3.
 
 ## Features
 - **Deterministic V3 Accounts**: Each account is keyed by a 20-byte `accountId` and derives a stable Neo virtual address without deploying per-user wallet logic.
@@ -63,31 +61,37 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 Domain rules:
 
 - mainnet AA domain: `smartwallet.neo`
-- mainnet AA compatibility alias: `aa.morpheus.neo`
+- mainnet AA additional alias: `aa.morpheus.neo`
 - mainnet NeoDID domain: `neodid.morpheus.neo`
 - testnet currently has no shared AA / NeoDID NNS aliases
+
+Current published Morpheus CVM attestation anchors:
+
+- Oracle request/response CVM: `oracle-morpheus-neo-r3e` / `ddff154546fe22d15b65667156dd4b7c611e6093`
+- Oracle attestation explorer: `https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093`
+- DataFeed CVM: `datafeed-morpheus-neo-r3e` / `28294e89d490924b79c85cdee057ce55723b3d56`
+- DataFeed attestation explorer: `https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56`
 
 Do not conflate the AA recovery verifier with the independent NeoDID registry:
 
 - `SocialRecoveryVerifier` is the AA-specific recovery verifier
 - `NeoDIDRegistry` is the independent Morpheus identity / action-ticket registry
 
-Mainnet validation references:
+Current validation references:
 
-- `docs/reports/2026-03-12-morpheus-mainnet-validation.md` records the original 2026-03-12 production validation window and now includes refresh notes.
-- `docs/reports/2026-03-15-v3-mainnet-upgrade-and-live-validation.md` records the in-place AA V3 mainnet upgrade, mainnet `Web3AuthVerifier` deployment, and fresh live AA -> Oracle proofs.
-- `docs/reports/2026-03-15-v3-testnet-clean-shared-anchors.md` records the clean shared testnet AA / `Web3AuthVerifier` deployments and the fresh live testnet Oracle smoke.
+- `docs/PLUGIN_MATRIX.md` captures the active verifier / hook matrix.
+- `docs/PAYMASTER_RELAY_VALIDATION.md` captures the active AA paymaster relay path.
 
 For Morpheus / NeoDID production integration, also set:
 
 - `VITE_WEB3AUTH_CLIENT_ID`
 - `VITE_WEB3AUTH_NETWORK=sapphire_mainnet`
-- `VITE_MORPHEUS_RUNTIME_URL=https://morpheus-mainnet.meshmini.app`
-- `VITE_MORPHEUS_TESTNET_RUNTIME_URL=https://morpheus-testnet.meshmini.app`
+- `VITE_MORPHEUS_RUNTIME_URL=https://oracle.meshmini.app/mainnet`
+- `VITE_MORPHEUS_TESTNET_RUNTIME_URL=https://oracle.meshmini.app/testnet`
 - `VITE_MORPHEUS_NEODID_SERVICE_DID=did:morpheus:neo_n3:service:neodid`
 - server-only `WEB3AUTH_CLIENT_SECRET`
-- server-only `MORPHEUS_RUNTIME_URL=https://morpheus-mainnet.meshmini.app`
-- server-only `MORPHEUS_TESTNET_RUNTIME_URL=https://morpheus-testnet.meshmini.app`
+- server-only `MORPHEUS_RUNTIME_URL=https://oracle.meshmini.app/mainnet`
+- server-only `MORPHEUS_TESTNET_RUNTIME_URL=https://oracle.meshmini.app/testnet`
 
 Shared draft metadata is intentionally bounded: the frontend keeps the latest 100 activity entries and the latest 12 submission receipts per draft so long-lived collaboration records do not grow without limit.
 
@@ -176,10 +180,7 @@ npm run testnet:validate:paymaster
 npm run testnet:validate:report
 ```
 
-The suite writes:
-
-- JSON artifacts under `sdk/docs/reports/`
-- a consolidated markdown acceptance report under `docs/reports/2026-03-14-v3-testnet-validation-suite.md`
+The suite writes JSON artifacts under `sdk/docs/reports/`.
 
 ### Build
 
@@ -195,7 +196,7 @@ The current V3 verifier / hook matrix was revalidated on **Neo N3 testnet** on *
 
 Canonical report:
 
-- `docs/reports/2026-03-13-v3-testnet-plugin-matrix.md`
+- `docs/PLUGIN_MATRIX.md`
 
 Verified on-chain in that matrix:
 
@@ -301,10 +302,6 @@ A second destructive verification pass was completed on **March 6, 2026** agains
 - Real update tx: **`0x3390f58a10e2aed726d6b414c57eaf59f92216eed44b825f230cd48f57d77b9e`**
 - Post-update validation reran `sdk/js/tests/aa_testnet_integration_check.js`, `sdk/js/tests/test-evm-meta-tx.js`, `sdk/js/tests/aa_testnet_full_validate.js`, `sdk/js/tests/aa_testnet_negative_meta_validate.js`, `sdk/js/tests/aa_testnet_max_transfer_validate.js`, and `sdk/js/tests/aa_testnet_direct_proxy_spend_validate.js`
 - Post-update authorization simulation confirmed the deployer `update` path still HALTs and a non-deployer signer still FAULTs with `Not Deployer`
-
-### Legacy Comparison Note
-
-The legacy testnet deployment **`0xf3f706936e37eeaf6bf51b074e55e840f30d993a`** remains a useful comparison baseline only. A raw proxy-signed GAS `transfer` still succeeds there, while the hardened deployment rejects that path and preserves wrapper execution through the canonical AA runtime entrypoints `executeUnified` and `executeUnifiedByAddress` where restrictions are enforced.
 
 ## Structure
 - `contracts/`: C# Smart Contract implementation of the Master Entry Contract.

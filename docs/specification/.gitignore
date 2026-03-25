@@ -1,6 +1,0 @@
-*.aux
-*.log
-*.out
-*.pdf
-!neo_abstract_account_spec.pdf
-*_complete.tex

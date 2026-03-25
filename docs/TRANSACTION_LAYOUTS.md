@@ -599,6 +599,4 @@ This document provides complete transaction layouts for all three verification t
 **Related Files**:
 - Contract: `/home/neo/git/neo-abstract-account/contracts/AbstractAccount.cs`
 - Frontend: `/home/neo/git/neo-abstract-account/frontend/src/features/operations/metaTx.js`
-- Specification: `/home/neo/git/neo-abstract-account/docs/specification/neo_aa_spec_sp.tex`
 - Flow Documentation: `/home/neo/git/neo-abstract-account/docs/TRANSACTION_FLOW.md`
-

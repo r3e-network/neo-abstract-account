@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(MODULE_DIR, "..");
 const SDK_REPORT_DIR = path.resolve(ROOT_DIR, "..", "docs", "reports");
-const REPO_REPORT_DIR = path.resolve(ROOT_DIR, "..", "..", "docs", "reports");
+const REPO_REPORT_DIR = path.resolve(ROOT_DIR, "..", "..", "docs");
 const REPO_ROOT = path.resolve(ROOT_DIR, "..", "..");
 const DATE_PREFIX = "2026-03-14";
 
@@ -40,6 +40,9 @@ const STAGES = [
     requiredEnv: ["TEST_WIF"],
     requiredEnvAny: [["MORPHEUS_RUNTIME_TOKEN", "PHALA_API_TOKEN", "PHALA_SHARED_SECRET"]],
     optional: true,
+    envOverrides: {
+      TEST_WIF: process.env.NEO_TESTNET_WIF || process.env.PAYMASTER_TEST_WIF || process.env.TEST_WIF || "",
+    },
   },
 ];
 
@@ -53,16 +56,12 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function slugTimestamp() {
-  return Date.now();
-}
-
 function envSnapshot() {
   return {
     TESTNET_RPC_URL: process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https://testnet1.neo.coz.io:443",
     hasTestWif: Boolean(process.env.TEST_WIF),
     hasMorpheusRuntimeToken: Boolean(process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET),
-    morpheusPaymasterAppId: process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56",
+    morpheusPaymasterAppId: process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093",
     paymasterAccountId: process.env.PAYMASTER_ACCOUNT_ID || null,
     skipPaymasterAllowlistUpdate: process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1",
   };
@@ -220,7 +219,10 @@ async function runStage(stage) {
   const startedAt = nowIso();
   const child = spawn(stage.command[0], stage.command.slice(1), {
     cwd: ROOT_DIR,
-    env: process.env,
+    env: {
+      ...process.env,
+      ...(stage.envOverrides || {}),
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -377,20 +379,16 @@ async function writeReports(report) {
   await mkdir(SDK_REPORT_DIR, { recursive: true });
   await mkdir(REPO_REPORT_DIR, { recursive: true });
 
-  const stamp = slugTimestamp();
-  const jsonFilename = `${DATE_PREFIX}-v3-testnet-validation-suite.${stamp}.json`;
-  const markdownFilename = `${DATE_PREFIX}-v3-testnet-validation-suite.md`;
-  const latestFilename = `${DATE_PREFIX}-v3-testnet-validation-suite.latest.json`;
+  const latestFilename = `v3-testnet-validation-suite.latest.json`;
+  const markdownFilename = `TESTNET_VALIDATION_SUMMARY.md`;
 
-  const jsonPath = path.join(SDK_REPORT_DIR, jsonFilename);
   const latestPath = path.join(SDK_REPORT_DIR, latestFilename);
   const markdownPath = path.join(REPO_REPORT_DIR, markdownFilename);
 
-  await writeFile(jsonPath, JSON.stringify(report, null, 2));
   await writeFile(latestPath, JSON.stringify(report, null, 2));
   await writeFile(markdownPath, buildMarkdownReport(report));
 
-  return { jsonPath, latestPath, markdownPath };
+  return { jsonPath: latestPath, latestPath, markdownPath };
 }
 
 async function main() {

@@ -32,10 +32,7 @@ From `sdk/js`, run the full ordered suite:
 ./run_testnet_validation_suite.sh
 ```
 
-The suite writes:
-
-- machine-readable JSON reports to `sdk/docs/reports/`
-- a human-readable markdown summary to `docs/reports/2026-03-14-v3-testnet-validation-suite.md`
+The suite writes machine-readable JSON reports to `sdk/docs/reports/`.
 
 ## Ordered scripts
 

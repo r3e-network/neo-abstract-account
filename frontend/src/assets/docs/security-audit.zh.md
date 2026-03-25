@@ -4,7 +4,7 @@
 
 完整英文报告来源：
 
-- `docs/reports/2026-03-11-security-audit.md`
+- `docs/SECURITY_AUDIT.md`
 
 ## 重点结论
 

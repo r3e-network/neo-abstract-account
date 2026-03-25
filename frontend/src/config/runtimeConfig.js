@@ -24,6 +24,14 @@ export const DEFAULT_MORPHEUS_EDGE_BASE_URL = 'https://edge.meshmini.app';
 export const DEFAULT_MORPHEUS_CONTROL_PLANE_BASE_URL = 'https://control.meshmini.app';
 export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://oracle.meshmini.app/mainnet';
 export const DEFAULT_MORPHEUS_API_BASE_URL_TESTNET = 'https://oracle.meshmini.app/testnet';
+export const DEFAULT_MORPHEUS_ORACLE_CVM_ID = 'ddff154546fe22d15b65667156dd4b7c611e6093';
+export const DEFAULT_MORPHEUS_ORACLE_CVM_NAME = 'oracle-morpheus-neo-r3e';
+export const DEFAULT_MORPHEUS_ORACLE_ATTESTATION_EXPLORER_URL =
+  'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093';
+export const DEFAULT_MORPHEUS_DATAFEED_CVM_ID = '28294e89d490924b79c85cdee057ce55723b3d56';
+export const DEFAULT_MORPHEUS_DATAFEED_CVM_NAME = 'datafeed-morpheus-neo-r3e';
+export const DEFAULT_MORPHEUS_DATAFEED_ATTESTATION_EXPLORER_URL =
+  'https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56';
 export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
 
 export const MORPHEUS_NETWORK_DEFAULTS = {
@@ -204,6 +212,30 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     morpheusApiBaseUrl: resolveOptionalUrl(
       env[`VITE_MORPHEUS_${runtimeNetwork === 'testnet' ? 'TESTNET' : 'MAINNET'}_RUNTIME_URL`] || env.VITE_MORPHEUS_RUNTIME_URL || env.VITE_MORPHEUS_API_BASE_URL,
       networkDefaults.morpheusApiBaseUrl
+    ),
+    morpheusOracleCvmId: resolveOptionalUrl(
+      env.VITE_MORPHEUS_ORACLE_CVM_ID,
+      DEFAULT_MORPHEUS_ORACLE_CVM_ID
+    ),
+    morpheusOracleCvmName: resolveOptionalUrl(
+      env.VITE_MORPHEUS_ORACLE_CVM_NAME,
+      DEFAULT_MORPHEUS_ORACLE_CVM_NAME
+    ),
+    morpheusOracleAttestationExplorerUrl: resolveOptionalUrl(
+      env.VITE_MORPHEUS_ORACLE_ATTESTATION_EXPLORER_URL,
+      DEFAULT_MORPHEUS_ORACLE_ATTESTATION_EXPLORER_URL
+    ),
+    morpheusDatafeedCvmId: resolveOptionalUrl(
+      env.VITE_MORPHEUS_DATAFEED_CVM_ID,
+      DEFAULT_MORPHEUS_DATAFEED_CVM_ID
+    ),
+    morpheusDatafeedCvmName: resolveOptionalUrl(
+      env.VITE_MORPHEUS_DATAFEED_CVM_NAME,
+      DEFAULT_MORPHEUS_DATAFEED_CVM_NAME
+    ),
+    morpheusDatafeedAttestationExplorerUrl: resolveOptionalUrl(
+      env.VITE_MORPHEUS_DATAFEED_ATTESTATION_EXPLORER_URL,
+      DEFAULT_MORPHEUS_DATAFEED_ATTESTATION_EXPLORER_URL
     ),
     morpheusNeoDidServiceDid: resolveOptionalUrl(
       env.VITE_MORPHEUS_NEODID_SERVICE_DID,

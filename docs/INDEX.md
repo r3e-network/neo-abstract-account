@@ -21,7 +21,6 @@ This index keeps the root documentation set visible and easy to browse.
 - `docs/DATA_FLOW.zh-CN.md`
 - `docs/architecture.zh-CN.md`
 - `docs/QUICK_REFERENCE.zh-CN.md`
-- `docs/MORPHEUS_SOCIAL_RECOVERY.zh-CN.md`
 - `docs/MORPHEUS_PRIVATE_ACTIONS.zh-CN.md`
 
 ## Recovery Verifier
@@ -36,14 +35,8 @@ This index keeps the root documentation set visible and easy to browse.
 ## Security Notes
 
 - `SECURITY_IMPROVEMENTS.md`
-- `docs/reports/2026-03-11-security-audit.md`
-- `docs/reports/2026-03-13-v3-testnet-plugin-matrix.md`
-- `docs/SECURITY_FIX_REPORT.md`
-
-## Formal Specification
-
-- `docs/specification/neo_abstract_account_spec.tex` — formal paper-style LaTeX specification
-- `docs/specification/README.md` — build instructions
+- `docs/SECURITY_AUDIT.md`
+- `docs/PLUGIN_MATRIX.md`
 
 ## Matrix Domain Support
 

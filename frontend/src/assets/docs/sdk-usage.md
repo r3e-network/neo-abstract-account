@@ -107,8 +107,8 @@ AA_RELAY_ALLOWED_HASH=0x5be915aea3ce85e4752d522632f0a9520e377aaf
 AA_RELAY_ALLOW_RAW_FORWARD=0
 AA_RELAY_INCLUDE_RAW_ERRORS=0
 MORPHEUS_NETWORK=testnet
-MORPHEUS_PAYMASTER_TESTNET_ENDPOINT=https://morpheus-testnet.meshmini.app/paymaster/authorize
-MORPHEUS_PAYMASTER_MAINNET_ENDPOINT=https://morpheus-mainnet.meshmini.app/paymaster/authorize
+MORPHEUS_PAYMASTER_TESTNET_ENDPOINT=https://oracle.meshmini.app/testnet/paymaster/authorize
+MORPHEUS_PAYMASTER_MAINNET_ENDPOINT=https://oracle.meshmini.app/mainnet/paymaster/authorize
 MORPHEUS_PAYMASTER_TESTNET_API_TOKEN=your-paymaster-token
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```

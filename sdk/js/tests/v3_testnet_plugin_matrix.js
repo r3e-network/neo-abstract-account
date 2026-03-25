@@ -944,7 +944,7 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
   }
 
   fs.mkdirSync(REPORT_DIR, { recursive: true });
-  const reportPath = path.join(REPORT_DIR, `2026-03-13-v3-testnet-plugin-matrix.${Date.now()}.json`);
+  const reportPath = path.join(REPORT_DIR, "v3-testnet-plugin-matrix.latest.json");
   fs.writeFileSync(reportPath, JSON.stringify(results, null, 2));
 
   logSection('Report');

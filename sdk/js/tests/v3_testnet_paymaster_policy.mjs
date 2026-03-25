@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const execFileAsync = promisify(execFile);
 
 const PHALA_API_TOKEN = process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
-const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "28294e89d490924b79c85cdee057ce55723b3d56";
+const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56";
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
@@ -18,6 +18,18 @@ const PAYMASTER_METHOD = process.env.MORPHEUS_PAYMASTER_METHOD || "executeUserOp
 const PAYMASTER_MAX_GAS_UNITS = Number(process.env.MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS || 5_000_000);
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE = process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1";
 const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3));
+const REMOTE_WORKER_SERVICE =
+  process.env.MORPHEUS_REMOTE_WORKER_SERVICE
+  || process.env.MORPHEUS_PAYMASTER_REMOTE_WORKER_SERVICE
+  || "testnet-request-worker";
+const PAYMASTER_ENDPOINT = (
+  process.env.MORPHEUS_PAYMASTER_TESTNET_ENDPOINT
+  || process.env.MORPHEUS_PAYMASTER_ENDPOINT
+  || process.env.MORPHEUS_TESTNET_RUNTIME_URL
+  || process.env.MORPHEUS_RUNTIME_URL
+  || process.env.PHALA_API_URL
+  || ""
+).trim().replace(/\/$/, "");
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPORT_DIR = path.resolve(MODULE_DIR, "..", "..", "docs", "reports");
 
@@ -83,10 +95,10 @@ async function callRemotePaymaster(payload) {
   ]
     .map(([key, value]) => `process.env.${key} = ${JSON.stringify(value)};`)
     .join("\n");
-  const shellScript = `
+const shellScript = `
 set -e
 cd /dstack
-docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T phala-worker node --input-type=module - <<'JS'
+docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T ${REMOTE_WORKER_SERVICE} node --input-type=module - <<'JS'
 ${overrideAssignments}
 process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
@@ -107,6 +119,23 @@ JS
   const jsonLine = stdout.trim().split("\n").find((line) => line.trim().startsWith("{"));
   if (!jsonLine) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
   return JSON.parse(jsonLine);
+}
+
+async function callDirectPaymaster(payload) {
+  const endpoint = PAYMASTER_ENDPOINT.endsWith("/paymaster/authorize")
+    ? PAYMASTER_ENDPOINT
+    : `${PAYMASTER_ENDPOINT}/paymaster/authorize`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${PHALA_API_TOKEN}`,
+      "x-phala-token": PHALA_API_TOKEN,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const body = await response.json().catch(() => ({}));
+  return { status: response.status, body };
 }
 
 function assertApproved(response, label) {
@@ -147,7 +176,9 @@ async function main() {
     operation_hash: `0x${"44".repeat(32)}`,
   };
 
-  const approved = await callRemotePaymaster(approvedPayload);
+  const approved = PAYMASTER_ENDPOINT
+    ? await callDirectPaymaster(approvedPayload)
+    : await callRemotePaymaster(approvedPayload);
   assertApproved(approved, "approved");
 
   const cases = [
@@ -190,7 +221,9 @@ async function main() {
 
   const deniedCases = {};
   for (const item of cases) {
-    const response = await callRemotePaymaster(item.payload);
+    const response = PAYMASTER_ENDPOINT
+      ? await callDirectPaymaster(item.payload)
+      : await callRemotePaymaster(item.payload);
     assertDenied(response, item.id, item.reason);
     deniedCases[item.id] = {
       approved: response.body.approved,
@@ -213,7 +246,7 @@ async function main() {
   };
 
   await mkdir(REPORT_DIR, { recursive: true });
-  const reportPath = path.join(REPORT_DIR, `2026-03-14-v3-testnet-paymaster-policy.${Date.now()}.json`);
+  const reportPath = path.join(REPORT_DIR, "v3-testnet-paymaster-policy.latest.json");
   await writeFile(reportPath, JSON.stringify(report, null, 2));
 
   console.log(JSON.stringify({

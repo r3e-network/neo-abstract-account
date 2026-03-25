@@ -1,0 +1,219 @@
+{
+  "env": {
+    "rpc": "https://testnet1.neo.coz.io:443",
+    "networkMagic": 894710606,
+    "address": "NhMYxG5ATmRjSy6ocnPxrA2DiYba6xhFqu",
+    "scriptHash": "0x69aa227309f35d7196d0d9f97fc22b33613a31eb"
+  },
+  "deployments": {
+    "core": {
+      "txid": "0xcaee6738886db577c0048dbcd94a390ace7637c71b02725a755b435ba7ecd975",
+      "hash": "0xd8906d8d5a0b172c9e57447ad318bb57235bce96",
+      "manifestName": "UnifiedSmartWalletV3-validation-plugin-matrix-mn5bzinc-core"
+    },
+    "web3AuthA": {
+      "txid": "0x88fb329ded1d1fbc4ed0b514c6b5f6e4ba521058d353696dff1f3a0d9004bc9b",
+      "hash": "0x599fd6f29d1948758cc2ca81483350e205ddbada",
+      "manifestName": "Web3AuthVerifier-validation-plugin-matrix-mn5bzinc-web3auth-a"
+    },
+    "web3AuthB": {
+      "txid": "0x88ef9bdf00c7d92126920df9faadceb713c4870d18b2ef708d63dee892212036",
+      "hash": "0xfcabb01ec3eefbc0a859adeddd56600e59cedeaf",
+      "manifestName": "Web3AuthVerifier-validation-plugin-matrix-mn5bzinc-web3auth-b"
+    },
+    "teeVerifier": {
+      "txid": "0xf78f28b8d587092747dfcccf08a739f4a1b928154a8d5055ae48781b1bfd9dd7",
+      "hash": "0xa617915cfa84f50a3ca8c0f992e645e1ccc4eae7",
+      "manifestName": "TEEVerifier-validation-plugin-matrix-mn5bzinc-tee"
+    },
+    "webAuthnVerifier": {
+      "txid": "0x01551c7abc2b1763cb24a1379629d6d1ca7771899f7230afe1ac76eeecafdd26",
+      "hash": "0xb1f1b8aebbc2c0da8311e592584519040288eb15",
+      "manifestName": "WebAuthnVerifier-validation-plugin-matrix-mn5bzinc-webauthn"
+    },
+    "sessionKeyVerifier": {
+      "txid": "0x3f2c84ef3ea31493aa176c853e0aaadfffd7e316cd9755d597be9732b4334cb7",
+      "hash": "0x7d561d3756811d36d89349b80ac9143f9b088f62",
+      "manifestName": "SessionKeyVerifier-validation-plugin-matrix-mn5bzinc-session-key"
+    },
+    "multiSigVerifier": {
+      "txid": "0x487149b43e1515a51806e6debda590eebe950e1dcde87522868466baf06c9f4e",
+      "hash": "0xc0bfcf58d0e3f2afc5f7228c8a15e560dc91a59b",
+      "manifestName": "MultiSigVerifier-validation-plugin-matrix-mn5bzinc-multisig"
+    },
+    "subscriptionVerifier": {
+      "txid": "0xd0e4a555149a0e1616f5dd8deafb512d3a149602bbded40510a29e5a88c39f20",
+      "hash": "0xf3d0859358179b1e17021ae631b4d33535d0ed62",
+      "manifestName": "SubscriptionVerifier-validation-plugin-matrix-mn5bzinc-subscription"
+    },
+    "zkEmailVerifier": {
+      "txid": "0x0b711efc093b32811540b60e26256c4a83a323f80740462151aee9e280821aa9",
+      "hash": "0x6b59bebd84efca0249d9d2ce46c6e698cd8f2566",
+      "manifestName": "ZKEmailVerifier-validation-plugin-matrix-mn5bzinc-zkemail"
+    },
+    "whitelistHook": {
+      "txid": "0xf983a54fabc149d3f9bf70f82f9dd04a00c39b8abf2aa48f8eb134f8a711e2dd",
+      "hash": "0xffbc5a8ac9494c273d3d5b429240a0b1a5b69f3d",
+      "manifestName": "WhitelistHook-validation-plugin-matrix-mn5bzinc-whitelist"
+    },
+    "dailyLimitHook": {
+      "txid": "0xba8c1c61c49f646845163daab0a2cf066a2055d44a0053e4950aa8e5c6bb9058",
+      "hash": "0xcf37b222dad1d86c3b91e4d0f466a2de664aa867",
+      "manifestName": "DailyLimitHook-validation-plugin-matrix-mn5bzinc-daily-limit"
+    },
+    "tokenRestrictedHook": {
+      "txid": "0xc98cd7eae61b84b08f2a97b5980bf8db0607e853c682e5c7871a177da2519d70",
+      "hash": "0x23532770a3211e9cbf245449d4a517808f5e2e67",
+      "manifestName": "TokenRestrictedHook-validation-plugin-matrix-mn5bzinc-token-restricted"
+    },
+    "multiHook": {
+      "txid": "0x7343c891b0e7f807b903ad95483f5a6546bb6eec0f733d91b9ad017dc10af7e9",
+      "hash": "0xcd6d283c600dd19a3eda67f94d28d310c44e9fe3",
+      "manifestName": "MultiHook-validation-plugin-matrix-mn5bzinc-multi-hook"
+    },
+    "neoDidHook": {
+      "txid": "0x790a70bda233886e59b27bc3223f1d12b838fae387626a03c061ff5e284f7203",
+      "hash": "0x365ed0e92d513f17a3fcfd9f920f90b393b5b6ce",
+      "manifestName": "NeoDIDCredentialHook-validation-plugin-matrix-mn5bzinc-neodid-hook"
+    },
+    "mockTarget": {
+      "txid": "0x4578ac5c0e89b687a38ec969bbf6a0e1df2dfcfdbc320dac1f5c154df3ddb0de",
+      "hash": "0x04cd3948fd1b3785e99dca0e7a40286e079c7747",
+      "manifestName": "MockTransferTarget-validation-plugin-matrix-mn5bzinc-mock-target"
+    }
+  },
+  "matrix": {
+    "directConfigGuards": {
+      "whitelistDirectSet": {
+        "state": "FAULT",
+        "exception": "at instruction 35 (SYSCALL): System.Contract.Call failed: called contract a92633e5ed4d00d90eb5910f3d3dcea47be50124 not found: key not found"
+      },
+      "web3AuthDirectSet": {
+        "state": "FAULT",
+        "exception": "at instruction 63 (SYSCALL): System.Contract.Call failed: called contract 2c6eefc51b42e59a9d8bcfccd162209f098e8c11 not found: key not found"
+      }
+    },
+    "web3Auth": {
+      "accountId": "0xeb6395540dc1ccd3741f1c9f2aa4e61f18ed5488",
+      "txid": "0xd7c1eadbab5f7100a357ffd3586d2605144bbe9ae263b23503e08e9e3d914cd3",
+      "result": "MOCK",
+      "tampered": {
+        "state": "FAULT",
+        "exception": "at instruction 2511 (ABORTMSG): ABORTMSG is executed. Reason: Verifier rejected signature"
+      },
+      "replay": {
+        "state": "FAULT",
+        "exception": "at instruction 3052 (ABORTMSG): ABORTMSG is executed. Reason: Invalid sequence for channel"
+      }
+    },
+    "teeVerifier": {
+      "accountId": "0x1f357d61127dba24d8bfa06c996d690bcdc41b1d",
+      "txid": "0x1c2afa556eb7537aeab9f0a8d2a9f09615e0720edc35a6c3dddc2c1ce5773ceb",
+      "result": "MOCK",
+      "tampered": {
+        "state": "FAULT",
+        "exception": "at instruction 2511 (ABORTMSG): ABORTMSG is executed. Reason: Verifier rejected signature"
+      }
+    },
+    "webAuthnVerifier": {
+      "accountId": "0xcc0073502c05de10d5d0e90aa30aea67c468c7ba",
+      "txid": "0x9c9d8b7f8fb346c9a401582b195f78907820914b757fc343e45490aa91306153",
+      "result": "MOCK",
+      "tampered": {
+        "state": "FAULT",
+        "exception": "at instruction 2511 (ABORTMSG): ABORTMSG is executed. Reason: Verifier rejected signature"
+      }
+    },
+    "sessionKeyVerifier": {
+      "accountId": "0xd30e39c12b6e6c5a485796fe88e1e35b84c31493",
+      "txid": "0x3f236baba9f2211df2a77fce9ed3cbb9085f8c9ecaf5550c153e6919fa745291",
+      "result": "MOCK",
+      "wrongTarget": {
+        "state": "FAULT",
+        "exception": "at instruction 525 (ABORTMSG): ABORTMSG is executed. Reason: Target contract not permitted"
+      },
+      "expiredConfig": {
+        "state": "FAULT",
+        "exception": "at instruction 134 (ABORTMSG): ABORTMSG is executed. Reason: Session key must expire in the future"
+      }
+    },
+    "multiSigVerifier": {
+      "accountId": "0x10b2cca51a7bfe89b02199ce40bd3cfc08d7c5b5",
+      "txid": "0x12947263b4397a0fb1f2bbb627b6ae42c2419a6160cbb1151d1d298ea6ac1c76",
+      "result": "MOCK",
+      "insufficient": {
+        "state": "FAULT",
+        "exception": "at instruction 2511 (ABORTMSG): ABORTMSG is executed. Reason: Verifier rejected signature"
+      }
+    },
+    "subscriptionVerifier": {
+      "accountId": "0x7fdffd3228f3d869bda7cba32bfb9d3503b52097",
+      "txid": "0x4bf433aa3abee46a368c3481897f8bd14e29cf5b135ce177d5b59a2b2f32d62b",
+      "result": "true",
+      "overAmount": {
+        "state": "FAULT",
+        "exception": "at instruction 427 (ABORTMSG): ABORTMSG is executed. Reason: Transfer amount exceeds subscription"
+      },
+      "replay": {
+        "state": "FAULT",
+        "exception": "at instruction 2926 (ABORTMSG): ABORTMSG is executed. Reason: Salt already used"
+      }
+    },
+    "zkEmailVerifier": {
+      "accountId": "0x9005579c25e2f56a5e8fdbbc5208bff6173dfb3e",
+      "disabled": {
+        "state": "FAULT",
+        "exception": "at instruction 225 (ABORTMSG): ABORTMSG is executed. Reason: ZKEmailVerifier disabled pending real proof verification"
+      }
+    },
+    "whitelistHook": {
+      "accountId": "0xc48c1a94be5e9ceb3a70cf63a4fec308f8996fdb",
+      "txid": "0xd1221aa3445d334d6570ed2d8da6dce99bac1968c34515827f7c53e9f5c55746",
+      "result": "MOCK",
+      "denied": {
+        "state": "FAULT",
+        "exception": "at instruction 202 (ABORTMSG): ABORTMSG is executed. Reason: Target contract not in whitelist"
+      }
+    },
+    "dailyLimitHook": {
+      "accountId": "0x361257604e1f7e1cb865012ee4ab85aaf699b8cb",
+      "txid": "0xfdb2ca1dd87d876544908d7797206bb87d0442672cb5ec780668f8adf4900f61",
+      "result": "true",
+      "overflow": {
+        "state": "FAULT",
+        "exception": "at instruction 464 (ABORTMSG): ABORTMSG is executed. Reason: Daily limit exceeded"
+      }
+    },
+    "tokenRestrictedHook": {
+      "accountId": "0x28afb206d550a412011cc7bb03a419deef6310e0",
+      "txid": "0xd6b8e8cef0db5adf6a8a744ede3246635c8cdf1af805752e29bf58ed524e4267",
+      "result": "MOCK",
+      "restricted": {
+        "state": "FAULT",
+        "exception": "at instruction 239 (ABORTMSG): ABORTMSG is executed. Reason: Interaction with restricted token is forbidden"
+      }
+    },
+    "multiHook": {
+      "accountId": "0xcae5535b4791fd36984f4701979aad8cf077542b",
+      "txid": "0xa13c821494f2fe06be1177b60eb8e69a623215eeab1bd50d255052c78f0a60e2",
+      "hookCount": 2,
+      "blocked": {
+        "state": "FAULT",
+        "exception": "at instruction 202 (ABORTMSG): ABORTMSG is executed. Reason: Target contract not in whitelist"
+      }
+    },
+    "neoDidCredentialHook": {
+      "accountId": "0x6427169fe7e4d80cd42b13f842e5b14f4b99daa8",
+      "txid": "0x436dc721ff45d09b228987610c5d2ee35630909e41a8b6f452b1dae72ea0fe88",
+      "result": "MOCK",
+      "missing": {
+        "state": "FAULT",
+        "exception": "at instruction 420 (ABORTMSG): ABORTMSG is executed. Reason: NeoDID Credential Missing"
+      },
+      "revoked": {
+        "state": "FAULT",
+        "exception": "at instruction 420 (ABORTMSG): ABORTMSG is executed. Reason: NeoDID Credential Missing"
+      }
+    }
+  }
+}

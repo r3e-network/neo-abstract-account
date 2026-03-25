@@ -188,7 +188,7 @@ While most sensitive methods still performed their own authorization checks, the
 ### Tests and Planning Record
 
 - `sdk/js/tests/securityAudit.unit.test.js`
-- `docs/plans/2026-03-11-security-fixes.md`
+- the current V3 contract/runtime hardening path documented in the main repo docs
 
 ## Verification Evidence
 
