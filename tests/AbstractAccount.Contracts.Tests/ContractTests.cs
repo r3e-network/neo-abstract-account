@@ -234,6 +234,19 @@ public class ContractTests
     }
 
     [TestMethod]
+    public void NeoDidHookUsesRegistryBackedChecksInsteadOfLocalCredentialFlags()
+    {
+        string source = ReadContractFile("hooks/NeoDIDCredentialHook.cs");
+
+        StringAssert.Contains(source, "SetRegistry");
+        StringAssert.Contains(source, "\"getBinding\"");
+        StringAssert.Contains(source, "NeoDID registry not configured");
+        Assert.IsFalse(source.Contains("IssueCredential(", StringComparison.Ordinal));
+        Assert.IsFalse(source.Contains("RevokeCredential(", StringComparison.Ordinal));
+        Assert.IsFalse(source.Contains("Prefix_VerifiedCredentials", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void VerifierContractsUseTrustedCoreAuthorityInsteadOfCallerControlledSpoofing()
     {
         foreach (string fileName in VerifierFiles)

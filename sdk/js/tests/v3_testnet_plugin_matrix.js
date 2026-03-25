@@ -51,10 +51,36 @@ function repoRoot() {
   return path.resolve(__dirname, '..', '..', '..');
 }
 
+function oracleRepoRoot() {
+  return path.resolve(repoRoot(), '..', 'neo-morpheus-oracle');
+}
+
 function artifactPaths(baseName) {
+  const verifierNames = new Set([
+    'Web3AuthVerifier',
+    'TEEVerifier',
+    'SessionKeyVerifier',
+    'WebAuthnVerifier',
+    'ZKEmailVerifier',
+    'ZkLoginVerifier',
+    'MultiSigVerifier',
+    'SubscriptionVerifier',
+  ]);
+  const hookNames = new Set([
+    'WhitelistHook',
+    'DailyLimitHook',
+    'TokenRestrictedHook',
+    'MultiHook',
+    'NeoDIDCredentialHook',
+  ]);
+  const artifactDir = verifierNames.has(baseName)
+    ? path.join(repoRoot(), 'contracts', 'bin', 'v3', 'verifiers')
+    : hookNames.has(baseName)
+      ? path.join(repoRoot(), 'contracts', 'bin', 'v3', 'hooks')
+      : path.join(repoRoot(), 'contracts', 'bin', 'v3');
   return {
-    nef: path.join(repoRoot(), 'contracts', 'bin', 'v3', `${baseName}.nef`),
-    manifest: path.join(repoRoot(), 'contracts', 'bin', 'v3', `${baseName}.manifest.json`),
+    nef: path.join(artifactDir, `${baseName}.nef`),
+    manifest: path.join(artifactDir, `${baseName}.manifest.json`),
   };
 }
 
@@ -62,6 +88,16 @@ function loadArtifact(baseName, uniqueSuffix) {
   const paths = artifactPaths(baseName);
   const nef = sc.NEF.fromBuffer(fs.readFileSync(paths.nef));
   const manifestJson = JSON.parse(fs.readFileSync(paths.manifest, 'utf8'));
+  manifestJson.name = `${manifestJson.name}-${uniqueSuffix}`;
+  const manifest = sc.ContractManifest.fromJson(manifestJson);
+  return { nef, manifest };
+}
+
+function loadOracleArtifact(baseName, uniqueSuffix) {
+  const nefPath = path.join(oracleRepoRoot(), 'contracts', 'build', `${baseName}.nef`);
+  const manifestPath = path.join(oracleRepoRoot(), 'contracts', 'build', `${baseName}.manifest.json`);
+  const nef = sc.NEF.fromBuffer(fs.readFileSync(nefPath));
+  const manifestJson = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   manifestJson.name = `${manifestJson.name}-${uniqueSuffix}`;
   const manifest = sc.ContractManifest.fromJson(manifestJson);
   return { nef, manifest };
@@ -181,6 +217,18 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
   return { txid, hash: normalizeHash(deployedHash), manifestName: manifest.name };
 }
 
+async function deployOracleContract(client, account, networkMagic, baseName, uniqueSuffix) {
+  const { nef, manifest } = loadOracleArtifact(baseName, uniqueSuffix);
+  const predictedHash = normalizeHash(experimental.getContractHash(account.scriptHash, nef.checksum, manifest.name));
+  console.log(`Deploying ${baseName} (${manifest.name})...`);
+  const txid = await withRpcRetry(`deploy ${baseName}`, () => experimental.deployContract(nef, manifest, buildConfig(account, networkMagic)));
+  const appLog = await waitForAppLog(client, txid, `deploy ${baseName}`);
+  assertVmState(appLog, `deploy ${baseName}`, 'HALT');
+  const deployedHash = extractDeployedContractHash(appLog) || predictedHash;
+  console.log(`Deployed ${baseName}: ${deployedHash} via ${txid}`);
+  return { txid, hash: normalizeHash(deployedHash), manifestName: manifest.name };
+}
+
 async function authorizeHook(client, coreHash, hookHash, account, networkMagic) {
   return invokePersisted(client, hookHash, account, networkMagic, 'setAuthorizedCore', [
     hash160Param(coreHash),
@@ -222,6 +270,39 @@ async function testInvoke(client, contractHash, account, networkMagic, operation
 function compactSignature(signature) {
   const parsed = ethers.Signature.from(signature);
   return `${sanitizeHex(parsed.r)}${sanitizeHex(parsed.s)}`;
+}
+
+function sha256Buffer(value) {
+  return crypto.createHash('sha256').update(value).digest();
+}
+
+function encodeNeoDidSegment(value) {
+  const text = Buffer.from(String(value || ''), 'utf8');
+  if (text.length > 255) {
+    throw new Error('NeoDID segment too long');
+  }
+  return Buffer.concat([Buffer.from([text.length]), text]);
+}
+
+function buildNeoDidBindingDigest({
+  vaultAccount,
+  provider,
+  claimType,
+  claimValue,
+  masterNullifierHex,
+  metadataHashHex,
+}) {
+  return sha256Buffer(
+    Buffer.concat([
+      Buffer.from('neodid-binding-v1', 'utf8'),
+      Buffer.from(sanitizeHex(vaultAccount), 'hex'),
+      encodeNeoDidSegment(provider),
+      encodeNeoDidSegment(claimType),
+      encodeNeoDidSegment(claimValue),
+      Buffer.from(sanitizeHex(masterNullifierHex), 'hex'),
+      Buffer.from(sanitizeHex(metadataHashHex), 'hex'),
+    ]),
+  );
 }
 
 function randomAccountId() {
@@ -357,6 +438,7 @@ async function main() {
   const tokenRestrictedHook = await deployContract(rpcClient, account, networkMagic, 'TokenRestrictedHook', `${deploymentTag}-token-restricted`);
   const multiHook = await deployContract(rpcClient, account, networkMagic, 'MultiHook', `${deploymentTag}-multi-hook`);
   const neoDidHook = await deployContract(rpcClient, account, networkMagic, 'NeoDIDCredentialHook', `${deploymentTag}-neodid-hook`);
+  const neoDidRegistry = await deployOracleContract(rpcClient, account, networkMagic, 'NeoDIDRegistry', `${deploymentTag}-neodid-registry`);
   const mockTarget = await deployContract(rpcClient, account, networkMagic, 'MockTransferTarget', `${deploymentTag}-mock-target`);
 
   await authorizeVerifier(rpcClient, core.hash, web3AuthA.hash, account, networkMagic);
@@ -389,9 +471,19 @@ async function main() {
     tokenRestrictedHook,
     multiHook,
     neoDidHook,
+    neoDidRegistry,
     mockTarget,
   });
   console.log(JSON.stringify(results.deployments, null, 2));
+
+  await invokePersisted(
+    rpcClient,
+    neoDidRegistry.hash,
+    account,
+    networkMagic,
+    'setVerifier',
+    [sc.ContractParam.publicKey(account.publicKey)],
+  );
 
   const aaClient = new AbstractAccountClient(RPC_URL, core.hash);
 
@@ -933,28 +1025,52 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
       hash160Param(scenario.accountId),
       hash160Param(neoDidHook.hash),
     ]);
+    await invokePersisted(rpcClient, neoDidHook.hash, account, networkMagic, 'setRegistry', [
+      hash160Param(neoDidRegistry.hash),
+    ]);
     await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
       hash160Param(scenario.accountId),
       stringParam('requireCredentialForContract'),
-      arrayParam([hash160Param(scenario.accountId), hash160Param(mockTarget.hash), stringParam('KYC_BASIC')]),
+      arrayParam([
+        hash160Param(scenario.accountId),
+        hash160Param(mockTarget.hash),
+        stringParam('github'),
+        stringParam('Github_VerifiedUser'),
+        stringParam('true'),
+      ]),
     ]);
     const missing = await testInvoke(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
       userOpParam({ targetContract: mockTarget.hash, method: 'symbol', args: [], nonce: 0n, deadline: BigInt(Date.now() + (60 * 60 * 1000)), signatureHex: '' }),
     ], [makeSigner(account.scriptHash)]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
+    const masterNullifier = sanitizeHex(crypto.randomBytes(32).toString('hex'));
+    const metadataHash = sanitizeHex(crypto.randomBytes(32).toString('hex'));
+    const bindingDigest = buildNeoDidBindingDigest({
+      vaultAccount: scenario.accountId,
+      provider: 'github',
+      claimType: 'Github_VerifiedUser',
+      claimValue: 'true',
+      masterNullifierHex: masterNullifier,
+      metadataHashHex: metadataHash,
+    });
+    const bindingSignature = wallet.sign(bindingDigest.toString('hex'), account.privateKey);
+    await invokePersisted(rpcClient, neoDidRegistry.hash, account, networkMagic, 'registerBinding', [
       hash160Param(scenario.accountId),
-      stringParam('issueCredential'),
-      arrayParam([hash160Param(scenario.accountId), stringParam('KYC_BASIC')]),
+      stringParam('github'),
+      stringParam('Github_VerifiedUser'),
+      stringParam('true'),
+      byteArrayParam(masterNullifier),
+      byteArrayParam(metadataHash),
+      byteArrayParam(bindingSignature),
     ]);
     const success = await invokePersisted(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
       userOpParam({ targetContract: mockTarget.hash, method: 'symbol', args: [], nonce: 0n, deadline: BigInt(Date.now() + (60 * 60 * 1000)), signatureHex: '' }),
     ]);
-    await invokePersisted(rpcClient, core.hash, account, networkMagic, 'callHook', [
+    await invokePersisted(rpcClient, neoDidRegistry.hash, account, networkMagic, 'revokeBinding', [
       hash160Param(scenario.accountId),
-      stringParam('revokeCredential'),
-      arrayParam([hash160Param(scenario.accountId), stringParam('KYC_BASIC')]),
+      stringParam('github'),
+      stringParam('Github_VerifiedUser'),
     ]);
     const revoked = await testInvoke(rpcClient, core.hash, account, networkMagic, 'executeUserOp', [
       hash160Param(scenario.accountId),
@@ -962,6 +1078,7 @@ async function runP256VerifierScenario(name, verifierHash, verifierKeyHex = '') 
     ], [makeSigner(account.scriptHash)]);
     results.matrix.neoDidCredentialHook = {
       accountId: normalizeHash(scenario.accountId),
+      registry: normalizeHash(neoDidRegistry.hash),
       txid: success.txid,
       result: stackItemToText(success.execution.stack?.[0]),
       missing: assertFaultResult(missing, 'neodid.missing', /NeoDID Credential Missing/),

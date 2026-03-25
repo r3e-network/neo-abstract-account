@@ -21,10 +21,10 @@ namespace AbstractAccount.Hooks
     [ManifestExtra("Description", "NeoDID Credential Check Hook")]
     public class NeoDIDCredentialHook : SmartContract
     {
-        // Setup: AccountId + TargetContract -> Required Credential Subject/Type (string or byte[])
-        private static readonly byte[] Prefix_RequiredCredential = new byte[] { 0x01 };
-        // Setup: AccountId -> Verified Credentials HashMap
-        private static readonly byte[] Prefix_VerifiedCredentials = new byte[] { 0x02 };
+        private static readonly byte[] Prefix_RequiredProvider = new byte[] { 0x01 };
+        private static readonly byte[] Prefix_RequiredClaimType = new byte[] { 0x02 };
+        private static readonly byte[] Prefix_RequiredClaimValue = new byte[] { 0x03 };
+        private static readonly byte[] Prefix_Registry = new byte[] { 0x04 };
 
         public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
 
@@ -33,39 +33,53 @@ namespace AbstractAccount.Hooks
 
         public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
 
-        /// <summary>
-        /// Declares which credential type is required before the account may call a target contract.
-        /// </summary>
-        public static void RequireCredentialForContract(UInt160 accountId, UInt160 targetContract, string credentialType)
+        [Safe]
+        public static UInt160 GetRegistry()
         {
-            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
-            byte[] key = Helper.Concat(Helper.Concat(Prefix_RequiredCredential, (byte[])accountId), (byte[])targetContract);
-            if (string.IsNullOrEmpty(credentialType)) Storage.Delete(Storage.CurrentContext, key);
-            else Storage.Put(Storage.CurrentContext, key, credentialType);
+            ByteString? raw = Storage.Get(Storage.CurrentContext, Prefix_Registry);
+            return raw == null ? UInt160.Zero : (UInt160)raw;
+        }
+
+        public static void SetRegistry(UInt160 registryContract)
+        {
+            HookAuthority.ValidateAdminCaller();
+            ExecutionEngine.Assert(registryContract != UInt160.Zero && registryContract.IsValid, "Invalid NeoDID registry");
+            Storage.Put(Storage.CurrentContext, Prefix_Registry, (byte[])registryContract);
         }
 
         /// <summary>
-        /// Marks a credential type as satisfied for the account.
+        /// Declares which NeoDID provider/claim pair is required before the account may call a target contract.
         /// </summary>
-        public static void IssueCredential(UInt160 accountId, string credentialType)
+        public static void RequireCredentialForContract(
+            UInt160 accountId,
+            UInt160 targetContract,
+            string provider,
+            string claimType,
+            string claimValue)
         {
             HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
-            byte[] key = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (ByteString)credentialType);
-            Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
+            if (string.IsNullOrEmpty(provider) || string.IsNullOrEmpty(claimType))
+            {
+                ClearRequirement(accountId, targetContract);
+                return;
+            }
+
+            Storage.Put(Storage.CurrentContext, BuildTargetScopedKey(Prefix_RequiredProvider, accountId, targetContract), provider);
+            Storage.Put(Storage.CurrentContext, BuildTargetScopedKey(Prefix_RequiredClaimType, accountId, targetContract), claimType);
+
+            byte[] claimValueKey = BuildTargetScopedKey(Prefix_RequiredClaimValue, accountId, targetContract);
+            if (string.IsNullOrEmpty(claimValue))
+            {
+                Storage.Delete(Storage.CurrentContext, claimValueKey);
+            }
+            else
+            {
+                Storage.Put(Storage.CurrentContext, claimValueKey, claimValue);
+            }
         }
 
         /// <summary>
-        /// Removes a previously issued credential marker from the account.
-        /// </summary>
-        public static void RevokeCredential(UInt160 accountId, string credentialType)
-        {
-            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
-            byte[] key = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (ByteString)credentialType);
-            Storage.Delete(Storage.CurrentContext, key);
-        }
-
-        /// <summary>
-        /// Rejects execution when the target contract requires a credential the account has not been issued.
+        /// Rejects execution when the target contract requires a NeoDID binding that is not active on the registry.
         /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
@@ -73,15 +87,29 @@ namespace AbstractAccount.Hooks
             if (opParams.Length < 1) return;
             UInt160 targetContract = (UInt160)opParams[0];
 
-            byte[] reqKey = Helper.Concat(Helper.Concat(Prefix_RequiredCredential, (byte[])accountId), (byte[])targetContract);
-            ByteString? reqData = Storage.Get(Storage.CurrentContext, reqKey);
+            string provider = ReadRequiredString(Prefix_RequiredProvider, accountId, targetContract);
+            string claimType = ReadRequiredString(Prefix_RequiredClaimType, accountId, targetContract);
+            if (provider.Length == 0 || claimType.Length == 0) return;
 
-            if (reqData != null)
+            UInt160 registry = GetRegistry();
+            ExecutionEngine.Assert(registry != UInt160.Zero && registry.IsValid, "NeoDID registry not configured");
+
+            object bindingObject = Contract.Call(
+                registry,
+                "getBinding",
+                CallFlags.ReadOnly,
+                new object[] { accountId, provider, claimType });
+            object[] binding = (object[])bindingObject;
+            ExecutionEngine.Assert(binding.Length >= 9, "NeoDID binding malformed");
+
+            bool active = (bool)binding[8];
+            ExecutionEngine.Assert(active, "NeoDID Credential Missing");
+
+            string expectedClaimValue = ReadRequiredString(Prefix_RequiredClaimValue, accountId, targetContract);
+            if (expectedClaimValue.Length > 0)
             {
-                ByteString reqType = (ByteString)reqData;
-                byte[] credKey = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (byte[])reqType);
-                ByteString? credData = Storage.Get(Storage.CurrentContext, credKey);
-                ExecutionEngine.Assert(credData != null, "NeoDID Credential Missing");
+                string actualClaimValue = (string)binding[3];
+                ExecutionEngine.Assert(actualClaimValue == expectedClaimValue, "NeoDID Claim Value Mismatch");
             }
         }
 
@@ -93,8 +121,9 @@ namespace AbstractAccount.Hooks
         {
             HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
-            ClearPrefixForAccount(Prefix_RequiredCredential, accountId);
-            ClearPrefixForAccount(Prefix_VerifiedCredentials, accountId);
+            ClearPrefixForAccount(Prefix_RequiredProvider, accountId);
+            ClearPrefixForAccount(Prefix_RequiredClaimType, accountId);
+            ClearPrefixForAccount(Prefix_RequiredClaimValue, accountId);
         }
 
         private static void ClearPrefixForAccount(byte[] prefix, UInt160 accountId)
@@ -105,6 +134,24 @@ namespace AbstractAccount.Hooks
             {
                 Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
             }
+        }
+
+        private static void ClearRequirement(UInt160 accountId, UInt160 targetContract)
+        {
+            Storage.Delete(Storage.CurrentContext, BuildTargetScopedKey(Prefix_RequiredProvider, accountId, targetContract));
+            Storage.Delete(Storage.CurrentContext, BuildTargetScopedKey(Prefix_RequiredClaimType, accountId, targetContract));
+            Storage.Delete(Storage.CurrentContext, BuildTargetScopedKey(Prefix_RequiredClaimValue, accountId, targetContract));
+        }
+
+        private static byte[] BuildTargetScopedKey(byte[] prefix, UInt160 accountId, UInt160 targetContract)
+        {
+            return Helper.Concat(Helper.Concat(prefix, (byte[])accountId), (byte[])targetContract);
+        }
+
+        private static string ReadRequiredString(byte[] prefix, UInt160 accountId, UInt160 targetContract)
+        {
+            ByteString? raw = Storage.Get(Storage.CurrentContext, BuildTargetScopedKey(prefix, accountId, targetContract));
+            return raw == null ? "" : (string)raw;
         }
     }
 }

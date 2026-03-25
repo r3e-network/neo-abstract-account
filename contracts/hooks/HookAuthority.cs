@@ -46,6 +46,11 @@ namespace AbstractAccount.Hooks
             Storage.Put(Storage.CurrentContext, Prefix_AuthorizedCore, (byte[])coreContract);
         }
 
+        internal static void ValidateAdminCaller()
+        {
+            ValidateAdmin();
+        }
+
         internal static void ValidateConfigCaller(UInt160 accountId, UInt160 hookContract)
         {
             UInt160 core = AuthorizedCore();
