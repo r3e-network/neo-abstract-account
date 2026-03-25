@@ -9,9 +9,9 @@
           <p class="mt-3 text-sm text-aa-muted max-w-2xl">{{ t('operations.subtitle', 'Load your account, compose an operation, collect signatures, and broadcast to the network.') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
-          <button v-if="didConnection.isConfigured.value" class="btn-secondary" :class="{ 'btn-loading': connectingDid }" :disabled="connectingDid" @click="connectDidAction">
-            <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm8 0c0 1.657-1.79 3-4 3s-4-1.343-4-3 1.79-3 4-3 4 1.343 4 3zm-8 8c0 1.657-1.79 3-4 3S4 20.657 4 19m8 0c0 1.657 1.79 3 4 3s4-1.343 4-3"></path></svg> {{ t('operations.connectDid', 'Connect Web3Auth') }}
-          </button>
+          <router-link v-if="didConnection.isConfigured.value" class="btn-secondary" :to="identityWorkspaceLink">
+            <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14m-6 4h6a2 2 0 002-2V8a2 2 0 00-2-2H9a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> {{ t('operations.openIdentityWorkspace', 'Open Identity Workspace') }}
+          </router-link>
           <button class="btn-secondary" :class="{ 'btn-loading': connectingNeo }" :disabled="connectingNeo" @click="connectNeoWallet">
             <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> {{ t('operations.connectNeoWallet', 'Connect Neo Wallet') }}
           </button>
@@ -98,14 +98,22 @@
         </div>
       </div>
 
-      <DidIdentityPanel
-        class="mb-8"
-        :aa-contract-hash="getAbstractAccountHash()"
-        :account-address-script-hash="workspace.account.value.accountAddressScriptHash"
-        :neo-wallet-address="walletService.address"
-        @status="handleDidStatus"
-        @activity="handleDidActivity"
-      />
+      <div class="mb-8 rounded-2xl border border-aa-info/20 bg-aa-info/5 p-5 backdrop-blur-md">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-aa-info">{{ t('operations.identityWorkspaceLabel', 'Identity Workspace') }}</p>
+            <p class="mt-2 text-sm leading-6 text-aa-text">
+              {{ t('operations.identityWorkspaceHint', 'Web3Auth login, NeoDID bind, recovery, and private-session controls now live in a separate route so the main AA workspace stays lighter and faster.') }}
+            </p>
+            <p class="mt-2 text-xs text-aa-muted">
+              {{ didConnection.isConnected.value ? t('operations.identityWorkspaceConnected', 'DID connected and ready for NeoDID actions.') : t('operations.identityWorkspaceDisconnected', 'Open the identity workspace when you need login or NeoDID operations.') }}
+            </p>
+          </div>
+          <router-link class="btn-secondary" :to="identityWorkspaceLink">
+            {{ t('operations.openIdentityWorkspace', 'Open Identity Workspace') }}
+          </router-link>
+        </div>
+      </div>
 
       <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="space-y-6">
@@ -358,7 +366,6 @@ import ActivitySidebar from './ActivitySidebar.vue';
 import BroadcastOptionsPanel from './BroadcastOptionsPanel.vue';
 import DraftStatusBanner from './DraftStatusBanner.vue';
 import DraftSummaryStrip from './DraftSummaryStrip.vue';
-import DidIdentityPanel from './DidIdentityPanel.vue';
 import LoadAccountPanel from './LoadAccountPanel.vue';
 import OperationComposerPanel from './OperationComposerPanel.vue';
 import RelayPreflightPanel from './RelayPreflightPanel.vue';
@@ -417,13 +424,12 @@ const signerKind = ref('neo');
 const signatureHex = ref('');
 const evmAddress = ref('');
 const connectingNeo = ref(false);
-const connectingDid = ref(false);
 const connectingEvm = ref(false);
 const loadingAccount = ref(false);
 const signingWithEvm = ref(false);
 const signingWithZkLogin = ref(false);
 const isAppendingSignature = ref(false);
-const loading = computed(() => connectingNeo.value || connectingDid.value || connectingEvm.value || loadingAccount.value || signingWithEvm.value || signingWithZkLogin.value);
+const loading = computed(() => connectingNeo.value || connectingEvm.value || loadingAccount.value || signingWithEvm.value || signingWithZkLogin.value);
 const lastBroadcastTxid = ref('');
 const pendingSubmissionAction = ref('');
 const isPersisting = ref(false);
@@ -438,6 +444,11 @@ const confirmationOverlayRef = ref(null);
 const shortcutsOverlayRef = ref(null);
 const actionsMenuRef = ref(null);
 useClickOutside(actionsMenuRef, () => { showActionsMenu.value = false; });
+const identityWorkspaceLink = computed(() =>
+  workspace.account.value.accountAddressScriptHash
+    ? { path: '/identity', query: { account: workspace.account.value.accountAddressScriptHash } }
+    : '/identity'
+);
 const step1Expanded = ref(true);
 const step2Expanded = ref(false);
 const step3Expanded = ref(false);
@@ -884,15 +895,6 @@ async function appendActivity(event) {
   } catch (_) { if (import.meta.env.DEV) console.warn('[HomeOperationsWorkspace] appendActivity sync failed'); /* best-effort remote sync; local state already updated */ }
 }
 
-function handleDidStatus(message) {
-  toast.success(String(message || '').trim());
-}
-
-async function handleDidActivity(event) {
-  if (!event) return;
-  await appendActivity(createActivityEvent(event));
-}
-
 function syncSignerRequirements() {
   if (!workspace.account.value.accountAddressScriptHash && !walletService.address && !evmAddress.value) {
     workspace.setSignerRequirements([]);
@@ -914,18 +916,6 @@ async function connectNeoWallet() {
     toast.error(translateError(error?.message, t));
   } finally {
     connectingNeo.value = false;
-  }
-}
-
-async function connectDidAction() {
-  connectingDid.value = true;
-  try {
-    const profile = await didConnection.connectDid();
-    toast.success(`${t('operations.didConnectedPrefix', 'DID connected:')} ${profile.did}`);
-  } catch (error) {
-    toast.error(translateError(error?.message, t));
-  } finally {
-    connectingDid.value = false;
   }
 }
 

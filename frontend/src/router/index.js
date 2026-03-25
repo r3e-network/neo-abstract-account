@@ -4,6 +4,7 @@ import { createI18nController } from '@/i18n';
 const MainLayout = () => import('@/components/layout/MainLayout.vue');
 const AbstractAccountTool = () => import('@/components/AbstractAccountTool.vue');
 const HomeView = () => import('@/views/HomeView.vue');
+const IdentityView = () => import('@/views/IdentityView.vue');
 const AddressMarketView = () => import('@/views/AddressMarketView.vue');
 const TransactionInfoView = () => import('@/views/TransactionInfoView.vue');
 const DocsView = () => import('@/views/DocsView.vue');
@@ -25,6 +26,12 @@ const routes = [
         name: 'app-workspace',
         component: AbstractAccountTool,
         meta: { breadcrumb: 'Workspace', breadcrumbKey: 'nav.app', titleKey: 'page.titleApp', title: 'App Workspace — Neo Abstract Account' }
+      },
+      {
+        path: 'identity',
+        name: 'identity-workspace',
+        component: IdentityView,
+        meta: { breadcrumb: 'Identity', breadcrumbKey: 'nav.identity', titleKey: 'page.titleIdentity', title: 'Identity Workspace — Neo Abstract Account' }
       },
       {
         path: 'market',

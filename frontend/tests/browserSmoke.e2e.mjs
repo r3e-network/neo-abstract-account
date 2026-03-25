@@ -87,7 +87,7 @@ async function waitForVisible(locator, label) {
   assert.equal(await locator.isVisible(), true, `${label} should be visible`);
 }
 
-test("browser smoke covers home, app workspace, market, and docs", async (t) => {
+test("browser smoke covers home, identity, app workspace, market, and docs", async (t) => {
   const server = await startPreviewServer();
   t.after(async () => {
     await stopProcess(server.child);
@@ -111,6 +111,10 @@ test("browser smoke covers home, app workspace, market, and docs", async (t) => 
     page.locator("#main-content").getByRole("button", { name: /Connect Wallet/i }),
     "connect wallet button"
   );
+
+  await page.goto(`${BASE_URL}/identity`, { waitUntil: "domcontentloaded" });
+  await waitForVisible(page.getByRole("heading", { name: /Web3Auth \/ NeoDID Workspace/i }), "identity heading");
+  await waitForVisible(page.getByText(/Identity Control Plane/i).first(), "identity eyebrow");
 
   await page.goto(`${BASE_URL}/market`, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByText(/Trustless escrow for AA address transfers/i).first(), "market subtitle");

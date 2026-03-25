@@ -45,6 +45,7 @@
                 <span class="w-1.5 h-1.5 mr-1 bg-aa-info rounded-full animate-pulse"></span>
                 {{ t('nav.didPrefix', 'DID') }} {{ didShort }}
               </span>
+              <router-link to="/identity" class="text-xs text-aa-muted hover:text-aa-text font-medium px-1 transition-colors duration-200">{{ t('nav.openIdentity', 'Open Identity') }}</router-link>
               <button @click="disconnectDid" class="text-xs text-aa-muted hover:text-aa-error-light font-medium px-1 transition-colors duration-200">{{ t('nav.disconnectDid', 'Disconnect Web3Auth') }}</button>
             </div>
             <div v-if="isConnected" class="flex items-center gap-3 bg-aa-panel border border-aa-border rounded px-3 py-1.5 shadow-sm">
@@ -55,7 +56,7 @@
               <button @click="disconnect" class="text-xs text-aa-muted hover:text-aa-error-light font-medium px-1 transition-colors duration-200">{{ t('nav.disconnect', 'Disconnect') }}</button>
             </div>
             <div v-else class="animate-fade-in flex items-center gap-2">
-              <button v-if="didAvailable && !didConnected" @click="connectDid" :class="{ 'btn-loading': isDidConnecting }" :disabled="isDidConnecting" class="btn-secondary btn-xs font-bold">{{ isDidConnecting ? t('nav.connecting', 'Connecting…') : t('nav.connectDid', 'Connect Web3Auth') }}</button>
+              <router-link v-if="didAvailable && !didConnected" to="/identity" class="btn-secondary btn-xs font-bold">{{ t('nav.openIdentity', 'Open Identity') }}</router-link>
               <button @click="connect" :class="{ 'btn-loading': isWalletConnecting }" :disabled="isWalletConnecting" class="btn-primary btn-xs font-bold">{{ isWalletConnecting ? t('nav.connecting', 'Connecting…') : t('nav.connect', 'Connect') }}</button>
             </div>
           </div>
@@ -85,11 +86,14 @@
               {{ item.code === 'en' ? 'EN' : '中' }}
             </button>
           </div>
-          <div v-if="didConnected" class="flex items-center gap-1.5 shrink-0">
-            <span class="badge-blue text-[10px] px-2 py-1">
-              <span class="w-1.5 h-1.5 mr-1 bg-aa-info rounded-full animate-pulse"></span>
-              {{ t('nav.didPrefix', 'DID') }} {{ didShort }}
-            </span>
+            <div v-if="didConnected" class="flex items-center gap-1.5 shrink-0">
+              <span class="badge-blue text-[10px] px-2 py-1">
+                <span class="w-1.5 h-1.5 mr-1 bg-aa-info rounded-full animate-pulse"></span>
+                {{ t('nav.didPrefix', 'DID') }} {{ didShort }}
+              </span>
+            <router-link to="/identity" class="text-aa-muted hover:text-aa-text transition-colors duration-200 p-2.5" :aria-label="t('nav.openIdentity', 'Open Identity')">
+              <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14m-6 4h6a2 2 0 002-2V8a2 2 0 00-2-2H9a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </router-link>
             <button @click="disconnectDid" class="text-aa-muted hover:text-aa-error-light transition-colors duration-200 p-2.5" :aria-label="t('nav.disconnectDid', 'Disconnect Web3Auth')">
               <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -104,7 +108,7 @@
             </button>
           </div>
           <div v-else class="flex items-center gap-1.5 shrink-0">
-            <button v-if="didAvailable && !didConnected" @click="connectDid" :class="{ 'btn-loading': isDidConnecting }" :disabled="isDidConnecting" class="btn-secondary btn-xs font-bold">{{ isDidConnecting ? t('nav.connecting', '…') : t('nav.connectDid', 'DID') }}</button>
+            <router-link v-if="didAvailable && !didConnected" to="/identity" class="btn-secondary btn-xs font-bold">{{ t('nav.identity', 'Identity') }}</router-link>
             <button @click="connect" :class="{ 'btn-loading': isWalletConnecting }" :disabled="isWalletConnecting" class="btn-primary btn-xs font-bold">{{ isWalletConnecting ? t('nav.connecting', '…') : t('nav.connect', 'Connect') }}</button>
           </div>
         </div>
@@ -218,7 +222,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onScroll);
 });
 const { isConnected, truncatedAddress, connect, disconnect, isConnecting: isWalletConnecting } = useWalletConnection();
-const { isConfigured: didAvailable, isConnected: didConnected, shortDid: didShort, connectDid, disconnectDid, isConnecting: isDidConnecting } = useDidConnection();
+const { isConfigured: didAvailable, isConnected: didConnected, shortDid: didShort, disconnectDid } = useDidConnection();
 const { locale, locales, setLocale, t } = useI18n();
 
 const runtimeNetwork = resolveRuntimeNetwork();
@@ -228,6 +232,7 @@ const networkLabelFallback = computed(() => runtimeNetwork === 'mainnet' ? 'Neo 
 const navLinks = [
   { to: '/', label: 'nav.home', fallback: 'Home' },
   { to: '/app', label: 'nav.app', fallback: 'Workspace' },
+  { to: '/identity', label: 'nav.identity', fallback: 'Identity' },
   { to: '/market', label: 'nav.market', fallback: 'Market' },
   { to: '/docs', label: 'nav.docs', fallback: 'Docs' },
 ];
