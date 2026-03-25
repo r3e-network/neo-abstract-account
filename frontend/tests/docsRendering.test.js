@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   isBlockedNodeName,
   shouldStripAttribute
 } from '../src/features/docs/rendering.js';
 
-const frontendRoot = path.resolve(import.meta.dirname, '..');
+const frontendRoot = fileURLToPath(new URL('..', import.meta.url));
 const read = (relativePath) => fs.readFileSync(path.join(frontendRoot, relativePath), 'utf8');
 const readRepo = (relativePath) => fs.readFileSync(path.join(frontendRoot, '..', relativePath), 'utf8');
 const readFrontendPackage = () => JSON.parse(read('package.json'));

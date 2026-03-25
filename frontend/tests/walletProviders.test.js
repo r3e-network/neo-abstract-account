@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const frontendRoot = path.resolve(import.meta.dirname, '..');
+const frontendRoot = fileURLToPath(new URL('..', import.meta.url));
 const read = (relativePath) => fs.readFileSync(path.join(frontendRoot, relativePath), 'utf8');
 
 test('wallet service recognizes NEOLineN3 and NEOLine module-style providers', () => {

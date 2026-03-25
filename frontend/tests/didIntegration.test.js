@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const frontendRoot = path.resolve(import.meta.dirname, '..');
+const frontendRoot = fileURLToPath(new URL('..', import.meta.url));
 const read = (relativePath) => fs.readFileSync(path.join(frontendRoot, relativePath), 'utf8');
 
 test('did service integrates Web3Auth as the NeoDID identity root', () => {
@@ -71,11 +72,19 @@ test('main layout and home workspace expose a DID connection path', () => {
   const layout = read('src/components/layout/MainLayout.vue');
   const workspace = read('src/features/operations/components/HomeOperationsWorkspace.vue');
   const panel = read('src/features/operations/components/DidIdentityPanel.vue');
+  const identityView = read('src/views/IdentityView.vue');
+  const router = read('src/router/index.js');
 
-  assert.match(layout, /Connect Web3Auth/);
+  assert.match(layout, /Open Identity/);
+  assert.match(layout, /Disconnect Web3Auth/);
   assert.match(layout, /useDidConnection/);
-  assert.match(workspace, /connectDidAction/);
-  assert.match(workspace, /Connect Web3Auth/);
+  assert.match(workspace, /useDidConnection/);
+  assert.match(workspace, /didConnection/);
+  assert.match(workspace, /connectDid\(/);
+  assert.match(workspace, /Open Identity Workspace/);
+  assert.match(identityView, /Web3Auth \/ NeoDID Workspace/);
+  assert.match(identityView, /DidIdentityPanel/);
+  assert.match(router, /path: 'identity'/);
   assert.match(panel, /Google/);
   assert.match(panel, /Email/);
   assert.match(panel, /SMS/);

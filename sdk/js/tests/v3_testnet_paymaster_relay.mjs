@@ -43,10 +43,11 @@ const PAYMASTER_ENDPOINT = (
 const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const DEFAULT_PAYMASTER_ACCOUNT_ID = "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56";
-const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || DEFAULT_PAYMASTER_ACCOUNT_ID;
+const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
+const PAYMASTER_ACCOUNT_ID = EXPLICIT_PAYMASTER_ACCOUNT_ID || DEFAULT_PAYMASTER_ACCOUNT_ID;
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
   process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1"
-  || (process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0" && !process.env.PAYMASTER_ACCOUNT_ID);
+  || (process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0" && !EXPLICIT_PAYMASTER_ACCOUNT_ID);
 const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3));
 const REMOTE_WORKER_SERVICE =
   process.env.MORPHEUS_REMOTE_WORKER_SERVICE
@@ -91,6 +92,11 @@ if (!PAYMASTER_API_TOKEN) {
 function normalizeHash(value) {
   const hex = sanitizeHex(value || "");
   return hex ? `0x${hex}` : "";
+}
+
+function isUnauthorizedBootstrapError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Unauthorized/i.test(message);
 }
 
 function createResponse() {
@@ -258,14 +264,23 @@ function buildLocalPaymasterOverrides(accountId) {
   };
 }
 
-async function callRemotePaymaster(payload) {
+async function callRemotePaymaster(
+  payload,
+  {
+    allowlistAccountId = PAYMASTER_ACCOUNT_ID,
+    skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE,
+  } = {},
+) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
-  const remoteOverrides = (!SKIP_PAYMASTER_ALLOWLIST_UPDATE && PAYMASTER_ACCOUNT_ID)
-    ? buildRemotePaymasterOverrides(PAYMASTER_ACCOUNT_ID)
+  const normalizedAllowlistAccountId = normalizeHash(allowlistAccountId);
+  const remoteOverrides = (!skipAllowlistUpdate && normalizedAllowlistAccountId)
+    ? buildRemotePaymasterOverrides(normalizedAllowlistAccountId)
     : null;
   if (LOCAL_PAYMASTER_HANDLER_PATH) {
     const snapshot = new Map();
-    const localOverrides = buildLocalPaymasterOverrides(PAYMASTER_ACCOUNT_ID);
+    const localOverrides = normalizedAllowlistAccountId
+      ? buildLocalPaymasterOverrides(normalizedAllowlistAccountId)
+      : null;
     if (localOverrides) {
       for (const [key, value] of Object.entries(localOverrides)) {
         snapshot.set(key, process.env[key]);
@@ -342,7 +357,10 @@ JS
   return JSON.parse(jsonLine);
 }
 
-async function startPaymasterProxy() {
+async function startPaymasterProxy({
+  allowlistAccountId = PAYMASTER_ACCOUNT_ID,
+  skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE,
+} = {}) {
   const sockets = new Set();
   const server = http.createServer(async (req, res) => {
     const chunks = [];
@@ -354,7 +372,10 @@ async function startPaymasterProxy() {
       return;
     }
     try {
-      const remote = await callRemotePaymaster(body);
+      const remote = await callRemotePaymaster(body, {
+        allowlistAccountId,
+        skipAllowlistUpdate,
+      });
       res.writeHead(Number(remote.status || 200), { "content-type": "application/json" });
       res.end(JSON.stringify(remote.body || {}));
     } catch (error) {
@@ -389,7 +410,8 @@ async function main() {
   const networkMagic = Number(version.protocol.network);
   const aaClient = new AbstractAccountClient(RPC_URL, CORE_HASH);
 
-  const accountId = sanitizeHex(PAYMASTER_ACCOUNT_ID || Buffer.from(randomBytes(20)).toString("hex"));
+  let accountId = sanitizeHex(PAYMASTER_ACCOUNT_ID || Buffer.from(randomBytes(20)).toString("hex"));
+  let skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE;
   const evmSigner = ethers.Wallet.createRandom();
   const verifierPubKey = sanitizeHex(evmSigner.signingKey.publicKey);
 
@@ -403,48 +425,73 @@ async function main() {
     verifierPubKey: `0x${verifierPubKey}`,
   }, null, 2));
 
-  let register = null;
-  try {
-    register = await invokePersisted(
+  async function bootstrapAccount(targetAccountId) {
+    let register = null;
+    try {
+      register = await invokePersisted(
+        rpcClient,
+        CORE_HASH,
+        account,
+        networkMagic,
+        "registerAccount",
+        [
+          hash160Param(targetAccountId),
+          hash160Param("0".repeat(40)),
+          emptyByteArrayParam(),
+          hash160Param("0".repeat(40)),
+          hash160Param(account.scriptHash),
+          integerParam(1),
+        ],
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("Account already exists")) throw error;
+      console.log(`registerAccount skipped for existing account ${normalizeHash(targetAccountId)}`);
+    }
+
+    const updateVerifier = await invokePersisted(
       rpcClient,
       CORE_HASH,
       account,
       networkMagic,
-      "registerAccount",
+      "updateVerifier",
       [
-        hash160Param(accountId),
-        hash160Param("0".repeat(40)),
-        emptyByteArrayParam(),
-        hash160Param("0".repeat(40)),
-        hash160Param(account.scriptHash),
-        integerParam(1),
+        hash160Param(targetAccountId),
+        hash160Param(WEB3AUTH_VERIFIER_HASH),
+        byteArrayParam(verifierPubKey),
       ],
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("Account already exists")) throw error;
-    console.log(`registerAccount skipped for existing account ${normalizeHash(accountId)}`);
+    return {
+      register,
+      updateVerifier,
+    };
   }
 
-  const updateVerifier = await invokePersisted(
-    rpcClient,
-    CORE_HASH,
-    account,
-    networkMagic,
-    "updateVerifier",
-    [
-      hash160Param(accountId),
-      hash160Param(WEB3AUTH_VERIFIER_HASH),
-      byteArrayParam(verifierPubKey),
-    ],
-  );
+  let register = null;
+  let updateVerifier;
+  try {
+    ({ register, updateVerifier } = await bootstrapAccount(accountId));
+  } catch (error) {
+    const usingStableDefaultAccount =
+      normalizeHash(accountId) === normalizeHash(DEFAULT_PAYMASTER_ACCOUNT_ID)
+      && skipAllowlistUpdate;
+    if (!usingStableDefaultAccount || !isUnauthorizedBootstrapError(error)) {
+      throw error;
+    }
+    accountId = Buffer.from(randomBytes(20)).toString("hex");
+    skipAllowlistUpdate = false;
+    console.warn(
+      `Stable paymaster account bootstrap is no longer signer-controlled; falling back to disposable account ${normalizeHash(accountId)}`
+    );
+    ({ register, updateVerifier } = await bootstrapAccount(accountId));
+  }
 
   console.log(JSON.stringify({
     registerTxid: register?.txid || null,
     updateVerifierTxid: updateVerifier.txid,
   }, null, 2));
 
-  if (!SKIP_PAYMASTER_ALLOWLIST_UPDATE) {
+  if (!skipAllowlistUpdate) {
     console.log("Using per-request remote paymaster overrides for allowlist validation...");
     const paymasterPolicy = await callRemotePaymaster({
       network: "testnet",
@@ -457,13 +504,19 @@ async function main() {
       userop_method: "symbol",
       estimated_gas_units: 2_000_000,
       operation_hash: `0x${Buffer.from(randomBytes(32)).toString("hex")}`,
+    }, {
+      allowlistAccountId: accountId,
+      skipAllowlistUpdate,
     });
     console.log(JSON.stringify({
       paymasterPolicyId: paymasterPolicy?.body?.policy_id || null,
       allowAccounts: paymasterPolicy?.body?.policy?.allow_accounts || [],
     }, null, 2));
   }
-  const paymasterProxy = await startPaymasterProxy();
+  const paymasterProxy = await startPaymasterProxy({
+    allowlistAccountId: accountId,
+    skipAllowlistUpdate,
+  });
 
   const nonce = decodeIntStack(await invokeRead(rpcClient, CORE_HASH, "getNonce", [hash160Param(accountId), integerParam(0)]));
   const argsHashHex = await aaClient.computeArgsHash([]);

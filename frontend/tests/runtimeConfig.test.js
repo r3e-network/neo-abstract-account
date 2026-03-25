@@ -2,6 +2,7 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 
 import {
   DEFAULT_ABSTRACT_ACCOUNT_HASH,
@@ -69,7 +70,7 @@ test('resolveOptionalHash preserves valid hashes and rejects invalid values', ()
 });
 
 test('frontend ships a runtime env example for browser and server routes', () => {
-  const examplePath = path.resolve(import.meta.dirname, '..', '.env.example');
+  const examplePath = fileURLToPath(new URL('../.env.example', import.meta.url));
   assert.equal(fs.existsSync(examplePath), true, 'expected frontend/.env.example to exist');
 
   const example = fs.readFileSync(examplePath, 'utf8');

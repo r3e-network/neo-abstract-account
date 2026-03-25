@@ -17,6 +17,9 @@ const timelinePath = path.resolve('src/features/operations/components/ActivityTi
 const activityTimelinePath = path.resolve('src/features/operations/activityTimeline.js');
 const preferencesPath = path.resolve('src/features/operations/preferences.js');
 const presetsPath = path.resolve('src/features/operations/presets.js');
+const identityViewPath = path.resolve('src/views/IdentityView.vue');
+const routerPath = path.resolve('src/router/index.js');
+const didPanelPath = path.resolve('src/features/operations/components/DidIdentityPanel.vue');
 
 test('home view is a product landing page with app, market, and docs entry points', () => {
   const homeSource = fs.readFileSync(homePath, 'utf8');
@@ -57,15 +60,20 @@ test('home workspace avoids accountId-first state outside creation flow', () => 
 
 test('operations workspace exposes load, compose, signature, and broadcast sections', () => {
   assert.match(fs.readFileSync(workspacePath, 'utf8'), /Abstract Account Workspace/);
-  assert.match(fs.readFileSync(workspacePath, 'utf8'), /DidIdentityPanel/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /NeoDID \/ Web3Auth/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /fetchVerifierContractByAddress/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /fetchUnifiedVerifierState/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /Refresh Chain State/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /Pending Recovery/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /Active Private Session/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /emit\('status'/);
-  assert.match(fs.readFileSync(path.resolve('src/features/operations/components/DidIdentityPanel.vue'), 'utf8'), /emit\('activity'/);
+  assert.doesNotMatch(fs.readFileSync(workspacePath, 'utf8'), /DidIdentityPanel/);
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Open Identity Workspace/);
+  assert.match(fs.readFileSync(workspacePath, 'utf8'), /Identity Workspace/);
+  assert.match(fs.readFileSync(identityViewPath, 'utf8'), /DidIdentityPanel/);
+  assert.match(fs.readFileSync(identityViewPath, 'utf8'), /Web3Auth \/ NeoDID Workspace/);
+  assert.match(fs.readFileSync(routerPath, 'utf8'), /path: 'identity'/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /NeoDID \/ Web3Auth/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /fetchVerifierContractByAddress/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /fetchUnifiedVerifierState/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Refresh Chain State/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Pending Recovery/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Active Private Session/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /emit\('status'/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /emit\('activity'/);
   assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load V3 Account/);
   assert.match(fs.readFileSync(composerPath, 'utf8'), /Compose Operation/);
   assert.match(fs.readFileSync(presetsPath, 'utf8'), /Generic Invoke/);
