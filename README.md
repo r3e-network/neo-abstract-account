@@ -222,6 +222,7 @@ Security outcomes:
 - whitelist bypass attempts fault
 - restricted-target access faults
 - credential-missing / revoked-credential access faults
+- NeoDID credential gating now checks the on-chain `NeoDIDRegistry` instead of local hook-issued flags
 
 Production note:
 

@@ -6,14 +6,14 @@ Under the V3 Unified Smart Wallet architecture, heavy on-chain components (like 
 
 Instead of storing recovery state on-chain, Morpheus provides a **Trusted Execution Environment (TEE)** using Intel SGX / TDX. This off-chain, secure enclave acts as a co-signer or policy enforcer without exposing the logic to the public chain.
 
-The process flows exclusively through the `TEEVerifier` and `NeoDIDCredentialHook` modules.
+The process flows exclusively through the `TEEVerifier`, `NeoDIDCredentialHook`, and the on-chain `NeoDIDRegistry`.
 
 ### 1. NeoDID Binding via Web3Auth
 Users can bind their NeoDID to their Abstract Account. This allows a user to authorize actions via their social accounts (Google, Discord, etc.) through Web3Auth, which resolves to a NeoDID signature.
 
 - **Frontend:** User authenticates via Web3Auth.
 - **Enclave:** The Morpheus Enclave validates the Web3Auth token and signs an authorization payload.
-- **Contract:** The `NeoDIDCredentialHook` verifies that the enclave's signature maps correctly to the expected NeoDID.
+- **Contracts:** the Oracle / NeoDID flow writes a binding into `NeoDIDRegistry`, and `NeoDIDCredentialHook` checks that registry binding before allowing the gated action.
 
 ### 2. Private Actions & Privacy Policies
 For actions where the policy (e.g., daily limits, whitelisted addresses, or conditional logic) shouldn't be publicly visible on-chain:

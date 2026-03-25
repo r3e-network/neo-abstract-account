@@ -66,7 +66,7 @@ Solves the "Can this be executed?" problem. Hooks dictate "how the money can be 
 * **DailyLimitHook**: Risk control for large daily transfers.
 * **WhitelistHook**: Restricts the account to interact only with trusted smart contracts.
 * **TokenRestrictedHook**: Restricts the account to operate only on specific types of tokens (e.g., only transferring a certain game token).
-* **NeoDIDCredentialHook**: Verifies if the account holds specific NeoDID KYC credentials before executing certain DeFi operations.
+* **NeoDIDCredentialHook**: Verifies if the account has an active matching NeoDID binding on the on-chain `NeoDIDRegistry` before executing certain DeFi operations.
 
 ### 6. User-Composable Killer Solutions ("Lego" Architecture in Practice)
 Through the Lego-like composability of Verifiers and Hooks, the V3 architecture natively supports several highly commercially valuable account models:

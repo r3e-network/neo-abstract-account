@@ -216,12 +216,14 @@ const hookPresets = [
   },
   {
     label: t('studioPanels.presetDIDLabel', 'NeoDIDCredentialHook'),
-    description: t('studioPanels.presetDIDDesc', 'Require a credential before target access.'),
+    description: t('studioPanels.presetDIDDesc', 'Require an active NeoDID registry binding before target access.'),
     method: 'requireCredentialForContract',
     args: [
       { type: 'Hash160', value: '0x<accountId>' },
       { type: 'Hash160', value: '0x<targetContract>' },
-      { type: 'String', value: 'Web3Auth_PrimaryIdentity' },
+      { type: 'String', value: 'github' },
+      { type: 'String', value: 'Github_VerifiedUser' },
+      { type: 'String', value: 'true' },
     ],
   },
   {
@@ -287,17 +289,26 @@ args: [
   },
   {
     label: t('studioPanels.presetDIDLabel', 'NeoDIDCredentialHook'),
-    code: `method: requireCredentialForContract
+    code: `method: setRegistry
+args: [
+  { "type": "Hash160", "value": "0x<neoDidRegistry>" }
+]
+
+method: requireCredentialForContract
 args: [
   { "type": "Hash160", "value": "0x<account>" },
   { "type": "Hash160", "value": "0x<target>" },
-  { "type": "String", "value": "Web3Auth_PrimaryIdentity" }
+  { "type": "String", "value": "github" },
+  { "type": "String", "value": "Github_VerifiedUser" },
+  { "type": "String", "value": "true" }
 ]`,
     method: 'requireCredentialForContract',
     args: [
       { type: 'Hash160', value: '0x<account>' },
       { type: 'Hash160', value: '0x<target>' },
-      { type: 'String', value: 'Web3Auth_PrimaryIdentity' },
+      { type: 'String', value: 'github' },
+      { type: 'String', value: 'Github_VerifiedUser' },
+      { type: 'String', value: 'true' },
     ],
   },
 ];

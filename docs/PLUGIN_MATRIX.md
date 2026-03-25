@@ -169,10 +169,16 @@ Conclusion:
 ### NeoDIDCredentialHook
 
 - Positive execution tx: `0x0128360207bc4bfdba2dac49a06f720aaa0f7037cb2261992ad13bfa26121d2b`
-- Attack: invoke credential-gated target without issued credential
+- Registry-backed configuration:
+  - `setRegistry(neoDidRegistryHash)`
+  - `requireCredentialForContract(accountId, target, provider, claimType, claimValue)`
+- Positive path:
+  - register a real binding on `NeoDIDRegistry`
+  - execute the gated target successfully
+- Attack: invoke credential-gated target without an active registry binding
   - Result: `FAULT`
   - Reason: `NeoDID Credential Missing`
-- Attack: invoke after credential revocation
+- Attack: invoke after registry revocation
   - Result: `FAULT`
   - Reason: `NeoDID Credential Missing`
 

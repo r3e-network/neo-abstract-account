@@ -106,11 +106,18 @@ Typical operations:
 ### NeoDIDCredentialHook
 
 Purpose:
-require a private credential before a call is allowed.
+require an active NeoDID registry binding before a call is allowed.
 
 Typical operations:
 
-- `requireCredentialForContract(accountId, target, credentialName)`
+- `setRegistry(registryHash)`
+- `requireCredentialForContract(accountId, target, provider, claimType, claimValue)`
+
+Operational notes:
+
+- this hook no longer stores local `issueCredential` / `revokeCredential` flags
+- the credential must exist on the configured `NeoDIDRegistry`
+- an empty `claimValue` means \"any active binding for this provider + claim type\"
 
 ### MultiHook
 
