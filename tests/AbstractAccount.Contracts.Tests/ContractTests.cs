@@ -219,6 +219,8 @@ public class ContractTests
 
         StringAssert.Contains(source, "public static void PostExecute");
         StringAssert.Contains(source, "if (!DidExecutionSucceed(result)) return;");
+        StringAssert.Contains(source, "ExecutionEngine.Assert(IsProtectedTransferSource(accountId, fromAccount), \"Transfer source not permitted\");");
+        StringAssert.Contains(source, "return from == DeriveVirtualAccountHash(accountId);");
         StringAssert.Contains(source, "StoreSpentToday(accountId, targetContract, currentTime, spentToday + amount);");
         Assert.IsFalse(source.Contains("Storage.Put(Storage.CurrentContext, spentKey, newTotal);", StringComparison.Ordinal));
     }

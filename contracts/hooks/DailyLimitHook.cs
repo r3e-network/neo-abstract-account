@@ -59,7 +59,8 @@ namespace AbstractAccount.Hooks
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
-            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out BigInteger amount)) return;
+            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount)) return;
+            ExecutionEngine.Assert(IsProtectedTransferSource(accountId, fromAccount), "Transfer source not permitted");
             BigInteger limit = GetDailyLimit(accountId, targetContract);
             if (limit == 0) return; // No limit configured for this token
 
@@ -72,7 +73,8 @@ namespace AbstractAccount.Hooks
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
-            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out BigInteger amount)) return;
+            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount)) return;
+            if (!IsProtectedTransferSource(accountId, fromAccount)) return;
             if (!DidExecutionSucceed(result)) return;
 
             BigInteger limit = GetDailyLimit(accountId, targetContract);
@@ -102,9 +104,10 @@ namespace AbstractAccount.Hooks
             }
         }
 
-        private static bool TryReadTrackedTransfer(object[] opParams, out UInt160 targetContract, out BigInteger amount)
+        private static bool TryReadTrackedTransfer(object[] opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount)
         {
             targetContract = UInt160.Zero;
+            fromAccount = UInt160.Zero;
             amount = 0;
 
             if (opParams.Length < 3) return false;
@@ -114,8 +117,10 @@ namespace AbstractAccount.Hooks
 
             object[] args = (object[])opParams[2];
             if (args.Length < 3) return false;
+            if (!(args[0] is UInt160 from)) return false;
             if (!(args[2] is BigInteger transferAmount)) return false;
 
+            fromAccount = from;
             amount = transferAmount;
             return true;
         }
@@ -151,6 +156,49 @@ namespace AbstractAccount.Hooks
             if (result is bool asBool) return asBool;
             if (result is BigInteger asInteger) return asInteger != 0;
             return true;
+        }
+
+        private static bool IsProtectedTransferSource(UInt160 accountId, UInt160 from)
+        {
+            if (from == accountId) return true;
+            return from == DeriveVirtualAccountHash(accountId);
+        }
+
+        private static UInt160 DeriveVirtualAccountHash(UInt160 accountId)
+        {
+            UInt160 core = HookAuthority.AuthorizedCore();
+            ExecutionEngine.Assert(core != UInt160.Zero && core.IsValid, "AA core not configured");
+
+            byte[] verifyScript = Helper.Concat(
+                Helper.Concat(
+                    Helper.Concat(
+                        new byte[] { 0x0C, 0x14 },
+                        (byte[])accountId
+                    ),
+                    new byte[] { 0x11, 0xC0, 0x1F, 0x0C, 0x06, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79 }
+                ),
+                Helper.Concat(
+                    Helper.Concat(
+                        new byte[] { 0x0C, 0x14 },
+                        (byte[])core
+                    ),
+                    new byte[] { 0x41, 0x62, 0x7D, 0x5B, 0x52 }
+                )
+            );
+
+            byte[] sha = (byte[])Contract.Call(
+                Neo.SmartContract.Framework.Native.CryptoLib.Hash,
+                "sha256",
+                CallFlags.ReadOnly,
+                new object[] { (ByteString)verifyScript }
+            );
+
+            return (UInt160)Contract.Call(
+                Neo.SmartContract.Framework.Native.CryptoLib.Hash,
+                "ripemd160",
+                CallFlags.ReadOnly,
+                new object[] { (ByteString)sha }
+            );
         }
     }
 }
