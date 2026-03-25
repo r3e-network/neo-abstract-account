@@ -60,7 +60,16 @@ namespace AbstractAccount
                 // [Hook phase] pre-execution hook
                 if (state.HookId != UInt160.Zero)
                 {
-                    Contract.Call(state.HookId, "preExecute", CallFlags.All, new object[] { accountId, op });
+                    SetHookExecutionContext(accountId, state.HookId);
+                    try
+                    {
+                        Contract.Call(state.HookId, "preExecute", CallFlags.All, new object[] { accountId, op });
+                    }
+                    catch
+                    {
+                        ClearHookExecutionContext(accountId);
+                        throw;
+                    }
                 }
 
                 // [Execution phase]
@@ -82,6 +91,10 @@ namespace AbstractAccount
                 finally
                 {
                     ClearVerifyContext(accountId);
+                    if (state.HookId != UInt160.Zero)
+                    {
+                        ClearHookExecutionContext(accountId);
+                    }
                 }
             }
             finally

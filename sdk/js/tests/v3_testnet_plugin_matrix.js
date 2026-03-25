@@ -181,6 +181,12 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
   return { txid, hash: normalizeHash(deployedHash), manifestName: manifest.name };
 }
 
+async function authorizeHook(client, coreHash, hookHash, account, networkMagic) {
+  return invokePersisted(client, hookHash, account, networkMagic, 'setAuthorizedCore', [
+    hash160Param(coreHash),
+  ]);
+}
+
 async function invokeRead(client, contractHash, operation, params = [], signers = undefined) {
   return withRpcRetry(`${sanitizeHex(contractHash)}.${operation}`, () => client.invokeFunction(sanitizeHex(contractHash), operation, params, signers));
 }
@@ -346,6 +352,12 @@ async function main() {
   const multiHook = await deployContract(rpcClient, account, networkMagic, 'MultiHook', `${deploymentTag}-multi-hook`);
   const neoDidHook = await deployContract(rpcClient, account, networkMagic, 'NeoDIDCredentialHook', `${deploymentTag}-neodid-hook`);
   const mockTarget = await deployContract(rpcClient, account, networkMagic, 'MockTransferTarget', `${deploymentTag}-mock-target`);
+
+  await authorizeHook(rpcClient, core.hash, whitelistHook.hash, account, networkMagic);
+  await authorizeHook(rpcClient, core.hash, dailyLimitHook.hash, account, networkMagic);
+  await authorizeHook(rpcClient, core.hash, tokenRestrictedHook.hash, account, networkMagic);
+  await authorizeHook(rpcClient, core.hash, multiHook.hash, account, networkMagic);
+  await authorizeHook(rpcClient, core.hash, neoDidHook.hash, account, networkMagic);
 
   Object.assign(results.deployments, {
     core,

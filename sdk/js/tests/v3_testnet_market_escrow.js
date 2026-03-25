@@ -141,6 +141,12 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
   return { txid, hash: normalizeHash(extractDeployedContractHash(appLog) || predictedHash), manifestName: manifest.name };
 }
 
+async function authorizeHook(client, coreHash, hookHash, account, networkMagic) {
+  return invokePersisted(client, hookHash, account, networkMagic, 'setAuthorizedCore', [
+    hash160Param(coreHash),
+  ]);
+}
+
 async function invokePersisted(client, contractHash, account, networkMagic, operation, params = [], signers = undefined) {
   const contract = new experimental.SmartContract(sanitizeHex(contractHash), buildConfig(account, networkMagic));
   const preview = await withRpcRetry(`${sanitizeHex(contractHash)}.${operation}.preview`, () => contract.testInvoke(operation, params, signers));
@@ -232,6 +238,7 @@ async function main() {
   const market = await deployContract(client, seller, networkMagic, 'AAAddressMarket', `${deploymentTag}-market`);
   const teeVerifier = await deployContract(client, seller, networkMagic, 'TEEVerifier', `${deploymentTag}-tee`);
   const whitelistHook = await deployContract(client, seller, networkMagic, 'WhitelistHook', `${deploymentTag}-whitelist`);
+  await authorizeHook(client, core.hash, whitelistHook.hash, seller, networkMagic);
 
   const accountId = randomAccountId();
 

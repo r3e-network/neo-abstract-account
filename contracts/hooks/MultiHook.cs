@@ -34,17 +34,19 @@ namespace AbstractAccount.Hooks
     {
         private static readonly byte[] Prefix_Hooks = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => HookAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Sets the ordered hook list for an account or clears it when the array is empty.
         /// </summary>
         public static void SetHooks(UInt160 accountId, UInt160[] hooks)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_Hooks, (byte[])accountId);
             if (hooks == null || hooks.Length == 0)
             {
@@ -70,6 +72,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             UInt160[] hooks = GetHooks(accountId);
             for (int i = 0; i < hooks.Length; i++)
             {
@@ -82,6 +85,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             UInt160[] hooks = GetHooks(accountId);
             for (int i = hooks.Length - 1; i >= 0; i--)
             {
@@ -91,12 +95,7 @@ namespace AbstractAccount.Hooks
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_Hooks, (byte[])accountId));
         }
     }

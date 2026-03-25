@@ -21,17 +21,19 @@ namespace AbstractAccount.Hooks
     {
         private static readonly byte[] Prefix_Whitelist = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => HookAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Adds or removes a target contract from the account's allowlist.
         /// </summary>
         public static void SetWhitelist(UInt160 accountId, UInt160 targetContract, bool allowed)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_Whitelist, (byte[])accountId);
             key = Helper.Concat(key, (byte[])targetContract);
             if (allowed) Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
@@ -43,6 +45,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             if (opParams.Length < 1) return;
             UInt160 targetContract = (UInt160)opParams[0];
 
@@ -63,12 +66,7 @@ namespace AbstractAccount.Hooks
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             byte[] prefix = Helper.Concat(Prefix_Whitelist, (byte[])accountId);
             Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly);

@@ -25,18 +25,20 @@ namespace AbstractAccount.Hooks
         private static readonly byte[] Prefix_SpentToday = new byte[] { 0x02 };
         private static readonly byte[] Prefix_LastReset = new byte[] { 0x03 };
 
+        public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => HookAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
+
         // Configuration: Only AA account can configure its own limits
         /// <summary>
         /// Sets or clears the maximum amount a given token may transfer in a 24-hour window.
         /// </summary>
         public static void SetDailyLimit(UInt160 accountId, UInt160 token, BigInteger maxAmount)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Helper.Concat(Prefix_DailyLimit, (byte[])accountId), (byte[])token);
             if (maxAmount <= 0) Storage.Delete(Storage.CurrentContext, key);
             else Storage.Put(Storage.CurrentContext, key, maxAmount);
@@ -55,6 +57,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             // Expected opParams layout: TargetContract, Method, Args, Nonce, Deadline, Signature
             if (opParams.Length < 3) return;
             UInt160 targetContract = (UInt160)opParams[0];
@@ -103,12 +106,7 @@ namespace AbstractAccount.Hooks
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             ClearPrefixForAccount(Prefix_DailyLimit, accountId);
             ClearPrefixForAccount(Prefix_SpentToday, accountId);

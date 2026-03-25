@@ -176,6 +176,12 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
   return { txid, hash: normalizeHash(deployedHash), manifestName: manifest.name };
 }
 
+async function authorizeHook(client, coreHash, hookHash, account, networkMagic) {
+  return invokePersisted(client, hookHash, account, networkMagic, 'setAuthorizedCore', [
+    hash160Param(coreHash),
+  ]);
+}
+
 async function invokeRead(client, contractHash, operation, params = [], signers = undefined) {
   return withRpcRetry(`${sanitizeHex(contractHash)}.${operation}`, () => client.invokeFunction(sanitizeHex(contractHash), operation, params, signers));
 }
@@ -237,6 +243,7 @@ async function main() {
   const core = await deployContract(rpcClient, account, networkMagic, 'UnifiedSmartWalletV3', `${deploymentTag}-core`);
   const web3Auth = await deployContract(rpcClient, account, networkMagic, 'Web3AuthVerifier', `${deploymentTag}-web3auth`);
   const whitelist = await deployContract(rpcClient, account, networkMagic, 'WhitelistHook', `${deploymentTag}-whitelist`);
+  await authorizeHook(rpcClient, core.hash, whitelist.hash, account, networkMagic);
   console.log(JSON.stringify({ core, web3Auth, whitelist }, null, 2));
 
   const aaClient = new AbstractAccountClient(RPC_URL, core.hash);

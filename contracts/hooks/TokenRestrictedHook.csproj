@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="HookAuthority.cs" />
     <Compile Include="TokenRestrictedHook.cs" />
   </ItemGroup>
 

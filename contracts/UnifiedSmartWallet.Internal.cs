@@ -21,6 +21,7 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_PendingHookUpdate = new byte[] { 0x0A };
         private static readonly byte[] Prefix_ExecutionLock = new byte[] { 0x0B };
         private static readonly byte[] Prefix_MetadataUri = new byte[] { 0x0C };
+        private static readonly byte[] Prefix_HookExecutionContext = new byte[] { 0x0D };
 
         private static readonly BigInteger MaxMetadataUriLength = 240;
 
@@ -76,6 +77,18 @@ namespace AbstractAccount
         private static void ClearHookConfigContext(UInt160 accountId)
         {
             byte[] key = Helper.Concat(Prefix_HookConfigContext, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, key);
+        }
+
+        private static void SetHookExecutionContext(UInt160 accountId, UInt160 hookContract)
+        {
+            byte[] key = Helper.Concat(Prefix_HookExecutionContext, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, (byte[])hookContract);
+        }
+
+        private static void ClearHookExecutionContext(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_HookExecutionContext, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, key);
         }
 

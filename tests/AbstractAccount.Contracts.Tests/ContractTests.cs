@@ -27,6 +27,16 @@ public class ContractTests
         "UnifiedSmartWallet.MarketEscrow.cs"
     };
 
+    private static readonly string[] HookFiles =
+    {
+        "hooks/HookAuthority.cs",
+        "hooks/WhitelistHook.cs",
+        "hooks/DailyLimitHook.cs",
+        "hooks/TokenRestrictedHook.cs",
+        "hooks/MultiHook.cs",
+        "hooks/NeoDIDCredentialHook.cs"
+    };
+
     private static Type ContractType => typeof(global::AbstractAccount.UnifiedSmartWallet);
 
     private static string ReadContractFile(string fileName) =>
@@ -131,5 +141,61 @@ public class ContractTests
         StringAssert.Contains(source, "Backup owner required");
         StringAssert.Contains(source, "Verifier rejected signature");
         StringAssert.Contains(source, "Native witness failed");
+    }
+
+    [TestMethod]
+    public void HookContractsUseTrustedCoreAuthorityInsteadOfCallerControlledSpoofing()
+    {
+        foreach (string fileName in HookFiles)
+        {
+            string source = ReadContractFile(fileName);
+            Assert.IsFalse(
+                source.Contains("Runtime.CallingScriptHash,\n                \"canConfigureHook\"", StringComparison.Ordinal)
+                || source.Contains("Runtime.CallingScriptHash,\r\n                \"canConfigureHook\"", StringComparison.Ordinal)
+                || source.Contains("Runtime.CallingScriptHash,\n                \"canExecuteHook\"", StringComparison.Ordinal)
+                || source.Contains("Runtime.CallingScriptHash,\r\n                \"canExecuteHook\"", StringComparison.Ordinal),
+                $"Direct caller-controlled authority call still present in {fileName}");
+        }
+
+        StringAssert.Contains(ReadContractFile("hooks/WhitelistHook.cs"), "HookAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("hooks/WhitelistHook.cs"), "HookAuthority.ValidateExecutionCaller");
+        StringAssert.Contains(ReadContractFile("hooks/DailyLimitHook.cs"), "HookAuthority.ValidateExecutionCaller");
+        StringAssert.Contains(ReadContractFile("hooks/MultiHook.cs"), "HookAuthority.ValidateExecutionCaller");
+        StringAssert.Contains(ReadContractFile("hooks/NeoDIDCredentialHook.cs"), "HookAuthority.ValidateExecutionCaller");
+        StringAssert.Contains(ReadContractFile("hooks/TokenRestrictedHook.cs"), "HookAuthority.ValidateExecutionCaller");
+    }
+
+    [TestMethod]
+    public void WalletTracksHookExecutionContextForTrustedPluginCalls()
+    {
+        string internalSource = ReadContractFile("UnifiedSmartWallet.Internal.cs");
+        string verifyContextSource = ReadContractFile("UnifiedSmartWallet.VerifyContext.cs");
+        string executionSource = ReadContractFile("UnifiedSmartWallet.Execution.cs");
+
+        StringAssert.Contains(internalSource, "Prefix_HookExecutionContext");
+        StringAssert.Contains(internalSource, "SetHookExecutionContext");
+        StringAssert.Contains(internalSource, "ClearHookExecutionContext");
+        StringAssert.Contains(verifyContextSource, "public static bool CanExecuteHook");
+        StringAssert.Contains(executionSource, "SetHookExecutionContext(accountId, state.HookId);");
+        StringAssert.Contains(executionSource, "ClearHookExecutionContext(accountId);");
+    }
+
+    [TestMethod]
+    public void HookProjectsCompileSharedAuthorityHelper()
+    {
+        string[] hookProjects =
+        {
+            "hooks/WhitelistHook.csproj",
+            "hooks/DailyLimitHook.csproj",
+            "hooks/TokenRestrictedHook.csproj",
+            "hooks/MultiHook.csproj",
+            "hooks/NeoDIDCredentialHook.csproj",
+        };
+
+        foreach (string project in hookProjects)
+        {
+            string projectFile = ReadContractFile(project);
+            StringAssert.Contains(projectFile, "<Compile Include=\"HookAuthority.cs\" />");
+        }
     }
 }

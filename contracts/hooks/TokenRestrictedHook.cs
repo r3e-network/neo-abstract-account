@@ -22,17 +22,19 @@ namespace AbstractAccount.Hooks
     {
         private static readonly byte[] Prefix_RestrictedTokens = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => HookAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Marks a token contract as restricted or clears the restriction.
         /// </summary>
         public static void SetRestrictedToken(UInt160 accountId, UInt160 token, bool isRestricted)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_RestrictedTokens, (byte[])accountId);
             key = Helper.Concat(key, (byte[])token);
             
@@ -51,6 +53,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             if (opParams.Length < 2) return;
             UInt160 targetContract = (UInt160)opParams[0];
 
@@ -68,12 +71,7 @@ namespace AbstractAccount.Hooks
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             byte[] prefix = Helper.Concat(Prefix_RestrictedTokens, (byte[])accountId);
             Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly);

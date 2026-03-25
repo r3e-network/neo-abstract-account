@@ -48,5 +48,22 @@ namespace AbstractAccount
                 && Runtime.CallingScriptHash == hookContract
                 && (UInt160)expectedHook == hookContract;
         }
+
+        [Safe]
+        public static bool CanExecuteHook(UInt160 accountId, UInt160 callerContract, UInt160 hookContract)
+        {
+            byte[] key = Helper.Concat(Prefix_HookExecutionContext, (byte[])accountId);
+            ByteString? expectedRoot = Storage.Get(Storage.CurrentContext, key);
+            if (expectedRoot == null) return false;
+            if (Runtime.CallingScriptHash != hookContract) return false;
+
+            UInt160 activeRootHook = (UInt160)expectedRoot;
+            if (callerContract == Runtime.ExecutingScriptHash)
+            {
+                return activeRootHook == hookContract;
+            }
+
+            return callerContract == activeRootHook;
+        }
     }
 }

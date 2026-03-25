@@ -26,17 +26,19 @@ namespace AbstractAccount.Hooks
         // Setup: AccountId -> Verified Credentials HashMap
         private static readonly byte[] Prefix_VerifiedCredentials = new byte[] { 0x02 };
 
+        public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => HookAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Declares which credential type is required before the account may call a target contract.
         /// </summary>
         public static void RequireCredentialForContract(UInt160 accountId, UInt160 targetContract, string credentialType)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Helper.Concat(Prefix_RequiredCredential, (byte[])accountId), (byte[])targetContract);
             if (string.IsNullOrEmpty(credentialType)) Storage.Delete(Storage.CurrentContext, key);
             else Storage.Put(Storage.CurrentContext, key, credentialType);
@@ -47,12 +49,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void IssueCredential(UInt160 accountId, string credentialType)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (ByteString)credentialType);
             Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
         }
@@ -62,12 +59,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void RevokeCredential(UInt160 accountId, string credentialType)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Helper.Concat(Prefix_VerifiedCredentials, (byte[])accountId), (ByteString)credentialType);
             Storage.Delete(Storage.CurrentContext, key);
         }
@@ -77,6 +69,7 @@ namespace AbstractAccount.Hooks
         /// </summary>
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             if (opParams.Length < 1) return;
             UInt160 targetContract = (UInt160)opParams[0];
 
@@ -98,12 +91,7 @@ namespace AbstractAccount.Hooks
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            HookAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             ClearPrefixForAccount(Prefix_RequiredCredential, accountId);
             ClearPrefixForAccount(Prefix_VerifiedCredentials, accountId);
