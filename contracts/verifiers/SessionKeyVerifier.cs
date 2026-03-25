@@ -24,6 +24,13 @@ namespace AbstractAccount.Verifiers
         // AccountId -> SessionKeyData
         private static readonly byte[] Prefix_SessionKeys = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         public class SessionKeyData
         {
             public ByteString PubKey;          // secp256r1 uncompressed
@@ -37,12 +44,7 @@ namespace AbstractAccount.Verifiers
         /// </summary>
         public static void SetSessionKey(UInt160 accountId, ByteString pubKey, UInt160 targetContract, string method, BigInteger validUntil)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             ExecutionEngine.Assert(pubKey.Length > 0, "Invalid pubKey");
             ExecutionEngine.Assert(validUntil > Runtime.Time, "Session key must expire in the future");
             
@@ -63,12 +65,7 @@ namespace AbstractAccount.Verifiers
         /// </summary>
         public static void ClearSessionKey(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_SessionKeys, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, key);
         }

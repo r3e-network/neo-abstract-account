@@ -25,7 +25,7 @@ function sleep(ms) {
 
 function isRetryableRpcError(error) {
   const message = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED/i.test(message);
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(message);
 }
 
 async function withRpcRetry(label, fn, attempts = 5) {
@@ -182,6 +182,12 @@ async function authorizeHook(client, coreHash, hookHash, account, networkMagic) 
   ]);
 }
 
+async function authorizeVerifier(client, coreHash, verifierHash, account, networkMagic) {
+  return invokePersisted(client, verifierHash, account, networkMagic, 'setAuthorizedCore', [
+    hash160Param(coreHash),
+  ]);
+}
+
 async function invokeRead(client, contractHash, operation, params = [], signers = undefined) {
   return withRpcRetry(`${sanitizeHex(contractHash)}.${operation}`, () => client.invokeFunction(sanitizeHex(contractHash), operation, params, signers));
 }
@@ -243,6 +249,7 @@ async function main() {
   const core = await deployContract(rpcClient, account, networkMagic, 'UnifiedSmartWalletV3', `${deploymentTag}-core`);
   const web3Auth = await deployContract(rpcClient, account, networkMagic, 'Web3AuthVerifier', `${deploymentTag}-web3auth`);
   const whitelist = await deployContract(rpcClient, account, networkMagic, 'WhitelistHook', `${deploymentTag}-whitelist`);
+  await authorizeVerifier(rpcClient, core.hash, web3Auth.hash, account, networkMagic);
   await authorizeHook(rpcClient, core.hash, whitelist.hash, account, networkMagic);
   console.log(JSON.stringify({ core, web3Auth, whitelist }, null, 2));
 

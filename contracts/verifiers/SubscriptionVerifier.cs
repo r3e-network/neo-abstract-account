@@ -23,6 +23,13 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_Subscription = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         public class SubscriptionConfig
         {
             public UInt160 Merchant;
@@ -37,12 +44,7 @@ namespace AbstractAccount.Verifiers
         /// </summary>
         public static void CreateSubscription(UInt160 accountId, ByteString subId, UInt160 merchant, UInt160 token, BigInteger amount, BigInteger periodMs)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             
             SubscriptionConfig config = new SubscriptionConfig 
             { 
@@ -102,12 +104,7 @@ namespace AbstractAccount.Verifiers
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             byte[] prefix = Helper.Concat(Prefix_Subscription, (byte[])accountId);
             Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly);

@@ -37,6 +37,19 @@ public class ContractTests
         "hooks/NeoDIDCredentialHook.cs"
     };
 
+    private static readonly string[] VerifierFiles =
+    {
+        "verifiers/VerifierAuthority.cs",
+        "verifiers/Web3AuthVerifier.cs",
+        "verifiers/TEEVerifier.cs",
+        "verifiers/WebAuthnVerifier.cs",
+        "verifiers/SessionKeyVerifier.cs",
+        "verifiers/MultiSigVerifier.cs",
+        "verifiers/SubscriptionVerifier.cs",
+        "verifiers/ZKEmailVerifier.cs",
+        "verifiers/ZkLoginVerifier.cs"
+    };
+
     private static Type ContractType => typeof(global::AbstractAccount.UnifiedSmartWallet);
 
     private static string ReadContractFile(string fileName) =>
@@ -196,6 +209,50 @@ public class ContractTests
         {
             string projectFile = ReadContractFile(project);
             StringAssert.Contains(projectFile, "<Compile Include=\"HookAuthority.cs\" />");
+        }
+    }
+
+    [TestMethod]
+    public void VerifierContractsUseTrustedCoreAuthorityInsteadOfCallerControlledSpoofing()
+    {
+        foreach (string fileName in VerifierFiles)
+        {
+            string source = ReadContractFile(fileName);
+            Assert.IsFalse(
+                source.Contains("Runtime.CallingScriptHash,\n                \"canConfigureVerifier\"", StringComparison.Ordinal)
+                || source.Contains("Runtime.CallingScriptHash,\r\n                \"canConfigureVerifier\"", StringComparison.Ordinal),
+                $"Direct caller-controlled verifier authority call still present in {fileName}");
+        }
+
+        StringAssert.Contains(ReadContractFile("verifiers/Web3AuthVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/TEEVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/WebAuthnVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/SessionKeyVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/MultiSigVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/SubscriptionVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/ZKEmailVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+        StringAssert.Contains(ReadContractFile("verifiers/ZkLoginVerifier.cs"), "VerifierAuthority.ValidateConfigCaller");
+    }
+
+    [TestMethod]
+    public void VerifierProjectsCompileSharedAuthorityHelper()
+    {
+        string[] verifierProjects =
+        {
+            "verifiers/Web3AuthVerifier.csproj",
+            "verifiers/TEEVerifier.csproj",
+            "verifiers/WebAuthnVerifier.csproj",
+            "verifiers/SessionKeyVerifier.csproj",
+            "verifiers/MultiSigVerifier.csproj",
+            "verifiers/SubscriptionVerifier.csproj",
+            "verifiers/ZKEmailVerifier.csproj",
+            "verifiers/ZkLoginVerifier.csproj",
+        };
+
+        foreach (string project in verifierProjects)
+        {
+            string projectFile = ReadContractFile(project);
+            StringAssert.Contains(projectFile, "<Compile Include=\"VerifierAuthority.cs\" />");
         }
     }
 }

@@ -23,17 +23,19 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_AccountPubKey = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Stores the passkey public key for an AA account.
         /// </summary>
         public static void SetPublicKey(UInt160 accountId, ByteString pubKey)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_AccountPubKey, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, pubKey);
         }
@@ -48,12 +50,7 @@ namespace AbstractAccount.Verifiers
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_AccountPubKey, (byte[])accountId));
         }
 

@@ -23,17 +23,19 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_AccountDKIM = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Stores the DKIM root or registry hash that a future zkEmail proof should bind against.
         /// </summary>
         public static void SetDKIMRegistry(UInt160 accountId, ByteString dkimHash)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_AccountDKIM, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, dkimHash);
         }
@@ -55,12 +57,7 @@ namespace AbstractAccount.Verifiers
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_AccountDKIM, (byte[])accountId));
         }
     }

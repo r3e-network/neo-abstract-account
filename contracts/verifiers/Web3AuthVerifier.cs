@@ -72,18 +72,20 @@ namespace AbstractAccount
             0x87, 0x1c, 0x96, 0xdf, 0x18, 0xe0, 0xf2, 0xf4
         };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         /// <summary>
         /// Stores the 65-byte uncompressed secp256k1 public key for an account.
         /// </summary>
         public static void SetPublicKey(UInt160 accountId, ByteString uncompressedPubKey)
         {
             ExecutionEngine.Assert(uncompressedPubKey.Length == 65, "Invalid pubkey");
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_AccountPubKey, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, uncompressedPubKey);
         }
@@ -98,12 +100,7 @@ namespace AbstractAccount
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_AccountPubKey, (byte[])accountId));
         }
 

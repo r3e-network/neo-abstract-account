@@ -28,7 +28,7 @@ function sleep(ms) {
 
 function isRetryableRpcError(error) {
   const message = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED/i.test(message);
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(message);
 }
 
 async function withRpcRetry(label, fn, attempts = 5) {
@@ -183,6 +183,12 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
 
 async function authorizeHook(client, coreHash, hookHash, account, networkMagic) {
   return invokePersisted(client, hookHash, account, networkMagic, 'setAuthorizedCore', [
+    hash160Param(coreHash),
+  ]);
+}
+
+async function authorizeVerifier(client, coreHash, verifierHash, account, networkMagic) {
+  return invokePersisted(client, verifierHash, account, networkMagic, 'setAuthorizedCore', [
     hash160Param(coreHash),
   ]);
 }
@@ -352,6 +358,15 @@ async function main() {
   const multiHook = await deployContract(rpcClient, account, networkMagic, 'MultiHook', `${deploymentTag}-multi-hook`);
   const neoDidHook = await deployContract(rpcClient, account, networkMagic, 'NeoDIDCredentialHook', `${deploymentTag}-neodid-hook`);
   const mockTarget = await deployContract(rpcClient, account, networkMagic, 'MockTransferTarget', `${deploymentTag}-mock-target`);
+
+  await authorizeVerifier(rpcClient, core.hash, web3AuthA.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, web3AuthB.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, teeVerifier.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, webAuthnVerifier.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, sessionKeyVerifier.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, multiSigVerifier.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, subscriptionVerifier.hash, account, networkMagic);
+  await authorizeVerifier(rpcClient, core.hash, zkEmailVerifier.hash, account, networkMagic);
 
   await authorizeHook(rpcClient, core.hash, whitelistHook.hash, account, networkMagic);
   await authorizeHook(rpcClient, core.hash, dailyLimitHook.hash, account, networkMagic);

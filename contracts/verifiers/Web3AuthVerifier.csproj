@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="VerifierAuthority.cs" />
     <Compile Include="Web3AuthVerifier.cs" />
   </ItemGroup>
 

@@ -23,6 +23,13 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_Config = new byte[] { 0x01 };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         public class MultiSigConfig
         {
             public UInt160[] Verifiers;
@@ -34,12 +41,7 @@ namespace AbstractAccount.Verifiers
         /// </summary>
         public static void SetConfig(UInt160 accountId, UInt160[] verifiers, int threshold)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             ExecutionEngine.Assert(threshold > 0 && threshold <= verifiers.Length, "Invalid threshold");
             
             MultiSigConfig config = new MultiSigConfig { Verifiers = verifiers, Threshold = threshold };
@@ -88,12 +90,7 @@ namespace AbstractAccount.Verifiers
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_Config, (byte[])accountId));
         }
     }

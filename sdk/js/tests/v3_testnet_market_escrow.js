@@ -25,7 +25,7 @@ function sleep(ms) {
 
 function isRetryableRpcError(error) {
   const message = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED/i.test(message);
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(message);
 }
 
 async function withRpcRetry(label, fn, attempts = 5) {

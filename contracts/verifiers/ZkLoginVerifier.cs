@@ -45,6 +45,13 @@ namespace AbstractAccount.Verifiers
             0x2d, 0x76, 0x31
         };
 
+        public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
+
+        [Safe]
+        public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
+
+        public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+
         public class ZkLoginConfig
         {
             public ByteString SignerPublicKey;
@@ -62,12 +69,7 @@ namespace AbstractAccount.Verifiers
 
         public static void SetPublicKey(UInt160 accountId, ByteString configBlob)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             ZkLoginConfig config = ParseConfigBlob(configBlob);
             byte[] key = Helper.Concat(Prefix_Config, (byte[])accountId);
@@ -76,12 +78,7 @@ namespace AbstractAccount.Verifiers
 
         public static void SetConfig(UInt160 accountId, ByteString signerPublicKey, string provider, ByteString masterNullifier)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
 
             ValidateSignerPublicKey(signerPublicKey);
             ValidateProvider(provider);
@@ -174,12 +171,7 @@ namespace AbstractAccount.Verifiers
 
         public static void ClearAccount(UInt160 accountId)
         {
-            bool authorized = (bool)Contract.Call(
-                Runtime.CallingScriptHash,
-                "canConfigureVerifier",
-                CallFlags.ReadOnly,
-                new object[] { accountId, Runtime.ExecutingScriptHash });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
+            VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_Config, (byte[])accountId));
         }
 
