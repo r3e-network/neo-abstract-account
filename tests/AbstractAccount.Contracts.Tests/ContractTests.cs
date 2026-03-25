@@ -213,6 +213,27 @@ public class ContractTests
     }
 
     [TestMethod]
+    public void DailyLimitHookOnlyAccruesUsageAfterSuccessfulExecution()
+    {
+        string source = ReadContractFile("hooks/DailyLimitHook.cs");
+
+        StringAssert.Contains(source, "public static void PostExecute");
+        StringAssert.Contains(source, "if (!DidExecutionSucceed(result)) return;");
+        StringAssert.Contains(source, "StoreSpentToday(accountId, targetContract, currentTime, spentToday + amount);");
+        Assert.IsFalse(source.Contains("Storage.Put(Storage.CurrentContext, spentKey, newTotal);", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void MultiHookRejectsUnsafeHookTopologies()
+    {
+        string source = ReadContractFile("hooks/MultiHook.cs");
+
+        StringAssert.Contains(source, "Too many hooks");
+        StringAssert.Contains(source, "Self hook not allowed");
+        StringAssert.Contains(source, "Duplicate hook not allowed");
+    }
+
+    [TestMethod]
     public void VerifierContractsUseTrustedCoreAuthorityInsteadOfCallerControlledSpoofing()
     {
         foreach (string fileName in VerifierFiles)

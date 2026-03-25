@@ -24,6 +24,7 @@ namespace AbstractAccount.Hooks
         private static readonly byte[] Prefix_DailyLimit = new byte[] { 0x01 };
         private static readonly byte[] Prefix_SpentToday = new byte[] { 0x02 };
         private static readonly byte[] Prefix_LastReset = new byte[] { 0x03 };
+        private const int OneDaySeconds = 24 * 60 * 60;
 
         public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
 
@@ -58,50 +59,28 @@ namespace AbstractAccount.Hooks
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
-            // Expected opParams layout: TargetContract, Method, Args, Nonce, Deadline, Signature
-            if (opParams.Length < 3) return;
-            UInt160 targetContract = (UInt160)opParams[0];
-            string method = (string)opParams[1];
-            object[] args = (object[])opParams[2];
-
-            // Only care about NEP-17 transfers
-            if (method != "transfer" || args.Length < 3) return;
-            
-            // args[0] = from, args[1] = to, args[2] = amount
-            if (!(args[2] is BigInteger amount)) return;
-
+            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out BigInteger amount)) return;
             BigInteger limit = GetDailyLimit(accountId, targetContract);
             if (limit == 0) return; // No limit configured for this token
 
-            byte[] spentKey = Helper.Concat(Helper.Concat(Prefix_SpentToday, (byte[])accountId), (byte[])targetContract);
-            byte[] resetKey = Helper.Concat(Helper.Concat(Prefix_LastReset, (byte[])accountId), (byte[])targetContract);
-
             BigInteger currentTime = Runtime.Time;
-            BigInteger oneDaySeconds = 24 * 60 * 60;
-            
-            ByteString? lastResetData = Storage.Get(Storage.CurrentContext, resetKey);
-            BigInteger lastReset = lastResetData == null ? 0 : (BigInteger)lastResetData;
-
-            BigInteger spentToday = 0;
-            if (currentTime >= lastReset + oneDaySeconds)
-            {
-                // New day, reset spent amount
-                Storage.Put(Storage.CurrentContext, resetKey, currentTime);
-            }
-            else
-            {
-                ByteString? spentData = Storage.Get(Storage.CurrentContext, spentKey);
-                spentToday = spentData == null ? 0 : (BigInteger)spentData;
-            }
-
+            BigInteger spentToday = GetSpentToday(accountId, targetContract, currentTime);
             BigInteger newTotal = spentToday + amount;
             ExecutionEngine.Assert(newTotal <= limit, "Daily limit exceeded");
-            
-            Storage.Put(Storage.CurrentContext, spentKey, newTotal);
         }
 
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
+            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out BigInteger amount)) return;
+            if (!DidExecutionSucceed(result)) return;
+
+            BigInteger limit = GetDailyLimit(accountId, targetContract);
+            if (limit == 0) return;
+
+            BigInteger currentTime = Runtime.Time;
+            BigInteger spentToday = GetSpentToday(accountId, targetContract, currentTime);
+            StoreSpentToday(accountId, targetContract, currentTime, spentToday + amount);
         }
 
         public static void ClearAccount(UInt160 accountId)
@@ -121,6 +100,57 @@ namespace AbstractAccount.Hooks
             {
                 Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
             }
+        }
+
+        private static bool TryReadTrackedTransfer(object[] opParams, out UInt160 targetContract, out BigInteger amount)
+        {
+            targetContract = UInt160.Zero;
+            amount = 0;
+
+            if (opParams.Length < 3) return false;
+            targetContract = (UInt160)opParams[0];
+            string method = (string)opParams[1];
+            if (method != "transfer") return false;
+
+            object[] args = (object[])opParams[2];
+            if (args.Length < 3) return false;
+            if (!(args[2] is BigInteger transferAmount)) return false;
+
+            amount = transferAmount;
+            return true;
+        }
+
+        private static byte[] BuildTrackedKey(byte[] prefix, UInt160 accountId, UInt160 token)
+        {
+            return Helper.Concat(Helper.Concat(prefix, (byte[])accountId), (byte[])token);
+        }
+
+        private static BigInteger GetSpentToday(UInt160 accountId, UInt160 token, BigInteger currentTime)
+        {
+            byte[] spentKey = BuildTrackedKey(Prefix_SpentToday, accountId, token);
+            byte[] resetKey = BuildTrackedKey(Prefix_LastReset, accountId, token);
+
+            ByteString? lastResetData = Storage.Get(Storage.CurrentContext, resetKey);
+            BigInteger lastReset = lastResetData == null ? 0 : (BigInteger)lastResetData;
+            if (currentTime >= lastReset + OneDaySeconds) return 0;
+
+            ByteString? spentData = Storage.Get(Storage.CurrentContext, spentKey);
+            return spentData == null ? 0 : (BigInteger)spentData;
+        }
+
+        private static void StoreSpentToday(UInt160 accountId, UInt160 token, BigInteger currentTime, BigInteger amount)
+        {
+            byte[] spentKey = BuildTrackedKey(Prefix_SpentToday, accountId, token);
+            byte[] resetKey = BuildTrackedKey(Prefix_LastReset, accountId, token);
+            Storage.Put(Storage.CurrentContext, resetKey, currentTime);
+            Storage.Put(Storage.CurrentContext, spentKey, amount);
+        }
+
+        private static bool DidExecutionSucceed(object result)
+        {
+            if (result is bool asBool) return asBool;
+            if (result is BigInteger asInteger) return asInteger != 0;
+            return true;
         }
     }
 }

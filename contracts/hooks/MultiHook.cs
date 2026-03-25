@@ -33,6 +33,7 @@ namespace AbstractAccount.Hooks
     public class MultiHook : SmartContract
     {
         private static readonly byte[] Prefix_Hooks = new byte[] { 0x01 };
+        private const int MaxHooks = 8;
 
         public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
 
@@ -54,6 +55,16 @@ namespace AbstractAccount.Hooks
             }
             else
             {
+                ExecutionEngine.Assert(hooks.Length <= MaxHooks, "Too many hooks");
+                for (int i = 0; i < hooks.Length; i++)
+                {
+                    ExecutionEngine.Assert(hooks[i] != UInt160.Zero && hooks[i].IsValid, "Invalid hook");
+                    ExecutionEngine.Assert(hooks[i] != Runtime.ExecutingScriptHash, "Self hook not allowed");
+                    for (int j = i + 1; j < hooks.Length; j++)
+                    {
+                        ExecutionEngine.Assert(hooks[i] != hooks[j], "Duplicate hook not allowed");
+                    }
+                }
                 Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(hooks));
             }
         }
