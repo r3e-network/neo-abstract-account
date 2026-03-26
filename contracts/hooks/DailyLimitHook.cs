@@ -117,11 +117,8 @@ namespace AbstractAccount.Hooks
 
             object[] args = (object[])opParams[2];
             if (args.Length < 3) return false;
-            if (!(args[0] is UInt160 from)) return false;
-            if (!(args[2] is BigInteger transferAmount)) return false;
-
-            fromAccount = from;
-            amount = transferAmount;
+            fromAccount = (UInt160)args[0];
+            amount = (BigInteger)args[2];
             return true;
         }
 

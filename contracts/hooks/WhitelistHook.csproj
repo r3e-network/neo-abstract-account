@@ -18,7 +18,7 @@
 
   <Target Name="CompileSmartContract" AfterTargets="Build">
     <Message Text="Compiling Neo smart contract: WhitelistHook.cs" Importance="high" />
-    <Exec Command="nccs ./WhitelistHook.csproj -o ../bin/hooks" WorkingDirectory="$(ProjectDir)" />
+    <Exec Command="nccs ./WhitelistHook.csproj -o ../bin/v3/hooks" WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 </Project>

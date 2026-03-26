@@ -17,7 +17,7 @@
 
   <Target Name="CompileSmartContract" AfterTargets="Build">
     <Message Text="Compiling Neo smart contract: MockTransferTarget.cs" Importance="high" />
-    <Exec Command="nccs ./MockTransferTarget.csproj -o ../bin/mocks" WorkingDirectory="$(ProjectDir)" />
+    <Exec Command="nccs ./MockTransferTarget.csproj -o ../bin/v3" WorkingDirectory="$(ProjectDir)" />
   </Target>
 
 </Project>

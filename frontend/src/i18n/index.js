@@ -1270,7 +1270,7 @@ const MESSAGES = {
       presetMultiSigDesc: 'Threshold-based approvals for treasury-style accounts.',
       presetWhitelistDesc: 'Allow one target contract.',
       presetDailyLimitDesc: 'Cap daily token outflow.',
-      presetDIDDesc: 'Require a credential before target access.',
+      presetDIDDesc: 'Require an active NeoDID registry binding before target access.',
       presetMultiHookDesc: 'Compose multiple policy hooks behind one slot.',
       // Preset labels
       presetSessionKeyLabel: 'SessionKeyVerifier',
@@ -2884,7 +2884,7 @@ const MESSAGES = {
       presetMultiSigDesc: '用于金库风格账户的基于阈值的审批。',
       presetWhitelistDesc: '允许一个目标合约。',
       presetDailyLimitDesc: '限制每日代币流出。',
-      presetDIDDesc: '在目标访问前要求凭证。',
+      presetDIDDesc: '在目标访问前要求活跃的 NeoDID 注册表绑定。',
       presetMultiHookDesc: '在一个插槽后组合多个策略 hook。',
       // 预设标签
       presetSessionKeyLabel: 'SessionKeyVerifier',

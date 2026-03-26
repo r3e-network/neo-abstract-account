@@ -65,7 +65,7 @@
 * **DailyLimitHook**：单日大额转账风控。
 * **WhitelistHook**：锁定账户只能与受信任的智能合约交互。
 * **TokenRestrictedHook**：限制账户只能操作特定种类的代币（如只能转账某种游戏币）。
-* **NeoDIDCredentialHook**：执行某些特定 DeFi 操作前，验证账户是否挂载了特定的 NeoDID KYC 凭证。
+* **NeoDIDCredentialHook**：执行某些特定 DeFi 操作前，验证账户是否在链上的 `NeoDIDRegistry` 中拥有匹配且处于激活状态的 NeoDID 绑定。
 
 ### 6. 用户可组合的杀手级解决方案 ("Lego" 架构实践)
 通过 Verifier 与 Hook 的乐高式组合，V3 架构能够原生支持多种极具商业价值的账户模型：

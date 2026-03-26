@@ -6,14 +6,14 @@
 
 Morpheus 提供了一个使用 Intel SGX / TDX 的**可信执行环境 (TEE)**，而不是在链上存储恢复状态。这个链下安全飞地充当共同签名者或策略执行者，而不会将逻辑暴露给公共链。
 
-该过程完全通过 `TEEVerifier` 和 `NeoDIDCredentialHook` 模块进行。
+该过程完全通过 `TEEVerifier`、`NeoDIDCredentialHook` 和链上的 `NeoDIDRegistry` 完成。
 
 ### 1. 通过 Web3Auth 绑定 NeoDID
 用户可以将他们的 NeoDID 绑定到抽象账户。这允许用户通过 Web3Auth 通过他们的社交账户（Google、Discord 等）授权操作，Web3Auth 解析为 NeoDID 签名。
 
 - **前端:** 用户通过 Web3Auth 进行身份验证。
 - **飞地 (Enclave):** Morpheus 飞地验证 Web3Auth 令牌并签署授权有效负载。
-- **合约:** `NeoDIDCredentialHook` 验证飞地的签名是否正确映射到预期的 NeoDID。
+- **合约:** Oracle / NeoDID 流程先把绑定写入 `NeoDIDRegistry`，`NeoDIDCredentialHook` 再读取该注册表并校验目标操作所需的绑定是否处于激活状态。
 
 ### 2. 私密操作与隐私策略
 对于那些不应在链上公开可见的策略（例如，每日限额、白名单地址或条件逻辑）：
