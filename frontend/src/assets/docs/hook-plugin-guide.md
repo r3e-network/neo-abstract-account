@@ -89,6 +89,12 @@ Typical operations:
 Purpose:
 cap daily outflow for a token or target.
 
+Operational notes:
+
+- the canonical protected transfer source is the V3 `accountId`
+- this hook does not treat the derived virtual address as a separate spend authority
+- usage only accrues after successful execution
+
 Typical operations:
 
 - `setDailyLimit(accountId, token, dailyLimit)`
