@@ -60,6 +60,10 @@
         :aa-contract-hash="aaContractHash"
         :account-address-script-hash="accountAddressScriptHash"
         :neo-wallet-address="neoWalletAddress"
+        :recovery-verifier-prefill="recoveryVerifierPrefill"
+        :recovery-new-owner-prefill="recoveryNewOwnerPrefill"
+        :recovery-expiry-prefill="recoveryExpiryPrefill"
+        :auto-preview-recovery="autoPreviewRecovery"
       />
     </div>
   </div>
@@ -71,12 +75,31 @@ import { useRoute } from 'vue-router';
 import { useI18n } from '@/i18n';
 import DidIdentityPanel from '@/features/operations/components/DidIdentityPanel.vue';
 import { getAbstractAccountHash, walletService } from '@/services/walletService.js';
+import { getScriptHashFromAddress } from '@/utils/neo.js';
 
 const route = useRoute();
 const { t } = useI18n();
 
 const aaContractHash = getAbstractAccountHash();
-const accountAddressScriptHash = computed(() => String(route.query.account || '').trim());
+const accountAddressScriptHash = computed(() => {
+  const raw = String(route.query.account || '').trim();
+  if (!raw) return '';
+  if (/^[Nn]/.test(raw)) {
+    try {
+      return `0x${getScriptHashFromAddress(raw)}`;
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+});
+const recoveryVerifierPrefill = computed(() => String(route.query.recoveryVerifier || '').trim());
+const recoveryNewOwnerPrefill = computed(() => String(route.query.recoveryNewOwner || '').trim());
+const recoveryExpiryPrefill = computed(() => String(route.query.recoveryExpiryMinutes || '').trim());
+const autoPreviewRecovery = computed(() => {
+  const raw = String(route.query.autoPreviewRecovery || '').trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes';
+});
 const neoWalletAddress = computed(() => walletService.address || '');
 const walletLabel = computed(() => neoWalletAddress.value || t('identity.walletNotConnected', 'not connected'));
 const accountContextLabel = computed(() => accountAddressScriptHash.value || t('identity.noAccountContext', 'no account bound'));

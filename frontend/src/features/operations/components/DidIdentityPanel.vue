@@ -341,6 +341,22 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  recoveryVerifierPrefill: {
+    type: String,
+    default: '',
+  },
+  recoveryNewOwnerPrefill: {
+    type: String,
+    default: '',
+  },
+  recoveryExpiryPrefill: {
+    type: [String, Number],
+    default: '',
+  },
+  autoPreviewRecovery: {
+    type: Boolean,
+    default: false,
+  },
 });
 const emit = defineEmits(['status', 'activity']);
 
@@ -391,6 +407,13 @@ const proxyExpiryMinutes = ref(15);
 const bindStatusLabel = computed(() => didConnected.value ? t('didPanel.statusReady', '(ready)') : t('didPanel.statusConnectDid', '(connect Web3Auth)'));
 const recoveryStatusLabel = computed(() => verifierState.value?.pendingRecovery?.active ? t('didPanel.statusPending', '(pending)') : t('didPanel.statusReady', '(ready)'));
 const sessionStatusLabel = computed(() => verifierState.value?.activeSession?.active ? t('didPanel.statusActive', '(active)') : t('didPanel.statusReady', '(ready)'));
+const prefillRecoveryVerifier = computed(() => String(props.recoveryVerifierPrefill || '').trim());
+const prefillRecoveryNewOwner = computed(() => String(props.recoveryNewOwnerPrefill || '').trim());
+const prefillRecoveryExpiryMinutes = computed(() => {
+  const raw = Number(String(props.recoveryExpiryPrefill || '').trim());
+  return Number.isFinite(raw) && raw > 0 ? raw : 30;
+});
+const autoRecoveryPreviewKey = ref('');
 
 function normalizeHashOrAddress(value) {
   const raw = String(value || '').trim();
@@ -431,23 +454,24 @@ async function refreshBoundVerifier() {
       aaContractHash: props.aaContractHash || getAbstractAccountHash(),
       accountAddressScriptHash: props.accountAddressScriptHash,
     });
-    if (!recoveryVerifierHash.value && bound) {
-      recoveryVerifierHash.value = bound;
+    const preferredRecoveryVerifier = prefillRecoveryVerifier.value || bound;
+    if (!recoveryVerifierHash.value && preferredRecoveryVerifier) {
+      recoveryVerifierHash.value = preferredRecoveryVerifier;
     }
     if (!proxyVerifierHash.value && bound) {
       proxyVerifierHash.value = bound;
     }
-    if (bound && resolvedAccountId.value) {
+    if ((preferredRecoveryVerifier || bound) && resolvedAccountId.value) {
       verifierState.value = await fetchUnifiedVerifierState({
         rpcUrl: RUNTIME_CONFIG.rpcUrl,
-        verifierHash: bound,
+        verifierHash: preferredRecoveryVerifier || bound,
         accountIdHex: resolvedAccountId.value,
       }).catch((err) => { if (import.meta.env.DEV) console.error('[DidIdentityPanel] fetchUnifiedVerifierState failed:', err?.message); return null; });
     }
   } catch (error) {
     if (import.meta.env.DEV) console.error('[DidIdentityPanel] refreshBoundVerifier failed:', error?.message);
     toast.error(translateError(error?.message, t));
-    recoveryVerifierHash.value = '';
+    recoveryVerifierHash.value = prefillRecoveryVerifier.value || '';
     proxyVerifierHash.value = '';
     verifierState.value = null;
   }
@@ -457,6 +481,26 @@ watch(() => props.accountAddressScriptHash, () => {
   void refreshAccountId();
   void refreshBoundVerifier();
 }, { immediate: true });
+
+watch(
+  () => [prefillRecoveryVerifier.value, prefillRecoveryNewOwner.value, prefillRecoveryExpiryMinutes.value, props.autoPreviewRecovery],
+  () => {
+    if (prefillRecoveryVerifier.value) {
+      recoveryVerifierHash.value = prefillRecoveryVerifier.value;
+    }
+    if (prefillRecoveryNewOwner.value) {
+      recoveryNewOwner.value = prefillRecoveryNewOwner.value;
+    }
+    if (prefillRecoveryExpiryMinutes.value > 0) {
+      recoveryExpiryMinutes.value = prefillRecoveryExpiryMinutes.value;
+    }
+    if (props.autoPreviewRecovery) {
+      expanded.value = true;
+      autoRecoveryPreviewKey.value = '';
+    }
+  },
+  { immediate: true },
+);
 
 let verifierStateRequestId = 0;
 watch([resolvedAccountId, recoveryVerifierHash], async ([accountId, verifier]) => {
@@ -511,6 +555,25 @@ const canInvokeRecovery = computed(() => canPreviewRecovery.value);
 const canPreviewProxy = computed(() => didConnected.value && proxyExecutor.value);
 const effectiveProxyVerifierHash = computed(() => proxyVerifierHash.value || recoveryVerifierHash.value);
 const canInvokeProxy = computed(() => didConnected.value && effectiveProxyVerifierHash.value && proxyExecutor.value && resolvedAccountId.value);
+
+watch(
+  () => [
+    props.autoPreviewRecovery,
+    didConnected.value,
+    canPreviewRecovery.value,
+    resolvedAccountId.value,
+    recoveryVerifierHash.value,
+    recoveryNewOwner.value,
+    recoveryExpiryMinutes.value,
+  ],
+  async ([autoPreview, connected, canPreview, accountId, verifier, newOwner, expiry]) => {
+    if (!autoPreview || !connected || !canPreview) return;
+    const nextKey = [accountId, verifier, newOwner, expiry].join('|');
+    if (!nextKey || autoRecoveryPreviewKey.value === nextKey || busy.value) return;
+    autoRecoveryPreviewKey.value = nextKey;
+    await previewRecoveryAction();
+  },
+);
 
 function publishStatus(message) {
   emit('status', message);

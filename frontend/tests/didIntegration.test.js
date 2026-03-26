@@ -87,6 +87,11 @@ test('main layout and home workspace expose a DID connection path', () => {
   assert.match(workspace, /Open Identity Workspace/);
   assert.match(identityView, /Web3Auth \/ NeoDID Workspace/);
   assert.match(identityView, /DidIdentityPanel/);
+  assert.match(identityView, /route\.query\.recoveryVerifier/);
+  assert.match(identityView, /route\.query\.autoPreviewRecovery/);
+  assert.match(panel, /recoveryVerifierPrefill/);
+  assert.match(panel, /autoPreviewRecovery/);
+  assert.match(panel, /previewRecoveryAction/);
   assert.match(router, /path: 'identity'/);
   assert.match(panel, /Google/);
   assert.match(panel, /Email/);
