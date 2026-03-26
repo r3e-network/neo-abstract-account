@@ -70,14 +70,17 @@ test('did verification api validates Web3Auth tokens against JWKS', () => {
 
 test('main layout and home workspace expose a DID connection path', () => {
   const layout = read('src/components/layout/MainLayout.vue');
+  const controls = read('src/components/layout/ConnectionControls.vue');
   const workspace = read('src/features/operations/components/HomeOperationsWorkspace.vue');
   const panel = read('src/features/operations/components/DidIdentityPanel.vue');
   const identityView = read('src/views/IdentityView.vue');
   const router = read('src/router/index.js');
 
-  assert.match(layout, /Open Identity/);
-  assert.match(layout, /Disconnect Web3Auth/);
-  assert.match(layout, /useDidConnection/);
+  assert.match(layout, /defineAsyncComponent/);
+  assert.match(layout, /ConnectionControls/);
+  assert.match(controls, /Open Identity/);
+  assert.match(controls, /Disconnect Web3Auth/);
+  assert.match(controls, /useDidConnection/);
   assert.match(workspace, /useDidConnection/);
   assert.match(workspace, /didConnection/);
   assert.match(workspace, /connectDid\(/);
