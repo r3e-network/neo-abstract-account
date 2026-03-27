@@ -23,8 +23,8 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
+          if (id.includes('/node_modules/buffer/')) return 'buffer-polyfill';
           if (id.includes('@vue-flow')) return 'vue-flow';
-          if (id.includes('ethers')) return 'ethers';
           if (id.includes('@supabase')) return 'supabase';
           if (id.includes('jose')) return 'jose';
           if (id.includes('katex')) return 'katex';

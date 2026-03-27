@@ -1,3 +1,4 @@
+import '@/polyfills/buffer.js';
 import { connectedDidProfile, setConnectedDidProfile } from '@/utils/did';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { EC } from '../config/errorCodes.js';

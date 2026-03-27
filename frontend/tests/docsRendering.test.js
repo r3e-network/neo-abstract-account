@@ -252,8 +252,8 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
   const viteConfigSource = read('vite.config.js');
 
   assert.match(viteConfigSource, /manualChunks/);
+  assert.match(viteConfigSource, /buffer-polyfill/);
   assert.match(viteConfigSource, /vue-flow/);
-  assert.match(viteConfigSource, /ethers/);
   assert.match(viteConfigSource, /supabase/);
   assert.match(viteConfigSource, /jose/);
   assert.doesNotMatch(viteConfigSource, /neon-core/);

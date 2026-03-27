@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { BrowserProvider } from 'ethers';
 import { connectedAccount, setConnectedAccount } from '@/utils/wallet';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { EC } from '../config/errorCodes.js';
@@ -167,7 +167,7 @@ class WalletService {
       throw new Error(EC.evmProviderMissing);
     }
 
-    const browserProvider = new ethers.BrowserProvider(provider);
+    const browserProvider = new BrowserProvider(provider);
     await browserProvider.send('eth_requestAccounts', []);
     const signer = await browserProvider.getSigner();
     const address = await signer.getAddress();
@@ -180,7 +180,7 @@ class WalletService {
       throw new Error(EC.evmProviderMissing);
     }
 
-    const browserProvider = new ethers.BrowserProvider(provider);
+    const browserProvider = new BrowserProvider(provider);
     await browserProvider.send('eth_requestAccounts', []);
     const signer = await browserProvider.getSigner();
     return signer.signTypedData(domain, types, message);

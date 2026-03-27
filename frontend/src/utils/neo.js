@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { ripemd160, sha256 } from 'ethers';
 import { EC } from '../config/errorCodes.js';
 import { sanitizeHex } from './hex.js';
 
@@ -34,7 +34,7 @@ function concatBytes(...chunks) {
 }
 
 function sha256Bytes(bytes) {
-  return hexToBytes(ethers.sha256(bytes));
+  return hexToBytes(sha256(bytes));
 }
 
 function doubleSha256Bytes(bytes) {
@@ -44,7 +44,7 @@ function doubleSha256Bytes(bytes) {
 function hash160Hex(hexValue) {
   const bytes = hexToBytes(hexValue);
   const sha = sha256Bytes(bytes);
-  return sanitizeHex(ethers.ripemd160(sha));
+  return sanitizeHex(ripemd160(sha));
 }
 
 function encodeBase58(bytes) {

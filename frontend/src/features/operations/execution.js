@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { getAddress, id, keccak256, toUtf8Bytes } from 'ethers';
 import { sanitizeHex } from '../../utils/hex.js';
 import { cloneImmutable } from './helpers.js';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from './shareLinks.js';
@@ -9,7 +9,7 @@ import {
 } from './metaTx.js';
 
 function buildPayloadDigest(draftRecord = {}) {
-  return ethers.id(JSON.stringify({
+  return id(JSON.stringify({
     account: draftRecord.account || {},
     transactionBody: draftRecord.transaction_body || {},
     signerRequirements: draftRecord.signer_requirements || [],
@@ -18,10 +18,10 @@ function buildPayloadDigest(draftRecord = {}) {
 }
 
 function buildVerifyingContract(draftRecord = {}) {
-  const seed = ethers.keccak256(ethers.toUtf8Bytes(
+  const seed = keccak256(toUtf8Bytes(
     draftRecord.share_slug || draftRecord.draft_id || 'neo-abstract-account-workspace'
   ));
-  return ethers.getAddress(`0x${seed.slice(-40)}`);
+  return getAddress(`0x${seed.slice(-40)}`);
 }
 
 function toHash160Param(value) {

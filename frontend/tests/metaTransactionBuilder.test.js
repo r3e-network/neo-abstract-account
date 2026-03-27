@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ethers } from 'ethers';
+import { Wallet, keccak256, toUtf8Bytes } from 'ethers';
 
 import {
   buildExecuteUnifiedByAddressInvocation,
@@ -49,7 +49,7 @@ test('buildMetaTransactionTypedData matches the contract field layout', () => {
     message: {
       accountAddress: `0x${params.accountAddressScriptHash}`,
       targetContract: `0x${params.targetContract}`,
-      methodHash: ethers.keccak256(ethers.toUtf8Bytes(params.method)),
+      methodHash: keccak256(toUtf8Bytes(params.method)),
       argsHash: `0x${params.argsHashHex}`,
       nonce: String(params.nonce),
       deadline: String(params.deadline),
@@ -261,7 +261,7 @@ test('buildExecuteUserOpInvocation builds V3 struct args', () => {
 });
 
 test('toCompactEcdsaSignature drops the recovery byte for V3 contract submission', async () => {
-  const signer = ethers.Wallet.createRandom();
+  const signer = Wallet.createRandom();
   const typedData = buildV3UserOperationTypedData({
     chainId: 894710606,
     verifyingContract: '49c095ce04d38642e39155f5481615c58227a498',
@@ -280,7 +280,7 @@ test('toCompactEcdsaSignature drops the recovery byte for V3 contract submission
 });
 
 test('recoverPublicKeyFromTypedDataSignature returns the uncompressed signer key', async () => {
-  const wallet = ethers.Wallet.createRandom();
+  const wallet = Wallet.createRandom();
   const typedData = buildMetaTransactionTypedData({
     chainId: 894710606,
     verifyingContract: '49c095ce04d38642e39155f5481615c58227a498',

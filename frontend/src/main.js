@@ -1,14 +1,10 @@
+import './polyfills/buffer.js';
 import { createApp } from 'vue';
-import { Buffer } from 'buffer';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
 import App from './App.vue';
 import router from './router';
 import './style.css';
-
-if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
-  window.Buffer = Buffer;
-}
 
 const app = createApp(App);
 

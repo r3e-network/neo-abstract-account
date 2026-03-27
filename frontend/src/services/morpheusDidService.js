@@ -1,12 +1,12 @@
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { EC } from '../config/errorCodes.js';
-import { didService } from '@/services/didService';
 import { notificationService } from '@/services/notificationService';
 import { invokeReadFunction, getScriptHashFromAddress } from '@/utils/neo';
 import { sanitizeHex } from '@/utils/hex';
 import { encryptJsonWithMorpheusOracleKey } from '@/utils/morpheusEncryption';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
 import { buildZkLoginVerifierParamsHex, formatZkLoginTicket, normalizeZkLoginProvider } from '@/services/zkLoginVerifierService.js';
+import { connectedDidProfile } from '@/utils/did';
 
 function trim(value) {
   return String(value || '').trim();
@@ -86,6 +86,25 @@ function decodeStackItem(item) {
     default:
       return item.value ?? null;
   }
+}
+
+function getDidProfile() {
+  return connectedDidProfile.value || null;
+}
+
+function buildNeoDidSubject(profile = getDidProfile()) {
+  if (!profile?.provider || !profile?.idToken) return null;
+  return {
+    provider: profile.provider,
+    provider_uid: profile.providerUid || '',
+    id_token: profile.idToken,
+    metadata: {
+      email: profile.email || undefined,
+      phone: profile.phone || undefined,
+      linked_accounts: profile.linkedAccounts || [],
+      aggregate_verifier: profile.aggregateVerifier || undefined,
+    },
+  };
 }
 
 export async function fetchAccountIdByAddress({ rpcUrl, aaContractHash, accountAddressScriptHash } = {}) {
@@ -224,7 +243,8 @@ async function callNeoDid(action, payload = {}) {
 }
 
 async function buildEncryptedSubjectPatch(extra = {}) {
-  const subject = didService.buildNeoDidSubject();
+  const profile = getDidProfile();
+  const subject = buildNeoDidSubject(profile);
   if (!subject?.provider || !subject?.id_token) {
     throw new Error(EC.web3AuthTokenRequired);
   }
@@ -247,10 +267,11 @@ async function buildEncryptedSubjectPatch(extra = {}) {
 
 class MorpheusDidService {
   async bindDid({ vaultAccount, claimType = 'Web3Auth_PrimaryIdentity', claimValue = 'verified', metadata = {} } = {}) {
+    const profile = getDidProfile();
     const subjectPatch = await buildEncryptedSubjectPatch({
-      linked_accounts: didService.profile?.linkedAccounts || [],
-      email: didService.profile?.email || undefined,
-      phone: didService.profile?.phone || undefined,
+      linked_accounts: profile?.linkedAccounts || [],
+      email: profile?.email || undefined,
+      phone: profile?.phone || undefined,
     });
     if (!subjectPatch?.provider || !subjectPatch?.encrypted_params) {
       throw new Error(EC.walletNotConnected);
@@ -263,8 +284,8 @@ class MorpheusDidService {
       encrypted_params: subjectPatch.encrypted_params,
       metadata: {
         provider_uid_hint: subjectPatch.provider_uid || undefined,
-        identity_root: didService.profile?.identityRoot || didService.profile?.providerUid || undefined,
-        service_did: didService.profile?.serviceDid || RUNTIME_CONFIG.morpheusNeoDidServiceDid,
+        identity_root: profile?.identityRoot || profile?.providerUid || undefined,
+        service_did: profile?.serviceDid || RUNTIME_CONFIG.morpheusNeoDidServiceDid,
         ...metadata,
       },
     });
@@ -286,10 +307,11 @@ class MorpheusDidService {
   }
 
   async previewRecoveryTicket({ aaContract, verifierContract, accountId, newOwner, recoveryNonce, expiresAt } = {}) {
+    const profile = getDidProfile();
     const subjectPatch = await buildEncryptedSubjectPatch({
-      linked_accounts: didService.profile?.linkedAccounts || [],
-      email: didService.profile?.email || undefined,
-      phone: didService.profile?.phone || undefined,
+      linked_accounts: profile?.linkedAccounts || [],
+      email: profile?.email || undefined,
+      phone: profile?.phone || undefined,
     });
     return callNeoDid('recovery-ticket', {
       ...subjectPatch,
@@ -304,8 +326,9 @@ class MorpheusDidService {
   }
 
   async previewActionTicket({ executor, actionId } = {}) {
+    const profile = getDidProfile();
     const subjectPatch = await buildEncryptedSubjectPatch({
-      linked_accounts: didService.profile?.linkedAccounts || [],
+      linked_accounts: profile?.linkedAccounts || [],
     });
     return callNeoDid('action-ticket', {
       ...subjectPatch,
@@ -325,10 +348,11 @@ class MorpheusDidService {
     deadline,
     provider = 'web3auth',
   } = {}) {
+    const profile = getDidProfile();
     const subjectPatch = await buildEncryptedSubjectPatch({
-      linked_accounts: didService.profile?.linkedAccounts || [],
-      email: didService.profile?.email || undefined,
-      phone: didService.profile?.phone || undefined,
+      linked_accounts: profile?.linkedAccounts || [],
+      email: profile?.email || undefined,
+      phone: profile?.phone || undefined,
     });
     const response = await callNeoDid('zklogin-ticket', {
       ...subjectPatch,
@@ -352,10 +376,11 @@ class MorpheusDidService {
   }
 
   async invokeRecoveryRequest({ verifierHash, accountIdHex, newOwner, expiresAt, provider = 'web3auth' } = {}) {
+    const profile = getDidProfile();
     const subjectPatch = await buildEncryptedSubjectPatch({
-      linked_accounts: didService.profile?.linkedAccounts || [],
-      email: didService.profile?.email || undefined,
-      phone: didService.profile?.phone || undefined,
+      linked_accounts: profile?.linkedAccounts || [],
+      email: profile?.email || undefined,
+      phone: profile?.phone || undefined,
     });
     const params = [
       toByteArrayParam(accountIdHex),
@@ -370,7 +395,6 @@ class MorpheusDidService {
       args: params,
     });
 
-    const profile = didService.profile;
     const notificationPayload = {
       aa_contract: getAbstractAccountHash(),
       verifier: sanitizeHex(verifierHash),
@@ -396,8 +420,9 @@ class MorpheusDidService {
   }
 
   async invokeProxySessionRequest({ verifierHash, accountIdHex, executor, expiresAt, provider = 'web3auth' } = {}) {
+    const profile = getDidProfile();
     const subjectPatch = await buildEncryptedSubjectPatch({
-      linked_accounts: didService.profile?.linkedAccounts || [],
+      linked_accounts: profile?.linkedAccounts || [],
     });
     return walletService.invoke({
       scriptHash: sanitizeHex(verifierHash),

@@ -42,6 +42,8 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   assert.match(source, /fetchUnifiedVerifierState/);
   assert.match(source, /requestRecoveryTicket/);
   assert.match(source, /requestActionSession/);
+  assert.doesNotMatch(source, /from ['"]@\/services\/didService['"]/);
+  assert.match(source, /connectedDidProfile/);
   assert.match(proxy, /Unsupported Morpheus NeoDID action/);
   assert.match(proxy, /normalized === 'resolve'/);
   assert.match(keyProxy, /oracle\/public-key/);
@@ -80,7 +82,9 @@ test('main layout and home workspace expose a DID connection path', () => {
   assert.match(layout, /ConnectionControls/);
   assert.match(controls, /Open Identity/);
   assert.match(controls, /Disconnect Web3Auth/);
-  assert.match(controls, /useDidConnection/);
+  assert.match(controls, /connectedDidProfile/);
+  assert.match(controls, /hydrateConnectedDidProfileFromStorage/);
+  assert.match(controls, /await import\('\@\/services\/didService'\)/);
   assert.match(workspace, /useDidConnection/);
   assert.match(workspace, /didConnection/);
   assert.match(workspace, /connectDid\(/);

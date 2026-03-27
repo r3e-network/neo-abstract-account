@@ -48,9 +48,11 @@
 </template>
 
 <script setup>
-import { useDidConnection } from '@/composables/useDidConnection';
+import { computed, onMounted } from 'vue';
 import { useWalletConnection } from '@/composables/useWalletConnection';
+import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { useI18n } from '@/i18n';
+import { connectedDidProfile, hydrateConnectedDidProfileFromStorage } from '@/utils/did';
 
 defineProps({
   compact: {
@@ -61,11 +63,22 @@ defineProps({
 
 const { isConnected, truncatedAddress, connect, disconnect, isConnecting: isWalletConnecting } =
   useWalletConnection();
-const {
-  isConfigured: didAvailable,
-  isConnected: didConnected,
-  shortDid: didShort,
-  disconnectDid,
-} = useDidConnection();
 const { t } = useI18n();
+
+const didAvailable = computed(() => Boolean(String(RUNTIME_CONFIG.web3AuthClientId || '').trim()));
+const didConnected = computed(() => Boolean(connectedDidProfile.value?.did));
+const didShort = computed(() => {
+  const did = connectedDidProfile.value?.did || '';
+  if (!did) return '';
+  return did.length > 26 ? `${did.slice(0, 18)}...${did.slice(-6)}` : did;
+});
+
+onMounted(() => {
+  hydrateConnectedDidProfileFromStorage();
+});
+
+async function disconnectDid() {
+  const { didService } = await import('@/services/didService');
+  await didService.disconnect();
+}
 </script>

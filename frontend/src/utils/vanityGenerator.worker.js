@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { ripemd160, sha256 } from 'ethers';
 import { EC } from '../config/errorCodes.js';
 
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -33,14 +33,14 @@ function concatBytes(...chunks) {
 }
 
 function doubleSha256Bytes(bytes) {
-  const h1 = hexToBytes(ethers.sha256(bytes));
-  return hexToBytes(ethers.sha256(h1));
+  const h1 = hexToBytes(sha256(bytes));
+  return hexToBytes(sha256(h1));
 }
 
 function hash160Hex(hexValue) {
   const bytes = hexToBytes(hexValue);
-  const sha = hexToBytes(ethers.sha256(bytes));
-  return sanitizeHex(ethers.ripemd160(sha));
+  const sha = hexToBytes(sha256(bytes));
+  return sanitizeHex(ripemd160(sha));
 }
 
 function reverseHex(hexValue) {

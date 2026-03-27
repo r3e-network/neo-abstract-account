@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { Signature, SigningKey, TypedDataEncoder, keccak256, toUtf8Bytes } from 'ethers';
 import { EC } from '../../config/errorCodes.js';
 import { sanitizeHex } from '../../utils/hex.js';
 
@@ -120,7 +120,7 @@ export function buildMetaTransactionTypedData({
     message: {
       accountAddress: `0x${sanitizeHex(accountAddressScriptHash)}`,
       targetContract: `0x${sanitizeHex(targetContract)}`,
-      methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method || ''))),
+      methodHash: keccak256(toUtf8Bytes(String(method || ''))),
       argsHash: `0x${sanitizeHex(argsHashHex)}`,
       nonce: String(nonce),
       deadline: String(deadline),
@@ -321,11 +321,11 @@ export function buildExecuteUnifiedByAddressInvocation({
 }
 
 export function toCompactEcdsaSignature(signature) {
-  const parsed = ethers.Signature.from(signature);
+  const parsed = Signature.from(signature);
   return `${sanitizeHex(parsed.r)}${sanitizeHex(parsed.s)}`;
 }
 
 export function recoverPublicKeyFromTypedDataSignature({ typedData, signature } = {}) {
-  const digest = ethers.TypedDataEncoder.hash(typedData.domain, typedData.types, typedData.message);
-  return ethers.SigningKey.recoverPublicKey(digest, signature);
+  const digest = TypedDataEncoder.hash(typedData.domain, typedData.types, typedData.message);
+  return SigningKey.recoverPublicKey(digest, signature);
 }
