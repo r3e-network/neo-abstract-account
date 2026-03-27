@@ -65,7 +65,7 @@ export default async function handler(req, res) {
   }
 
   const jwksUrl = trim(process.env.WEB3AUTH_JWKS_URL || 'https://api-auth.web3auth.io/.well-known/jwks.json');
-  const clientId = trim(process.env.VITE_WEB3AUTH_CLIENT_ID || process.env.WEB3AUTH_CLIENT_ID || '');
+  const clientId = trim(process.env.WEB3AUTH_CLIENT_ID || process.env.VITE_WEB3AUTH_CLIENT_ID || '');
   if (!clientId) {
     return res.status(500).json({ error: 'WEB3AUTH_CLIENT_ID is not configured' });
   }

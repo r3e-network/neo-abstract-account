@@ -67,6 +67,7 @@ test('did verification api validates Web3Auth tokens against JWKS', () => {
   assert.match(source, /createRemoteJWKSet/);
   assert.match(source, /jwtVerify/);
   assert.match(source, /WEB3AUTH_JWKS_URL/);
+  assert.match(source, /WEB3AUTH_CLIENT_ID \|\| process\.env\.VITE_WEB3AUTH_CLIENT_ID/);
   assert.match(source, /provider:\s*'web3auth'/);
 });
 
