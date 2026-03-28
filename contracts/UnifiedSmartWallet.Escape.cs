@@ -34,6 +34,7 @@ namespace AbstractAccount
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
             Storage.Put(Storage.CurrentContext, escapeKey, Runtime.Time);
+            OnEscapeInitiated?.Invoke(accountId, state.BackupOwner);
         }
 
         /// <summary>
@@ -47,6 +48,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(Runtime.Time >= state.EscapeTriggeredAt + state.EscapeTimelock, "Timelock active");
             ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Only backup owner can finalize");
 
+            UInt160 previousVerifier = state.Verifier;
             state.Verifier = newVerifier;
             state.EscapeTriggeredAt = 0;
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
@@ -54,6 +56,28 @@ namespace AbstractAccount
 
             byte[] escapeKey = Helper.Concat(Prefix_EscapeLastInitiated, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, escapeKey);
+
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId));
+            if (previousVerifier != newVerifier)
+            {
+                if (newVerifier == UInt160.Zero)
+                {
+                    if (previousVerifier != UInt160.Zero)
+                    {
+                        OnModuleRemoved?.Invoke(accountId, ModuleTypeVerifier, previousVerifier);
+                    }
+                }
+                else if (previousVerifier == UInt160.Zero)
+                {
+                    OnModuleInstalled?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+                }
+                else
+                {
+                    OnModuleUpdateConfirmed?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+                }
+            }
+            OnEscapeFinalized?.Invoke(accountId, newVerifier);
         }
     }
 }

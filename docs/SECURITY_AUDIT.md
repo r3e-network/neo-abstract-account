@@ -4,7 +4,7 @@ _Date:_ March 11, 2026
 
 ## Summary
 
-This document records a focused static security audit of the Neo Abstract Account system and its recovery verifier contracts, together with the fixes applied during remediation.
+This document records a focused static security audit of an earlier Neo Abstract Account contract generation together with the fixes applied during remediation. The current production runtime is `UnifiedSmartWalletV3`; this audit is retained as historical security context rather than as the sole description of the current system.
 
 The audit concentrated on the following areas:
 
@@ -22,14 +22,7 @@ This was a source-level audit and regression-hardening exercise. It was not a fo
 
 ### Core Contract
 
-- `contracts/AbstractAccount.cs`
-- `contracts/AbstractAccount.AccountLifecycle.cs`
-- `contracts/AbstractAccount.StorageAndContext.cs`
-- `contracts/AbstractAccount.ExecutionAndPermissions.cs`
-- `contracts/AbstractAccount.MetaTx.cs`
-- `contracts/AbstractAccount.Admin.cs`
-- `contracts/AbstractAccount.Oracle.cs`
-- `contracts/AbstractAccount.Upgrade.cs`
+- predecessor account-abstraction runtime modules that predate `UnifiedSmartWalletV3`
 
 ### Recovery Verifiers
 
@@ -107,7 +100,7 @@ Custom verifier installation could fail at runtime or make meta-transaction auth
 **Severity:** Low
 
 **Affected file:**
-- `contracts/AbstractAccount.MetaTx.cs`
+- predecessor meta-transaction module from the pre-V3 runtime
 
 **Issue:**
 Recovered EVM signers were handed to custom verifiers without deduplication.
@@ -123,7 +116,7 @@ The built-in mixed-signature quorum check was safe, but a naive custom verifier 
 **Severity:** Medium
 
 **Affected file:**
-- `contracts/AbstractAccount.Oracle.cs`
+- predecessor oracle/recovery module from the pre-V3 runtime
 
 **Issue:**
 The dome unlock helper treated a missing oracle URL as implicitly unlocked.
@@ -139,7 +132,7 @@ Operators could believe dome recovery was oracle-gated while actually enabling t
 **Severity:** Medium
 
 **Affected file:**
-- `contracts/AbstractAccount.StorageAndContext.cs`
+- predecessor storage/context module from the pre-V3 runtime
 
 **Issue:**
 Account creation silently appended `tx.Sender` to the admin set even when administrators were explicitly provided.
@@ -156,7 +149,7 @@ In sponsored or delegated creation flows, the creator could gain persistent admi
 **Severity:** Informational / Defense-in-depth
 
 **Affected file:**
-- `contracts/AbstractAccount.StorageAndContext.cs`
+- predecessor storage/context module from the pre-V3 runtime
 
 **Issue:**
 Proxy-witness verification previously accepted any hardened single-self-call script shape, not only the intended AA execution wrappers.
@@ -172,9 +165,7 @@ While most sensitive methods still performed their own authorization checks, the
 
 ### Core Wallet
 
-- `contracts/AbstractAccount.MetaTx.cs`
-- `contracts/AbstractAccount.Oracle.cs`
-- `contracts/AbstractAccount.StorageAndContext.cs`
+- predecessor account-abstraction runtime modules later superseded by `UnifiedSmartWalletV3`
 
 ### Recovery Verifiers
 
@@ -195,7 +186,7 @@ While most sensitive methods still performed their own authorization checks, the
 The following commands were used to verify the remediated state:
 
 ```bash
-cd contracts && dotnet build AbstractAccount.csproj -nologo
+dotnet build neo-abstract-account.sln -c Release --nologo
 cd contracts/recovery && dotnet build ArgentRecoveryVerifier.csproj -nologo
 cd contracts/recovery && dotnet build SafeRecoveryVerifier.csproj -nologo
 cd contracts/recovery && dotnet build LoopringRecoveryVerifier.csproj -nologo
@@ -220,7 +211,7 @@ cd sdk/js && node --test tests/securityAudit.unit.test.js tests/contractArtifact
 
 ## Current Security Posture
 
-After the fixes described here, all identified issues from this audit pass have been remediated and regression-tested. The remaining recommended next steps are:
+After the fixes described here, all identified issues from this audit pass were remediated for that contract generation. For the current V3 runtime, this document should be read alongside the active architecture, plugin-matrix, and relay-validation docs. The remaining recommended next steps are:
 
 - external third-party review,
 - broader property-based / adversarial test coverage,

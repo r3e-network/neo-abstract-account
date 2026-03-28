@@ -121,6 +121,31 @@ test('normalizeRelayPreflightResult preserves returned stack items for inspectio
   assert.deepEqual(result.stack, [{ type: 'Integer', value: '1' }, { type: 'ByteString', value: 'YWJjZA==' }]);
 });
 
+test('normalizeRelayPreflightResult preserves structured validation preview details', () => {
+  const result = normalizeRelayPreflightResult({
+    simulate: true,
+    ok: true,
+    vmState: 'HALT',
+    gasConsumed: '42',
+    operation: 'executeUserOp',
+    validationPreview: {
+      deadlineValid: true,
+      nonceAcceptable: false,
+      hasVerifier: true,
+      verifier: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+      hook: '1111111111111111111111111111111111111111',
+    },
+  });
+
+  assert.deepEqual(result.validationPreview, {
+    deadlineValid: true,
+    nonceAcceptable: false,
+    hasVerifier: true,
+    verifier: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+    hook: '1111111111111111111111111111111111111111',
+  });
+});
+
 test('relay preflight payloads are exportable for draft metadata persistence', () => {
   const result = normalizeRelayPreflightResult({
     simulate: true,
@@ -147,6 +172,13 @@ test('runRelayPreflight submits simulate requests through the relay transport', 
         gasConsumed: '77',
         operation: 'executeUnifiedByAddress',
         stack: [{ type: 'Integer', value: '1' }],
+        validationPreview: {
+          deadlineValid: true,
+          nonceAcceptable: true,
+          hasVerifier: true,
+          verifier: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+          hook: '0000000000000000000000000000000000000000',
+        },
       };
     },
   };
@@ -174,4 +206,5 @@ test('runRelayPreflight submits simulate requests through the relay transport', 
   assert.equal(result.operation, 'executeUnifiedByAddress');
   assert.equal(result.gasConsumed, '77');
   assert.deepEqual(result.stack, [{ type: 'Integer', value: '1' }]);
+  assert.equal(result.validationPreview?.hasVerifier, true);
 });

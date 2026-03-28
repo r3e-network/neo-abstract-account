@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.7.5" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.8.1" />
   </ItemGroup>
 
   <ItemGroup>

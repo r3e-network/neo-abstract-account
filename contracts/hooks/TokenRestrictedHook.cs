@@ -16,7 +16,8 @@ namespace AbstractAccount.Hooks
     /// the rest of the AA account remains broadly usable.
     /// </remarks>
     [DisplayName("TokenRestrictedHook")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canExecuteHook")]
+    [ContractPermission("*", "canConfigureHook")]
     [ManifestExtra("Description", "Hook to restrict interacting with specific high-value tokens")]
     public class TokenRestrictedHook : SmartContract
     {

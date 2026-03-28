@@ -162,6 +162,47 @@ function buildInvocationScript({ invocation, sc, u }) {
   });
 }
 
+function decodeHash160Stack(item) {
+  if (!item || typeof item !== 'object') return '';
+  if (item.type === 'Hash160' && item.value) return sanitizeHex(item.value);
+  if (item.type === 'ByteString' && item.value) return sanitizeHex(Buffer.from(item.value, 'base64').toString('hex'));
+  return '';
+}
+
+function decodeValidationPreviewStack(item) {
+  const values = item?.type === 'Array' && Array.isArray(item.value) ? item.value : [];
+  return {
+    deadlineValid: values?.[0]?.value === true || values?.[0]?.value === 1 || values?.[0]?.value === '1',
+    nonceAcceptable: values?.[1]?.value === true || values?.[1]?.value === 1 || values?.[1]?.value === '1',
+    hasVerifier: values?.[2]?.value === true || values?.[2]?.value === 1 || values?.[2]?.value === '1',
+    verifier: decodeHash160Stack(values?.[3]),
+    hook: decodeHash160Stack(values?.[4]),
+  };
+}
+
+async function fetchValidationPreview({ rpcUrl, invocation }) {
+  if (invocation?.operation !== 'executeUserOp') return null;
+  if (!Array.isArray(invocation?.args) || invocation.args.length < 2) return null;
+
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'invokefunction',
+      params: [
+        invocation.scriptHash,
+        'previewUserOpValidation',
+        [invocation.args[0], invocation.args[1]],
+      ],
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (payload?.error || payload?.result?.state === 'FAULT') return null;
+  return decodeValidationPreviewStack(payload?.result?.stack?.[0]);
+}
+
 function resolveInvocationSigners({ account, tx }) {
   return [{ account: account.scriptHash, scopes: tx.WitnessScope.CalledByEntry }];
 }
@@ -170,6 +211,7 @@ async function simulateMetaInvocation({ rpcUrl, relayWif, invocation }) {
   const { rpc, tx, sc, u, rpcClient, account } = loadRelayInvocationContext({ rpcUrl, relayWif });
   const signers = resolveInvocationSigners({ account, tx });
   const script = buildInvocationScript({ invocation, sc, u });
+  const validationPreview = await fetchValidationPreview({ rpcUrl, invocation });
 
   const simulation = await rpcClient.invokeScript(u.HexString.fromHex(script), signers);
   if (simulation?.state === 'FAULT') {
@@ -181,6 +223,7 @@ async function simulateMetaInvocation({ rpcUrl, relayWif, invocation }) {
       exception: simulation.exception || 'VM fault',
       operation: invocation.operation,
       gasConsumed: simulation?.gasconsumed || '0',
+      validationPreview,
     };
   }
 
@@ -191,6 +234,7 @@ async function simulateMetaInvocation({ rpcUrl, relayWif, invocation }) {
     gasConsumed: simulation?.gasconsumed || '0',
     operation: invocation.operation,
     stack: simulation?.stack || [],
+    validationPreview,
   };
 }
 

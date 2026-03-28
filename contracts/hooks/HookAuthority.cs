@@ -78,6 +78,13 @@ namespace AbstractAccount.Hooks
             ExecutionEngine.Assert(authorized, "Unauthorized");
         }
 
+        internal static void RotateAdmin(UInt160 newAdmin)
+        {
+            ValidateAdmin();
+            ExecutionEngine.Assert(newAdmin != null && newAdmin.IsValid, "Invalid admin");
+            Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin!);
+        }
+
         private static void ValidateAdmin()
         {
             UInt160 admin = Admin();

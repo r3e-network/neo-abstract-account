@@ -4,6 +4,7 @@ obj/
 .env
 .idea/
 .vscode/
+.claude/
 dist/
 .serena/
 tests/.env.testnet

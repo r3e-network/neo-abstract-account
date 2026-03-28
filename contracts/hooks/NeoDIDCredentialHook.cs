@@ -17,7 +17,9 @@ namespace AbstractAccount.Hooks
     /// hook enforces those flags at execution time.
     /// </remarks>
     [DisplayName("NeoDIDCredentialHook")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canExecuteHook")]
+    [ContractPermission("*", "canConfigureHook")]
+    [ContractPermission("*", "getBinding")]
     [ManifestExtra("Description", "NeoDID Credential Check Hook")]
     public class NeoDIDCredentialHook : SmartContract
     {

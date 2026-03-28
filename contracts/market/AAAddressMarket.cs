@@ -36,14 +36,14 @@ namespace AbstractAccount.Market
         public class Listing
         {
             public BigInteger Id;
-            public UInt160 AAContract;
-            public UInt160 AccountId;
-            public UInt160 Seller;
+            public UInt160 AAContract = UInt160.Zero;
+            public UInt160 AccountId = UInt160.Zero;
+            public UInt160 Seller = UInt160.Zero;
             public BigInteger Price;
-            public string Title;
-            public string MetadataUri;
+            public string Title = string.Empty;
+            public string MetadataUri = string.Empty;
             public byte Status;
-            public UInt160 Buyer;
+            public UInt160 Buyer = UInt160.Zero;
             public BigInteger CreatedAt;
             public BigInteger UpdatedAt;
         }
@@ -55,15 +55,15 @@ namespace AbstractAccount.Market
             ExecutionEngine.Assert(price > 0, "Price must be positive");
             ValidateListingText(title, metadataUri);
 
-            UInt160 seller = RequireBackupOwner(aaContract, accountId);
+            UInt160 seller = RequireBackupOwner(aaContract!, accountId!);
             ExecutionEngine.Assert(Runtime.CheckWitness(seller), "Seller witness required");
 
             BigInteger listingId = AllocateListingId();
             Listing listing = new Listing
             {
                 Id = listingId,
-                AAContract = aaContract,
-                AccountId = accountId,
+                AAContract = aaContract!,
+                AccountId = accountId!,
                 Seller = seller,
                 Price = price,
                 Title = title ?? "",
@@ -74,7 +74,7 @@ namespace AbstractAccount.Market
                 UpdatedAt = Runtime.Time
             };
 
-            Contract.Call(aaContract, "enterMarketEscrow", CallFlags.All, new object[] { accountId, Runtime.ExecutingScriptHash, listingId });
+            Contract.Call(aaContract!, "enterMarketEscrow", CallFlags.All, new object[] { accountId!, Runtime.ExecutingScriptHash, listingId });
             PutListing(listing);
         }
 
@@ -108,25 +108,25 @@ namespace AbstractAccount.Market
             Listing listing = GetExistingListing(listingId);
             ExecutionEngine.Assert(listing.Status == StatusActive, "Listing not active");
             ExecutionEngine.Assert(payer != null && payer != UInt160.Zero, "Payer required");
-            ExecutionEngine.Assert(Runtime.CheckWitness(payer), "Payer witness required");
+            ExecutionEngine.Assert(Runtime.CheckWitness(payer!), "Payer witness required");
             ExecutionEngine.Assert(newBackupOwner != null && newBackupOwner != UInt160.Zero, "New backup owner required");
 
-            BigInteger pendingPayment = GetPendingPayment(listingId, payer);
+            BigInteger pendingPayment = GetPendingPayment(listingId, payer!);
             ExecutionEngine.Assert(pendingPayment == listing.Price, "Pending payment mismatch");
-            ClearPendingPayment(listingId, payer);
+            ClearPendingPayment(listingId, payer!);
 
             ExecutionEngine.Assert(
-                GAS.Transfer(Runtime.ExecutingScriptHash, listing.Seller, listing.Price, null),
+                GAS.Transfer(Runtime.ExecutingScriptHash, listing.Seller, listing.Price, (ByteString)new byte[0]),
                 "Seller payout failed");
 
             Contract.Call(
                 listing.AAContract,
                 "settleMarketEscrow",
                 CallFlags.All,
-                new object[] { listing.AccountId, listingId, newBackupOwner });
+                new object[] { listing.AccountId, listingId, newBackupOwner! });
 
             listing.Status = StatusSold;
-            listing.Buyer = payer;
+            listing.Buyer = payer!;
             listing.UpdatedAt = Runtime.Time;
             PutListing(listing);
         }
@@ -134,14 +134,14 @@ namespace AbstractAccount.Market
         public static void RefundPendingPayment(BigInteger listingId, UInt160 payer)
         {
             ExecutionEngine.Assert(payer != null && payer != UInt160.Zero, "Payer required");
-            ExecutionEngine.Assert(Runtime.CheckWitness(payer), "Payer witness required");
+            ExecutionEngine.Assert(Runtime.CheckWitness(payer!), "Payer witness required");
 
-            BigInteger pendingPayment = GetPendingPayment(listingId, payer);
+            BigInteger pendingPayment = GetPendingPayment(listingId, payer!);
             ExecutionEngine.Assert(pendingPayment > 0, "No pending payment");
 
-            ClearPendingPayment(listingId, payer);
+            ClearPendingPayment(listingId, payer!);
             ExecutionEngine.Assert(
-                GAS.Transfer(Runtime.ExecutingScriptHash, payer, pendingPayment, null),
+                GAS.Transfer(Runtime.ExecutingScriptHash, payer!, pendingPayment, (ByteString)new byte[0]),
                 "Refund failed");
         }
 
@@ -169,7 +169,7 @@ namespace AbstractAccount.Market
         [Safe]
         public static BigInteger GetListingCount()
         {
-            ByteString current = Storage.Get(Storage.CurrentContext, Prefix_NextListingId);
+            ByteString? current = Storage.Get(Storage.CurrentContext, Prefix_NextListingId);
             if (current == null) return 0;
             BigInteger next = (BigInteger)current;
             return next <= 1 ? 0 : next - 1;
@@ -178,10 +178,10 @@ namespace AbstractAccount.Market
         [Safe]
         public static object[] GetListing(BigInteger listingId)
         {
-            ByteString data = Storage.Get(Storage.CurrentContext, ListingKey(listingId));
+            ByteString? data = Storage.Get(Storage.CurrentContext, ListingKey(listingId));
             if (data == null) return new object[] { };
 
-            Listing listing = (Listing)StdLib.Deserialize(data);
+            Listing listing = (Listing)StdLib.Deserialize(data!);
             return new object[]
             {
                 listing.Id,
@@ -214,15 +214,14 @@ namespace AbstractAccount.Market
 
         private static UInt160 RequireBackupOwner(UInt160 aaContract, UInt160 accountId)
         {
-            object owner = Contract.Call(aaContract, "getBackupOwner", CallFlags.ReadOnly, new object[] { accountId });
-            UInt160 backupOwner = (UInt160)owner;
+            UInt160 backupOwner = (UInt160)Contract.Call(aaContract, "getBackupOwner", CallFlags.ReadOnly, new object[] { accountId });
             ExecutionEngine.Assert(backupOwner != null && backupOwner != UInt160.Zero, "Backup owner not configured");
-            return backupOwner;
+            return backupOwner!;
         }
 
         private static BigInteger AllocateListingId()
         {
-            ByteString current = Storage.Get(Storage.CurrentContext, Prefix_NextListingId);
+            ByteString? current = Storage.Get(Storage.CurrentContext, Prefix_NextListingId);
             BigInteger next = current == null ? 1 : (BigInteger)current;
             Storage.Put(Storage.CurrentContext, Prefix_NextListingId, next + 1);
             return next;
@@ -230,9 +229,9 @@ namespace AbstractAccount.Market
 
         private static Listing GetExistingListing(BigInteger listingId)
         {
-            ByteString data = Storage.Get(Storage.CurrentContext, ListingKey(listingId));
+            ByteString? data = Storage.Get(Storage.CurrentContext, ListingKey(listingId));
             ExecutionEngine.Assert(data != null, "Listing not found");
-            return (Listing)StdLib.Deserialize(data);
+            return (Listing)StdLib.Deserialize(data!);
         }
 
         private static void PutListing(Listing listing)
@@ -258,7 +257,7 @@ namespace AbstractAccount.Market
 
         private static BigInteger GetPendingPayment(BigInteger listingId, UInt160 payer)
         {
-            ByteString pending = Storage.Get(Storage.CurrentContext, PendingPaymentKey(listingId, payer));
+            ByteString? pending = Storage.Get(Storage.CurrentContext, PendingPaymentKey(listingId, payer));
             return pending == null ? 0 : (BigInteger)pending;
         }
 
@@ -277,11 +276,16 @@ namespace AbstractAccount.Market
                 return bigInteger;
             }
 
-            ByteString raw = (ByteString)data;
-            ExecutionEngine.Assert(raw != null && raw.Length > 0, "Listing id required");
-            BigInteger listingId = (BigInteger)raw;
-            ExecutionEngine.Assert(listingId > 0, "Listing id required");
-            return listingId;
+            if (data is ByteString raw)
+            {
+                ExecutionEngine.Assert(raw.Length > 0, "Listing id required");
+                BigInteger listingId = (BigInteger)raw;
+                ExecutionEngine.Assert(listingId > 0, "Listing id required");
+                return listingId;
+            }
+
+            ExecutionEngine.Assert(false, "Listing id required");
+            return 0;
         }
     }
 }

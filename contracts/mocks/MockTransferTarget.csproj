@@ -5,17 +5,18 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <RunNccsAfterBuild>false</RunNccsAfterBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.7.5" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.8.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="MockTransferTarget.cs" />
   </ItemGroup>
 
-  <Target Name="CompileSmartContract" AfterTargets="Build">
+  <Target Name="CompileSmartContract" AfterTargets="Build" Condition="'$(RunNccsAfterBuild)' == 'true'">
     <Message Text="Compiling Neo smart contract: MockTransferTarget.cs" Importance="high" />
     <Exec Command="nccs ./MockTransferTarget.csproj -o ../bin/v3" WorkingDirectory="$(ProjectDir)" />
   </Target>

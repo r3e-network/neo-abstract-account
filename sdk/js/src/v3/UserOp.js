@@ -1,52 +1,33 @@
 const { ethers } = require('ethers');
+// DEPRECATED: Use buildV3UserOperationTypedData from '../metaTx.js' instead.
+// This file is retained only for backward compatibility.
+const { buildV3UserOperationTypedData } = require('../metaTx');
 
-// Helper to build V3 UserOperation payload for Neo N3 Smart Contract Execution
+function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountId, userOp, argsHash }) {
+  console.warn('buildEIP712PayloadForWeb3AuthVerifier is deprecated. Use buildV3UserOperationTypedData from metaTx.js instead.');
+  const resolvedArgsHash = argsHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(userOp.Args || [])));
+  return buildV3UserOperationTypedData({
+    chainId,
+    verifyingContract: verifierHash,
+    accountIdHash: accountId,
+    targetContract: userOp.TargetContract,
+    method: userOp.Method,
+    argsHashHex: resolvedArgsHash,
+    nonce: userOp.Nonce,
+    deadline: userOp.Deadline,
+  });
+}
+
 function buildV3UserOp({ targetContract, method, args, nonce, deadline }) {
+  console.warn('buildV3UserOp is deprecated. Construct the UserOp object directly.');
   return {
     TargetContract: targetContract,
     Method: method,
     Args: args,
     Nonce: nonce,
     Deadline: deadline,
-    Signature: ""
+    Signature: '',
   };
 }
 
-function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountId, userOp, argsHash }) {
-  // Matches the Web3AuthVerifier struct hashing logic
-  const domain = {
-    name: "Neo N3 Abstract Account",
-    version: "1",
-    chainId: chainId,
-    verifyingContract: verifierHash,
-  };
-
-  const types = {
-    UserOperation: [
-      { name: 'accountId', type: 'bytes20' }, // Actually UInt160 length, so 20 bytes
-      { name: 'targetContract', type: 'address' },
-      { name: 'method', type: 'string' },
-      { name: 'argsHash', type: 'bytes32' },
-      { name: 'nonce', type: 'uint256' },
-      { name: 'deadline', type: 'uint256' }
-    ],
-  };
-
-  const resolvedArgsHash = argsHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(userOp.Args)));
-
-  const message = {
-    accountId: `0x${accountId}`,
-    targetContract: `0x${userOp.TargetContract}`,
-    method: userOp.Method,
-    argsHash: resolvedArgsHash,
-    nonce: userOp.Nonce,
-    deadline: userOp.Deadline
-  };
-
-  return { domain, types, message };
-}
-
-module.exports = {
-  buildV3UserOp,
-  buildEIP712PayloadForWeb3AuthVerifier
-};
+module.exports = { buildEIP712PayloadForWeb3AuthVerifier, buildV3UserOp };

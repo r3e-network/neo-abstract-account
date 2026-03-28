@@ -11,9 +11,9 @@ const DEFAULT_OPERATOR_MUTATION_ENDPOINT = '/api/draft-operator';
 function getStorage(storage) {
   if (storage) return storage;
   try {
-    return globalThis.localStorage || null;
+    return globalThis.sessionStorage || null;
   } catch (err) {
-    if (import.meta.env.DEV) console.warn('[operatorMutationTransport] localStorage access denied:', err?.message);
+    if (import.meta.env.DEV) console.warn('[operatorMutationTransport] sessionStorage access denied:', err?.message);
     return null;
   }
 }

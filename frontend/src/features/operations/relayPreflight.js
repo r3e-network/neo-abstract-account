@@ -11,6 +11,10 @@ export function buildRelayPreflightRequest({ relayEndpoint = '', relayPayloadMod
 export function normalizeRelayPreflightResult(payload = {}, payloadMode = 'best', t) {
   const fallbackT = typeof t === 'function' ? t : (_key, fb) => fb;
   const stack = Array.isArray(payload?.stack) ? payload.stack : [];
+  const validationPreview = payload?.validationPreview && typeof payload.validationPreview === 'object'
+    ? payload.validationPreview
+    : null;
+  const optionalPreview = validationPreview ? { validationPreview } : {};
 
   if (payload?.supported === false || payload?.code === 'simulation_not_supported_for_raw') {
     return {
@@ -25,6 +29,7 @@ export function normalizeRelayPreflightResult(payload = {}, payloadMode = 'best'
       exception: '',
       supported: false,
       stack,
+      ...optionalPreview,
     };
   }
 
@@ -41,6 +46,7 @@ export function normalizeRelayPreflightResult(payload = {}, payloadMode = 'best'
       exception: '',
       supported: true,
       stack,
+      ...optionalPreview,
     };
   }
 
@@ -56,6 +62,7 @@ export function normalizeRelayPreflightResult(payload = {}, payloadMode = 'best'
     exception: String(payload?.exception || payload?.message || ''),
     supported: payload?.supported !== false,
     stack,
+    ...optionalPreview,
   };
 }
 

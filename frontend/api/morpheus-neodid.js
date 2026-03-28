@@ -1,4 +1,5 @@
 import { resolveMorpheusRuntimeBase } from './morpheus-base.js';
+import { checkRateLimit } from './rateLimiter.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -17,6 +18,13 @@ function resolvePath(action) {
 }
 
 export default async function handler(req, res) {
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+  const rateLimit = await checkRateLimit(clientIp);
+  if (!rateLimit.allowed) {
+    res.setHeader('Retry-After', String(rateLimit.retryAfter || 60));
+    return res.status(429).json({ error: 'Rate limit exceeded' });
+  }
+
   const action = req.method === 'GET' ? req.query?.action : req.body?.action;
   const route = resolvePath(action);
   if (!route) {

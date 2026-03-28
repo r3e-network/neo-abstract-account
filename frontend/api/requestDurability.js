@@ -102,7 +102,6 @@ function deriveRequestId(req, payload = {}) {
 
 function deriveIdempotencyKey(req, payload = {}, fingerprint = null) {
   const explicit = deriveHeader(req, ['idempotency-key', 'x-idempotency-key']);
-  if (explicit) return explicit;
 
   const payloadKey = trimString(
     payload.idempotency_key
@@ -113,9 +112,16 @@ function deriveIdempotencyKey(req, payload = {}, fingerprint = null) {
       || payload.requestId
       || ''
   );
-  if (payloadKey) return payloadKey;
 
-  if (fingerprint) return sha256Hex(fingerprint);
+  // Always incorporate the payload fingerprint into the idempotency key so that
+  // the same user-supplied key with a different payload produces a different
+  // cache entry, preventing cached-response confusion attacks.
+  const fpHash = fingerprint ? sha256Hex(fingerprint) : '';
+
+  const userKey = explicit || payloadKey;
+  if (userKey && fpHash) return sha256Hex(userKey + ':' + fpHash);
+  if (userKey) return userKey;
+  if (fpHash) return fpHash;
   return '';
 }
 

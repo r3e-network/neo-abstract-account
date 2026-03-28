@@ -52,6 +52,17 @@ export function decodeHash160Stack(item) {
   return '';
 }
 
+export function decodeValidationPreviewStack(item) {
+  const values = item?.type === 'Array' && Array.isArray(item.value) ? item.value : [];
+  return {
+    deadlineValid: values?.[0]?.value === true || values?.[0]?.value === 1 || values?.[0]?.value === '1',
+    nonceAcceptable: values?.[1]?.value === true || values?.[1]?.value === 1 || values?.[1]?.value === '1',
+    hasVerifier: values?.[2]?.value === true || values?.[2]?.value === 1 || values?.[2]?.value === '1',
+    verifier: decodeHash160Stack(values?.[3]),
+    hook: decodeHash160Stack(values?.[4]),
+  };
+}
+
 export function buildV3UserOperationTypedData({
   chainId,
   verifyingContract,
@@ -227,6 +238,47 @@ export async function fetchV3Verifier({
   }
 
   return decodeHash160Stack(result?.stack?.[0]);
+}
+
+export async function fetchV3ValidationPreview({
+  rpcUrl,
+  aaContractHash,
+  accountIdHash,
+  targetContract,
+  method,
+  args = [],
+  nonce = 0n,
+  deadline = 0,
+  fetchImpl,
+} = {}) {
+  const result = await invokeRead({
+    rpcUrl,
+    scriptHash: sanitizeHex(aaContractHash),
+    operation: 'previewUserOpValidation',
+    args: [
+      { type: 'Hash160', value: `0x${sanitizeHex(accountIdHash)}` },
+      {
+        type: 'Struct',
+        value: [
+          { type: 'Hash160', value: `0x${sanitizeHex(targetContract)}` },
+          { type: 'String', value: String(method || '') },
+          { type: 'Array', value: args },
+          { type: 'Integer', value: String(nonce) },
+          { type: 'Integer', value: String(deadline) },
+          { type: 'ByteArray', value: '0x' },
+        ],
+      },
+    ],
+    fetchImpl,
+  });
+
+  if (result?.state === 'FAULT') {
+    const err = new Error(EC.metaTxVerifierFailed);
+    err.rpcDetail = result.exception;
+    throw err;
+  }
+
+  return decodeValidationPreviewStack(result?.stack?.[0]);
 }
 
 export async function assertV3AccountExists({

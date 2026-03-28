@@ -20,6 +20,12 @@ function buildMetaTransactionTypedData({
   nonce,
   deadline,
 }) {
+  if (nonce == null) throw new Error('nonce is required for EIP-712 payload');
+  if (deadline == null) throw new Error('deadline is required for EIP-712 payload');
+  const sanitized = sanitizeHex(argsHashHex);
+  if (sanitized.length !== 64) {
+    throw new Error(`argsHash must be 32 bytes (64 hex chars), got ${sanitized.length} hex chars`);
+  }
   return {
     domain: {
       name: 'Neo N3 Abstract Account',
@@ -58,6 +64,12 @@ function buildV3UserOperationTypedData({
   nonce,
   deadline,
 }) {
+  if (nonce == null) throw new Error('nonce is required for EIP-712 payload');
+  if (deadline == null) throw new Error('deadline is required for EIP-712 payload');
+  const sanitized = sanitizeHex(argsHashHex);
+  if (sanitized.length !== 64) {
+    throw new Error(`argsHash must be 32 bytes (64 hex chars), got ${sanitized.length} hex chars`);
+  }
   return {
     domain: {
       name: 'Neo N3 Abstract Account',

@@ -8,6 +8,7 @@ import {
   buildMetaTransactionTypedData,
   buildV3UserOperationTypedData,
   computeArgsHash,
+  fetchV3ValidationPreview,
   fetchNonceForAddress,
   fetchV3Verifier,
   fetchV3Nonce,
@@ -228,6 +229,53 @@ test('fetchV3Verifier reads the bound verifier for a V3 account id', async () =>
   });
 
   assert.equal(verifierHash, '49c095ce04d38642e39155f5481615c58227a498');
+});
+
+test('fetchV3ValidationPreview reads the structured validation preview for a user operation', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push([url, JSON.parse(options.body)]);
+    return {
+      async json() {
+        return {
+          result: {
+            state: 'HALT',
+            stack: [{
+              type: 'Array',
+              value: [
+                { type: 'Boolean', value: true },
+                { type: 'Boolean', value: true },
+                { type: 'Boolean', value: false },
+                { type: 'Hash160', value: '0x0000000000000000000000000000000000000000' },
+                { type: 'Hash160', value: '0x2222222222222222222222222222222222222222' },
+              ],
+            }],
+          },
+        };
+      },
+    };
+  };
+
+  const preview = await fetchV3ValidationPreview({
+    rpcUrl: 'https://rpc.example.org',
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    targetContract: '49c095ce04d38642e39155f5481615c58227a498',
+    method: 'transfer',
+    args: [{ type: 'String', value: 'ok' }],
+    nonce: 9n,
+    deadline: 1710001234,
+    fetchImpl,
+  });
+
+  assert.deepEqual(preview, {
+    deadlineValid: true,
+    nonceAcceptable: true,
+    hasVerifier: false,
+    verifier: '0000000000000000000000000000000000000000',
+    hook: '2222222222222222222222222222222222222222',
+  });
+  assert.equal(calls[0][1].params[1], 'previewUserOpValidation');
 });
 
 test('buildExecuteUserOpInvocation builds V3 struct args', () => {

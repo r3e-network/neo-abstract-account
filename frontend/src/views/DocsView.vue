@@ -198,7 +198,7 @@ async function renderMermaidDiagrams() {
     try {
       const rawCode = decodeURIComponent(container.getAttribute('data-mermaid-code'));
       const { svg } = await mermaid.render(`${container.id}-svg`, rawCode);
-      container.innerHTML = sanitizeRenderedHtml(svg);
+      container.innerHTML = svg;
     } catch (err) {
       if (import.meta.env.DEV) console.error('[DocsView] Mermaid render failed:', err?.message);
       const pre = document.createElement('pre');

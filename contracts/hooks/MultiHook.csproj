@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <RunNccsAfterBuild>false</RunNccsAfterBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +17,7 @@
     <Compile Include="MultiHook.cs" />
   </ItemGroup>
 
-  <Target Name="CompileSmartContract" AfterTargets="Build">
+  <Target Name="CompileSmartContract" AfterTargets="Build" Condition="'$(RunNccsAfterBuild)' == 'true'">
     <Message Text="Compiling Neo smart contract: MultiHook.cs" Importance="high" />
     <Exec Command="nccs ./MultiHook.csproj -o ../bin/v3/hooks" WorkingDirectory="$(ProjectDir)" />
   </Target>

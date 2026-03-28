@@ -17,7 +17,9 @@ namespace AbstractAccount.Verifiers
     /// sufficient number of child verifiers approve the same user operation.
     /// </remarks>
     [DisplayName("MultiSigVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
+    [ContractPermission("*", "validateSignature")]
     [ManifestExtra("Description", "Heterogeneous Threshold Multi-Sig Verifier")]
     public class MultiSigVerifier : SmartContract
     {
@@ -43,7 +45,16 @@ namespace AbstractAccount.Verifiers
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             ExecutionEngine.Assert(threshold > 0 && threshold <= verifiers.Length, "Invalid threshold");
-            
+
+            // Reject duplicate verifiers to prevent single-signature threshold bypass
+            for (int i = 0; i < verifiers.Length; i++)
+            {
+                for (int j = i + 1; j < verifiers.Length; j++)
+                {
+                    ExecutionEngine.Assert(verifiers[i] != verifiers[j], "Duplicate verifier");
+                }
+            }
+
             MultiSigConfig config = new MultiSigConfig { Verifiers = verifiers, Threshold = threshold };
             byte[] key = Helper.Concat(Prefix_Config, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
@@ -79,9 +90,15 @@ namespace AbstractAccount.Verifiers
                         Deadline = op.Deadline,
                         Signature = (ByteString)signatures[i]
                     };
-                    
-                    bool isValid = (bool)Contract.Call(config.Verifiers[i], "validateSignature", CallFlags.ReadOnly, new object[] { accountId, subOp });
-                    if (isValid) validCount++;
+
+                    // Wrap in try-catch so a throwing child verifier doesn't block
+                    // the entire multisig when threshold can still be met
+                    try
+                    {
+                        bool isValid = (bool)Contract.Call(config.Verifiers[i], "validateSignature", CallFlags.ReadOnly, new object[] { accountId, subOp });
+                        if (isValid) validCount++;
+                    }
+                    catch { }
                 }
             }
             

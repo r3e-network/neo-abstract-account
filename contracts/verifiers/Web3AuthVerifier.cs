@@ -7,20 +7,9 @@ using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using System.ComponentModel;
 
-namespace AbstractAccount
+namespace AbstractAccount.Verifiers
 {
-    // The UserOperation struct must match the caller's struct exactly
-    public class UserOperation
-    {
-        public UInt160 TargetContract;
-        public string Method;
-        public object[] Args;
-        public BigInteger Nonce;
-        public BigInteger Deadline;
-        public ByteString Signature;
-    }
-
-    public class NativeCryptoLib
+    internal static class NativeCryptoLib
     {
         public static ByteString Keccak256(ByteString data)
         {
@@ -37,7 +26,9 @@ namespace AbstractAccount
     /// Public-key setup is still routed through the AA core authorization boundary.
     /// </remarks>
     [DisplayName("Web3AuthVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
+    [ContractPermission("*", "keccak256")]
     [ManifestExtra("Description", "EIP-712 MetaTransaction Verifier Plugin for Neo N3")]
     public class Web3AuthVerifier : SmartContract
     {
@@ -114,6 +105,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(pubKey.Length == 65, "No pubkey configured");
 
             ExecutionEngine.Assert(op.Signature != null && op.Signature.Length == 64, "Invalid signature");
+            ByteString signature = op.Signature!;
 
             byte[] structHash = BuildMetaTxStructHash(accountId, op);
             
@@ -126,7 +118,7 @@ namespace AbstractAccount
             return CryptoLib.VerifyWithECDsa(
                 (ByteString)typedDataPayload,
                 compressedPubKey,
-                op.Signature,
+                signature,
                 NamedCurveHash.secp256k1Keccak256
             );
         }

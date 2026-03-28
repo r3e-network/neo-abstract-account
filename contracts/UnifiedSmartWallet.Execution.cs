@@ -1,6 +1,7 @@
 using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 
@@ -32,6 +33,7 @@ namespace AbstractAccount
             {
                 // [ValidateUserOp phase]
                 ExecutionEngine.Assert(Runtime.Time <= op.Deadline, "UserOp expired");
+                ExecutionEngine.Assert(IsNonceAcceptable(accountId, op.Nonce), "Invalid sequence for channel");
                 ConsumeNonce(accountId, op.Nonce);
 
                 if (state.Verifier != UInt160.Zero)
@@ -55,6 +57,7 @@ namespace AbstractAccount
                     state.EscapeTriggeredAt = 0;
                     byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
                     Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+                    OnEscapeCancelled?.Invoke(accountId);
                 }
 
                 // [Hook phase] pre-execution hook
@@ -86,6 +89,7 @@ namespace AbstractAccount
                         Contract.Call(state.HookId, "postExecute", CallFlags.All, new object[] { accountId, op, result });
                     }
 
+                    OnUserOpExecuted?.Invoke(accountId, op.TargetContract, op.Method, op.Nonce);
                     return result;
                 }
                 finally
@@ -103,12 +107,32 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Read-only preview of the core validation checks for a single user operation.
+        /// This intentionally excludes signature verification and hook execution.
+        /// </summary>
+        [Safe]
+        public static object[] PreviewUserOpValidation(UInt160 accountId, UserOperation op)
+        {
+            AccountState state = GetAccountState(accountId);
+            return new object[]
+            {
+                Runtime.Time <= op.Deadline,
+                IsNonceAcceptable(accountId, op.Nonce),
+                state.Verifier != UInt160.Zero,
+                state.Verifier,
+                state.HookId
+            };
+        }
+
         // ========================================================================
         // 3.1 Intent Engine: Batch Execution
         // ========================================================================
 
         /// <summary>
-        /// Executes multiple user operations in sequence under the same account context.
+        /// Executes multiple user operations sequentially inside one Neo application invocation.
+        /// Because Neo contract execution is transactional, a failure on any operation faults
+        /// the invocation and reverts the whole batch.
         /// </summary>
         public static object[] ExecuteUserOps(UInt160 accountId, UserOperation[] ops)
         {
@@ -123,6 +147,28 @@ namespace AbstractAccount
         // ========================================================================
         // 4. Replay Protection (ERC-4337 2D Nonce spec)
         // ========================================================================
+
+        private static bool IsNonceAcceptable(UInt160 accountId, BigInteger nonce)
+        {
+            BigInteger MAX_2D_NONCE = 1_000_000_000_000_000_000;
+
+            if (nonce >= MAX_2D_NONCE)
+            {
+                byte[] saltKey = Helper.Concat(Prefix_Nonce, (byte[])accountId);
+                saltKey = Helper.Concat(saltKey, nonce.ToByteArray());
+                return Storage.Get(Storage.CurrentContext, saltKey) == null;
+            }
+
+            BigInteger channel = nonce >> 64;
+            BigInteger sequence = nonce & 0xFFFFFFFFFFFFFFFF;
+
+            byte[] key = Helper.Concat(Prefix_Nonce, (byte[])accountId);
+            key = Helper.Concat(key, channel.ToByteArray());
+
+            ByteString? currentData = Storage.Get(Storage.CurrentContext, key);
+            BigInteger currentSeq = currentData == null ? 0 : (BigInteger)currentData;
+            return sequence == currentSeq;
+        }
 
         private static void ConsumeNonce(UInt160 accountId, BigInteger nonce)
         {

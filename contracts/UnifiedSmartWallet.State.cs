@@ -10,12 +10,51 @@ namespace AbstractAccount
 {
     public partial class UnifiedSmartWallet
     {
+        private const string AccountImplementationId = "org.r3e.neo.aa.unified-smart-wallet.v3";
+
         private static AccountState GetAccountState(UInt160 accountId)
         {
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             ByteString? data = Storage.Get(Storage.CurrentContext, key);
             ExecutionEngine.Assert(data != null, "Account not found");
             return (AccountState)StdLib.Deserialize(data!);
+        }
+
+        [Safe]
+        public static string GetAccountImplementationId()
+        {
+            return AccountImplementationId;
+        }
+
+        [Safe]
+        public static bool SupportsExecutionMode(string mode)
+        {
+            return mode == "single" || mode == "batch" || mode == "batch-atomic";
+        }
+
+        [Safe]
+        public static bool SupportsModuleType(string moduleType)
+        {
+            return moduleType == "validator" || moduleType == "verifier" || moduleType == "hook";
+        }
+
+        [Safe]
+        public static bool IsModuleInstalled(UInt160 accountId, string moduleType, UInt160 moduleHash)
+        {
+            if (moduleHash == null || moduleHash == UInt160.Zero) return false;
+
+            AccountState state = GetAccountState(accountId);
+            if (moduleType == "validator" || moduleType == "verifier")
+            {
+                return state.Verifier == moduleHash;
+            }
+
+            if (moduleType == "hook")
+            {
+                return state.HookId == moduleHash;
+            }
+
+            return false;
         }
 
         [Safe]
@@ -138,7 +177,14 @@ namespace AbstractAccount
         {
             AssertBackupOwner(accountId);
             byte[] key = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
             Storage.Delete(Storage.CurrentContext, key);
+            if (data != null)
+            {
+                PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
+                OnModuleUpdateCancelled?.Invoke(accountId, ModuleTypeVerifier, pending.NewVerifier);
+            }
+            OnVerifierUpdateCancelled?.Invoke(accountId);
         }
 
         /// <summary>
@@ -148,7 +194,14 @@ namespace AbstractAccount
         {
             AssertBackupOwner(accountId);
             byte[] key = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
             Storage.Delete(Storage.CurrentContext, key);
+            if (data != null)
+            {
+                PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
+                OnModuleUpdateCancelled?.Invoke(accountId, ModuleTypeHook, pending.NewHookId);
+            }
+            OnHookUpdateCancelled?.Invoke(accountId);
         }
 
         /// <summary>
@@ -166,6 +219,7 @@ namespace AbstractAccount
 
             ExecutionEngine.Assert(metadataUri.Length <= MaxMetadataUriLength, "MetadataUri too long");
             Storage.Put(Storage.CurrentContext, key, metadataUri);
+            OnMetadataUriUpdated?.Invoke(accountId, metadataUri);
         }
 
         /// <summary>

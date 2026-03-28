@@ -138,6 +138,13 @@ test('relay API binds paymaster requests to dapp and operation hashes', () => {
   assert.match(source, /paymaster \? \{ \.\.\.result, paymaster \} : result/);
 });
 
+test('account metadata API does not require a browser-visible API key for upserts', () => {
+  const source = fs.readFileSync(path.resolve('api/account-metadata.js'), 'utf8');
+
+  assert.doesNotMatch(source, /AA_METADATA_API_KEY/);
+  assert.doesNotMatch(source, /x-api-key header required/);
+});
+
 test('gitignore quarantines local testnet secret artifacts', () => {
   const source = fs.readFileSync(path.resolve('..', '.gitignore'), 'utf8');
 

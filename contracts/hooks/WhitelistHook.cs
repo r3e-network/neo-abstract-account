@@ -15,7 +15,8 @@ namespace AbstractAccount.Hooks
     /// Configuration must still flow through the AA core via <c>canConfigureHook</c>.
     /// </remarks>
     [DisplayName("WhitelistHook")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canExecuteHook")]
+    [ContractPermission("*", "canConfigureHook")]
     [ManifestExtra("Description", "Target Contract Whitelist Hook")]
     public class WhitelistHook : SmartContract
     {

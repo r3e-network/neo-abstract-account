@@ -1,0 +1,69 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Motivation}{1}{subsection.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}The Neo N3 Challenge}{1}{subsection.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Challenges}{1}{subsection.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Our Solution: Mixed Authorization Protocol}{2}{subsection.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}Contributions}{2}{subsection.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.6}EVM Integration and Account Management}{2}{subsection.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.7}.matrix Domain Integration}{3}{subsection.1.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.8}Recovery Verifier Architecture}{3}{subsection.1.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.9}Dome Inactivity Recovery Protocol}{4}{subsection.1.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Account Model and Lifecycle}{4}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Account Creation and Structure}{4}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Deterministic Address Generation}{5}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Transaction Structure and Verification Entry}{5}{subsection.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Neo-AA system architecture. A shared master contract governs many deterministic AA addresses while storing role sets and authorization policies in one on-chain control plane.}}{6}{figure.1}\protected@file@percent }
+\newlabel{fig:architecture}{{1}{6}{Neo-AA system architecture. A shared master contract governs many deterministic AA addresses while storing role sets and authorization policies in one on-chain control plane}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Mixed Authorization Transaction Anatomy}{6}{subsection.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Two-phase verification in Neo-AA. The verification trigger authenticates native Neo paths, while the application trigger combines Neo and EVM signers for mixed authorization.}}{6}{figure.2}\protected@file@percent }
+\newlabel{fig:two_phase_verification}{{2}{6}{Two-phase verification in Neo-AA. The verification trigger authenticates native Neo paths, while the application trigger combines Neo and EVM signers for mixed authorization}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Detailed Verification Flow}{7}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Mixed Authorization Protocol}{7}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Protocol Overview}{7}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Core Verification Methods}{8}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Verify Method: Two-Phase Verification Model}{8}{subsubsection.3.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}CheckNativeSignatures: Pure Neo Signature Verification}{8}{subsubsection.3.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}CheckMixedSignatures: Unified Threshold Algorithm}{9}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Three Authorization Scenarios}{9}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Scenario 1: Pure Neo Account}{9}{subsubsection.3.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.2}Scenario 2: Pure EVM Account}{9}{subsubsection.3.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Unified threshold evaluation in CheckMixedSignatures. Recovered EVM signers and Neo witnesses are counted against one policy threshold.}}{10}{figure.3}\protected@file@percent }
+\newlabel{fig:checkmixed_algorithm}{{3}{10}{Unified threshold evaluation in CheckMixedSignatures. Recovered EVM signers and Neo witnesses are counted against one policy threshold}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Authorization modes supported by Neo-AA: pure Neo, pure EVM meta-transaction, and mixed Neo+EVM execution.}}{10}{figure.4}\protected@file@percent }
+\newlabel{fig:transaction_comparison}{{4}{10}{Authorization modes supported by Neo-AA: pure Neo, pure EVM meta-transaction, and mixed Neo+EVM execution}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.3}Scenario 3: Mixed Neo + EVM Account}{10}{subsubsection.3.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}EIP-712 Signature Verification Details}{11}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}State Management and Nonce Mechanism}{11}{subsection.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}EIP-712 Typed Data Structure}{11}{subsection.3.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Mixed authorization workflow. EVM typed-data signatures are produced off-chain, then combined with Neo transaction material and evaluated under one threshold.}}{12}{figure.5}\protected@file@percent }
+\newlabel{fig:mixed-flow-detailed}{{5}{12}{Mixed authorization workflow. EVM typed-data signatures are produced off-chain, then combined with Neo transaction material and evaluated under one threshold}{figure.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Verification Algorithm}{12}{subsection.3.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Security Analysis}{12}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Threat Model}{12}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Formal Security Definitions}{12}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Security Properties}{12}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Additional Security Properties}{12}{subsection.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Attack Analysis}{12}{subsection.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Detailed Security Proofs}{12}{subsection.4.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Neo N3 transaction layout for AA execution, highlighting the verify-proxy signer, optional EVM signature payloads, and Neo witnesses.}}{13}{figure.6}\protected@file@percent }
+\newlabel{fig:neo-tx-layout}{{6}{13}{Neo N3 transaction layout for AA execution, highlighting the verify-proxy signer, optional EVM signature payloads, and Neo witnesses}{figure.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Related Work}{13}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Account Abstraction Systems}{13}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Threshold and Cross-Ecosystem Authorization}{13}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Positioning of Neo-AA}{13}{subsection.5.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Threshold-verification workflow used by Neo-AA to load account policy, count signer evidence, and accept or reject execution.}}{14}{figure.7}\protected@file@percent }
+\newlabel{fig:threshold-verification}{{7}{14}{Threshold-verification workflow used by Neo-AA to load account policy, count signer evidence, and accept or reject execution}{figure.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{14}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Limitations}{14}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Design Trade-offs}{14}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Operational Architecture}{15}{subsection.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Future Directions}{15}{subsection.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Deployment Details}{15}{subsection.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{15}{section.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Trust-boundary view of Neo-AA. Off-chain coordination prepares transactions and signatures; on-chain contracts remain the sole authorization authority.}}{16}{figure.8}\protected@file@percent }
+\newlabel{fig:system-architecture}{{8}{16}{Trust-boundary view of Neo-AA. Off-chain coordination prepares transactions and signatures; on-chain contracts remain the sole authorization authority}{figure.8}{}}
+\gdef \@abspage@last{16}

@@ -93,7 +93,23 @@ The V3 core is intentionally small: authorization is delegated to verifier plugi
 | `contracts/verifiers/ZKEmailVerifier.cs` | Email-based authorization extension |
 | `contracts/hooks/*.cs` | Optional policies such as daily limits, token restrictions, and credential gating |
 
-## 7. Recovery Model
+## 7. Module Lifecycle
+
+V3 now has two layers of lifecycle signaling:
+
+- legacy compatibility events that remain verifier-specific or hook-specific,
+- and a generic module lifecycle that treats verifiers and hooks as first-class modules.
+
+The generic lifecycle is:
+
+- **install**: first binding of a verifier or hook emits `ModuleInstalled`
+- **replace**: timelocked replacement emits `ModuleUpdateInitiated` and later `ModuleUpdateConfirmed`
+- **remove**: replacement to `UInt160.Zero`, market settlement cleanup, or escape-driven clearing emits `ModuleRemoved`
+- **cancel**: aborting a pending verifier or hook rotation emits `ModuleUpdateCancelled`
+
+This keeps older indexers working while giving new tooling one consistent lifecycle model to consume.
+
+## 8. Recovery Model
 
 V3 recovery is explicit:
 
@@ -103,7 +119,7 @@ V3 recovery is explicit:
 
 This keeps recovery auditable without reintroducing large role graphs into the core wallet.
 
-## 8. Security Invariants
+## 9. Security Invariants
 
 1. `verify(accountId)` is only valid inside the expected `executeUserOp` context.
 2. Nonces are consumed by the core wallet, not verifier plugins.

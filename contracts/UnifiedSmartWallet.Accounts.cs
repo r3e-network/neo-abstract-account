@@ -19,7 +19,8 @@ namespace AbstractAccount
         {
             ExecutionEngine.Assert(backupOwner != null && backupOwner != UInt160.Zero, "Backup owner required");
             ExecutionEngine.Assert(Runtime.CheckWitness(backupOwner!), "Backup owner witness required");
-            ExecutionEngine.Assert(escapeTimelock > 0, "Escape timelock required");
+            ExecutionEngine.Assert(escapeTimelock >= 604800, "Escape timelock must be at least 7 days");
+            ExecutionEngine.Assert(escapeTimelock <= 7776000, "Escape timelock must not exceed 90 days");
 
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Account already exists");
@@ -33,6 +34,15 @@ namespace AbstractAccount
                 EscapeTriggeredAt = 0
             };
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+            OnAccountRegistered?.Invoke(accountId, backupOwner!, verifier, hookId);
+            if (verifier != UInt160.Zero)
+            {
+                OnModuleInstalled?.Invoke(accountId, ModuleTypeVerifier, verifier);
+            }
+            if (hookId != UInt160.Zero)
+            {
+                OnModuleInstalled?.Invoke(accountId, ModuleTypeHook, hookId);
+            }
 
             if (verifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
             {
@@ -64,6 +74,11 @@ namespace AbstractAccount
                 state.HookId = newHookId;
                 byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
                 Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
+                if (newHookId != UInt160.Zero)
+                {
+                    OnModuleInstalled?.Invoke(accountId, ModuleTypeHook, newHookId);
+                }
+                OnHookUpdateConfirmed?.Invoke(accountId, newHookId);
                 return;
             }
 
@@ -81,6 +96,8 @@ namespace AbstractAccount
                 InitiatedAt = Runtime.Time
             };
             Storage.Put(Storage.CurrentContext, key2, StdLib.Serialize(update));
+            OnModuleUpdateInitiated?.Invoke(accountId, ModuleTypeHook, newHookId);
+            OnHookUpdateInitiated?.Invoke(accountId, newHookId);
         }
 
         /// <summary>
@@ -99,10 +116,23 @@ namespace AbstractAccount
             ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
 
             AccountState state = GetAccountState(accountId);
+            UInt160 previousHook = state.HookId;
             state.HookId = pending.NewHookId;
             byte[] stateKey = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, stateKey, StdLib.Serialize(state));
             Storage.Delete(Storage.CurrentContext, key);
+            if (pending.NewHookId == UInt160.Zero)
+            {
+                if (previousHook != UInt160.Zero)
+                {
+                    OnModuleRemoved?.Invoke(accountId, ModuleTypeHook, previousHook);
+                }
+            }
+            else
+            {
+                OnModuleUpdateConfirmed?.Invoke(accountId, ModuleTypeHook, pending.NewHookId);
+            }
+            OnHookUpdateConfirmed?.Invoke(accountId, pending.NewHookId);
         }
 
         /// <summary>
@@ -134,6 +164,11 @@ namespace AbstractAccount
                         ClearVerifierConfigContext(accountId);
                     }
                 }
+                if (newVerifier != UInt160.Zero)
+                {
+                    OnModuleInstalled?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+                }
+                OnVerifierUpdateConfirmed?.Invoke(accountId, newVerifier);
                 return;
             }
 
@@ -152,6 +187,8 @@ namespace AbstractAccount
                 InitiatedAt = Runtime.Time
             };
             Storage.Put(Storage.CurrentContext, key2, StdLib.Serialize(update));
+            OnModuleUpdateInitiated?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+            OnVerifierUpdateInitiated?.Invoke(accountId, newVerifier);
         }
 
         /// <summary>
@@ -170,6 +207,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
 
             AccountState state = GetAccountState(accountId);
+            UInt160 previousVerifier = state.Verifier;
             state.Verifier = pending.NewVerifier;
             byte[] stateKey = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, stateKey, StdLib.Serialize(state));
@@ -188,13 +226,59 @@ namespace AbstractAccount
             }
 
             Storage.Delete(Storage.CurrentContext, key);
+            if (pending.NewVerifier == UInt160.Zero)
+            {
+                if (previousVerifier != UInt160.Zero)
+                {
+                    OnModuleRemoved?.Invoke(accountId, ModuleTypeVerifier, previousVerifier);
+                }
+            }
+            else
+            {
+                OnModuleUpdateConfirmed?.Invoke(accountId, ModuleTypeVerifier, pending.NewVerifier);
+            }
+            OnVerifierUpdateConfirmed?.Invoke(accountId, pending.NewVerifier);
+        }
+
+        private static readonly string[] AllowedVerifierMethods = new string[]
+        {
+            "setPublicKey",
+            "clearAccount",
+            "setSessionKey",
+            "clearSessionKey",
+            "setConfig",
+            "createSubscription",
+            "setDKIMRegistry"
+        };
+
+        private static readonly string[] AllowedHookMethods = new string[]
+        {
+            "setDailyLimit",
+            "setWhitelist",
+            "setRestrictedToken",
+            "requireCredentialForContract",
+            "setRegistry",
+            "setHooks",
+            "setConfig",
+            "clearAccount"
+        };
+
+        private static bool IsMethodAllowed(string method, string[] allowlist)
+        {
+            for (int i = 0; i < allowlist.Length; i++)
+            {
+                if (method == allowlist[i]) return true;
+            }
+            return false;
         }
 
         /// <summary>
         /// Allows the backup owner to call an account verifier for configuration or maintenance tasks.
+        /// Only methods in the allowlist may be called to prevent timelock bypass.
         /// </summary>
         public static object CallVerifier(UInt160 accountId, string method, object[] args)
         {
+            ExecutionEngine.Assert(IsMethodAllowed(method, AllowedVerifierMethods), "Verifier method not allowed");
             AssertBackupOwner(accountId);
             AssertNoMarketEscrow(accountId);
             AccountState state = GetAccountState(accountId);
@@ -213,9 +297,11 @@ namespace AbstractAccount
 
         /// <summary>
         /// Allows the backup owner to call an account hook for configuration or maintenance tasks.
+        /// Only methods in the allowlist may be called to prevent timelock bypass.
         /// </summary>
         public static object CallHook(UInt160 accountId, string method, object[] args)
         {
+            ExecutionEngine.Assert(IsMethodAllowed(method, AllowedHookMethods), "Hook method not allowed");
             AssertBackupOwner(accountId);
             AssertNoMarketEscrow(accountId);
             AccountState state = GetAccountState(accountId);

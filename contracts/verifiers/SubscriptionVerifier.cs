@@ -17,7 +17,8 @@ namespace AbstractAccount.Verifiers
     /// current billing period so the AA core replay checks prevent duplicate charges.
     /// </remarks>
     [DisplayName("SubscriptionVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
     [ManifestExtra("Description", "Time-based Subscription Auto-Payment Verifier")]
     public class SubscriptionVerifier : SmartContract
     {
@@ -71,12 +72,13 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert(data != null, "Subscription not found");
             
             SubscriptionConfig config = (SubscriptionConfig)StdLib.Deserialize(data!);
-            
+
             ExecutionEngine.Assert(op.TargetContract == config.Token, "Target must be the subscription token");
             ExecutionEngine.Assert(op.Method == "transfer", "Method must be transfer");
             
             // Expected args: [from, to, amount, ...]
             ExecutionEngine.Assert(op.Args.Length >= 3, "Invalid transfer args");
+            ExecutionEngine.Assert((UInt160)op.Args[0] == accountId, "Transfer source must be the account");
             ExecutionEngine.Assert((UInt160)op.Args[1] == config.Merchant, "Transfer destination must be merchant");
             ExecutionEngine.Assert((BigInteger)op.Args[2] <= config.Amount, "Transfer amount exceeds subscription");
 

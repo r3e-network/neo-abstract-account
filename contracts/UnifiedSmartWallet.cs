@@ -17,6 +17,9 @@ namespace AbstractAccount
     /// Security-sensitive configuration changes are always gated by the backup owner witness.
     /// </remarks>
     [DisplayName("UnifiedSmartWalletV3")]
+    // Wildcard permission is required because ExecuteUserOp dynamically dispatches
+    // Contract.Call(op.TargetContract, op.Method, ...) to arbitrary user-chosen contracts.
+    // All plugins (verifiers, hooks) use least-privilege manifests; only the core needs this.
     [ContractPermission("*", "*")]
     [ManifestExtra("Description", "ERC-4337 Aligned Minimalist AA Engine for Neo N3")]
     public partial class UnifiedSmartWallet : SmartContract

@@ -17,7 +17,8 @@ namespace AbstractAccount.Hooks
     /// inside its own storage. It is meant for treasury and user-wallet safety policies.
     /// </remarks>
     [DisplayName("DailyLimitHook")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canExecuteHook")]
+    [ContractPermission("*", "canConfigureHook")]
     [ManifestExtra("Description", "Daily Limit Policy Hook Plugin for Neo N3 AA")]
     public class DailyLimitHook : SmartContract
     {
@@ -60,6 +61,7 @@ namespace AbstractAccount.Hooks
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
             if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount)) return;
+            ExecutionEngine.Assert(amount > 0, "Transfer amount must be positive");
             ExecutionEngine.Assert(IsProtectedTransferSource(accountId, fromAccount), "Transfer source not permitted");
             BigInteger limit = GetDailyLimit(accountId, targetContract);
             if (limit == 0) return; // No limit configured for this token

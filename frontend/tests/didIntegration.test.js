@@ -55,10 +55,16 @@ test('notification service supports email and sms webhook delivery', () => {
 
   assert.match(source, /sendRecoveryEmail/);
   assert.match(source, /sendRecoverySms/);
+  assert.match(source, /connectedDidProfile/);
+  assert.match(source, /idToken/);
+  assert.doesNotMatch(source, /x-api-key/);
   assert.match(apiSource, /DID_EMAIL_WEBHOOK_URL/);
   assert.match(apiSource, /DID_SMS_WEBHOOK_URL/);
   assert.match(apiSource, /channel === 'email'/);
   assert.match(apiSource, /channel === 'sms'/);
+  assert.match(apiSource, /jwtVerify/);
+  assert.match(apiSource, /idToken is required/);
+  assert.doesNotMatch(apiSource, /DID_NOTIFY_API_KEY/);
 });
 
 test('did verification api validates Web3Auth tokens against JWKS', () => {

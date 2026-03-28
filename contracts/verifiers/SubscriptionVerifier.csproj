@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RunNccsAfterBuild>false</RunNccsAfterBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +17,7 @@
     <Compile Include="SubscriptionVerifier.cs" />
   </ItemGroup>
 
-  <Target Name="CompileSmartContract" AfterTargets="Build">
+  <Target Name="CompileSmartContract" AfterTargets="Build" Condition="'$(RunNccsAfterBuild)' == 'true'">
     <Message Text="Compiling Neo smart contract: SubscriptionVerifier.cs" Importance="high" />
     <Exec Command="nccs ./SubscriptionVerifier.csproj -o ../bin/v3/verifiers" WorkingDirectory="$(ProjectDir)" />
   </Target>

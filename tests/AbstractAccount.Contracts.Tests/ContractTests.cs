@@ -19,6 +19,7 @@ public class ContractTests
         "UnifiedSmartWallet.cs",
         "UnifiedSmartWallet.Models.cs",
         "UnifiedSmartWallet.Internal.cs",
+        "UnifiedSmartWallet.Events.cs",
         "UnifiedSmartWallet.Accounts.cs",
         "UnifiedSmartWallet.State.cs",
         "UnifiedSmartWallet.Execution.cs",
@@ -48,6 +49,26 @@ public class ContractTests
         "verifiers/SubscriptionVerifier.cs",
         "verifiers/ZKEmailVerifier.cs",
         "verifiers/ZkLoginVerifier.cs"
+    };
+
+    private static readonly string[] ContractProjectFiles =
+    {
+        "UnifiedSmartWallet.csproj",
+        "hooks/DailyLimitHook.csproj",
+        "hooks/MultiHook.csproj",
+        "hooks/NeoDIDCredentialHook.csproj",
+        "hooks/TokenRestrictedHook.csproj",
+        "hooks/WhitelistHook.csproj",
+        "market/AAAddressMarket.csproj",
+        "mocks/MockTransferTarget.csproj",
+        "verifiers/MultiSigVerifier.csproj",
+        "verifiers/SessionKeyVerifier.csproj",
+        "verifiers/SubscriptionVerifier.csproj",
+        "verifiers/TEEVerifier.csproj",
+        "verifiers/Web3AuthVerifier.csproj",
+        "verifiers/WebAuthnVerifier.csproj",
+        "verifiers/ZKEmailVerifier.csproj",
+        "verifiers/ZkLoginVerifier.csproj",
     };
 
     private static Type ContractType => typeof(global::AbstractAccount.UnifiedSmartWallet);
@@ -90,6 +111,7 @@ public class ContractTests
             "ConfirmVerifierUpdate",
             "CallVerifier",
             "CallHook",
+            "PreviewUserOpValidation",
             "ExecuteUserOp",
             "ExecuteUserOps",
             "InitiateEscape",
@@ -289,6 +311,18 @@ public class ContractTests
         {
             string projectFile = ReadContractFile(project);
             StringAssert.Contains(projectFile, "<Compile Include=\"VerifierAuthority.cs\" />");
+        }
+    }
+
+    [TestMethod]
+    public void ContractSubprojectsUseConsistentFrameworkVersionAndOptInNccs()
+    {
+        foreach (string project in ContractProjectFiles)
+        {
+            string projectFile = ReadContractFile(project);
+            StringAssert.Contains(projectFile, "<PackageReference Include=\"Neo.SmartContract.Framework\" Version=\"3.8.1\" />");
+            StringAssert.Contains(projectFile, "<RunNccsAfterBuild>false</RunNccsAfterBuild>");
+            StringAssert.Contains(projectFile, "Condition=\"'$(RunNccsAfterBuild)' == 'true'\"");
         }
     }
 }

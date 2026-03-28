@@ -28,7 +28,10 @@ namespace AbstractAccount.Hooks
     /// post-hooks run in reverse order.
     /// </remarks>
     [DisplayName("MultiHook")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canExecuteHook")]
+    [ContractPermission("*", "canConfigureHook")]
+    [ContractPermission("*", "preExecute")]
+    [ContractPermission("*", "postExecute")]
     [ManifestExtra("Description", "Composable Hook to chain multiple hooks")]
     public class MultiHook : SmartContract
     {

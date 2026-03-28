@@ -6,11 +6,62 @@ const {
   sanitizeHex,
 } = require('./metaTx');
 
+function normalizeAddress(addressHex) {
+  if (!addressHex) {
+    throw new Error('Address is required');
+  }
+  let hex = addressHex;
+  if (hex.startsWith('N') && hex.length === 34) {
+    return wallet.getScriptHashFromAddress(hex);
+  }
+  if (hex.startsWith('0x')) hex = hex.slice(2);
+  return hex;
+}
+
+function decodeByteStringStackText(item) {
+  if (!item) return '';
+  if (item.type === 'ByteString' && item.value) {
+    return Buffer.from(item.value, 'base64').toString('utf8');
+  }
+  if (item.type === 'String' && item.value) {
+    return String(item.value);
+  }
+  return '';
+}
+
+function decodeStackBoolean(item) {
+  return item?.value === true
+    || item?.value === 1
+    || item?.value === '1'
+    || item?.value === 'true'
+    || item?.value === 'True';
+}
+
+function decodeHash160Stack(item) {
+  if (!item || typeof item !== 'object') return '';
+  if (item.type === 'Hash160' && item.value) return sanitizeHex(item.value);
+  if (item.type === 'ByteString' && item.value) return sanitizeHex(Buffer.from(item.value, 'base64').toString('hex'));
+  return '';
+}
+
+function decodeValidationPreviewStack(item) {
+  const values = item?.type === 'Array' && Array.isArray(item.value) ? item.value : [];
+  return {
+    deadlineValid: decodeStackBoolean(values[0]),
+    nonceAcceptable: decodeStackBoolean(values[1]),
+    hasVerifier: decodeStackBoolean(values[2]),
+    verifier: decodeHash160Stack(values[3]),
+    hook: decodeHash160Stack(values[4]),
+  };
+}
+
 /**
  * Neo N3 Abstract Account SDK
  */
 class AbstractAccountClient {
   constructor(rpcUrl, masterContractHash) {
+    if (!rpcUrl) throw new Error('rpcUrl is required');
+    if (!masterContractHash) throw new Error('masterContractHash is required');
     this.rpcClient = new rpc.RPCClient(rpcUrl);
     this.masterContractHash = sanitizeHex(masterContractHash);
   }
@@ -81,15 +132,6 @@ class AbstractAccountClient {
       escapeTimelock = 30 * 24 * 60 * 60, // 30 days default
     } = options;
 
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
-
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
       : accountAddress
@@ -103,8 +145,8 @@ class AbstractAccountClient {
         sc.ContractParam.hash160(resolvedAccountHash),
         sc.ContractParam.hash160(normalizeAddress(verifierContractHash)),
         sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(verifierParamsHex), true)),
-        sc.ContractParam.hash160(normalizeAddress(hookContractHash)),
-        sc.ContractParam.hash160(normalizeAddress(backupOwnerAddress)),
+        sc.ContractParam.hash160(hookContractHash ? normalizeAddress(hookContractHash) : '00'.repeat(20)),
+        sc.ContractParam.hash160(backupOwnerAddress ? normalizeAddress(backupOwnerAddress) : '00'.repeat(20)),
         sc.ContractParam.integer(escapeTimelock)
       ],
     };
@@ -117,15 +159,6 @@ class AbstractAccountClient {
       verifierContractHash,
       verifierParamsHex = '',
     } = options || {};
-
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -149,15 +182,6 @@ class AbstractAccountClient {
       hookContractHash = '',
     } = options || {};
 
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
-
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
       : normalizeAddress(accountAddress);
@@ -167,7 +191,7 @@ class AbstractAccountClient {
       operation: 'updateHook',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
-        sc.ContractParam.hash160(normalizeAddress(hookContractHash)),
+        sc.ContractParam.hash160(hookContractHash ? normalizeAddress(hookContractHash) : '00'.repeat(20)),
       ],
     };
   }
@@ -178,15 +202,6 @@ class AbstractAccountClient {
       accountAddress = '',
       metadataUri = '',
     } = options || {};
-
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -244,6 +259,9 @@ class AbstractAccountClient {
       nonce,
       deadline,
     } = options;
+
+    if (nonce == null) throw new Error('nonce is required for EIP-712 payload');
+    if (deadline == null) throw new Error('deadline is required for EIP-712 payload');
 
     const argsHashHex = await this.computeArgsHash(args);
     const resolvedAccountIdHash = accountIdHash
@@ -306,14 +324,6 @@ class AbstractAccountClient {
     });
   }
 
-  async getAccountsByAdmin(address) {
-    throw new Error('Removed in V3: role-based admin discovery no longer exists.');
-  }
-
-  async getAccountsByManager(address) {
-    throw new Error('Removed in V3: role-based manager discovery no longer exists.');
-  }
-
   decodeAddressArray(stackItem) {
     if (!stackItem || stackItem.type !== 'Array' || !Array.isArray(stackItem.value)) return [];
     return stackItem.value.map((item) => {
@@ -325,20 +335,103 @@ class AbstractAccountClient {
     }).filter(Boolean);
   }
 
-  async getAccountAddressesByAdmin(address) {
+  async getAccountImplementationId() {
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'getAccountImplementationId',
+      args: [],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`getAccountImplementationId fault: ${response.exception}`);
+    return decodeByteStringStackText(response?.stack?.[0]);
+  }
+
+  async supportsExecutionMode(mode) {
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'supportsExecutionMode',
+      args: [{ type: 'String', value: String(mode || '') }],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`supportsExecutionMode fault: ${response.exception}`);
+    return decodeStackBoolean(response?.stack?.[0]);
+  }
+
+  async supportsModuleType(moduleType) {
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'supportsModuleType',
+      args: [{ type: 'String', value: String(moduleType || '') }],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`supportsModuleType fault: ${response.exception}`);
+    return decodeStackBoolean(response?.stack?.[0]);
+  }
+
+  async isModuleInstalled(accountHashOrAddress, moduleType, moduleHashOrAddress) {
+    const accountId = normalizeAddress(accountHashOrAddress);
+    const moduleHash = normalizeAddress(moduleHashOrAddress);
+    const script = sc.createScript({
+      scriptHash: this.masterContractHash,
+      operation: 'isModuleInstalled',
+      args: [
+        { type: 'Hash160', value: accountId },
+        { type: 'String', value: String(moduleType || '') },
+        { type: 'Hash160', value: moduleHash },
+      ],
+    });
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    if (response?.state === 'FAULT') throw new Error(`isModuleInstalled fault: ${response.exception}`);
+    return decodeStackBoolean(response?.stack?.[0]);
+  }
+
+  async getUserOpValidationPreview({
+    accountIdHash = '',
+    accountAddress = '',
+    targetContract,
+    method,
+    args = [],
+    nonce = 0,
+    deadline = 0,
+  } = {}) {
+    const accountId = accountIdHash
+      ? normalizeAddress(accountIdHash)
+      : normalizeAddress(accountAddress);
+    const response = await this.rpcClient.invokeFunction(this.masterContractHash, 'previewUserOpValidation', [
+      { type: 'Hash160', value: accountId },
+      {
+        type: 'Struct',
+        value: [
+          { type: 'Hash160', value: normalizeAddress(targetContract) },
+          { type: 'String', value: String(method || '') },
+          { type: 'Array', value: args },
+          { type: 'Integer', value: String(nonce) },
+          { type: 'Integer', value: String(deadline) },
+          { type: 'ByteArray', value: '0x' },
+        ],
+      },
+    ]);
+    if (response?.state === 'FAULT') throw new Error(`previewUserOpValidation fault: ${response.exception}`);
+    return decodeValidationPreviewStack(response?.stack?.[0]);
+  }
+
+  async getAccountsByAdmin() {
     throw new Error('Removed in V3: role-based admin discovery no longer exists.');
   }
 
-  async getAccountAddressesByManager(address) {
+  async getAccountsByManager() {
+    throw new Error('Removed in V3: role-based manager discovery no longer exists.');
+  }
+
+  async getAccountAddressesByAdmin() {
+    throw new Error('Removed in V3: role-based admin discovery no longer exists.');
+  }
+
+  async getAccountAddressesByManager() {
     throw new Error('Removed in V3: role-based manager discovery no longer exists.');
   }
 
   async getAccountState(accountHashOrAddress) {
-    const normalizeAddress = (addr) => {
-      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
     const accountId = normalizeAddress(accountHashOrAddress);
 
     const invokeSafe = async (operation) => {
@@ -391,15 +484,6 @@ class AbstractAccountClient {
       accountAddress = '',
     } = options || {};
 
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
-
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
       : normalizeAddress(accountAddress);
@@ -418,15 +502,6 @@ class AbstractAccountClient {
       accountScriptHash = '',
       accountAddress = '',
     } = options || {};
-
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -447,15 +522,6 @@ class AbstractAccountClient {
       accountAddress = '',
     } = options || {};
 
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
-
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
       : normalizeAddress(accountAddress);
@@ -475,15 +541,6 @@ class AbstractAccountClient {
       accountAddress = '',
     } = options || {};
 
-    const normalizeAddress = (addr) => {
-      if (!addr) return '00'.repeat(20);
-      if (addr.startsWith('N') && addr.length === 34) {
-        return wallet.getScriptHashFromAddress(addr);
-      }
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
-
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
       : normalizeAddress(accountAddress);
@@ -498,11 +555,6 @@ class AbstractAccountClient {
   }
 
   async getHasPendingVerifierUpdate(accountHashOrAddress) {
-    const normalizeAddress = (addr) => {
-      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
     const accountId = normalizeAddress(accountHashOrAddress);
 
     const script = sc.createScript({
@@ -517,11 +569,6 @@ class AbstractAccountClient {
   }
 
   async getHasPendingHookUpdate(accountHashOrAddress) {
-    const normalizeAddress = (addr) => {
-      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
     const accountId = normalizeAddress(accountHashOrAddress);
 
     const script = sc.createScript({
@@ -536,11 +583,6 @@ class AbstractAccountClient {
   }
 
   async getPendingVerifierUpdateTime(accountHashOrAddress) {
-    const normalizeAddress = (addr) => {
-      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
     const accountId = normalizeAddress(accountHashOrAddress);
 
     const script = sc.createScript({
@@ -555,11 +597,6 @@ class AbstractAccountClient {
   }
 
   async getPendingHookUpdateTime(accountHashOrAddress) {
-    const normalizeAddress = (addr) => {
-      if (addr.startsWith('N') && addr.length === 34) return wallet.getScriptHashFromAddress(addr);
-      if (addr.startsWith('0x')) return addr.slice(2);
-      return addr;
-    };
     const accountId = normalizeAddress(accountHashOrAddress);
 
     const script = sc.createScript({
@@ -590,5 +627,7 @@ class AbstractAccountClient {
 module.exports = {
   AbstractAccountClient,
   buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData,
+  decodeByteStringStackHex,
   sanitizeHex,
 };

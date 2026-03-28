@@ -17,7 +17,8 @@ namespace AbstractAccount.Verifiers
     /// corresponding public key has been provisioned through the AA core.
     /// </remarks>
     [DisplayName("WebAuthnVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
     [ManifestExtra("Description", "WebAuthn / Passkey Hardware Enclave Verifier")]
     public class WebAuthnVerifier : SmartContract
     {
@@ -36,6 +37,7 @@ namespace AbstractAccount.Verifiers
         public static void SetPublicKey(UInt160 accountId, ByteString pubKey)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
+            ExecutionEngine.Assert(pubKey.Length == 33 || pubKey.Length == 65, "Invalid public key length");
             byte[] key = Helper.Concat(Prefix_AccountPubKey, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, pubKey);
         }
@@ -60,7 +62,7 @@ namespace AbstractAccount.Verifiers
         /// </summary>
         public static ByteString GetPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
         {
-            return (ByteString)BuildPayload(accountId, targetContract, method, args, nonce, deadline);
+            return (ByteString)VerifierPayload.BuildPayload(accountId, targetContract, method, args, nonce, deadline);
         }
 
         /// <summary>
@@ -72,25 +74,10 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert(pubKey.Length > 0, "No WebAuthn pubkey configured");
 
             ExecutionEngine.Assert(op.Signature != null && op.Signature.Length == 64, "Invalid signature length");
-            byte[] payload = BuildPayload(accountId, op.TargetContract, op.Method, op.Args, op.Nonce, op.Deadline);
+            ByteString signature = op.Signature!;
+            byte[] payload = VerifierPayload.BuildPayload(accountId, op.TargetContract, op.Method, op.Args, op.Nonce, op.Deadline);
             
-            return CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)pubKey, op.Signature, NamedCurveHash.secp256r1SHA256);
-        }
-
-        private static byte[] BuildPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
-        {
-            byte[] argsSerialized = (byte[])StdLib.Serialize(args);
-            byte[] methodBytes = (byte[])StdLib.Serialize(method);
-            return Helper.Concat(
-                Helper.Concat(
-                    Helper.Concat(
-                        Helper.Concat((byte[])accountId, (byte[])targetContract),
-                        methodBytes
-                    ),
-                    argsSerialized
-                ),
-                Helper.Concat(nonce.ToByteArray(), deadline.ToByteArray())
-            );
+            return CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)pubKey, signature, NamedCurveHash.secp256r1SHA256);
         }
     }
 }

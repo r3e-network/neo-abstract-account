@@ -1,0 +1,59 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand*\HyPL@Entry[1]{}
+\HyPL@Entry{0<</S/D>>}
+\@writefile{toc}{\contentsline {section}{\numberline {1}引言}{3}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}动机}{3}{subsection.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Neo N3 的挑战}{3}{subsection.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}挑战}{3}{subsection.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}解决方案：混合授权协议}{3}{subsection.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}主要贡献}{4}{subsection.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.6}.matrix 域名集成}{4}{subsection.1.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \texttt  {.matrix} 域名解析流程：域名解析为所有者地址，再查询 AA 合约获取绑定账户。}}{4}{figure.1}\protected@file@percent }
+\newlabel{fig:cn-matrix-resolution}{{1}{4}{\texttt {.matrix} 域名解析流程：域名解析为所有者地址，再查询 AA 合约获取绑定账户。}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.7}恢复验证器架构}{5}{subsection.1.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces 监护人恢复生命周期（Argent 风格）：四个阶段依次为发起、批准累积、时间锁取消窗口及执行更新。}}{5}{figure.2}\protected@file@percent }
+\newlabel{fig:cn-guardian-recovery}{{2}{5}{监护人恢复生命周期（Argent 风格）：四个阶段依次为发起、批准累积、时间锁取消窗口及执行更新。}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.8}Dome 不活跃恢复协议}{6}{subsection.1.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}账户模型与生命周期}{6}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}账户创建与结构}{6}{subsection.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces 账户创建与绑定生命周期：客户端从 \texttt  {accountId} 派生确定性地址，主合约验证唯一性后存储角色集并绑定双向地址映射。}}{7}{figure.3}\protected@file@percent }
+\newlabel{fig:cn-account-creation}{{3}{7}{账户创建与绑定生命周期：客户端从 \texttt {accountId} 派生确定性地址，主合约验证唯一性后存储角色集并绑定双向地址映射。}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}确定性地址生成}{7}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}交易结构与验证入口}{8}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}混合授权交易结构}{8}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}混合授权协议}{8}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}协议概述}{8}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}核心验证方法}{9}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Verify 方法：两阶段验证模型}{9}{subsubsection.3.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}CheckNativeSignatures：纯 Neo 签名验证}{9}{subsubsection.3.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}CheckMixedSignatures：统一阈值算法}{9}{subsection.3.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces CheckMixedSignatures 中的统一阈值评估：恢复的 EVM 签名者与 Neo 见证合并计入一个策略阈值。}}{10}{figure.4}\protected@file@percent }
+\newlabel{fig:cn-checkmixed2}{{4}{10}{CheckMixedSignatures 中的统一阈值评估：恢复的 EVM 签名者与 Neo 见证合并计入一个策略阈值。}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}EIP-712 签名验证详情}{11}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}状态管理与随机数机制}{11}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}EIP-712 类型化数据结构}{11}{subsection.3.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces 混合授权工作流：EVM 类型化数据签名与 Neo 执行合并，在一个阈值下完成授权。}}{11}{figure.5}\protected@file@percent }
+\newlabel{fig:cn-mixed-flow}{{5}{11}{混合授权工作流：EVM 类型化数据签名与 Neo 执行合并，在一个阈值下完成授权。}{figure.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}验证算法}{12}{subsection.3.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces AA 执行的 Neo N3 交易布局，突出显示验证代理签名者、可选 EVM 签名载荷及 Neo 见证。}}{12}{figure.6}\protected@file@percent }
+\newlabel{fig:cn-neo-tx}{{6}{12}{AA 执行的 Neo N3 交易布局，突出显示验证代理签名者、可选 EVM 签名载荷及 Neo 见证。}{figure.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}安全分析}{12}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}威胁模型}{12}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}形式安全定义}{13}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces \textsc  {Neo-AA}\ 账户抽象协议的主要安全属性摘要。}}{13}{table.1}\protected@file@percent }
+\newlabel{tab:cn-security-properties}{{1}{13}{\sys \ 账户抽象协议的主要安全属性摘要。}{table.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}相关工作}{13}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}账户抽象系统}{13}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}阈值授权与跨生态系统授权}{14}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Neo-AA 的定位}{14}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}讨论}{14}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}局限性}{14}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}设计权衡}{14}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}运营架构}{15}{subsection.6.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Neo-AA 的信任边界视图：链下协调负责准备交易和签名；链上合约是唯一的授权权威。}}{15}{figure.7}\protected@file@percent }
+\newlabel{fig:cn-trust-boundary}{{7}{15}{Neo-AA 的信任边界视图：链下协调负责准备交易和签名；链上合约是唯一的授权权威。}{figure.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}未来方向}{15}{subsection.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}部署详情}{15}{subsection.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}结论}{16}{section.7}\protected@file@percent }
+\gdef \@abspage@last{16}

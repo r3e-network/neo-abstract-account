@@ -109,7 +109,33 @@ The app workspace is V3-first:
 
 Legacy `executeUnifiedByAddress` handling remains compatibility-only and should not be presented as the primary runtime path.
 
-## 8. Contract File Map
+## 8. Module Lifecycle
+
+The runtime now exposes a generic module lifecycle in addition to the legacy verifier/hook-specific events.
+
+- **install** — first binding of a verifier or hook emits `ModuleInstalled`
+- **replace** — pending rotations emit `ModuleUpdateInitiated` and confirmed rotations emit `ModuleUpdateConfirmed`
+- **remove** — clearing a binding, escape-driven clearing, or market-settlement cleanup emits `ModuleRemoved`
+- **cancel** — aborting a pending verifier or hook rotation emits `ModuleUpdateCancelled`
+
+For new operational tooling, prefer the generic module lifecycle instead of stitching together verifier-only and hook-only event streams.
+
+## 9. Validation Preview
+
+Relay preflight now has two layers:
+
+- a **validation preview** from the core runtime via `previewUserOpValidation(accountId, op)` that checks deadline validity, nonce acceptability, and current verifier/hook bindings
+- full relay simulation that executes the relay-ready invocation against Neo RPC and returns VM state and gas estimates
+
+The validation preview is intentionally read-only and does not authorize or execute anything by itself.
+
+The relay trust boundary is explicit:
+
+- the relay can simulate and submit
+- the relay cannot authorize for the account
+- paymaster sponsorship does not authorize execution
+
+## 10. Contract File Map
 
 | File | Responsibility |
 | --- | --- |
@@ -122,10 +148,11 @@ Legacy `executeUnifiedByAddress` handling remains compatibility-only and should 
 | `contracts/verifiers/MultiSigVerifier.cs` | Plugin-based multisig authorization |
 | `contracts/hooks/*.cs` | Optional execution policies such as daily limits, token restrictions, credential gating, and hook composition |
 
-## 9. Security Invariants
+## 11. Security Invariants
 
 1. `verify(accountId)` only succeeds during a matching `executeUserOp` context.
 2. Nonces are consumed in the core wallet, not in the verifier plugins.
 3. Verifier plugins do not automatically grant policy bypass; hooks and target contracts still run.
 4. Backup-owner recovery is timelocked and explicit.
 5. The user-facing V3 path is deterministic `accountId -> virtual address -> executeUserOp`.
+6. Relay preflight and paymaster sponsorship are operator conveniences only; they do not replace verifier authorization.

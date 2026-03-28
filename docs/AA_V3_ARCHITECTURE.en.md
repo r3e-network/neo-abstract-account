@@ -1,9 +1,9 @@
+# Neo N3 Abstract Account V3 Historical Design Note
 
-# 🚀 Neo N3 Ultimate Abstract Account (AA) Architecture Blueprint V3
+> This document is a historical design note from the V3 design phase. The current runtime contract surface is documented in `README.md`, `docs/architecture.md`, and the frontend architecture docs.
 
 ## 1. System Macro Positioning
-This architecture is more than just a smart wallet base; it is a **"Unified Aggregation Gateway for Multi-dimensional Identity and Trusted Execution"**.
-By leveraging the underlying magic of Neo N3, it unifies heterogeneous identities (Web2 social accounts, Web3 DIDs), heterogeneous signatures (EVM, Passkey), and high-privacy computing environments (TEE) into a single routing protocol, delivering a **keyless, gasless, and frictionless cross-chain Web3 experience**.
+This design note described the intended V3 direction: unify heterogeneous identities (Web2 social accounts, Web3 DIDs), heterogeneous signatures (EVM, Passkey), and high-privacy computing environments (TEE) behind a single Neo account runtime.
 
 ---
 
@@ -25,10 +25,10 @@ Solves the "Who proves, and who pays?" problem.
 * **Session Key Issuers**: Upon user login, the TEE or frontend issues a high-frequency temporary session key (e.g., restricted to infinite attacks in a fully on-chain game for 1 hour).
 * **Bundler & Paymaster**:
   * Official or third-party operated nodes. They receive the user's `UserOperation` (containing various signatures) and package them into standard N3 transactions.
-  * **Paymaster Logic**: If the operation falls under an "official airdrop" or "whitelisted DApp interaction," the Bundler directly uses its own account's GAS to pay for the user, achieving a completely Gasless, ultimate experience.
+  * **Paymaster Logic**: If the operation falls under an allowlisted sponsorship policy, the Bundler can pay GAS on the user's behalf. This is an operational convenience, not an authorization boundary.
 
 ### 3. Core Gateway Engine
-The heart of the system and the only Neo N3 contract that stores state. It employs a **Global Singleton** pattern, providing users with **zero deployment costs**.
+The heart of the system and the only Neo N3 contract that stores state. It employs a **Global Singleton** pattern, providing users with a shared runtime and deterministic virtual accounts.
 * **Zero-Deployment Virtual Accounts**: Utilizing Neo N3's unique dynamic scripting and `VerifyContext` locking mechanisms, it generates a virtual address for each user that can receive funds and pass `CheckWitness` authentication without needing to be physically deployed.
 * **Minimalist State Storage**: Only stores the account's `Verifier ID`, `Hook ID`, and L1 Escape Hatch state.
 * **Hybrid Replay Routing**: Intelligently decides between a standard sequential queue (for DeFi) or a random salt Bitmap (for high-frequency TEE concurrency) based on the Nonce value.
@@ -37,7 +37,7 @@ The heart of the system and the only Neo N3 contract that stores state. It emplo
 ### 4. Heterogeneous Verifier Plugin Ecosystem
 Solves the "How to verify signatures?" problem. Verifiers dictate "who has the right to use the vault." They are pre-deployed, **Stateless**, pure-computation singleton contracts. The following 7 core Verifiers form the foundation of the system:
 * **Web3Auth / EIP-712 Verifier (Traffic Funnel)**:
-  * Currently the killer plugin on N3.
+  * The primary EVM-compatibility verifier in the current V3 runtime.
   * Directly receives Ethereum-standard EIP-712 Typed Data Hashes and `v, r, s` signatures.
   * Internally uses N3's underlying `CryptoLib.VerifyWithECDsa` (for the secp256k1 curve) and custom Keccak256 to perfectly replicate Ethereum signature verification. Allows MetaMask users to seamlessly control N3 assets.
 * **TEE / AI Agent Verifier (Privacy & Automation Center)**:
@@ -73,7 +73,7 @@ Through the Lego-like composability of Verifiers and Hooks, the V3 architecture 
 
 * **Solution A: Web2 Seamless Account (Default Configuration)**
   * **Combination**: Web3Auth Verifier + Empty Hook
-  * **Scenario**: Lowers the barrier to entry for Web3. Users simply log in with Web2 social accounts to generate an account with no transfer restrictions, enjoying a frictionless experience.
+  * **Scenario**: Lowers the barrier to entry for Web3. Users log in with Web2 social accounts to generate an account with no transfer restrictions.
 * **Solution B: "Bear Market DCA" Vault (Combined Risk Control)**
   * **Combination**: Built-in cold wallet fallback + DailyLimitHook + WhitelistHook (via MultiHook)
   * **Scenario**: Uses an extremely secure hardware cold wallet for control, while restricting daily outbound transfers to a small amount and only allowing interaction with specific DCA (Dollar Cost Averaging) or DeFi staking contracts.
@@ -86,7 +86,7 @@ Through the Lego-like composability of Verifiers and Hooks, the V3 architecture 
 
 ---
 
-## 3. Ultimate Security Architecture: L1 Native Escape Hatch
+## 3. Security Architecture: L1 Native Escape Hatch
 
 Considering extreme scenarios like TEE downtime, MPC node failure, or Web2 service provider collapse, a non-custodial baseline must be maintained.
 This architecture completely abandons the attack-prone and extremely GAS-heavy Oracle deadman's switch, replacing it with a **Time-locked Preemption Model**:
@@ -127,10 +127,10 @@ Here is an example of a **"Web2 player using TEE relay to play an N3 fully on-ch
 
 ---
 
-## 5. Architectural Tone: Why is this the Ultimate Answer for N3?
+## 5. Architectural Notes
 
 1. **Fusion, not Rejection**: Through the `EIP-712 Verifier`, it perfectly absorbs Ethereum ecosystem developers and existing wallet toolchains; through the `TEE Verifier`, it shifts complex business logic (time, limits, multi-sig thresholds) off-chain, maintaining an absolutely minimalist on-chain foundation.
-2. **Squeezing N3's Foundation**: It takes ultimate advantage of NeoVM's `VerifyContext` and dynamic scripting, achieving true **zero deployment fee virtual addresses**. This thoroughly solves the highly criticized excessive Proxy deployment costs of Ethereum's ERC-4337.
+2. **Neo-specific strengths**: It takes advantage of NeoVM `VerifyContext` and dynamic scripting to achieve deterministic virtual accounts without per-user proxy deployment.
 3. **True Modularity (Modular Smart Accounts)**: The master contract never upgrades. Whether integrating new identity standards (like future Apple Passkeys) or integrating more complex DID risk control logic, it merely requires deploying a few hundred lines of stateless plugin contracts and mounting them.
 
-This is not just a smart wallet; this is a **panoramic trusted interaction gateway infrastructure** built for Neo N3.
+The current runtime should be treated as the authoritative source over this historical design note where they differ.

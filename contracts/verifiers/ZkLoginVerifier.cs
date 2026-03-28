@@ -33,7 +33,10 @@ namespace AbstractAccount.Verifiers
     }
 
     [DisplayName("ZkLoginVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
+    [ContractPermission("*", "keccak256")]
+    [ContractPermission("*", "sha256")]
     [ManifestExtra("Description", "Morpheus NeoDID zklogin-style verifier for Web2-backed AA execution")]
     public class ZkLoginVerifier : SmartContract
     {
@@ -316,7 +319,10 @@ namespace AbstractAccount.Verifiers
                                 Helper.Concat(
                                     Helper.Concat(
                                         Helper.Concat(
-                                            ZkLoginDomain,
+                                            Helper.Concat(
+                                                ZkLoginDomain,
+                                                ToUint256Word((BigInteger)Runtime.GetNetwork())
+                                            ),
                                             (byte[])accountId
                                         ),
                                         (byte[])Runtime.ExecutingScriptHash

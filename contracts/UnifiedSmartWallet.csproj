@@ -9,13 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neo.SmartContract.Framework" Version="3.7.5" />
+    <PackageReference Include="Neo.SmartContract.Framework" Version="3.8.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="UnifiedSmartWallet.cs" />
     <Compile Include="UnifiedSmartWallet.Models.cs" />
     <Compile Include="UnifiedSmartWallet.Internal.cs" />
+    <Compile Include="UnifiedSmartWallet.Events.cs" />
     <Compile Include="UnifiedSmartWallet.Accounts.cs" />
     <Compile Include="UnifiedSmartWallet.State.cs" />
     <Compile Include="UnifiedSmartWallet.Execution.cs" />

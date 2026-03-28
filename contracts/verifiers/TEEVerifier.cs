@@ -9,17 +9,6 @@ using System.ComponentModel;
 
 namespace AbstractAccount.Verifiers
 {
-    // The UserOperation struct must match the caller's struct exactly
-    public class UserOperation
-    {
-        public UInt160 TargetContract;
-        public string Method;
-        public object[] Args;
-        public BigInteger Nonce;
-        public BigInteger Deadline;
-        public ByteString Signature;
-    }
-
     /// <summary>
     /// Verifier for enclave- or TEE-produced secp256r1 signatures.
     /// </summary>
@@ -29,7 +18,8 @@ namespace AbstractAccount.Verifiers
     /// signature; remote attestation and policy decisions must happen off-chain before signing.
     /// </remarks>
     [DisplayName("TEEVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
     [ManifestExtra("Description", "TEE Hardware Signature Verifier")]
     public class TEEVerifier : SmartContract
     {
@@ -49,6 +39,7 @@ namespace AbstractAccount.Verifiers
         public static void SetPublicKey(UInt160 accountId, ByteString pubKey)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
+            ExecutionEngine.Assert(pubKey.Length == 33 || pubKey.Length == 65, "Invalid public key length");
             byte[] key = Helper.Concat(Prefix_AccountPubKey, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, pubKey);
         }
@@ -73,7 +64,7 @@ namespace AbstractAccount.Verifiers
         /// </summary>
         public static ByteString GetPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
         {
-            return (ByteString)BuildPayload(accountId, targetContract, method, args, nonce, deadline);
+            return (ByteString)VerifierPayload.BuildPayload(accountId, targetContract, method, args, nonce, deadline);
         }
 
         /// <summary>
@@ -85,26 +76,11 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert(teePubKey.Length > 0, "No TEE pubkey configured");
 
             ExecutionEngine.Assert(op.Signature != null && op.Signature.Length == 64, "Invalid signature");
-            byte[] payload = BuildPayload(accountId, op.TargetContract, op.Method, op.Args, op.Nonce, op.Deadline);
+            ByteString signature = op.Signature!;
+            byte[] payload = VerifierPayload.BuildPayload(accountId, op.TargetContract, op.Method, op.Args, op.Nonce, op.Deadline);
             
             // Verify secp256r1 (P-256) which is commonly used in SGX/TDX TEEs.
-            return CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)teePubKey, op.Signature, NamedCurveHash.secp256r1SHA256);
-        }
-
-        private static byte[] BuildPayload(UInt160 accountId, UInt160 targetContract, string method, object[] args, BigInteger nonce, BigInteger deadline)
-        {
-            byte[] argsSerialized = (byte[])StdLib.Serialize(args);
-            byte[] methodBytes = (byte[])StdLib.Serialize(method);
-            return Helper.Concat(
-                Helper.Concat(
-                    Helper.Concat(
-                        Helper.Concat((byte[])accountId, (byte[])targetContract),
-                        methodBytes
-                    ),
-                    argsSerialized
-                ),
-                Helper.Concat(nonce.ToByteArray(), deadline.ToByteArray())
-            );
+            return CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)teePubKey, signature, NamedCurveHash.secp256r1SHA256);
         }
     }
 }

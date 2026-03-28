@@ -1,4 +1,5 @@
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { connectedDidProfile } from '@/utils/did';
 import { EC } from '../config/errorCodes.js';
 
 function trim(value) {
@@ -11,10 +12,19 @@ async function postNotification(body) {
     throw new Error(EC.didEndpointMissing);
   }
 
+  const idToken = trim(connectedDidProfile.value?.idToken);
+  if (!idToken) {
+    throw new Error(EC.web3AuthTokenRequired);
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      ...body,
+      did: trim(body?.did || connectedDidProfile.value?.did || ''),
+      idToken,
+    }),
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload?.error) {

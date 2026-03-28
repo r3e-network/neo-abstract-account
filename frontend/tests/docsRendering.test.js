@@ -81,6 +81,36 @@ test('repo docs describe a hardened policy-gated execution surface', () => {
   assert.doesNotMatch(architectureDoc, /fully programmable logic gates/i);
 });
 
+test('production docs describe validation preview, module lifecycle, and relay trust boundaries', () => {
+  const readme = readRepo('README.md');
+  const securityAudit = readRepo('docs/SECURITY_AUDIT.md');
+  const frontendArchitecture = read('src/assets/docs/architecture.md');
+
+  assert.match(readme, /validation preview|previewUserOpValidation/i);
+  assert.match(readme, /module lifecycle/i);
+  assert.match(readme, /paymaster sponsorship does not replace|relay trust boundary|paymaster does not authorize/i);
+
+  assert.match(frontendArchitecture, /Module Lifecycle/i);
+  assert.match(frontendArchitecture, /Validation Preview|relay preflight/i);
+  assert.match(frontendArchitecture, /compatibility-only/i);
+
+  assert.match(securityAudit, /external third-party review/i);
+  assert.match(securityAudit, /property-based|adversarial/i);
+});
+
+test('historical architecture and audit docs stay aligned with the professionalized V3 runtime', () => {
+  const v3Blueprint = readRepo('docs/AA_V3_ARCHITECTURE.en.md');
+  const securityAudit = readRepo('docs/SECURITY_AUDIT.md');
+
+  assert.doesNotMatch(v3Blueprint, /Ultimate Abstract Account|Ultimate Security Architecture|Ultimate Answer/i);
+  assert.doesNotMatch(v3Blueprint, /killer plugin|panoramic trusted interaction gateway|frictionless cross-chain/i);
+  assert.match(v3Blueprint, /historical|design note|current runtime/i);
+
+  assert.doesNotMatch(securityAudit, /contracts\/AbstractAccount\.cs/);
+  assert.doesNotMatch(securityAudit, /contracts\/AbstractAccount\./);
+  assert.match(securityAudit, /UnifiedSmartWalletV3|current V3 runtime/i);
+});
+
 test('repo README keeps a single quickstart heading', () => {
   const readme = readRepo('README.md');
   const matches = readme.match(/^## Quickstart$/gm) || [];
@@ -237,6 +267,7 @@ test('DocsView lazy-loads heavy markdown and diagram dependencies', () => {
   assert.match(docsViewSource, /await import\('mermaid'\)/);
   assert.doesNotMatch(docsViewSource, /await import\('highlight\.js'\)/);
   assert.doesNotMatch(docsViewSource, /import mermaid from 'mermaid';/);
+  assert.doesNotMatch(docsViewSource, /sanitizeRenderedHtml\(svg\)/);
 });
 
 test('DocsView supports deep-linking to a specific doc entry through the query string', () => {

@@ -147,7 +147,8 @@ class DidService {
       window.localStorage.removeItem(DID_STORAGE_KEY);
       return;
     }
-    window.localStorage.setItem(DID_STORAGE_KEY, JSON.stringify(profile));
+    const { idToken: _strip, ...safeProfile } = profile;
+    window.localStorage.setItem(DID_STORAGE_KEY, JSON.stringify(safeProfile));
   }
 
   async ensureClient() {

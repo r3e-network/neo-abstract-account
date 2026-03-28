@@ -69,7 +69,13 @@ export function normalizeRelayPayload(body = {}) {
   };
 }
 
-export function convertContractParamFromJson(param, { sc, u } = {}) {
+const MAX_PARAM_DEPTH = 8;
+
+export function convertContractParamFromJson(param, { sc, u } = {}, depth = 0) {
+  if (depth > MAX_PARAM_DEPTH) {
+    throw new Error(`Contract parameter nesting exceeds maximum depth of ${MAX_PARAM_DEPTH}`);
+  }
+
   if (!param || typeof param !== 'object') {
     return sc.ContractParam.any(null);
   }
@@ -84,9 +90,9 @@ export function convertContractParamFromJson(param, { sc, u } = {}) {
     case 'ByteArray':
       return sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(param.value), true));
     case 'Array':
-      return sc.ContractParam.array(...asArray(param.value).map((item) => convertContractParamFromJson(item, { sc, u })));
+      return sc.ContractParam.array(...asArray(param.value).map((item) => convertContractParamFromJson(item, { sc, u }, depth + 1)));
     case 'Struct':
-      return sc.ContractParam.array(...asArray(param.value).map((item) => convertContractParamFromJson(item, { sc, u })));
+      return sc.ContractParam.array(...asArray(param.value).map((item) => convertContractParamFromJson(item, { sc, u }, depth + 1)));
     case 'Any':
       return sc.ContractParam.any(param.value ?? null);
     case 'Boolean':

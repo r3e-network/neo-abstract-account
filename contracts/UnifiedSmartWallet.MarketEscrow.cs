@@ -27,6 +27,7 @@ namespace AbstractAccount
             byte[] listingKey = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, marketKey, (byte[])marketContract!);
             Storage.Put(Storage.CurrentContext, listingKey, listingId);
+            OnMarketEscrowEntered?.Invoke(accountId, marketContract!, listingId);
         }
 
         /// <summary>
@@ -36,6 +37,7 @@ namespace AbstractAccount
         {
             AssertEscrowMarket(accountId, listingId);
             ClearMarketEscrow(accountId);
+            OnMarketEscrowCancelled?.Invoke(accountId);
         }
 
         /// <summary>
@@ -48,6 +50,8 @@ namespace AbstractAccount
             ExecutionEngine.Assert(newBackupOwner != null && newBackupOwner != UInt160.Zero, "New backup owner required");
 
             AccountState state = GetAccountState(accountId);
+            UInt160 previousVerifier = state.Verifier;
+            UInt160 previousHook = state.HookId;
             state.BackupOwner = newBackupOwner!;
             state.Verifier = UInt160.Zero;
             state.HookId = UInt160.Zero;
@@ -56,7 +60,20 @@ namespace AbstractAccount
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
 
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId));
+
+            if (previousVerifier != UInt160.Zero)
+            {
+                OnModuleRemoved?.Invoke(accountId, ModuleTypeVerifier, previousVerifier);
+            }
+            if (previousHook != UInt160.Zero)
+            {
+                OnModuleRemoved?.Invoke(accountId, ModuleTypeHook, previousHook);
+            }
+
             ClearMarketEscrow(accountId);
+            OnMarketEscrowSettled?.Invoke(accountId, newBackupOwner!);
         }
 
         private static void AssertNoMarketEscrow(UInt160 accountId)

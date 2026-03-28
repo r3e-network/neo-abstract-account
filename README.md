@@ -43,6 +43,33 @@ If you want relay submission to request Morpheus sponsorship before broadcasting
 
 The relay route now forwards optional paymaster metadata and can request Morpheus paymaster pre-authorization before broadcasting a relay-ready `executeUserOp` or `executeUnifiedByAddress` invocation. Failures are now phase-tagged as `preview`, `paymaster`, `relay`, or `response` so operator logs can separate Morpheus sponsorship errors from on-chain relay failures.
 
+### Validation Preview And Trust Boundaries
+
+Production integrations should treat the core AA runtime as having three distinct boundaries:
+
+- **validation preview**: `previewUserOpValidation(accountId, op)` is a read-only check for deadline validity, nonce acceptability, and current verifier/hook bindings
+- **authorization**: only the configured verifier plugin or backup-owner witness can authorize `executeUserOp`
+- **execution**: hooks and target contracts still run after authorization and can still reject the operation
+
+The relay is an operator convenience layer, not an authority layer:
+
+- **relay trust boundary**: the relay can simulate, package, and submit, but it cannot authorize on behalf of the account
+- relay preflight and validation preview help operators simulate readiness before submit
+- relay submission can package and pay for transactions, but it does not replace on-chain signature validation
+- paymaster sponsorship does not replace the configured verifier or backup-owner witness
+- paymaster does not authorize execution
+
+### Module Lifecycle
+
+V3 now exposes a generic module lifecycle for new tooling while preserving the legacy verifier/hook events for compatibility.
+
+- **install**: first binding of a verifier or hook emits `ModuleInstalled`
+- **replace**: timelocked rotations emit `ModuleUpdateInitiated` and later `ModuleUpdateConfirmed`
+- **remove**: clearing a binding, escape-driven clearing, or market-settlement cleanup emits `ModuleRemoved`
+- **cancel**: aborting a pending verifier or hook rotation emits `ModuleUpdateCancelled`
+
+This generic lifecycle is the recommended surface for indexers, dashboards, and operational tooling that should not care whether the bound module is a verifier or a hook.
+
 ## Canonical Morpheus Network Anchors
 
 When this repo references Morpheus-integrated addresses, treat the following as the current canonical Neo N3 anchors:

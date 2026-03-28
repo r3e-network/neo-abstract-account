@@ -17,7 +17,8 @@ namespace AbstractAccount.Verifiers
     /// It is kept in the tree so integrators can see the intended configuration surface.
     /// </remarks>
     [DisplayName("ZKEmailVerifier")]
-    [ContractPermission("*", "*")]
+    [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "computeArgsHash")]
     [ManifestExtra("Description", "ZK-SNARK Email Proof Verifier")]
     public class ZKEmailVerifier : SmartContract
     {
