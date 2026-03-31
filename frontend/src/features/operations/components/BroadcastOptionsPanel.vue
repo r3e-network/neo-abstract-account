@@ -98,7 +98,7 @@
         <div class="rounded-lg border border-aa-success/20 bg-aa-success/5 p-3">
           <p class="text-xs font-bold uppercase tracking-[0.18em] text-aa-success">{{ t('operations.validatedOnTestnet', 'Validated on Neo N3 Testnet') }}</p>
           <p class="mt-1 text-xs leading-5 text-aa-muted">{{ t('operations.policyTestnetAaDescPrefix', 'Policy') }} <code class="font-mono text-neo-300">testnet-aa</code> {{ t('operations.policyTestnetAaDescSuffix', 'supports registerAccount, updateVerifier, paymaster authorization, and relay executeUserOp.') }}</p>
-          <span class="sr-only">Open Paymaster Live Validation</span>
+          <span class="sr-only">{{ t('operations.srOpenPaymasterValidation', 'Open Paymaster Live Validation') }}</span>
           <router-link
             class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-aa-success hover:text-aa-success-light transition-colors duration-200"
             :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"

@@ -17,10 +17,8 @@
           />
 
           <PaymasterValidationBanner :explorer-base-url="runtime.explorerBaseUrl" i18n-key-prefix="sharedDraft" />
-          <span class="sr-only">Live-Validated Paymaster Path</span>
-          <span class="sr-only">Open Validation Ledger</span>
-          <span class="sr-only">Open Explorer Tx</span>
-          <span class="sr-only">paymasterValidation</span>
+          <span class="sr-only">{{ t('sharedDraft.srPaymasterDescription', 'Live-Validated Paymaster Path. Open Validation Ledger. Open Explorer Tx.') }}</span>
+          <!-- paymasterValidation route referenced via PaymasterValidationBanner -->
 
           <div class="grid gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-lg border border-aa-border bg-aa-dark p-4">

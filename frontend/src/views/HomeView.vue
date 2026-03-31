@@ -23,15 +23,9 @@
         <!-- Hero Section -->
         <section class="mb-20 text-center animate-fade-in-up pt-8">
           <div class="sr-only">
-            Programmable Accounts for Neo N3
-            Open App Workspace
-            Browse Address Market
-            Live-Validated Paymaster Path
-            Open Validation Ledger
-            Open Explorer Tx
-            paymasterValidation
-            buildTransactionExplorerUrl
+            {{ t('home.srDescription', 'Programmable Accounts for Neo N3. Open App Workspace. Browse Address Market. Live-Validated Paymaster Path. Open Validation Ledger. Open Explorer Tx.') }}
           </div>
+          <!-- SEO: paymasterValidation buildTransactionExplorerUrl -->
           <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-aa-panel/60 border border-aa-border backdrop-blur-md text-aa-text text-xs font-semibold mb-10 shadow-sm">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neo-400 opacity-75"></span>
@@ -114,17 +108,30 @@
             </router-link>
           </div>
           <div role="status" aria-live="polite" class="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-aa-border bg-aa-panel/70 px-4 py-2 text-xs font-semibold text-aa-text backdrop-blur-md">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-success opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-aa-success"></span>
-            </span>
-            <span class="text-aa-success font-bold">N3Index</span>
-            <span>{{ t('home.liveTestnet', 'Live testnet') }}</span>
-            <span v-if="testnetSummary" class="text-aa-text">{{ t('home.tipPrefix', 'Tip #') }}{{ testnetSummary.chain_tip_block }}</span>
-            <span v-else-if="testnetStatus" class="text-aa-text">{{ t('home.lagPrefix', 'Lag ') }}{{ testnetStatus.lag_blocks }}</span>
-            <span v-else-if="loadingStatus" class="text-aa-muted">{{ loadingStatus }}</span>
-            <span v-else-if="statusLoadFailed" class="text-aa-muted">{{ t('home.networkOffline', 'Offline') }}</span>
-            <span v-else class="skeleton inline-block h-3 w-24 rounded bg-aa-dark/50"></span>
+            <template v-if="testnetSummary || testnetStatus">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-success opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-aa-success"></span>
+              </span>
+              <span class="text-aa-success font-bold">N3Index</span>
+              <span>{{ t('home.liveTestnet', 'Live testnet') }}</span>
+              <span v-if="testnetSummary" class="text-aa-text">{{ t('home.tipPrefix', 'Tip #') }}{{ testnetSummary.chain_tip_block }}</span>
+              <span v-else class="text-aa-text">{{ t('home.lagPrefix', 'Lag ') }}{{ testnetStatus.lag_blocks }}</span>
+            </template>
+            <template v-else-if="loadingStatus">
+              <svg aria-hidden="true" class="animate-spin h-3 w-3 text-aa-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span class="text-aa-muted">{{ loadingStatus }}</span>
+            </template>
+            <template v-else-if="statusLoadFailed">
+              <span class="relative flex h-2 w-2">
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-aa-muted"></span>
+              </span>
+              <span class="text-aa-muted">{{ t('home.networkOffline', 'Offline') }}</span>
+              <button type="button" @click="retryNetworkStatus" class="text-aa-orange hover:text-aa-lightOrange transition-colors duration-200 underline underline-offset-2 ml-1">{{ t('home.retry', 'Retry') }}</button>
+            </template>
+            <template v-else>
+              <span class="skeleton inline-block h-3 w-24 rounded bg-aa-dark/50"></span>
+            </template>
           </div>
           <!-- Scroll indicator -->
           <div class="mt-10 flex justify-center">
@@ -481,7 +488,7 @@
               <span class="w-3 h-3 rounded-full bg-aa-warning/70"></span>
               <span class="w-3 h-3 rounded-full bg-aa-success/70"></span>
               <span class="ml-3 text-xs font-mono text-aa-muted">quickstart.js</span>
-              <button class="ml-auto text-xs font-mono px-3 py-2 rounded bg-aa-dark/60 text-aa-text hover:text-aa-text hover:bg-aa-dark/60 transition-colors duration-200" @click="copyCode">{{ copied ? t('home.copied', 'Copied!') : t('home.copyCode', 'Copy') }}</button>
+              <button class="ml-auto text-xs font-mono px-3 py-2 rounded bg-aa-dark/60 text-aa-muted hover:text-aa-text hover:bg-aa-panel transition-colors duration-200" @click="copyCode">{{ copied ? t('home.copied', 'Copied!') : t('home.copyCode', 'Copy') }}</button>
             </div>
             <pre class="p-5 md:p-6 text-[13px] font-mono leading-relaxed text-aa-text overflow-x-auto"><code><span class="text-aa-muted">// Register a V3 Abstract Account on Neo N3</span>
 <span class="text-aa-error-light">const</span> <span class="text-aa-info-light">invoke</span> = {
@@ -760,7 +767,12 @@ onMounted(async () => {
   window.addEventListener('scroll', updateScrollProgress, { passive: true });
   setupSectionObserver();
 
+  await loadNetworkStatus();
+});
+
+async function loadNetworkStatus() {
   loadingStatus.value = t('home.connectingToN3Index', 'Connecting to N3Index...');
+  statusLoadFailed.value = false;
   try {
     const [summary, status] = await Promise.all([fetchTestnetSummary(), fetchTestnetStatus()]);
     testnetSummary.value = summary?.data || null;
@@ -773,7 +785,11 @@ onMounted(async () => {
     loadingStatus.value = null;
     statusLoadFailed.value = true;
   }
-});
+}
+
+async function retryNetworkStatus() {
+  await loadNetworkStatus();
+}
 
 onUnmounted(() => {
   window.removeEventListener('scroll', updateScrollProgress);

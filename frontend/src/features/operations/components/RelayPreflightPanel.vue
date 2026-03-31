@@ -20,7 +20,7 @@
     </div>
 
     <template v-else>
-      <div class="sr-only">Stack Preview View Stack Decoded Value</div>
+      <div class="sr-only">{{ t('operations.srStackPreview', 'Stack Preview. View Stack. Decoded Value.') }}</div>
       <div class="mb-4 flex flex-wrap gap-3">
         <button class="btn-secondary" :aria-label="t('operations.copyPayload', 'Copy Payload')" :disabled="!canCopyPayload" @click="emitCopy('payload')">
           <span class="flex items-center gap-2">

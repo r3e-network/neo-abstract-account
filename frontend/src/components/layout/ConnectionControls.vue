@@ -52,6 +52,8 @@ import { computed, onMounted } from 'vue';
 import { useWalletConnection } from '@/composables/useWalletConnection';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { useI18n } from '@/i18n';
+import { useToast } from 'vue-toastification';
+import { translateError } from '@/config/errorCodes.js';
 import { connectedDidProfile, hydrateConnectedDidProfileFromStorage } from '@/utils/did';
 
 defineProps({
@@ -61,9 +63,10 @@ defineProps({
   },
 });
 
-const { isConnected, truncatedAddress, connect, disconnect, isConnecting: isWalletConnecting } =
+const { isConnected, truncatedAddress, connect: rawConnect, disconnect: rawDisconnect, isConnecting: isWalletConnecting } =
   useWalletConnection();
 const { t } = useI18n();
+const toast = useToast();
 
 const didAvailable = computed(() => Boolean(String(RUNTIME_CONFIG.web3AuthClientId || '').trim()));
 const didConnected = computed(() => Boolean(connectedDidProfile.value?.did));
@@ -77,8 +80,28 @@ onMounted(() => {
   hydrateConnectedDidProfileFromStorage();
 });
 
+async function connect() {
+  try {
+    await rawConnect();
+  } catch (error) {
+    toast.error(translateError(error?.message, t) || t('nav.connectWalletFailed', 'Wallet connection failed. Please try again.'));
+  }
+}
+
+async function disconnect() {
+  try {
+    await rawDisconnect();
+  } catch (error) {
+    toast.error(translateError(error?.message, t) || t('nav.disconnect', 'Disconnect'));
+  }
+}
+
 async function disconnectDid() {
-  const { didService } = await import('@/services/didService');
-  await didService.disconnect();
+  try {
+    const { didService } = await import('@/services/didService');
+    await didService.disconnect();
+  } catch (error) {
+    toast.error(translateError(error?.message, t) || t('nav.connectDidFailed', 'Web3Auth connection failed. Please try again.'));
+  }
 }
 </script>

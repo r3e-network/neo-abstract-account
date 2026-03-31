@@ -17,7 +17,7 @@
             </span>
             {{ t('market.badge', 'Trustless Escrow') }}
           </div>
-          <span class="sr-only">Trustless escrow for AA address transfers</span>
+          <span class="sr-only">{{ t('market.srDescription', 'Trustless escrow for AA address transfers') }}</span>
           <h1 class="text-4xl font-extrabold font-outfit md:text-5xl leading-tight">
             <span class="text-gradient-white">{{ t('market.subtitlePart1', 'AA Address') }}</span>
             <span class="text-gradient"> {{ t('market.subtitlePart2', 'Marketplace') }}</span>
@@ -70,7 +70,7 @@
           <div class="mt-6 space-y-4">
             <label class="block" for="market-account-seed">
               <span class="mb-1 block text-xs font-semibold uppercase tracking-widest text-aa-muted">{{ t('market.accountSeedLabel', 'Account Seed / AccountId Hash') }}</span>
-              <input id="market-account-seed" v-model="createForm.accountSeed" type="text" class="input-field w-full bg-aa-dark font-mono text-sm" :class="accountSeedInputClass" :placeholder="t('market.accountSeedPlaceholder', '64-char hex seed or 40-char account hash')" />
+              <input id="market-account-seed" v-model="createForm.accountSeed" type="text" class="input-field w-full bg-aa-dark font-mono text-sm" :class="accountSeedInputClass" :placeholder="t('market.accountSeedPlaceholder', '64-char hex seed or 40-char account hash')" autocomplete="off" spellcheck="false" />
               <p v-if="accountSeedError" role="alert" class="mt-1 text-xs text-aa-error">{{ accountSeedError }}</p>
               <p v-else-if="listingPreview.address" class="mt-1 text-xs text-aa-success/70">{{ t('market.validAccountDetected', 'Valid account detected') }}</p>
             </label>
@@ -89,7 +89,9 @@
 
             <label class="block" for="market-listing-title">
               <span class="mb-1 block text-xs font-semibold uppercase tracking-widest text-aa-muted">{{ t('market.listingTitleLabel', 'Listing Title') }}</span>
-              <input id="market-listing-title" v-model="createForm.title" type="text" maxlength="80" class="input-field w-full bg-aa-dark text-sm" :placeholder="t('market.listingTitlePlaceholder', 'Short and descriptive')" />
+              <input id="market-listing-title" v-model="createForm.title" type="text" maxlength="80" class="input-field w-full bg-aa-dark text-sm" :class="titleError ? 'border-aa-error focus:border-aa-error-light focus:ring-aa-error/20' : ''" :placeholder="t('market.listingTitlePlaceholder', 'Short and descriptive')" @input="validateTitle" />
+              <p v-if="titleError" role="alert" class="mt-1 text-xs text-aa-error">{{ titleError }}</p>
+              <p v-else class="mt-1 text-xs text-aa-muted">{{ createForm.title.length }}/80</p>
             </label>
 
             <label class="block" for="market-price-gas">
@@ -343,6 +345,7 @@ function setListingSeed(seed) {
 }
 
 const priceError = ref('');
+const titleError = ref('');
 
 const accountSeedError = ref('');
 
@@ -392,6 +395,20 @@ function validatePrice() {
   return true;
 }
 
+function validateTitle() {
+  const val = createForm.title.trim();
+  if (!val) {
+    titleError.value = '';
+    return true;
+  }
+  if (val.length < 3) {
+    titleError.value = t('market.errorTitleTooShort', 'Title must be at least 3 characters');
+    return false;
+  }
+  titleError.value = '';
+  return true;
+}
+
 const priceInputClass = computed(() => {
   if (priceError.value) return 'border-aa-error focus:border-aa-error-light focus:ring-aa-error/20';
   if (createForm.price_gas && !priceError.value) return 'border-aa-success/50';
@@ -428,6 +445,7 @@ const canSubmitListing = computed(() => {
     createForm.accountSeed &&
     createForm.price_gas &&
     !priceError.value &&
+    !titleError.value &&
     connectedAccount.value &&
     listingPreview.value.accountIdHash
   );
