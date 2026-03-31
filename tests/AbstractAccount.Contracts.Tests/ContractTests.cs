@@ -243,7 +243,7 @@ public class ContractTests
         StringAssert.Contains(source, "if (!DidExecutionSucceed(result)) return;");
         StringAssert.Contains(source, "ExecutionEngine.Assert(IsProtectedTransferSource(accountId, fromAccount), \"Transfer source not permitted\");");
         StringAssert.Contains(source, "return from == accountId;");
-        StringAssert.Contains(source, "StoreSpentToday(accountId, targetContract, currentTime, spentToday + amount);");
+        StringAssert.Contains(source, "StoreFixedWindowSpent(accountId, targetContract, currentTime, spentToday + amount);");
         Assert.IsFalse(source.Contains("Storage.Put(Storage.CurrentContext, spentKey, newTotal);", StringComparison.Ordinal));
     }
 
@@ -252,7 +252,7 @@ public class ContractTests
     {
         string source = ReadContractFile("hooks/MultiHook.cs");
 
-        StringAssert.Contains(source, "Too many hooks");
+        StringAssert.Contains(source, "hooks allowed");
         StringAssert.Contains(source, "Self hook not allowed");
         StringAssert.Contains(source, "Duplicate hook not allowed");
     }

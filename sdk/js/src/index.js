@@ -568,7 +568,7 @@ class AbstractAccountClient {
         });
       }
 
-      return buildV3UserOperationTypedData({
+      return metaTxExports.buildV3UserOperationTypedData({
         chainId,
         verifyingContract: resolvedVerifierHash,
         accountIdHash: resolvedAccountIdHash,
