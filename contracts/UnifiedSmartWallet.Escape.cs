@@ -34,7 +34,7 @@ namespace AbstractAccount
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
             Storage.Put(Storage.CurrentContext, escapeKey, Runtime.Time);
-            OnEscapeInitiated?.Invoke(accountId, state.BackupOwner);
+            OnEscapeInitiated(accountId, state.BackupOwner);
         }
 
         /// <summary>
@@ -65,19 +65,19 @@ namespace AbstractAccount
                 {
                     if (previousVerifier != UInt160.Zero)
                     {
-                        OnModuleRemoved?.Invoke(accountId, ModuleTypeVerifier, previousVerifier);
+                        OnModuleRemoved(accountId, ModuleTypeVerifier, previousVerifier);
                     }
                 }
                 else if (previousVerifier == UInt160.Zero)
                 {
-                    OnModuleInstalled?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+                    OnModuleInstalled(accountId, ModuleTypeVerifier, newVerifier);
                 }
                 else
                 {
-                    OnModuleUpdateConfirmed?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+                    OnModuleUpdateConfirmed(accountId, ModuleTypeVerifier, newVerifier);
                 }
             }
-            OnEscapeFinalized?.Invoke(accountId, newVerifier);
+            OnEscapeFinalized(accountId, newVerifier);
         }
     }
 }

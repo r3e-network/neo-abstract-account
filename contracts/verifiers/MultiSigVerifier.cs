@@ -24,6 +24,7 @@ namespace AbstractAccount.Verifiers
     public class MultiSigVerifier : SmartContract
     {
         private static readonly byte[] Prefix_Config = new byte[] { 0x01 };
+        private const int MaxChildVerifiers = 10;
 
         public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
 
@@ -44,11 +45,14 @@ namespace AbstractAccount.Verifiers
         public static void SetConfig(UInt160 accountId, UInt160[] verifiers, int threshold)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
+            ExecutionEngine.Assert(verifiers != null && verifiers.Length > 0, "Empty verifier list not allowed");
+            ExecutionEngine.Assert(verifiers.Length <= MaxChildVerifiers, $"Maximum {MaxChildVerifiers} child verifiers allowed");
             ExecutionEngine.Assert(threshold > 0 && threshold <= verifiers.Length, "Invalid threshold");
 
             // Reject duplicate verifiers to prevent single-signature threshold bypass
             for (int i = 0; i < verifiers.Length; i++)
             {
+                ExecutionEngine.Assert(verifiers[i] != UInt160.Zero && verifiers[i].IsValid, "Invalid verifier address");
                 for (int j = i + 1; j < verifiers.Length; j++)
                 {
                     ExecutionEngine.Assert(verifiers[i] != verifiers[j], "Duplicate verifier");
@@ -58,6 +62,15 @@ namespace AbstractAccount.Verifiers
             MultiSigConfig config = new MultiSigConfig { Verifiers = verifiers, Threshold = threshold };
             byte[] key = Helper.Concat(Prefix_Config, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
+        }
+
+        [Safe]
+        public static MultiSigConfig? GetConfig(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_Config, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            if (data == null) return null;
+            return (MultiSigConfig)StdLib.Deserialize(data!);
         }
 
         /// <summary>

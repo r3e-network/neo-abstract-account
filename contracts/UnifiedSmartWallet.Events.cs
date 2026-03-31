@@ -10,6 +10,7 @@ namespace AbstractAccount
         private const string ModuleTypeVerifier = "verifier";
         private const string ModuleTypeHook = "hook";
 
+        // Custom delegates matching nccs-supported pattern (see Nep17Token.cs).
         public delegate void AccountRegisteredDelegate(UInt160 accountId, UInt160 backupOwner, UInt160 verifier, UInt160 hookId);
         public delegate void HookUpdateDelegate(UInt160 accountId, UInt160 hookId);
         public delegate void VerifierUpdateDelegate(UInt160 accountId, UInt160 verifier);
@@ -22,63 +23,63 @@ namespace AbstractAccount
         public delegate void MarketEscrowSettledDelegate(UInt160 accountId, UInt160 newBackupOwner);
 
         [DisplayName("AccountRegistered")]
-        public static event AccountRegisteredDelegate? OnAccountRegistered;
+        public static event AccountRegisteredDelegate OnAccountRegistered = null!;
 
         [DisplayName("ModuleInstalled")]
-        public static event ModuleLifecycleDelegate? OnModuleInstalled;
+        public static event ModuleLifecycleDelegate OnModuleInstalled = null!;
 
         [DisplayName("ModuleUpdateInitiated")]
-        public static event ModuleLifecycleDelegate? OnModuleUpdateInitiated;
+        public static event ModuleLifecycleDelegate OnModuleUpdateInitiated = null!;
 
         [DisplayName("ModuleUpdateConfirmed")]
-        public static event ModuleLifecycleDelegate? OnModuleUpdateConfirmed;
+        public static event ModuleLifecycleDelegate OnModuleUpdateConfirmed = null!;
 
         [DisplayName("ModuleRemoved")]
-        public static event ModuleLifecycleDelegate? OnModuleRemoved;
+        public static event ModuleLifecycleDelegate OnModuleRemoved = null!;
 
         [DisplayName("ModuleUpdateCancelled")]
-        public static event ModuleLifecycleDelegate? OnModuleUpdateCancelled;
+        public static event ModuleLifecycleDelegate OnModuleUpdateCancelled = null!;
 
         [DisplayName("HookUpdateConfirmed")]
-        public static event HookUpdateDelegate? OnHookUpdateConfirmed;
+        public static event HookUpdateDelegate OnHookUpdateConfirmed = null!;
 
         [DisplayName("HookUpdateInitiated")]
-        public static event HookUpdateDelegate? OnHookUpdateInitiated;
+        public static event HookUpdateDelegate OnHookUpdateInitiated = null!;
 
         [DisplayName("VerifierUpdateConfirmed")]
-        public static event VerifierUpdateDelegate? OnVerifierUpdateConfirmed;
+        public static event VerifierUpdateDelegate OnVerifierUpdateConfirmed = null!;
 
         [DisplayName("VerifierUpdateInitiated")]
-        public static event VerifierUpdateDelegate? OnVerifierUpdateInitiated;
+        public static event VerifierUpdateDelegate OnVerifierUpdateInitiated = null!;
 
         [DisplayName("VerifierUpdateCancelled")]
-        public static event AccountOnlyDelegate? OnVerifierUpdateCancelled;
+        public static event AccountOnlyDelegate OnVerifierUpdateCancelled = null!;
 
         [DisplayName("HookUpdateCancelled")]
-        public static event AccountOnlyDelegate? OnHookUpdateCancelled;
+        public static event AccountOnlyDelegate OnHookUpdateCancelled = null!;
 
         [DisplayName("MetadataUriUpdated")]
-        public static event MetadataUriUpdatedDelegate? OnMetadataUriUpdated;
+        public static event MetadataUriUpdatedDelegate OnMetadataUriUpdated = null!;
 
         [DisplayName("EscapeCancelled")]
-        public static event AccountOnlyDelegate? OnEscapeCancelled;
+        public static event AccountOnlyDelegate OnEscapeCancelled = null!;
 
         [DisplayName("UserOpExecuted")]
-        public static event UserOpExecutedDelegate? OnUserOpExecuted;
+        public static event UserOpExecutedDelegate OnUserOpExecuted = null!;
 
         [DisplayName("EscapeInitiated")]
-        public static event EscapeInitiatedDelegate? OnEscapeInitiated;
+        public static event EscapeInitiatedDelegate OnEscapeInitiated = null!;
 
         [DisplayName("EscapeFinalized")]
-        public static event VerifierUpdateDelegate? OnEscapeFinalized;
+        public static event VerifierUpdateDelegate OnEscapeFinalized = null!;
 
         [DisplayName("MarketEscrowEntered")]
-        public static event MarketEscrowEnteredDelegate? OnMarketEscrowEntered;
+        public static event MarketEscrowEnteredDelegate OnMarketEscrowEntered = null!;
 
         [DisplayName("MarketEscrowCancelled")]
-        public static event AccountOnlyDelegate? OnMarketEscrowCancelled;
+        public static event AccountOnlyDelegate OnMarketEscrowCancelled = null!;
 
         [DisplayName("MarketEscrowSettled")]
-        public static event MarketEscrowSettledDelegate? OnMarketEscrowSettled;
+        public static event MarketEscrowSettledDelegate OnMarketEscrowSettled = null!;
     }
 }

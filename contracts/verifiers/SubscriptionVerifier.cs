@@ -23,6 +23,7 @@ namespace AbstractAccount.Verifiers
     public class SubscriptionVerifier : SmartContract
     {
         private static readonly byte[] Prefix_Subscription = new byte[] { 0x01 };
+        private static readonly byte[] Prefix_SubscriptionNonceCounter = new byte[] { 0x02 };
 
         public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
 
@@ -66,16 +67,16 @@ namespace AbstractAccount.Verifiers
         public static bool ValidateSignature(UInt160 accountId, UserOperation op)
         {
             // Signature field acts as the Subscription ID being claimed by the merchant
-            ByteString subId = op.Signature; 
+            ByteString subId = op.Signature;
             byte[] key = Helper.Concat(Helper.Concat(Prefix_Subscription, (byte[])accountId), (byte[])subId);
             ByteString? data = Storage.Get(Storage.CurrentContext, key);
             ExecutionEngine.Assert(data != null, "Subscription not found");
-            
+
             SubscriptionConfig config = (SubscriptionConfig)StdLib.Deserialize(data!);
 
             ExecutionEngine.Assert(op.TargetContract == config.Token, "Target must be the subscription token");
             ExecutionEngine.Assert(op.Method == "transfer", "Method must be transfer");
-            
+
             // Expected args: [from, to, amount, ...]
             ExecutionEngine.Assert(op.Args.Length >= 3, "Invalid transfer args");
             ExecutionEngine.Assert((UInt160)op.Args[0] == accountId, "Transfer source must be the account");
@@ -86,10 +87,12 @@ namespace AbstractAccount.Verifiers
             BigInteger currentPeriod = Runtime.Time / config.PeriodMs;
             ExecutionEngine.Assert(currentPeriod > 0, "Subscription period not yet elapsed");
 
-            // Replay protection without mutating state: require a salt-mode nonce
-            // that deterministically binds this request to the current billing
-            // period and subscription ID. Core nonce consumption then ensures
-            // the same period cannot be charged twice with the same subId.
+            // Get per-subscription nonce counter to prevent replay within the same billing period
+            byte[] counterKey = Helper.Concat(Helper.Concat(Prefix_SubscriptionNonceCounter, (byte[])accountId), (byte[])subId);
+            ByteString? counterData = Storage.Get(Storage.CurrentContext, counterKey);
+            BigInteger nonceCounter = counterData == null ? 0 : (BigInteger)counterData;
+
+            // Replay protection: nonce binds to subscription ID, billing period, and charge counter
             BigInteger saltBase = 1_000_000_000_000_000_000;
             ByteString digest = CryptoLib.Sha256(subId);
             byte[] digestBytes = (byte[])digest;
@@ -98,8 +101,11 @@ namespace AbstractAccount.Verifiers
             {
                 subTag = (subTag << 8) + digestBytes[i];
             }
-            BigInteger expectedNonce = saltBase + (subTag << 32) + currentPeriod;
-            ExecutionEngine.Assert(op.Nonce == expectedNonce, "Subscription nonce must match the current billing period");
+            BigInteger expectedNonce = saltBase + (subTag << 32) + currentPeriod + nonceCounter;
+            ExecutionEngine.Assert(op.Nonce == expectedNonce, "Subscription nonce mismatch");
+
+            // Increment counter for next charge to prevent replay within the same billing period
+            Storage.Put(Storage.CurrentContext, counterKey, nonceCounter + 1);
 
             return true;
         }
@@ -110,6 +116,14 @@ namespace AbstractAccount.Verifiers
 
             byte[] prefix = Helper.Concat(Prefix_Subscription, (byte[])accountId);
             Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly);
+            while (iterator.Next())
+            {
+                Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
+            }
+
+            // Clear nonce counters
+            byte[] counterPrefix = Helper.Concat(Prefix_SubscriptionNonceCounter, (byte[])accountId);
+            iterator = Storage.Find(Storage.CurrentContext, counterPrefix, FindOptions.KeysOnly);
             while (iterator.Next())
             {
                 Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);

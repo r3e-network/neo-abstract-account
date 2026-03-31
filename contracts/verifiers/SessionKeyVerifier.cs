@@ -24,9 +24,17 @@ namespace AbstractAccount.Verifiers
     {
         // AccountId -> SessionKeyData
         private static readonly byte[] Prefix_SessionKeys = new byte[] { 0x01 };
+        // AccountId -> SessionKeyMetadata
+        private static readonly byte[] Prefix_SessionMetadata = new byte[] { 0x02 };
+        // AccountId -> SpentAmount (for spending limit tracking)
+        private static readonly byte[] Prefix_SpentAmount = new byte[] { 0x03 };
+        // AccountId -> LastKeyRotation timestamp (for rotation cooldown)
+        private static readonly byte[] Prefix_LastKeyRotation = new byte[] { 0x04 };
+        // Key rotation cooldown: 24 hours in milliseconds to prevent spending limit bypass
+        private static readonly BigInteger KeyRotationCooldownMs = 24 * 3600 * 1000;
 
         // Maximum session key lifetime: 30 days in milliseconds
-        private const long MaxSessionDuration = 30L * 24 * 3600 * 1000; // 2_592_000_000
+        private static readonly BigInteger MaxSessionDuration = BigInteger.Parse("2592000000"); // 30 days in ms
 
         public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
 
@@ -41,28 +49,64 @@ namespace AbstractAccount.Verifiers
             public UInt160 TargetContract = UInt160.Zero;
             public string Method = string.Empty;
             public BigInteger ValidUntil;
+            public BigInteger SpendingLimit;                             // Maximum total spend (0 = unlimited)
+        }
+
+        public class SessionKeyMetadata
+        {
+            public BigInteger CreatedAt;                                 // Session creation timestamp
+            public BigInteger LastUsedAt;                                // Last successful use timestamp
+            public string Description;                                    // Optional description (max 128 chars)
         }
 
         /// <summary>
         /// Configures the active session key and its target/method/expiry scope.
         /// </summary>
-        public static void SetSessionKey(UInt160 accountId, ByteString pubKey, UInt160 targetContract, string method, BigInteger validUntil)
+        public static void SetSessionKey(UInt160 accountId, ByteString pubKey, UInt160 targetContract, string method, BigInteger validUntil, BigInteger spendingLimit, string description)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             ExecutionEngine.Assert(pubKey.Length == 33 || pubKey.Length == 65, "Invalid public key length");
             ExecutionEngine.Assert(validUntil > Runtime.Time, "Session key must expire in the future");
             ExecutionEngine.Assert(validUntil <= Runtime.Time + MaxSessionDuration, "Session key lifetime exceeds maximum of 30 days");
-            
+            ExecutionEngine.Assert(spendingLimit >= 0, "Spending limit must be non-negative");
+            ExecutionEngine.Assert(description == null || description.Length <= 128, "Description too long (max 128 chars)");
+
+            // Enforce key rotation cooldown to prevent spending limit bypass via rapid key rotation
+            byte[] rotationKey = Helper.Concat(Prefix_LastKeyRotation, (byte[])accountId);
+            ByteString? lastRotationData = Storage.Get(Storage.CurrentContext, rotationKey);
+            if (lastRotationData != null)
+            {
+                BigInteger lastRotation = (BigInteger)lastRotationData;
+                ExecutionEngine.Assert(Runtime.Time >= lastRotation + KeyRotationCooldownMs, "Key rotation cooldown active (24h)");
+            }
+
             SessionKeyData data = new SessionKeyData
             {
                 PubKey = pubKey,
                 TargetContract = targetContract,
                 Method = method,
-                ValidUntil = validUntil
+                ValidUntil = validUntil,
+                SpendingLimit = spendingLimit
             };
 
             byte[] key = Helper.Concat(Prefix_SessionKeys, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(data));
+
+            // Store metadata
+            SessionKeyMetadata metadata = new SessionKeyMetadata
+            {
+                CreatedAt = Runtime.Time,
+                LastUsedAt = 0,
+                Description = description ?? string.Empty
+            };
+            byte[] metadataKey = Helper.Concat(Prefix_SessionMetadata, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, metadataKey, StdLib.Serialize(metadata));
+
+            // Record rotation timestamp for cooldown enforcement
+            byte[] rotationTsKey = Helper.Concat(Prefix_LastKeyRotation, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, rotationTsKey, Runtime.Time);
+
+            // Do NOT reset spending tracking — prevent spending limit bypass via key rotation
         }
 
         /// <summary>
@@ -73,6 +117,10 @@ namespace AbstractAccount.Verifiers
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             byte[] key = Helper.Concat(Prefix_SessionKeys, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, key);
+            byte[] metadataKey = Helper.Concat(Prefix_SessionMetadata, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, metadataKey);
+            byte[] spentKey = Helper.Concat(Prefix_SpentAmount, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, spentKey);
         }
 
         [Safe]
@@ -82,6 +130,23 @@ namespace AbstractAccount.Verifiers
             ByteString? data = Storage.Get(Storage.CurrentContext, key);
             if (data == null) return null;
             return (SessionKeyData)StdLib.Deserialize(data!);
+        }
+
+        [Safe]
+        public static SessionKeyMetadata? GetSessionKeyMetadata(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_SessionMetadata, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            if (data == null) return null;
+            return (SessionKeyMetadata)StdLib.Deserialize(data!);
+        }
+
+        [Safe]
+        public static BigInteger GetSpentAmount(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_SpentAmount, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            return data == null ? 0 : (BigInteger)data;
         }
 
         public static void ClearAccount(UInt160 accountId)
@@ -106,7 +171,7 @@ namespace AbstractAccount.Verifiers
             SessionKeyData? sk = GetSessionKey(accountId);
             ExecutionEngine.Assert(sk != null, "No session key active");
             SessionKeyData sessionKey = sk!;
-            
+
             ExecutionEngine.Assert(Runtime.Time <= sessionKey.ValidUntil, "Session key expired");
             ExecutionEngine.Assert(op.TargetContract == sessionKey.TargetContract, "Target contract not permitted");
             if (sessionKey.Method != "*") // Allow wildcard method if configured
@@ -117,9 +182,54 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert(op.Signature != null && op.Signature.Length == 64, "Invalid signature length");
             ByteString signature = op.Signature!;
             byte[] payload = VerifierPayload.BuildPayload(accountId, op.TargetContract, op.Method, op.Args, op.Nonce, op.Deadline);
-            
+
             // Verify against the raw payload; secp256r1SHA256 hashes internally.
-            return CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)sessionKey.PubKey, signature, NamedCurveHash.secp256r1SHA256);
+            bool isValid = CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)sessionKey.PubKey, signature, NamedCurveHash.secp256r1SHA256);
+
+            if (isValid)
+            {
+                // Enforce spending limit if configured
+                if (sessionKey.SpendingLimit > 0)
+                {
+                    BigInteger spent = GetSpentAmount(accountId);
+                    BigInteger operationValue = ExtractTransferValue(op);
+                    if (operationValue > 0)
+                    {
+                        BigInteger newSpent = spent + operationValue;
+                        ExecutionEngine.Assert(newSpent <= sessionKey.SpendingLimit, "Session key spending limit exceeded");
+                        byte[] spentKey = Helper.Concat(Prefix_SpentAmount, (byte[])accountId);
+                        Storage.Put(Storage.CurrentContext, spentKey, newSpent);
+                    }
+                }
+
+                // Update last used timestamp
+                byte[] metadataKey = Helper.Concat(Prefix_SessionMetadata, (byte[])accountId);
+                ByteString? metadataData = Storage.Get(Storage.CurrentContext, metadataKey);
+                if (metadataData != null)
+                {
+                    SessionKeyMetadata metadata = (SessionKeyMetadata)StdLib.Deserialize(metadataData);
+                    metadata.LastUsedAt = Runtime.Time;
+                    Storage.Put(Storage.CurrentContext, metadataKey, StdLib.Serialize(metadata));
+                }
+            }
+
+            return isValid;
+        }
+
+        /// <summary>
+        /// Extracts the transfer value from a user operation if it's a transfer call.
+        /// Returns 0 if not a transfer or value cannot be determined.
+        /// </summary>
+        private static BigInteger ExtractTransferValue(UserOperation op)
+        {
+            if (op.Args == null || op.Args.Length < 3) return 0;
+            if (op.Method != "transfer") return 0;
+
+            object[] args = (object[])op.Args;
+            if (args.Length < 3) return 0;
+
+            if (args[2] is BigInteger amount) return amount;
+            return 0;
         }
     }
 }

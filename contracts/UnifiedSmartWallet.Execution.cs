@@ -52,12 +52,17 @@ namespace AbstractAccount
                 }
 
                 // Security defense: if account is in stolen escape state, normal operations interrupt escape
+                // NOTE: Only the backup owner can cancel an active escape to prevent attackers
+                // from repeatedly executing operations to indefinitely delay the escape hatch.
                 if (state.EscapeTriggeredAt > 0)
                 {
+                    // BackupOwner is validated to be non-null on line 50, but add redundant check for compiler
+                    ExecutionEngine.Assert(state.BackupOwner != null && state.BackupOwner != UInt160.Zero, "No backup owner");
+                    ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner!), "Only backup owner can cancel escape");
                     state.EscapeTriggeredAt = 0;
                     byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
                     Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
-                    OnEscapeCancelled?.Invoke(accountId);
+                    OnEscapeCancelled(accountId);
                 }
 
                 // [Hook phase] pre-execution hook
@@ -89,7 +94,7 @@ namespace AbstractAccount
                         Contract.Call(state.HookId, "postExecute", CallFlags.All, new object[] { accountId, op, result });
                     }
 
-                    OnUserOpExecuted?.Invoke(accountId, op.TargetContract, op.Method, op.Nonce);
+                    OnUserOpExecuted(accountId, op.TargetContract, op.Method, op.Nonce);
                     return result;
                 }
                 finally

@@ -17,12 +17,13 @@ namespace AbstractAccount
         /// </summary>
         public static void RegisterAccount(UInt160 accountId, UInt160 verifier, ByteString verifierParams, UInt160 hookId, UInt160 backupOwner, uint escapeTimelock)
         {
+            ExecutionEngine.Assert(accountId != null && accountId != UInt160.Zero, "Account id required");
             ExecutionEngine.Assert(backupOwner != null && backupOwner != UInt160.Zero, "Backup owner required");
-            ExecutionEngine.Assert(Runtime.CheckWitness(backupOwner!), "Backup owner witness required");
+            ExecutionEngine.Assert(Runtime.CheckWitness(backupOwner), "Backup owner witness required");
             ExecutionEngine.Assert(escapeTimelock >= 604800, "Escape timelock must be at least 7 days");
             ExecutionEngine.Assert(escapeTimelock <= 7776000, "Escape timelock must not exceed 90 days");
 
-            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
+            byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId!);
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Account already exists");
 
             AccountState state = new AccountState
@@ -34,14 +35,14 @@ namespace AbstractAccount
                 EscapeTriggeredAt = 0
             };
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
-            OnAccountRegistered?.Invoke(accountId, backupOwner!, verifier, hookId);
+            OnAccountRegistered(accountId, backupOwner!, verifier, hookId);
             if (verifier != UInt160.Zero)
             {
-                OnModuleInstalled?.Invoke(accountId, ModuleTypeVerifier, verifier);
+                OnModuleInstalled(accountId, ModuleTypeVerifier, verifier);
             }
             if (hookId != UInt160.Zero)
             {
-                OnModuleInstalled?.Invoke(accountId, ModuleTypeHook, hookId);
+                OnModuleInstalled(accountId, ModuleTypeHook, hookId);
             }
 
             if (verifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
@@ -76,9 +77,9 @@ namespace AbstractAccount
                 Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
                 if (newHookId != UInt160.Zero)
                 {
-                    OnModuleInstalled?.Invoke(accountId, ModuleTypeHook, newHookId);
+                    OnModuleInstalled(accountId, ModuleTypeHook, newHookId);
                 }
-                OnHookUpdateConfirmed?.Invoke(accountId, newHookId);
+                OnHookUpdateConfirmed(accountId, newHookId);
                 return;
             }
 
@@ -96,8 +97,8 @@ namespace AbstractAccount
                 InitiatedAt = Runtime.Time
             };
             Storage.Put(Storage.CurrentContext, key2, StdLib.Serialize(update));
-            OnModuleUpdateInitiated?.Invoke(accountId, ModuleTypeHook, newHookId);
-            OnHookUpdateInitiated?.Invoke(accountId, newHookId);
+            OnModuleUpdateInitiated(accountId, ModuleTypeHook, newHookId);
+            OnHookUpdateInitiated(accountId, newHookId);
         }
 
         /// <summary>
@@ -125,14 +126,14 @@ namespace AbstractAccount
             {
                 if (previousHook != UInt160.Zero)
                 {
-                    OnModuleRemoved?.Invoke(accountId, ModuleTypeHook, previousHook);
+                    OnModuleRemoved(accountId, ModuleTypeHook, previousHook);
                 }
             }
             else
             {
-                OnModuleUpdateConfirmed?.Invoke(accountId, ModuleTypeHook, pending.NewHookId);
+                OnModuleUpdateConfirmed(accountId, ModuleTypeHook, pending.NewHookId);
             }
-            OnHookUpdateConfirmed?.Invoke(accountId, pending.NewHookId);
+            OnHookUpdateConfirmed(accountId, pending.NewHookId);
         }
 
         /// <summary>
@@ -166,9 +167,9 @@ namespace AbstractAccount
                 }
                 if (newVerifier != UInt160.Zero)
                 {
-                    OnModuleInstalled?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
+                    OnModuleInstalled(accountId, ModuleTypeVerifier, newVerifier);
                 }
-                OnVerifierUpdateConfirmed?.Invoke(accountId, newVerifier);
+                OnVerifierUpdateConfirmed(accountId, newVerifier);
                 return;
             }
 
@@ -187,8 +188,8 @@ namespace AbstractAccount
                 InitiatedAt = Runtime.Time
             };
             Storage.Put(Storage.CurrentContext, key2, StdLib.Serialize(update));
-            OnModuleUpdateInitiated?.Invoke(accountId, ModuleTypeVerifier, newVerifier);
-            OnVerifierUpdateInitiated?.Invoke(accountId, newVerifier);
+            OnModuleUpdateInitiated(accountId, ModuleTypeVerifier, newVerifier);
+            OnVerifierUpdateInitiated(accountId, newVerifier);
         }
 
         /// <summary>
@@ -230,14 +231,14 @@ namespace AbstractAccount
             {
                 if (previousVerifier != UInt160.Zero)
                 {
-                    OnModuleRemoved?.Invoke(accountId, ModuleTypeVerifier, previousVerifier);
+                    OnModuleRemoved(accountId, ModuleTypeVerifier, previousVerifier);
                 }
             }
             else
             {
-                OnModuleUpdateConfirmed?.Invoke(accountId, ModuleTypeVerifier, pending.NewVerifier);
+                OnModuleUpdateConfirmed(accountId, ModuleTypeVerifier, pending.NewVerifier);
             }
-            OnVerifierUpdateConfirmed?.Invoke(accountId, pending.NewVerifier);
+            OnVerifierUpdateConfirmed(accountId, pending.NewVerifier);
         }
 
         private static readonly string[] AllowedVerifierMethods = new string[]

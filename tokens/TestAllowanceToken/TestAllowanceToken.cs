@@ -5,7 +5,7 @@ using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.Services;
 using System.ComponentModel;
 
-namespace TestAllowanceTokenContract
+namespace TestAllowanceToken
 {
     [DisplayName("TestAllowanceToken")]
     [ManifestExtra("Author", "R3E Network")]

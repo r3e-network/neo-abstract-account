@@ -36,7 +36,10 @@ This index keeps the root documentation set visible and easy to browse.
 
 - `SECURITY_IMPROVEMENTS.md`
 - `docs/SECURITY_AUDIT.md`
+- `docs/SECURITY_MODEL.md`
+- `docs/ETHEREUM_AA_COMPARISON.md`
 - `docs/PLUGIN_MATRIX.md`
+- `docs/PLUGIN_DEVELOPER_GUIDE.md`
 
 ## Matrix Domain Support
 

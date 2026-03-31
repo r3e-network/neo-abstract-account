@@ -19,7 +19,7 @@ namespace AbstractAccount.Verifiers
         public ByteString Signature;
     }
 
-    public class NativeCryptoLib
+    public class ZkCryptoLib
     {
         public static ByteString Keccak256(ByteString data)
         {
@@ -310,7 +310,7 @@ namespace AbstractAccount.Verifiers
             ByteString actionNullifier
         )
         {
-            ByteString argsHash = NativeCryptoLib.Keccak256((ByteString)StdLib.Serialize(args));
+            ByteString argsHash = ZkCryptoLib.Keccak256((ByteString)StdLib.Serialize(args));
             return Sha256(
                 Helper.Concat(
                     Helper.Concat(

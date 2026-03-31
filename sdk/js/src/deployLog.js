@@ -1,5 +1,11 @@
 const { u } = require('@cityofzion/neon-js');
 
+/**
+ * Decodes a contract hash from a ByteString stack item.
+ *
+ * @param {string} byteStringBase64 - Base64-encoded ByteString
+ * @returns {string|null} Contract hash as hex string (with 0x prefix), or null
+ */
 function decodeContractHash(byteStringBase64) {
   if (!byteStringBase64) return null;
   const hex = Buffer.from(byteStringBase64, 'base64').toString('hex');
@@ -7,6 +13,12 @@ function decodeContractHash(byteStringBase64) {
   return `0x${u.reverseHex(hex)}`;
 }
 
+/**
+ * Extracts the deployed contract hash from an application log.
+ *
+ * @param {Object} appLog - Application log from RPC response
+ * @returns {string|null} Contract hash as hex string (with 0x prefix), or null
+ */
 function extractDeployedContractHash(appLog) {
   const execution = appLog?.executions?.[0];
   if (!execution) return null;

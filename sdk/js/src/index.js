@@ -1,23 +1,58 @@
 const { rpc, sc, u, wallet } = require('@cityofzion/neon-js');
+const metaTxExports = require('./metaTx');
+const { EC, createError, mapRpcError, formatError } = require('./errors');
 const {
-  buildMetaTransactionTypedData,
-  buildV3UserOperationTypedData,
-  decodeByteStringStackHex,
+  validateNeoAddress,
+  validateHash160,
+  validateHexString,
+  validatePublicKey,
+  validateAccountId,
+  validateAddressOrHash160,
+  validateEIP712Fields,
+  validateOptions,
+  validateRpcUrl,
   sanitizeHex,
-} = require('./metaTx');
+} = require('./validation');
 
+/**
+ * Normalizes an address or contract hash to a 40-character hex string.
+ * Handles both Neo addresses (N-prefixed) and hex hashes.
+ *
+ * @param {string} addressHex - Neo address or contract hash
+ * @returns {string} 40-character hex string
+ * @throws {Error} If address is invalid
+ * @private
+ */
 function normalizeAddress(addressHex) {
   if (!addressHex) {
-    throw new Error('Address is required');
+    throw createError(EC.VALIDATION_ADDRESS_INVALID);
   }
-  let hex = addressHex;
-  if (hex.startsWith('N') && hex.length === 34) {
-    return wallet.getScriptHashFromAddress(hex);
+
+  const clean = addressHex.trim();
+  let hex = clean;
+
+  // Check if it's a Neo address (N-prefixed Base58)
+  if (clean.startsWith('N') && clean.length === 34) {
+    validateNeoAddress(clean);
+    return wallet.getScriptHashFromAddress(clean).toLowerCase();
   }
+
+  // Remove 0x prefix
   if (hex.startsWith('0x')) hex = hex.slice(2);
-  return hex;
+
+  // Validate as Hash160
+  validateHash160(hex);
+
+  return hex.toLowerCase();
 }
 
+/**
+ * Decodes a ByteString stack item to UTF-8 text.
+ *
+ * @param {Object} item - Stack item from RPC response
+ * @returns {string} Decoded text
+ * @private
+ */
 function decodeByteStringStackText(item) {
   if (!item) return '';
   if (item.type === 'ByteString' && item.value) {
@@ -29,6 +64,13 @@ function decodeByteStringStackText(item) {
   return '';
 }
 
+/**
+ * Decodes a stack item to a boolean value.
+ *
+ * @param {Object} item - Stack item from RPC response
+ * @returns {boolean} Boolean value
+ * @private
+ */
 function decodeStackBoolean(item) {
   return item?.value === true
     || item?.value === 1
@@ -37,6 +79,13 @@ function decodeStackBoolean(item) {
     || item?.value === 'True';
 }
 
+/**
+ * Decodes a Hash160 stack item to hex string.
+ *
+ * @param {Object} item - Stack item from RPC response
+ * @returns {string} 40-character hex string
+ * @private
+ */
 function decodeHash160Stack(item) {
   if (!item || typeof item !== 'object') return '';
   if (item.type === 'Hash160' && item.value) return sanitizeHex(item.value);
@@ -44,6 +93,13 @@ function decodeHash160Stack(item) {
   return '';
 }
 
+/**
+ * Decodes a validation preview stack item.
+ *
+ * @param {Object} item - Stack item from previewUserOpValidation
+ * @returns {Object} Validation preview with deadlineValid, nonceAcceptable, hasVerifier, verifier, hook
+ * @private
+ */
 function decodeValidationPreviewStack(item) {
   const values = item?.type === 'Array' && Array.isArray(item.value) ? item.value : [];
   return {
@@ -56,16 +112,55 @@ function decodeValidationPreviewStack(item) {
 }
 
 /**
- * Neo N3 Abstract Account SDK
+ * Neo N3 Abstract Account SDK Client.
+ *
+ * The SDK provides methods for:
+ * - Creating and managing abstract accounts
+ * - Building UserOperations for signing
+ * - Validating operations before submission
+ * - Managing verifiers and hooks
+ *
+ * @example
+ * ```javascript
+ * const { AbstractAccountClient } = require('neo-abstract-account');
+ *
+ * const client = new AbstractAccountClient(
+ *   'https://rpc.example.com',
+ *   '0x1234...40chars'
+ * );
+ *
+ * // Derive a virtual account address
+ * const account = client.deriveVirtualAccount('0x04...seed');
+ * console.log('Account address:', account.address);
+ *
+ * // Create a new account registration payload
+ * const payload = client.createAccountPayload({
+ *   accountIdHex: '0x04...seed',
+ *   verifierContractHash: '0xabcd...verifier',
+ *   hookContractHash: '0xef01...hook',
+ * });
+ * ```
  */
 class AbstractAccountClient {
+  /**
+   * Creates a new AbstractAccountClient instance.
+   *
+   * @param {string} rpcUrl - RPC endpoint URL (http:// or https://)
+   * @param {string} masterContractHash - Master contract hash (40 hex chars)
+   * @throws {Error} If RPC URL or contract hash is invalid
+   */
   constructor(rpcUrl, masterContractHash) {
-    if (!rpcUrl) throw new Error('rpcUrl is required');
-    if (!masterContractHash) throw new Error('masterContractHash is required');
+    validateRpcUrl(rpcUrl);
     this.rpcClient = new rpc.RPCClient(rpcUrl);
     this.masterContractHash = sanitizeHex(masterContractHash);
   }
 
+  /**
+   * Builds the verification script for an account.
+   *
+   * @param {string} accountIdHex - Account ID hash (40 hex chars)
+   * @returns {string} Verification script hex
+   */
   buildVerifyScript(accountIdHex) {
     const normalizedAccountId = this.deriveAccountIdHash(accountIdHex);
     const byteLength = normalizedAccountId.length / 2;
@@ -81,10 +176,17 @@ class AbstractAccountClient {
     ].join('');
   }
 
+  /**
+   * Derives the account ID hash from a seed or existing hash.
+   *
+   * @param {string} accountIdHexOrSeed - Account ID hex or seed string
+   * @returns {string} 40-character account ID hash
+   * @throws {Error} If account seed is empty
+   */
   deriveAccountIdHash(accountIdHexOrSeed) {
     const normalized = sanitizeHex(accountIdHexOrSeed || '');
     if (!normalized) {
-      throw new Error('Account seed is required');
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED);
     }
     if (/^[0-9a-f]{40}$/i.test(normalized)) {
       return normalized;
@@ -92,6 +194,16 @@ class AbstractAccountClient {
     return sanitizeHex(u.hash160(normalized));
   }
 
+  /**
+   * Derives a virtual account from an account seed.
+   *
+   * @param {string} accountIdSeedHex - Account seed (hex or string)
+   * @returns {Object} Virtual account details
+   * @returns {string} returns.accountIdHash - 40-character hash
+   * @returns {string} returns.verifyScript - Verification script
+   * @returns {string} returns.scriptHash - Script hash
+   * @returns {string} returns.address - Neo address
+   */
   deriveVirtualAccount(accountIdSeedHex) {
     const accountIdHash = this.deriveAccountIdHash(accountIdSeedHex);
     const verifyScript = this.buildVerifyScript(accountIdHash);
@@ -106,11 +218,23 @@ class AbstractAccountClient {
   }
 
   /**
-   * Derive an Abstract Account Neo address from an EVM public key.
+   * Derives an Abstract Account Neo address from an EVM public key.
+   *
+   * @param {string} uncompressedPubKey - Uncompressed public key (130 hex chars or with 0x prefix)
+   * @returns {string} Neo address
+   * @throws {Error} If public key is invalid
    */
   deriveAddressFromEVM(uncompressedPubKey) {
     let pubKeyHex = uncompressedPubKey;
     if (pubKeyHex.startsWith('0x')) pubKeyHex = pubKeyHex.slice(2);
+
+    // Validate public key format
+    if (pubKeyHex.length !== 130 || !/^[0-9a-f]{130}$/i.test(pubKeyHex)) {
+      throw createError(EC.VALIDATION_PUBLIC_KEY_INVALID, {
+        provided: uncompressedPubKey,
+        hint: 'Expected 130 hex characters for uncompressed public key',
+      });
+    }
 
     const verifyScript = this.buildVerifyScript(pubKeyHex);
     const scriptHash = sanitizeHex(u.hash160(verifyScript));
@@ -119,8 +243,22 @@ class AbstractAccountClient {
 
   /**
    * Creates the payload required to register a new V3 Abstract Account.
+   *
+   * @param {Object} options - Account creation options
+   * @param {string} options.accountIdHex - Account ID hex (used to derive account hash)
+   * @param {string} [options.accountScriptHash] - Direct script hash (overrides derivation)
+   * @param {string} [options.accountAddress] - Neo address (alternative to script hash)
+   * @param {string} options.verifierContractHash - Verifier contract hash (40 hex chars)
+   * @param {string} [options.verifierParamsHex=''] - Verifier parameters hex
+   * @param {string} [options.hookContractHash=''] - Hook contract hash (40 hex chars)
+   * @param {string} [options.backupOwnerAddress] - Backup owner address (optional)
+   * @param {number} [options.escapeTimelock=2592000] - Escape hatch timelock in seconds (default: 30 days)
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If required parameters are missing or invalid
    */
   createAccountPayload(options) {
+    validateOptions(options, ['verifierContractHash']);
+
     const {
       accountIdHex,
       accountScriptHash = '',
@@ -131,6 +269,19 @@ class AbstractAccountClient {
       backupOwnerAddress,
       escapeTimelock = 30 * 24 * 60 * 60, // 30 days default
     } = options;
+
+    // Validate verifier contract hash
+    validateHash160(verifierContractHash);
+
+    // Validate hook contract hash if provided
+    if (hookContractHash) {
+      validateHash160(hookContractHash);
+    }
+
+    // Validate backup owner address if provided
+    if (backupOwnerAddress) {
+      validateAddressOrHash160(backupOwnerAddress);
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -152,13 +303,28 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to update the verifier for an account.
+   *
+   * @param {Object} options - Update options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @param {string} options.verifierContractHash - New verifier contract hash
+   * @param {string} [options.verifierParamsHex=''] - New verifier parameters
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If required parameters are missing
+   */
   createUpdateVerifierPayload(options) {
+    validateOptions(options, ['verifierContractHash']);
+
     const {
       accountScriptHash = '',
       accountAddress = '',
       verifierContractHash,
       verifierParamsHex = '',
     } = options || {};
+
+    validateHash160(verifierContractHash);
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -175,12 +341,33 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to update the hook for an account.
+   *
+   * @param {Object} options - Update options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @param {string} [options.hookContractHash=''] - New hook contract hash (empty to remove)
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If account is not specified
+   */
   createUpdateHookPayload(options) {
     const {
       accountScriptHash = '',
       accountAddress = '',
       hookContractHash = '',
     } = options || {};
+
+    // Validate hook contract hash if provided
+    if (hookContractHash) {
+      validateHash160(hookContractHash);
+    }
+
+    if (!accountScriptHash && !accountAddress) {
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED, {
+        hint: 'Either accountScriptHash or accountAddress is required',
+      });
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -196,12 +383,28 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to set the metadata URI for an account.
+   *
+   * @param {Object} options - Metadata options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @param {string} [options.metadataUri=''] - Metadata URI string
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If account is not specified
+   */
   createSetMetadataUriPayload(options) {
     const {
       accountScriptHash = '',
       accountAddress = '',
       metadataUri = '',
     } = options || {};
+
+    if (!accountScriptHash && !accountAddress) {
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED, {
+        hint: 'Either accountScriptHash or accountAddress is required',
+      });
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -217,6 +420,13 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Computes the hash of contract arguments for EIP-712 signing.
+   *
+   * @param {Array} args - Contract arguments array
+   * @returns {Promise<string>} 32-byte hash (64 hex characters)
+   * @throws {Error} If computation fails or returns empty result
+   */
   async computeArgsHash(args = []) {
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
@@ -225,25 +435,67 @@ class AbstractAccountClient {
     });
 
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+
     if (response?.state === 'FAULT') {
-      throw new Error(`computeArgsHash fault: ${response.exception || 'VM fault'}`);
+      const mappedError = mapRpcError({ message: response.exception });
+      if (mappedError) {
+        throw createError(mappedError, { operation: 'computeArgsHash' });
+      }
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
     }
 
-    const argsHashHex = decodeByteStringStackHex(response?.stack?.[0]);
+    const argsHashHex = metaTxExports.decodeByteStringStackHex(response?.stack?.[0]);
     if (!argsHashHex) {
-      throw new Error('computeArgsHash returned an empty result');
+      throw createError(EC.CONTRACT_INVOCATION_FAILED, { hint: 'computeArgsHash returned empty result' });
     }
 
     return argsHashHex;
   }
 
   /**
-   * Generates the contract-aligned EIP-712 payload for a V3 UserOperation signature.
-   * Falls back to the legacy MetaTransaction schema only when no accountId path is provided.
+   * Generates the EIP-712 payload for signing a UserOperation.
+   * Supports both V3 (accountId-based) and legacy (bound address) formats.
+   *
+   * @param {Object} options - EIP-712 options
+   * @param {string|number} options.chainId - Chain ID for EIP-712 domain
+   * @param {string} [options.accountIdHash] - V3 account ID hash (40 hex chars)
+   * @param {string} [options.accountIdHex] - Account ID hex (derives accountIdHash)
+   * @param {string} [options.verifierHash] - Verifier contract hash (for V3)
+   * @param {string} [options.accountAddressScriptHash] - Legacy account script hash
+   * @param {string} [options.accountAddressHash] - Legacy account address hash
+   * @param {string} options.targetContract - Target contract hash (40 hex chars)
+   * @param {string} options.method - Method name
+   * @param {Array} [options.args=[]] - Method arguments
+   * @param {string|number} options.nonce - Nonce value
+   * @param {string|number} options.deadline - Deadline timestamp (Unix seconds)
+   * @returns {Promise<Object>} EIP-712 typed data structure
+   * @throws {Error} If required parameters are missing or validation fails
+   *
+   * @example
+   * ```javascript
+   * const typedData = await client.createEIP712Payload({
+   *   chainId: 860833102,
+   *   accountIdHash: 'f951...',
+   *   verifierHash: 'b410...',
+   *   targetContract: '49c0...',
+   *   method: 'transfer',
+   *   args: [{ type: 'Address', value: '0xabcd...' }],
+   *   nonce: 0,
+   *   deadline: Math.floor(Date.now() / 1000) + 3600,
+   * });
+   *
+   * const signature = await signer.signTypedData(
+   *   typedData.domain,
+   *   typedData.types,
+   *   typedData.message
+   * );
+   * ```
    */
   async createEIP712Payload(options) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) {
-      throw new Error('createEIP712Payload expects an options object');
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, {
+        hint: 'createEIP712Payload expects an options object',
+      });
     }
 
     const {
@@ -260,34 +512,60 @@ class AbstractAccountClient {
       deadline,
     } = options;
 
-    if (nonce == null) throw new Error('nonce is required for EIP-712 payload');
-    if (deadline == null) throw new Error('deadline is required for EIP-712 payload');
+    // Validate required fields
+    validateEIP712Fields(nonce, deadline);
 
+    if (!chainId) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'chainId is required' });
+    }
+
+    if (!targetContract) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'targetContract is required' });
+    }
+
+    if (!method) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'method is required' });
+    }
+
+    // Compute args hash
     const argsHashHex = await this.computeArgsHash(args);
+
+    // Resolve account ID hash for V3
     const resolvedAccountIdHash = accountIdHash
       ? sanitizeHex(accountIdHash)
       : accountIdHex
         ? this.deriveVirtualAccount(accountIdHex).accountIdHash
         : '';
 
+    // V3 path: use accountId and verifier
     if (resolvedAccountIdHash) {
-      const resolvedVerifierHash = verifierHash
-        ? sanitizeHex(verifierHash)
-        : await (async () => {
-            const script = sc.createScript({
-              scriptHash: this.masterContractHash,
-              operation: 'getVerifier',
-              args: [{ type: 'Hash160', value: resolvedAccountIdHash }],
-            });
-            const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-            if (response?.state === 'FAULT') {
-              throw new Error(`getVerifier fault: ${response.exception || 'VM fault'}`);
-            }
-            return sanitizeHex(response?.stack?.[0]?.value || '');
-          })();
+      let resolvedVerifierHash = verifierHash;
+
+      // Auto-resolve verifier if not provided
+      if (!resolvedVerifierHash) {
+        const script = sc.createScript({
+          scriptHash: this.masterContractHash,
+          operation: 'getVerifier',
+          args: [{ type: 'Hash160', value: resolvedAccountIdHash }],
+        });
+        const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+
+        if (response?.state === 'FAULT') {
+          const mappedError = mapRpcError({ message: response.exception });
+          if (mappedError) {
+            throw createError(mappedError, { operation: 'getVerifier' });
+          }
+          throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+        }
+
+        resolvedVerifierHash = sanitizeHex(response?.stack?.[0]?.value || '');
+      }
 
       if (!resolvedVerifierHash) {
-        throw new Error('No verifier is configured for this V3 account.');
+        throw createError(EC.ACCOUNT_VERIFIER_NOT_CONFIGURED, {
+          accountIdHash: resolvedAccountIdHash,
+          hint: 'No verifier is configured for this V3 account',
+        });
       }
 
       return buildV3UserOperationTypedData({
@@ -302,6 +580,7 @@ class AbstractAccountClient {
       });
     }
 
+    // Legacy path: use bound address
     const resolvedAccountAddressScriptHash = accountAddressScriptHash
       ? sanitizeHex(accountAddressScriptHash)
       : accountAddressHash
@@ -309,10 +588,10 @@ class AbstractAccountClient {
         : '';
 
     if (!resolvedAccountAddressScriptHash) {
-      throw new Error('createEIP712Payload requires either an accountId path or a legacy bound address.');
+      throw createError(EC.ACCOUNT_MISSING_BINDING);
     }
 
-    return buildMetaTransactionTypedData({
+    return metaTxExports.buildMetaTransactionTypedData({
       chainId,
       verifyingContract: this.masterContractHash,
       accountAddressScriptHash: resolvedAccountAddressScriptHash,
@@ -324,6 +603,12 @@ class AbstractAccountClient {
     });
   }
 
+  /**
+   * Decodes an address array from a stack item.
+   *
+   * @param {Object} stackItem - Stack item from RPC response
+   * @returns {Array<string>} Array of Neo addresses
+   */
   decodeAddressArray(stackItem) {
     if (!stackItem || stackItem.type !== 'Array' || !Array.isArray(stackItem.value)) return [];
     return stackItem.value.map((item) => {
@@ -335,6 +620,12 @@ class AbstractAccountClient {
     }).filter(Boolean);
   }
 
+  /**
+   * Gets the account implementation ID.
+   *
+   * @returns {Promise<string>} Implementation ID string
+   * @throws {Error} If RPC call fails
+   */
   async getAccountImplementationId() {
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
@@ -342,10 +633,21 @@ class AbstractAccountClient {
       args: [],
     });
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`getAccountImplementationId fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return decodeByteStringStackText(response?.stack?.[0]);
   }
 
+  /**
+   * Checks if a specific execution mode is supported.
+   *
+   * @param {string} mode - Execution mode to check (e.g., 'single', 'batch')
+   * @returns {Promise<boolean>} True if mode is supported
+   * @throws {Error} If RPC call fails
+   */
   async supportsExecutionMode(mode) {
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
@@ -353,10 +655,21 @@ class AbstractAccountClient {
       args: [{ type: 'String', value: String(mode || '') }],
     });
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`supportsExecutionMode fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return decodeStackBoolean(response?.stack?.[0]);
   }
 
+  /**
+   * Checks if a specific module type is supported.
+   *
+   * @param {string} moduleType - Module type to check (e.g., 'validator', 'executor', 'hook')
+   * @returns {Promise<boolean>} True if module type is supported
+   * @throws {Error} If RPC call fails
+   */
   async supportsModuleType(moduleType) {
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
@@ -364,13 +677,27 @@ class AbstractAccountClient {
       args: [{ type: 'String', value: String(moduleType || '') }],
     });
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`supportsModuleType fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return decodeStackBoolean(response?.stack?.[0]);
   }
 
+  /**
+   * Checks if a specific module is installed on an account.
+   *
+   * @param {string} accountHashOrAddress - Account hash or address
+   * @param {string} moduleType - Module type (e.g., 'validator', 'executor', 'hook')
+   * @param {string} moduleHashOrAddress - Module hash or address
+   * @returns {Promise<boolean>} True if module is installed
+   * @throws {Error} If RPC call fails
+   */
   async isModuleInstalled(accountHashOrAddress, moduleType, moduleHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
     const moduleHash = normalizeAddress(moduleHashOrAddress);
+
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
       operation: 'isModuleInstalled',
@@ -381,10 +708,34 @@ class AbstractAccountClient {
       ],
     });
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`isModuleInstalled fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return decodeStackBoolean(response?.stack?.[0]);
   }
 
+  /**
+   * Gets a validation preview for a UserOperation before submission.
+   * Useful for checking if the operation would pass signature validation.
+   *
+   * @param {Object} options - Preview options
+   * @param {string} [options.accountIdHash] - V3 account ID hash
+   * @param {string} [options.accountAddress] - Legacy account address
+   * @param {string} options.targetContract - Target contract hash
+   * @param {string} options.method - Method name
+   * @param {Array} [options.args=[]] - Method arguments
+   * @param {string|number} [options.nonce=0] - Nonce value
+   * @param {string|number} [options.deadline=0] - Deadline timestamp
+   * @returns {Promise<Object>} Validation preview
+   * @returns {boolean} returns.deadlineValid - Deadline is valid
+   * @returns {boolean} returns.nonceAcceptable - Nonce is acceptable
+   * @returns {boolean} returns.hasVerifier - Verifier is configured
+   * @returns {string} returns.verifier - Verifier hash
+   * @returns {string} returns.hook - Hook hash
+   * @throws {Error} If RPC call fails
+   */
   async getUserOpValidationPreview({
     accountIdHash = '',
     accountAddress = '',
@@ -397,6 +748,7 @@ class AbstractAccountClient {
     const accountId = accountIdHash
       ? normalizeAddress(accountIdHash)
       : normalizeAddress(accountAddress);
+
     const response = await this.rpcClient.invokeFunction(this.masterContractHash, 'previewUserOpValidation', [
       { type: 'Hash160', value: accountId },
       {
@@ -411,26 +763,69 @@ class AbstractAccountClient {
         ],
       },
     ]);
-    if (response?.state === 'FAULT') throw new Error(`previewUserOpValidation fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return decodeValidationPreviewStack(response?.stack?.[0]);
   }
 
+  /**
+   * @deprecated This method is removed in V3. Role-based admin discovery no longer exists.
+   * @throws {Error} Always throws with deprecation message
+   */
   async getAccountsByAdmin() {
-    throw new Error('Removed in V3: role-based admin discovery no longer exists.');
+    throw createError(EC.LEGACY_V3_REMOVED, {
+      hint: 'Use getAccountState() to check individual account details',
+    });
   }
 
+  /**
+   * @deprecated This method is removed in V3. Role-based manager discovery no longer exists.
+   * @throws {Error} Always throws with deprecation message
+   */
   async getAccountsByManager() {
-    throw new Error('Removed in V3: role-based manager discovery no longer exists.');
+    throw createError(EC.LEGACY_V3_REMOVED, {
+      hint: 'Use getAccountState() to check individual account details',
+    });
   }
 
+  /**
+   * @deprecated This method is removed in V3. Role-based admin discovery no longer exists.
+   * @throws {Error} Always throws with deprecation message
+   */
   async getAccountAddressesByAdmin() {
-    throw new Error('Removed in V3: role-based admin discovery no longer exists.');
+    throw createError(EC.LEGACY_V3_REMOVED, {
+      hint: 'Use getAccountState() to check individual account details',
+    });
   }
 
+  /**
+   * @deprecated This method is removed in V3. Role-based manager discovery no longer exists.
+   * @throws {Error} Always throws with deprecation message
+   */
   async getAccountAddressesByManager() {
-    throw new Error('Removed in V3: role-based manager discovery no longer exists.');
+    throw createError(EC.LEGACY_V3_REMOVED, {
+      hint: 'Use getAccountState() to check individual account details',
+    });
   }
 
+  /**
+   * Gets the complete state of an abstract account.
+   *
+   * @param {string} accountHashOrAddress - Account hash or address
+   * @returns {Promise<Object>} Account state
+   * @returns {string} returns.accountId - Account ID hash
+   * @returns {string} returns.verifier - Verifier contract hash
+   * @returns {string} returns.hook - Hook contract hash
+   * @returns {string} returns.backupOwner - Backup owner address
+   * @returns {string} returns.escapeTimelock - Escape hatch timelock (seconds)
+   * @returns {string} returns.escapeTriggeredAt - Timestamp when escape was triggered
+   * @returns {boolean} returns.escapeActive - Whether escape hatch is active
+   * @returns {string} returns.metadataUri - Metadata URI (if set)
+   * @throws {Error} If RPC call fails
+   */
   async getAccountState(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
 
@@ -441,7 +836,11 @@ class AbstractAccountClient {
         args: [{ type: 'Hash160', value: accountId }],
       });
       const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-      if (response?.state === 'FAULT') throw new Error(`${operation} fault: ${response.exception}`);
+
+      if (response?.state === 'FAULT') {
+        throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+      }
+
       return response?.stack?.[0] || null;
     };
 
@@ -478,11 +877,26 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to confirm a pending hook update.
+   *
+   * @param {Object} options - Confirm options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If account is not specified
+   */
   createConfirmHookUpdatePayload(options) {
     const {
       accountScriptHash = '',
       accountAddress = '',
     } = options || {};
+
+    if (!accountScriptHash && !accountAddress) {
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED, {
+        hint: 'Either accountScriptHash or accountAddress is required',
+      });
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -497,11 +911,26 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to confirm a pending verifier update.
+   *
+   * @param {Object} options - Confirm options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If account is not specified
+   */
   createConfirmVerifierUpdatePayload(options) {
     const {
       accountScriptHash = '',
       accountAddress = '',
     } = options || {};
+
+    if (!accountScriptHash && !accountAddress) {
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED, {
+        hint: 'Either accountScriptHash or accountAddress is required',
+      });
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -516,11 +945,26 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to cancel a pending hook update.
+   *
+   * @param {Object} options - Cancel options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If account is not specified
+   */
   createCancelHookUpdatePayload(options) {
     const {
       accountScriptHash = '',
       accountAddress = '',
     } = options || {};
+
+    if (!accountScriptHash && !accountAddress) {
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED, {
+        hint: 'Either accountScriptHash or accountAddress is required',
+      });
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -535,11 +979,26 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Creates a payload to cancel a pending verifier update.
+   *
+   * @param {Object} options - Cancel options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @returns {Object} Contract invocation payload
+   * @throws {Error} If account is not specified
+   */
   createCancelVerifierUpdatePayload(options) {
     const {
       accountScriptHash = '',
       accountAddress = '',
     } = options || {};
+
+    if (!accountScriptHash && !accountAddress) {
+      throw createError(EC.VALIDATION_ACCOUNT_ID_REQUIRED, {
+        hint: 'Either accountScriptHash or accountAddress is required',
+      });
+    }
 
     const resolvedAccountHash = accountScriptHash
       ? normalizeAddress(accountScriptHash)
@@ -554,6 +1013,13 @@ class AbstractAccountClient {
     };
   }
 
+  /**
+   * Checks if an account has a pending verifier update.
+   *
+   * @param {string} accountHashOrAddress - Account hash or address
+   * @returns {Promise<boolean>} True if there's a pending update
+   * @throws {Error} If RPC call fails
+   */
   async getHasPendingVerifierUpdate(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
 
@@ -564,10 +1030,21 @@ class AbstractAccountClient {
     });
 
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`HasPendingVerifierUpdate fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
   }
 
+  /**
+   * Checks if an account has a pending hook update.
+   *
+   * @param {string} accountHashOrAddress - Account hash or address
+   * @returns {Promise<boolean>} True if there's a pending update
+   * @throws {Error} If RPC call fails
+   */
   async getHasPendingHookUpdate(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
 
@@ -578,10 +1055,21 @@ class AbstractAccountClient {
     });
 
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`HasPendingHookUpdate fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
   }
 
+  /**
+   * Gets the timestamp when a pending verifier update was initiated.
+   *
+   * @param {string} accountHashOrAddress - Account hash or address
+   * @returns {Promise<number>} Update timestamp (Unix seconds)
+   * @throws {Error} If RPC call fails
+   */
   async getPendingVerifierUpdateTime(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
 
@@ -592,10 +1080,21 @@ class AbstractAccountClient {
     });
 
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`GetPendingVerifierUpdateTime fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return response?.stack?.[0]?.value || 0;
   }
 
+  /**
+   * Gets the timestamp when a pending hook update was initiated.
+   *
+   * @param {string} accountHashOrAddress - Account hash or address
+   * @returns {Promise<number>} Update timestamp (Unix seconds)
+   * @throws {Error} If RPC call fails
+   */
   async getPendingHookUpdateTime(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
 
@@ -606,10 +1105,20 @@ class AbstractAccountClient {
     });
 
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`GetPendingHookUpdateTime fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return response?.stack?.[0]?.value || 0;
   }
 
+  /**
+   * Checks if any execution is currently active for the contract.
+   *
+   * @returns {Promise<boolean>} True if an execution is active
+   * @throws {Error} If RPC call fails
+   */
   async getIsAnyExecutionActive() {
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
@@ -618,16 +1127,38 @@ class AbstractAccountClient {
     });
 
     const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
-    if (response?.state === 'FAULT') throw new Error(`IsAnyExecutionActive fault: ${response.exception}`);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
     return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
   }
-
 }
 
 module.exports = {
   AbstractAccountClient,
-  buildMetaTransactionTypedData,
-  buildV3UserOperationTypedData,
-  decodeByteStringStackHex,
-  sanitizeHex,
+  // Meta-tx exports
+  buildMetaTransactionTypedData: metaTxExports.buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData: metaTxExports.buildV3UserOperationTypedData,
+  buildContractCompatibleStructHash: metaTxExports.buildContractCompatibleStructHash,
+  buildContractCompatibleDomainSeparator: metaTxExports.buildContractCompatibleDomainSeparator,
+  buildWeb3AuthSigningPayload: metaTxExports.buildWeb3AuthSigningPayload,
+  decodeByteStringStackHex: metaTxExports.decodeByteStringStackHex,
+  toBytes20Word: metaTxExports.toBytes20Word,
+  toAddressWord: metaTxExports.toAddressWord,
+  toUint256Word: metaTxExports.toUint256Word,
+  sanitizeHex: metaTxExports.sanitizeHex,
+  // Export new modules
+  EC,
+  createError,
+  mapRpcError,
+  formatError,
+  UserOperationBuilder: require('./UserOpBuilder').UserOperationBuilder,
+  createUserOpBuilder: require('./UserOpBuilder').createUserOpBuilder,
+  simulateUserOperation: require('./simulation').simulateUserOperation,
+  preFlightCheck: require('./simulation').preFlightCheck,
+  EVENT_NAMES: require('./events').EVENT_NAMES,
+  EventSubscription: require('./events').EventSubscription,
+  createEventSubscription: require('./events').createEventSubscription,
 };

@@ -36,7 +36,9 @@ namespace AbstractAccount.Hooks
     public class MultiHook : SmartContract
     {
         private static readonly byte[] Prefix_Hooks = new byte[] { 0x01 };
+        private static readonly byte[] Prefix_ExecutionDepth = new byte[] { 0x02 };
         private const int MaxHooks = 8;
+        private const int MaxHookDepth = 3;
 
         public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
 
@@ -58,7 +60,7 @@ namespace AbstractAccount.Hooks
             }
             else
             {
-                ExecutionEngine.Assert(hooks.Length <= MaxHooks, "Too many hooks");
+                ExecutionEngine.Assert(hooks.Length <= MaxHooks, $"Maximum {MaxHooks} hooks allowed");
                 for (int i = 0; i < hooks.Length; i++)
                 {
                     ExecutionEngine.Assert(hooks[i] != UInt160.Zero && hooks[i].IsValid, "Invalid hook");
@@ -87,10 +89,37 @@ namespace AbstractAccount.Hooks
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
-            UInt160[] hooks = GetHooks(accountId);
-            for (int i = 0; i < hooks.Length; i++)
+
+            // Circular dependency guard using execution depth tracking
+            byte[] depthKey = Helper.Concat(Prefix_ExecutionDepth, (byte[])accountId);
+            ByteString? depthData = Storage.Get(Storage.CurrentContext, depthKey);
+            BigInteger depth = depthData == null ? 0 : (BigInteger)depthData;
+
+            ExecutionEngine.Assert(depth < MaxHookDepth, "Maximum hook depth exceeded");
+
+            depth++;
+            Storage.Put(Storage.CurrentContext, depthKey, depth);
+
+            try
             {
-                Contract.Call(hooks[i], "preExecute", CallFlags.All, new object[] { accountId, opParams });
+                UInt160[] hooks = GetHooks(accountId);
+                for (int i = 0; i < hooks.Length; i++)
+                {
+                    Contract.Call(hooks[i], "preExecute", CallFlags.All, new object[] { accountId, opParams });
+                }
+            }
+            finally
+            {
+                // Decrement depth to allow re-entry from other operations
+                depth--;
+                if (depth <= 0)
+                {
+                    Storage.Delete(Storage.CurrentContext, depthKey);
+                }
+                else
+                {
+                    Storage.Put(Storage.CurrentContext, depthKey, depth);
+                }
             }
         }
 
@@ -100,10 +129,37 @@ namespace AbstractAccount.Hooks
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
-            UInt160[] hooks = GetHooks(accountId);
-            for (int i = hooks.Length - 1; i >= 0; i--)
+
+            // Circular dependency guard using execution depth tracking
+            byte[] depthKey = Helper.Concat(Prefix_ExecutionDepth, (byte[])accountId);
+            ByteString? depthData = Storage.Get(Storage.CurrentContext, depthKey);
+            BigInteger depth = depthData == null ? 0 : (BigInteger)depthData;
+
+            ExecutionEngine.Assert(depth < MaxHookDepth, "Maximum hook depth exceeded");
+
+            depth++;
+            Storage.Put(Storage.CurrentContext, depthKey, depth);
+
+            try
             {
-                Contract.Call(hooks[i], "postExecute", CallFlags.All, new object[] { accountId, opParams, result });
+                UInt160[] hooks = GetHooks(accountId);
+                for (int i = hooks.Length - 1; i >= 0; i--)
+                {
+                    Contract.Call(hooks[i], "postExecute", CallFlags.All, new object[] { accountId, opParams, result });
+                }
+            }
+            finally
+            {
+                // Decrement depth to allow re-entry from other operations
+                depth--;
+                if (depth <= 0)
+                {
+                    Storage.Delete(Storage.CurrentContext, depthKey);
+                }
+                else
+                {
+                    Storage.Put(Storage.CurrentContext, depthKey, depth);
+                }
             }
         }
 

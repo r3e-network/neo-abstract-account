@@ -1,3 +1,4 @@
+using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Services;
@@ -8,6 +9,9 @@ namespace AbstractAccount
     {
         private static readonly byte[] Prefix_Admin = new byte[] { 0xE0 };
         private static readonly byte[] Prefix_AuthorizedCore = new byte[] { 0xE1 };
+        private static readonly byte[] Prefix_PendingAdmin = new byte[] { 0xE2 };
+        private static readonly byte[] Prefix_AdminRotationTimelock = new byte[] { 0xE3 };
+        private static readonly BigInteger AdminRotationTimelockMs = 7 * 24 * 3600 * 1000; // 7 days in ms
 
         internal static void Initialize(object data, bool update)
         {
@@ -64,7 +68,34 @@ namespace AbstractAccount
         {
             ValidateAdmin();
             ExecutionEngine.Assert(newAdmin != null && newAdmin.IsValid, "Invalid admin");
-            Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin!);
+            ExecutionEngine.Assert(newAdmin != Admin(), "New admin must differ from current");
+
+            // Initiate timelocked rotation instead of instant swap
+            Storage.Put(Storage.CurrentContext, Prefix_PendingAdmin, (byte[])newAdmin!);
+            Storage.Put(Storage.CurrentContext, Prefix_AdminRotationTimelock, Runtime.Time);
+        }
+
+        internal static void ConfirmAdminRotation(UInt160 newAdmin)
+        {
+            ByteString? pending = Storage.Get(Storage.CurrentContext, Prefix_PendingAdmin);
+            ExecutionEngine.Assert(pending != null, "No pending admin rotation");
+
+            ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_AdminRotationTimelock);
+            ExecutionEngine.Assert(timelockData != null, "No timelock set");
+            BigInteger timelockStart = (BigInteger)timelockData;
+            ExecutionEngine.Assert(Runtime.Time >= timelockStart + AdminRotationTimelockMs, "Admin rotation timelock not expired");
+
+            ExecutionEngine.Assert((UInt160)pending! == newAdmin, "Pending admin mismatch");
+            Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_AdminRotationTimelock);
+        }
+
+        internal static void CancelAdminRotation()
+        {
+            ValidateAdmin();
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_AdminRotationTimelock);
         }
 
         private static void ValidateAdmin()

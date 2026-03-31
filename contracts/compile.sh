@@ -21,6 +21,7 @@ pushd verifiers >/dev/null
 ~/.dotnet/tools/nccs ./ZkLoginVerifier.csproj -o ../bin/v3/verifiers
 ~/.dotnet/tools/nccs ./MultiSigVerifier.csproj -o ../bin/v3/verifiers
 ~/.dotnet/tools/nccs ./SubscriptionVerifier.csproj -o ../bin/v3/verifiers
+~/.dotnet/tools/nccs ./NeoNativeVerifier.csproj -o ../bin/v3/verifiers
 popd >/dev/null
 
 echo "Compiling Hooks..."

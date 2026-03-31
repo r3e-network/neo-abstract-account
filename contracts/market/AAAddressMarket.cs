@@ -7,7 +7,7 @@ using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using System.ComponentModel;
 
-namespace AbstractAccount.Market
+namespace AbstractAccount
 {
     /// <summary>
     /// Trustless GAS escrow market for deterministic Neo Abstract Account addresses.
@@ -33,6 +33,10 @@ namespace AbstractAccount.Market
         private const int MaxTitleLength = 80;
         private const int MaxMetadataUriLength = 240;
 
+        // Price bounds (GAS has 8 decimals, so 1000 GAS = 100_000_000_000)
+        private static readonly BigInteger MinListingPrice = 1_000_000;  // Minimum 0.01 GAS
+        private static readonly BigInteger MaxListingPrice = 100_000_000_000;  // Maximum 1000 GAS
+
         public class Listing
         {
             public BigInteger Id;
@@ -52,7 +56,8 @@ namespace AbstractAccount.Market
         {
             ExecutionEngine.Assert(aaContract != null && aaContract != UInt160.Zero, "AA contract required");
             ExecutionEngine.Assert(accountId != null && accountId != UInt160.Zero, "Account id required");
-            ExecutionEngine.Assert(price > 0, "Price must be positive");
+            ExecutionEngine.Assert(price >= MinListingPrice, "Price below minimum");
+            ExecutionEngine.Assert(price <= MaxListingPrice, "Price exceeds maximum");
             ValidateListingText(title, metadataUri);
 
             UInt160 seller = RequireBackupOwner(aaContract!, accountId!);
@@ -80,7 +85,8 @@ namespace AbstractAccount.Market
 
         public static void UpdateListingPrice(BigInteger listingId, BigInteger newPrice)
         {
-            ExecutionEngine.Assert(newPrice > 0, "Price must be positive");
+            ExecutionEngine.Assert(newPrice >= MinListingPrice, "Price below minimum");
+            ExecutionEngine.Assert(newPrice <= MaxListingPrice, "Price exceeds maximum");
             Listing listing = GetExistingListing(listingId);
             ExecutionEngine.Assert(listing.Status == StatusActive, "Listing not active");
             ExecutionEngine.Assert(Runtime.CheckWitness(listing.Seller), "Seller witness required");

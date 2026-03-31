@@ -182,9 +182,9 @@ namespace AbstractAccount
             if (data != null)
             {
                 PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
-                OnModuleUpdateCancelled?.Invoke(accountId, ModuleTypeVerifier, pending.NewVerifier);
+                OnModuleUpdateCancelled(accountId, ModuleTypeVerifier, pending.NewVerifier);
             }
-            OnVerifierUpdateCancelled?.Invoke(accountId);
+            OnVerifierUpdateCancelled(accountId);
         }
 
         /// <summary>
@@ -199,9 +199,9 @@ namespace AbstractAccount
             if (data != null)
             {
                 PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
-                OnModuleUpdateCancelled?.Invoke(accountId, ModuleTypeHook, pending.NewHookId);
+                OnModuleUpdateCancelled(accountId, ModuleTypeHook, pending.NewHookId);
             }
-            OnHookUpdateCancelled?.Invoke(accountId);
+            OnHookUpdateCancelled(accountId);
         }
 
         /// <summary>
@@ -219,7 +219,7 @@ namespace AbstractAccount
 
             ExecutionEngine.Assert(metadataUri.Length <= MaxMetadataUriLength, "MetadataUri too long");
             Storage.Put(Storage.CurrentContext, key, metadataUri);
-            OnMetadataUriUpdated?.Invoke(accountId, metadataUri);
+            OnMetadataUriUpdated(accountId, metadataUri);
         }
 
         /// <summary>

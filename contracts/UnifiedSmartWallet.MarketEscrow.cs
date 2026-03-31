@@ -27,7 +27,7 @@ namespace AbstractAccount
             byte[] listingKey = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, marketKey, (byte[])marketContract!);
             Storage.Put(Storage.CurrentContext, listingKey, listingId);
-            OnMarketEscrowEntered?.Invoke(accountId, marketContract!, listingId);
+            OnMarketEscrowEntered(accountId, marketContract!, listingId);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace AbstractAccount
         {
             AssertEscrowMarket(accountId, listingId);
             ClearMarketEscrow(accountId);
-            OnMarketEscrowCancelled?.Invoke(accountId);
+            OnMarketEscrowCancelled(accountId);
         }
 
         /// <summary>
@@ -65,15 +65,15 @@ namespace AbstractAccount
 
             if (previousVerifier != UInt160.Zero)
             {
-                OnModuleRemoved?.Invoke(accountId, ModuleTypeVerifier, previousVerifier);
+                OnModuleRemoved(accountId, ModuleTypeVerifier, previousVerifier);
             }
             if (previousHook != UInt160.Zero)
             {
-                OnModuleRemoved?.Invoke(accountId, ModuleTypeHook, previousHook);
+                OnModuleRemoved(accountId, ModuleTypeHook, previousHook);
             }
 
             ClearMarketEscrow(accountId);
-            OnMarketEscrowSettled?.Invoke(accountId, newBackupOwner!);
+            OnMarketEscrowSettled(accountId, newBackupOwner!);
         }
 
         private static void AssertNoMarketEscrow(UInt160 accountId)
