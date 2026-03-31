@@ -216,3 +216,40 @@ test('receipt history uses formatted labels instead of raw createdAt fields', ()
   const source = fs.readFileSync(path.resolve('src/features/operations/components/HomeOperationsWorkspace.vue'), 'utf8');
   assert.match(source, /createdLabel/);
 });
+
+test('console view exists with service cards linking to workspace, identity, market, and docs', () => {
+  const consolePath = path.resolve('src/views/ConsoleView.vue');
+  const consoleSource = fs.readFileSync(consolePath, 'utf8');
+  assert.match(consoleSource, /Abstract Account Console/);
+  assert.match(consoleSource, /App Workspace/);
+  assert.match(consoleSource, /Identity Workspace/);
+  assert.match(consoleSource, /Address Market/);
+  assert.match(consoleSource, /Hooks & Plugins/);
+  assert.match(consoleSource, /Documentation/);
+  assert.match(consoleSource, /Getting Started/);
+  assert.match(consoleSource, /\/app/);
+  assert.match(consoleSource, /\/identity/);
+  assert.match(consoleSource, /\/market/);
+  assert.match(consoleSource, /\/docs/);
+});
+
+test('router includes console route', () => {
+  const routerSource = fs.readFileSync(routerPath, 'utf8');
+  assert.match(routerSource, /path: 'console'/);
+  assert.match(routerSource, /ConsoleView/);
+  assert.match(routerSource, /Console — Neo Abstract Account/);
+});
+
+test('home view hero CTAs point to console', () => {
+  const homeSource = fs.readFileSync(homePath, 'utf8');
+  assert.match(homeSource, /to="\/console" class="btn-primary/);
+  assert.match(homeSource, /Open Console/);
+});
+
+test('main layout navigation includes console link with distinct styling', () => {
+  const layoutPath = path.resolve('src/components/layout/MainLayout.vue');
+  const layoutSource = fs.readFileSync(layoutPath, 'utf8');
+  assert.match(layoutSource, /\/console/);
+  assert.match(layoutSource, /isConsole/);
+  assert.match(layoutSource, /nav\.console/);
+});

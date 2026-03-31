@@ -4,6 +4,7 @@ import { createI18nController } from '@/i18n';
 const MainLayout = () => import('@/components/layout/MainLayout.vue');
 const AbstractAccountTool = () => import('@/components/AbstractAccountTool.vue');
 const HomeView = () => import('@/views/HomeView.vue');
+const ConsoleView = () => import('@/views/ConsoleView.vue');
 const IdentityView = () => import('@/views/IdentityView.vue');
 const AddressMarketView = () => import('@/views/AddressMarketView.vue');
 const TransactionInfoView = () => import('@/views/TransactionInfoView.vue');
@@ -20,6 +21,12 @@ const routes = [
         name: 'home',
         component: HomeView,
         meta: { breadcrumb: 'Home', breadcrumbKey: 'nav.home', titleKey: 'page.titleHome', title: 'Neo Abstract Account — Smart Wallets on Neo N3' }
+      },
+      {
+        path: 'console',
+        name: 'console',
+        component: ConsoleView,
+        meta: { breadcrumb: 'Console', breadcrumbKey: 'nav.console', titleKey: 'page.titleConsole', title: 'Console — Neo Abstract Account' }
       },
       {
         path: 'app',

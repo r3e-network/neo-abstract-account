@@ -40,11 +40,12 @@
             {{ t('home.subtitle', 'Create a wallet you truly own — with recovery built in, cross-chain signing, and zero gas fees for your users.') }}
           </p>
           <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <router-link to="/app" class="btn-primary btn-lg">
-              {{ t('home.heroPrimaryAction', 'Launch App') }}
+            <router-link to="/console" class="btn-primary btn-lg">
+              {{ t('home.heroPrimaryAction', 'Open Console') }}
+              <svg aria-hidden="true" class="w-4 h-4 ml-1.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
             </router-link>
-            <router-link to="/market" class="btn-secondary text-sm group">
-              {{ t('home.heroSecondaryAction', 'Browse Market') }}
+            <router-link to="/docs" class="btn-secondary text-sm group">
+              {{ t('home.heroSecondaryAction', 'Read the Docs') }}
               <svg aria-hidden="true" class="w-4 h-4 ml-1.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </router-link>
           </div>
@@ -64,8 +65,8 @@
               <div class="relative p-5 md:p-6 min-h-[140px]">
                 <!-- Shimmer overlay with sweep -->
                 <div class="absolute inset-0 bg-gradient-to-b from-aa-dark/5 to-aa-dark/15 z-10 flex items-center justify-center hero-preview-overlay">
-                  <router-link to="/app" class="relative z-20 btn-primary btn-xs shadow-glow-orange">
-                    {{ t('home.heroPreviewCta', 'Launch App') }}
+                  <router-link to="/console" class="relative z-20 btn-primary btn-xs shadow-glow-orange">
+                    {{ t('home.heroPreviewCta', 'Open Console') }}
                   </router-link>
                 </div>
                 <!-- Mock UI elements -->
@@ -341,14 +342,14 @@
         <section class="mb-20 scroll-reveal" :ref="observe">
           <h2 class="sr-only">{{ t('home.entryPointsHeading', 'Primary Entry Points') }}</h2>
           <div class="grid gap-6 lg:grid-cols-3">
-            <router-link to="/app" class="group rounded-2xl border border-aa-border bg-aa-panel/60 p-6 backdrop-blur-xl transition-all duration-200 card-hover-green">
+            <router-link to="/console" class="group rounded-2xl border border-aa-border bg-aa-panel/60 p-6 backdrop-blur-xl transition-all duration-200 card-hover-green">
               <div class="flex items-start justify-between">
-                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-aa-success-light">{{ t('home.entryAppLabel', 'App Workspace') }}</p>
+                <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-aa-success-light">{{ t('home.entryAppLabel', 'Console') }}</p>
                 <svg aria-hidden="true" class="w-5 h-5 text-aa-success opacity-0 group-hover:opacity-100 transform translate-x-[-4px] group-hover:translate-x-0 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
               </div>
               <h3 class="mt-3 text-2xl font-bold text-white font-outfit">{{ t('home.entryAppTitle', 'Create and operate AA accounts') }}</h3>
               <p class="mt-3 text-sm leading-7 text-aa-muted">{{ t('home.entryAppBody', 'Move account creation, ownership changes, mixed signing, relay submission, and recovery actions into one operator-focused workspace.') }}</p>
-              <span class="mt-6 inline-flex items-center text-sm font-semibold text-aa-success-light group-hover:text-aa-success-light">{{ t('home.entryAppAction', 'Launch App') }} →</span>
+              <span class="mt-6 inline-flex items-center text-sm font-semibold text-aa-success-light group-hover:text-aa-success-light">{{ t('home.entryAppAction', 'Open Console') }} →</span>
             </router-link>
 
             <router-link to="/market" class="group rounded-2xl border border-aa-border bg-aa-panel/60 p-6 backdrop-blur-xl transition-all duration-200 card-hover-blue">
@@ -541,8 +542,8 @@
           <p class="text-xs font-mono text-aa-orange/80 uppercase tracking-widest mb-2">{{ t('home.ctaTime', 'Get Started in 3 Minutes') }}</p>
           <p class="text-aa-muted max-w-xl mx-auto mb-6">{{ t('home.ctaSubtitle', 'Deploy a programmable wallet, configure verifiers, and send your first gasless transaction.') }}</p>
           <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <router-link to="/app" class="btn-primary btn-lg">
-              {{ t('home.ctaPrimary', 'Launch App') }}
+            <router-link to="/console" class="btn-primary btn-lg">
+              {{ t('home.ctaPrimary', 'Open Console') }}
             </router-link>
             <router-link :to="{ path: '/docs', query: { doc: 'pluginGuide' } }" class="btn-secondary">
               {{ t('home.ctaSecondary', 'Read the Docs') }}
@@ -621,11 +622,11 @@ const ecosystemPartners = computed(() => [
 ]);
 
 const features = computed(() => [
-  { title: t('home.feature1Title', 'Plugin-based Verification'), body: t('home.feature1Body', 'Choose verifier plugins for your account — from simple public-key checks to complex multi-sig policies.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>', accentBg: 'bg-neo-500/10 border-neo-500/20 group-hover:bg-neo-500/15 group-hover:border-neo-500/30', accentText: 'text-neo-400', link: '/app', linkLabel: t('home.feature1Link', 'Open Workspace') },
-  { title: t('home.feature2Title', 'Deterministic Addresses'), body: t('home.feature2Body', 'Derive AA addresses from a seed before deploying, so you always know where your account lives.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>', accentBg: 'bg-aa-info/10 border-aa-info/20 group-hover:bg-aa-info/15 group-hover:border-aa-info/30', accentText: 'text-aa-info', link: '/app', linkLabel: t('home.feature2Link', 'Try Create') },
+  { title: t('home.feature1Title', 'Plugin-based Verification'), body: t('home.feature1Body', 'Choose verifier plugins for your account — from simple public-key checks to complex multi-sig policies.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>', accentBg: 'bg-neo-500/10 border-neo-500/20 group-hover:bg-neo-500/15 group-hover:border-neo-500/30', accentText: 'text-neo-400', link: '/console', linkLabel: t('home.feature1Link', 'Open Console') },
+  { title: t('home.feature2Title', 'Deterministic Addresses'), body: t('home.feature2Body', 'Derive AA addresses from a seed before deploying, so you always know where your account lives.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>', accentBg: 'bg-aa-info/10 border-aa-info/20 group-hover:bg-aa-info/15 group-hover:border-aa-info/30', accentText: 'text-aa-info', link: '/console', linkLabel: t('home.feature2Link', 'Try Create') },
   { title: t('home.feature3Title', 'Transferable AA Addresses'), body: t('home.feature3Body', 'List and trade AA address shells in a trustless on-chain marketplace with escrow settlement.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>', accentBg: 'bg-aa-purple/10 border-aa-purple/20 group-hover:bg-aa-purple/15 group-hover:border-aa-purple/30', accentText: 'text-aa-purple-light', link: '/market', linkLabel: t('home.feature3Link', 'Browse Market') },
-  { title: t('home.feature4Title', 'Relay & Paymaster'), body: t('home.feature4Body', 'Submit transactions through a relay with paymaster sponsorship — no need to hold GAS.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>', accentBg: 'bg-aa-orange/10 border-aa-orange/20 group-hover:bg-aa-orange/15 group-hover:border-aa-orange/30', accentText: 'text-aa-orange', link: '/app', linkLabel: t('home.feature4Link', 'Try Broadcast') },
-  { title: t('home.feature5Title', 'Backup-owner Recovery'), body: t('home.feature5Body', 'Set a backup owner and escape timelock so you can always recover access to your account.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>', accentBg: 'bg-aa-warning/10 border-aa-warning/20 group-hover:bg-aa-warning/15 group-hover:border-aa-warning/30', accentText: 'text-aa-warning', link: '/app', linkLabel: t('home.feature5Link', 'Configure') },
+  { title: t('home.feature4Title', 'Relay & Paymaster'), body: t('home.feature4Body', 'Submit transactions through a relay with paymaster sponsorship — no need to hold GAS.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>', accentBg: 'bg-aa-orange/10 border-aa-orange/20 group-hover:bg-aa-orange/15 group-hover:border-aa-orange/30', accentText: 'text-aa-orange', link: '/console', linkLabel: t('home.feature4Link', 'Try Broadcast') },
+  { title: t('home.feature5Title', 'Backup-owner Recovery'), body: t('home.feature5Body', 'Set a backup owner and escape timelock so you can always recover access to your account.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>', accentBg: 'bg-aa-warning/10 border-aa-warning/20 group-hover:bg-aa-warning/15 group-hover:border-aa-warning/30', accentText: 'text-aa-warning', link: '/console', linkLabel: t('home.feature5Link', 'Configure') },
   { title: t('home.feature6Title', 'Mixed Signing'), body: t('home.feature6Body', 'Collect Neo wallet and EVM signatures on the same operation for cross-chain authorization.'), icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>', accentBg: 'bg-aa-success/10 border-aa-success/20 group-hover:bg-aa-success/15 group-hover:border-aa-success/30', accentText: 'text-aa-success', link: '/docs', linkLabel: t('home.feature6Link', 'Read Docs') },
 ]);
 

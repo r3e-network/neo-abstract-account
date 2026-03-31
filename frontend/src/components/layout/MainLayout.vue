@@ -13,17 +13,28 @@
                 <span class="font-bold text-sm text-white hidden sm:inline">{{ t('brand.name', 'Abstract Account') }}</span>
               </router-link>
             </div>
-            <div class="hidden sm:-my-px sm:ml-10 sm:flex sm:space-x-8">
-              <router-link
-                v-for="link in navLinks"
-                :key="link.to"
-                :to="link.to"
-                class="relative text-aa-muted hover:text-aa-text inline-flex items-center px-1 pt-1 text-sm font-medium transition-all duration-200 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-aa-orange after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 hover:bg-aa-orange/5 rounded-t-md"
-                active-class="text-aa-text font-semibold after:scale-x-100 bg-aa-orange/5"
-                :aria-current="route.path === link.to ? 'page' : undefined"
-              >
-                {{ t(link.label, link.fallback) }}
-              </router-link>
+            <div class="hidden sm:-my-px sm:ml-10 sm:flex sm:space-x-8 sm:items-center">
+              <template v-for="link in navLinks" :key="link.to">
+                <router-link
+                  v-if="link.isConsole"
+                  :to="link.to"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-aa-orange/10 text-aa-orange border border-aa-orange/30 hover:bg-aa-orange/20 hover:border-aa-orange/50 transition-all duration-200"
+                  active-class="bg-aa-orange/20 border-aa-orange/50"
+                  :aria-current="route.path === link.to ? 'page' : undefined"
+                >
+                  <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  {{ t(link.label, link.fallback) }}
+                </router-link>
+                <router-link
+                  v-else
+                  :to="link.to"
+                  class="relative text-aa-muted hover:text-aa-text inline-flex items-center px-1 pt-1 text-sm font-medium transition-all duration-200 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-aa-orange after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 hover:bg-aa-orange/5 rounded-t-md"
+                  active-class="text-aa-text font-semibold after:scale-x-100 bg-aa-orange/5"
+                  :aria-current="route.path === link.to ? 'page' : undefined"
+                >
+                  {{ t(link.label, link.fallback) }}
+                </router-link>
+              </template>
             </div>
           </div>
           <div class="flex items-center gap-4">
@@ -45,16 +56,26 @@
         </div>
         <div class="scroll-fade-container relative">
           <div class="scroll-fade-inner flex items-center gap-2 overflow-x-auto pb-3 sm:hidden snap-x snap-proximity">
-          <router-link
-            v-for="link in navLinks"
-            :key="link.to"
-            :to="link.to"
-            class="snap-start rounded-full border border-aa-border bg-aa-panel px-4 py-2 text-xs font-semibold text-aa-muted transition-all duration-200 hover:text-aa-text hover:border-aa-border"
-            active-class="border-aa-orange text-aa-text bg-aa-orange/10"
-            :aria-current="route.path === link.to ? 'page' : undefined"
-          >
-            {{ t(link.label, link.fallback) }}
-          </router-link>
+          <template v-for="link in navLinks" :key="link.to">
+            <router-link
+              v-if="link.isConsole"
+              :to="link.to"
+              class="snap-start rounded-full border border-aa-orange/40 bg-aa-orange/10 px-4 py-2 text-xs font-bold text-aa-orange transition-all duration-200 hover:bg-aa-orange/20"
+              active-class="border-aa-orange bg-aa-orange/20"
+              :aria-current="route.path === link.to ? 'page' : undefined"
+            >
+              {{ t(link.label, link.fallback) }}
+            </router-link>
+            <router-link
+              v-else
+              :to="link.to"
+              class="snap-start rounded-full border border-aa-border bg-aa-panel px-4 py-2 text-xs font-semibold text-aa-muted transition-all duration-200 hover:text-aa-text hover:border-aa-border"
+              active-class="border-aa-orange text-aa-text bg-aa-orange/10"
+              :aria-current="route.path === link.to ? 'page' : undefined"
+            >
+              {{ t(link.label, link.fallback) }}
+            </router-link>
+          </template>
           <div class="ml-auto flex items-center gap-1 bg-aa-panel border border-aa-border rounded p-1 text-xs font-semibold text-aa-muted shrink-0" role="group" :aria-label="t('nav.languageSwitcher', 'Language selector')">
             <button
               v-for="item in locales"
@@ -186,6 +207,7 @@ const networkLabelFallback = computed(() => runtimeNetwork === 'mainnet' ? 'Neo 
 
 const navLinks = [
   { to: '/', label: 'nav.home', fallback: 'Home' },
+  { to: '/console', label: 'nav.console', fallback: 'Console', isConsole: true },
   { to: '/app', label: 'nav.app', fallback: 'Workspace' },
   { to: '/identity', label: 'nav.identity', fallback: 'Identity' },
   { to: '/market', label: 'nav.market', fallback: 'Market' },
@@ -196,6 +218,7 @@ const footerColumns = [
   {
     titleKey: 'footer.product', titleFallback: 'Product',
     links: [
+      { to: '/console', label: 'footer.footerConsole', fallback: 'Console' },
       { to: '/app', label: 'footer.footerAppWorkspace', fallback: 'App Workspace' },
       { to: '/market', label: 'footer.footerAddressMarket', fallback: 'Address Market' },
       { to: { path: '/docs', query: { doc: 'transactionViewer' } }, label: 'footer.footerTransactionViewer', fallback: 'Transaction Viewer' },
