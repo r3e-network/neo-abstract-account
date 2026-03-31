@@ -163,177 +163,90 @@
           </div>
         </section>
 
-        <!-- Workspace Preview -->
+        <!-- Plugin Architecture -->
         <section class="mb-20 scroll-reveal" :ref="observe">
           <div class="text-center mb-10">
-            <h2 class="text-2xl md:text-3xl font-bold text-white font-outfit">{{ t('home.previewTitle', 'See It in Action') }}</h2>
+            <h2 class="text-2xl md:text-3xl font-bold text-white font-outfit">{{ t('home.previewTitle', 'Plugin Architecture') }}</h2>
             <div class="section-accent-line"></div>
-            <p class="text-aa-muted mt-4 text-base max-w-2xl mx-auto">{{ t('home.previewSubtitle', 'A workspace designed for power users and developers.') }}</p>
+            <p class="text-aa-muted mt-4 text-base max-w-2xl mx-auto">{{ t('home.previewSubtitle', 'A modular smart wallet where every capability is a composable plugin.') }}</p>
           </div>
-          <div class="max-w-4xl mx-auto gradient-border-card bg-aa-panel/60 backdrop-blur-xl overflow-hidden">
-            <!-- Browser chrome -->
-            <div class="flex items-center gap-3 px-4 py-3 bg-aa-dark/80 border-b border-aa-border">
-              <div class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-full bg-aa-error/60"></span>
-                <span class="w-3 h-3 rounded-full bg-aa-warning/60"></span>
-                <span class="w-3 h-3 rounded-full bg-aa-success/60"></span>
+          <div class="max-w-5xl mx-auto">
+            <!-- Core wallet in center, plugin rings around it -->
+            <div class="grid gap-5 md:grid-cols-4">
+              <!-- Core -->
+              <div class="md:col-span-4 flex justify-center mb-2">
+                <div class="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-neo-500/15 to-aa-orange/15 border-2 border-neo-500/30 shadow-glow-neo-sm">
+                  <svg aria-hidden="true" class="w-7 h-7 text-neo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                  <div>
+                    <h3 class="text-base font-bold text-white font-outfit">{{ t('home.archCoreTitle', 'Smart Wallet Contract') }}</h3>
+                    <p class="text-xs text-aa-muted">{{ t('home.archCoreDesc', 'Lightweight proxy that delegates to registered plugins') }}</p>
+                  </div>
+                </div>
               </div>
-              <div class="flex-1 flex items-center justify-center">
-                <div class="bg-aa-panel/60 rounded-md px-3 py-1 text-xs font-mono text-aa-muted border border-aa-border">neo-abstract-account/app</div>
+
+              <!-- Verifiers column -->
+              <div class="rounded-xl border border-aa-border bg-aa-panel/60 backdrop-blur-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="w-8 h-8 rounded-lg bg-neo-500/15 border border-neo-500/30 flex items-center justify-center">
+                    <svg aria-hidden="true" class="w-4 h-4 text-neo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                  </div>
+                  <h3 class="text-sm font-bold text-white font-outfit">{{ t('home.archVerifiersTitle', 'Verifiers') }}</h3>
+                </div>
+                <ul class="space-y-2">
+                  <li v-for="v in archVerifiers" :key="v" class="flex items-center gap-2 text-xs text-aa-muted">
+                    <span class="w-1.5 h-1.5 rounded-full bg-neo-400/60"></span>
+                    {{ v }}
+                  </li>
+                </ul>
               </div>
-            </div>
-            <!-- Mock tabs -->
-            <div class="scroll-fade-container relative">
-              <div role="tablist" @keydown="handleTabKeydown" class="scroll-fade-inner flex gap-1 px-4 py-3 bg-aa-dark/50 border-b border-aa-border/60 overflow-x-auto">
-              <button
-                v-for="(tab, i) in previewTabs"
-                :key="i"
-                role="tab"
-                :aria-selected="activePreviewTab === i"
-                :aria-controls="'preview-panel-' + i"
-                :id="'preview-tab-' + i"
-                :tabindex="activePreviewTab === i ? 0 : -1"
-                @click="activePreviewTab = i"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap"
-                :class="activePreviewTab === i
-                  ? 'bg-aa-orange/15 text-aa-orange ring-1 ring-aa-orange/30'
-                  : 'text-aa-muted hover:text-aa-text hover:bg-aa-panel/60'"
-              >
-                <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" v-html="tab.icon"></svg>
-                {{ tab.label }}
-              </button>
-            </div>
-            </div>
-            <!-- Preview content area -->
-            <div class="p-6 md:p-8 min-h-[260px]">
-              <transition name="preview-fade" mode="out-in">
-                <!-- Operations mock -->
-                <div v-if="activePreviewTab === 0" key="ops" role="tabpanel" id="preview-panel-0" aria-labelledby="preview-tab-0" class="space-y-4">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span v-for="(s, si) in mockSteps" :key="si" class="flex items-center gap-1.5">
-                      <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-mono" :class="si < 2 ? 'bg-aa-orange/15 text-aa-orange border border-aa-orange/30' : 'bg-aa-panel border border-aa-border text-aa-muted'">{{ si + 1 }}</span>
-                      <span class="text-xs font-medium" :class="si < 2 ? 'text-aa-text' : 'text-aa-muted'">{{ s }}</span>
-                      <svg aria-hidden="true" v-if="si < 3" class="w-3 h-3 text-aa-border shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </span>
-                  </div>
-                  <div class="rounded-lg bg-aa-dark/60 border border-aa-border/40 p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-semibold text-aa-text">{{ t('home.mockOperation', 'Operation #42') }}</span>
-                      <span class="badge-orange text-[10px]">{{ t('home.mockPendingSigs', 'Pending signatures') }}</span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div class="rounded bg-aa-panel/60 border border-aa-border/30 px-3 py-2">
-                        <span class="text-[10px] text-aa-muted block">{{ t('home.mockNeoSig', 'Neo Sig') }}</span>
-                        <span class="text-xs text-aa-success font-mono">0x3a8f...c21d</span>
-                      </div>
-                      <div class="rounded bg-aa-panel/60 border border-aa-border/30 px-3 py-2">
-                        <span class="text-[10px] text-aa-muted block">{{ t('home.mockEvmSig', 'EVM Sig') }}</span>
-                        <span class="text-xs text-aa-muted font-mono">{{ t('home.mockAwaiting', 'Awaiting...') }}</span>
-                      </div>
-                    </div>
-                    <div class="flex gap-2 pt-1">
-                      <div class="h-8 w-28 rounded bg-aa-orange/10 border border-aa-orange/20 flex items-center justify-center">
-                        <span class="text-[10px] font-semibold text-aa-orange uppercase tracking-wider">{{ t('home.mockBroadcast', 'Broadcast') }}</span>
-                      </div>
-                      <div class="h-8 w-20 rounded bg-aa-panel/60 border border-aa-border/40 flex items-center justify-center">
-                        <span class="text-[10px] text-aa-muted">{{ t('home.mockSaveDraft', 'Save Draft') }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Create mock -->
-                <div v-else-if="activePreviewTab === 1" key="create" role="tabpanel" id="preview-panel-1" aria-labelledby="preview-tab-1" class="space-y-3">
-                  <div class="rounded-lg bg-aa-dark/60 border border-aa-border/40 p-4 space-y-3">
-                    <div>
-                      <span class="text-[10px] text-aa-muted uppercase tracking-wider font-semibold">{{ t('home.mockSeed', 'Seed') }}</span>
-                      <div class="mt-1 rounded bg-aa-panel/80 border border-aa-border/50 px-3 py-2 flex items-center justify-between">
-                        <span class="text-xs font-mono text-aa-text">0x7c3b...a91e</span>
-                        <span class="text-[10px] text-aa-success font-semibold">{{ t('home.mockDerived', 'Derived') }}</span>
-                      </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div>
-                        <span class="text-[10px] text-aa-muted uppercase tracking-wider font-semibold">{{ t('home.mockVerifier', 'Verifier') }}</span>
-                        <div class="mt-1 rounded bg-aa-panel/80 border border-aa-border/50 px-3 py-2 flex items-center justify-between">
-                          <span class="text-xs text-neo-400 font-mono">ECDSASecp256r1</span>
-                          <svg aria-hidden="true" class="w-3 h-3 text-aa-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                      </div>
-                      <div>
-                        <span class="text-[10px] text-aa-muted uppercase tracking-wider font-semibold">{{ t('home.mockBackupOwner', 'Backup Owner') }}</span>
-                        <div class="mt-1 rounded bg-aa-panel/80 border border-aa-border/50 px-3 py-2">
-                          <span class="text-xs font-mono text-aa-info">NiEt...VJnD</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="rounded bg-neo-500/8 border border-neo-500/15 px-3 py-2 flex items-center gap-2">
-                      <svg aria-hidden="true" class="w-4 h-4 text-neo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                      <span class="text-xs text-neo-300">{{ t('home.mockAddressReady', 'Address available — deploy to activate') }}</span>
-                    </div>
-                    <div class="h-8 w-28 rounded bg-neo-500/15 border border-neo-500/30 flex items-center justify-center">
-                      <span class="text-[10px] font-semibold text-neo-400 uppercase tracking-wider">{{ t('home.mockDeploy', 'Deploy AA') }}</span>
-                    </div>
+              <!-- Hooks column -->
+              <div class="rounded-xl border border-aa-border bg-aa-panel/60 backdrop-blur-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="w-8 h-8 rounded-lg bg-aa-warning/15 border border-aa-warning/30 flex items-center justify-center">
+                    <svg aria-hidden="true" class="w-4 h-4 text-aa-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                   </div>
+                  <h3 class="text-sm font-bold text-white font-outfit">{{ t('home.archHooksTitle', 'Hooks') }}</h3>
                 </div>
+                <ul class="space-y-2">
+                  <li v-for="h in archHooks" :key="h" class="flex items-center gap-2 text-xs text-aa-muted">
+                    <span class="w-1.5 h-1.5 rounded-full bg-aa-warning/60"></span>
+                    {{ h }}
+                  </li>
+                </ul>
+              </div>
 
-                <!-- Manage mock -->
-                <div v-else-if="activePreviewTab === 2" key="manage" role="tabpanel" id="preview-panel-2" aria-labelledby="preview-tab-2" class="space-y-3">
-                  <div class="rounded-lg bg-aa-dark/60 border border-aa-border/40 p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-semibold text-aa-text">{{ t('home.mockGovernance', 'Governance') }}</span>
-                      <span class="badge-blue text-[10px]">{{ t('home.mockActive', 'Active') }}</span>
-                    </div>
-                    <div class="space-y-2">
-                      <div class="flex items-center justify-between rounded bg-aa-panel/60 border border-aa-border/30 px-3 py-2">
-                        <div class="flex items-center gap-2">
-                          <span class="w-2 h-2 rounded-full bg-aa-info"></span>
-                          <span class="text-xs text-aa-text">{{ t('home.mockVerifier', 'Verifier') }}</span>
-                        </div>
-                        <span class="text-xs font-mono text-aa-info">ECDSASecp256r1</span>
-                      </div>
-                      <div class="flex items-center justify-between rounded bg-aa-panel/60 border border-aa-border/30 px-3 py-2">
-                        <div class="flex items-center gap-2">
-                          <span class="w-2 h-2 rounded-full bg-aa-warning"></span>
-                          <span class="text-xs text-aa-text">{{ t('home.mockEscapeTimelock', 'Escape Timelock') }}</span>
-                        </div>
-                        <span class="text-xs font-mono text-aa-warning">24h</span>
-                      </div>
-                      <div class="flex items-center justify-between rounded bg-aa-panel/60 border border-aa-border/30 px-3 py-2">
-                        <div class="flex items-center gap-2">
-                          <span class="w-2 h-2 rounded-full bg-aa-success"></span>
-                          <span class="text-xs text-aa-text">{{ t('home.mockBackupOwner', 'Backup Owner') }}</span>
-                        </div>
-                        <span class="text-xs font-mono text-aa-success">NiEt...VJnD</span>
-                      </div>
-                    </div>
-                    <div class="flex gap-2 pt-1">
-                      <div class="h-8 w-28 rounded bg-aa-info/10 border border-aa-info/20 flex items-center justify-center">
-                        <span class="text-[10px] font-semibold text-aa-info uppercase tracking-wider">{{ t('home.mockUpdate', 'Update') }}</span>
-                      </div>
-                      <div class="h-8 w-28 rounded bg-aa-warning/10 border border-aa-warning/20 flex items-center justify-center">
-                        <span class="text-[10px] font-semibold text-aa-warning uppercase tracking-wider">{{ t('home.mockRecovery', 'Recovery') }}</span>
-                      </div>
-                    </div>
+              <!-- Services column -->
+              <div class="rounded-xl border border-aa-border bg-aa-panel/60 backdrop-blur-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="w-8 h-8 rounded-lg bg-aa-info/15 border border-aa-info/30 flex items-center justify-center">
+                    <svg aria-hidden="true" class="w-4 h-4 text-aa-info" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
                   </div>
+                  <h3 class="text-sm font-bold text-white font-outfit">{{ t('home.archServicesTitle', 'Services') }}</h3>
                 </div>
+                <ul class="space-y-2">
+                  <li v-for="s in archServices" :key="s" class="flex items-center gap-2 text-xs text-aa-muted">
+                    <span class="w-1.5 h-1.5 rounded-full bg-aa-info/60"></span>
+                    {{ s }}
+                  </li>
+                </ul>
+              </div>
 
-                <!-- Source mock -->
-                <div v-else-if="activePreviewTab === 3" key="source" role="tabpanel" id="preview-panel-3" aria-labelledby="preview-tab-3" class="space-y-3">
-                  <div class="rounded-lg bg-aa-dark/80 border border-aa-border/40 overflow-hidden font-mono text-[11px] leading-5">
-                    <div class="flex items-center gap-2 px-4 py-2 bg-aa-dark/60 border-b border-aa-border/30">
-                      <span class="w-2 h-2 rounded-full bg-aa-purple-light"></span>
-                      <span class="text-aa-muted">UnifiedSmartWallet.cs</span>
-                    </div>
-                    <div class="p-4 space-y-0.5">
-                      <div v-for="(line, li) in mockCodeLines" :key="li" class="flex gap-3">
-                        <span class="text-aa-muted/40 select-none w-5 text-right shrink-0">{{ li + 1 }}</span>
-                        <span v-html="line"></span>
-                      </div>
-                    </div>
+              <!-- Governance column -->
+              <div class="rounded-xl border border-aa-border bg-aa-panel/60 backdrop-blur-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <div class="w-8 h-8 rounded-lg bg-aa-purple/15 border border-aa-purple/30 flex items-center justify-center">
+                    <svg aria-hidden="true" class="w-4 h-4 text-aa-purple-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                   </div>
+                  <h3 class="text-sm font-bold text-white font-outfit">{{ t('home.archGovernanceTitle', 'Governance') }}</h3>
                 </div>
-              </transition>
+                <ul class="space-y-2">
+                  <li v-for="g in archGovernance" :key="g" class="flex items-center gap-2 text-xs text-aa-muted">
+                    <span class="w-1.5 h-1.5 rounded-full bg-aa-purple-light/60"></span>
+                    {{ g }}
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>
@@ -654,45 +567,36 @@ const faqItems = computed(() => [
 ]);
 
 const openFaq = ref(-1);
-const activePreviewTab = ref(0);
-const PREVIEW_TAB_COUNT = 4;
 
-function handleTabKeydown(e) {
-  const { key } = e;
-  let next = activePreviewTab.value;
-  if (key === 'ArrowRight') { next = (next + 1) % PREVIEW_TAB_COUNT; }
-  else if (key === 'ArrowLeft') { next = (next - 1 + PREVIEW_TAB_COUNT) % PREVIEW_TAB_COUNT; }
-  else if (key === 'Home') { next = 0; }
-  else if (key === 'End') { next = PREVIEW_TAB_COUNT - 1; }
-  else return;
-  e.preventDefault();
-  activePreviewTab.value = next;
-  const el = document.getElementById('preview-tab-' + next);
-  if (el) el.focus();
-}
-
-const mockSteps = computed(() => [
-  t('home.mockStepLoad', 'Load'),
-  t('home.mockStepCompose', 'Compose'),
-  t('home.mockStepSign', 'Sign'),
-  t('home.mockStepBroadcast', 'Broadcast'),
+const archVerifiers = computed(() => [
+  t('home.archVerifier1', 'ECDSASecp256r1 (Neo native)'),
+  t('home.archVerifier2', 'Web3Auth / DID'),
+  t('home.archVerifier3', 'Session Keys'),
+  t('home.archVerifier4', 'MultiSig (m-of-n)'),
+  t('home.archVerifier5', 'WebAuthn / Passkeys'),
 ]);
 
-const mockCodeLines = [
-  '<span class="text-aa-purple-light">public class</span> <span class="text-aa-text">UnifiedSmartWallet</span> : <span class="text-aa-info">SmartContract</span>',
-  '{',
-  '    <span class="text-aa-purple-light">private static readonly</span> <span class="text-aa-info">StorageMap</span> <span class="text-aa-text">Accounts</span>;',
-  '    <span class="text-aa-purple-light">private static readonly</span> <span class="text-aa-info">StorageMap</span> <span class="text-aa-text">Verifiers</span>;',
-  '',
-  '    <span class="text-aa-purple-light">public static bool</span> <span class="text-neo-400">RegisterAccount</span>(',
-  '        <span class="text-aa-info">UInt160</span> accountId, <span class="text-aa-info">UInt160</span> verifier,',
-  '        <span class="text-aa-info">byte[]</span> hook, <span class="text-aa-info">UInt160</span> backup,',
-  '        <span class="text-aa-info">ulong</span> timelock)',
-  '    {',
-  '        <span class="text-aa-muted">// validate & store account ...</span>',
-  '    }',
-  '}',
-];
+const archHooks = computed(() => [
+  t('home.archHook1', 'Daily Spend Limits'),
+  t('home.archHook2', 'Address Whitelists'),
+  t('home.archHook3', 'Token Restrictions'),
+  t('home.archHook4', 'Time-based Policies'),
+  t('home.archHook5', 'Custom Validators'),
+]);
+
+const archServices = computed(() => [
+  t('home.archService1', 'Relay (meta-transactions)'),
+  t('home.archService2', 'Paymaster (gas sponsorship)'),
+  t('home.archService3', 'Address Market (escrow)'),
+  t('home.archService4', 'N3Index (chain data)'),
+]);
+
+const archGovernance = computed(() => [
+  t('home.archGov1', 'Backup Owner Assignment'),
+  t('home.archGov2', 'Escape Timelock Recovery'),
+  t('home.archGov3', 'Ownership Transfer'),
+  t('home.archGov4', 'Plugin Hot-swap'),
+]);
 const hasRealContractHash = !!(RUNTIME_CONFIG.abstractAccountHash);
 const contractHashDisplay = RUNTIME_CONFIG.abstractAccountHash || 'AA_CONTRACT_HASH';
 const displayedSnippet = `// Register a V3 Abstract Account on Neo N3
@@ -713,40 +617,6 @@ const invoke = {
 const result = await walletService.invoke(invoke);
 console.log('TxID:', result.txid);`;
 
-const previewTabs = computed(() => [
-  {
-    label: t('home.previewTab1Label', 'Operations'),
-    icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>',
-    title: t('home.previewTab1Title', 'Compose & Broadcast'),
-    desc: t('home.previewTab1Desc', 'Build multi-step operations, collect signatures from Neo and EVM wallets, then broadcast through the relay with paymaster sponsorship.'),
-    accentBg: 'bg-aa-orange/10',
-    accentText: 'text-aa-orange',
-  },
-  {
-    label: t('home.previewTab2Label', 'Create'),
-    icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>',
-    title: t('home.previewTab2Title', 'Deploy New Account'),
-    desc: t('home.previewTab2Desc', 'Configure verifier plugins, hook policies, and backup owners. Preview the deterministic address before deploying on-chain.'),
-    accentBg: 'bg-neo-500/10',
-    accentText: 'text-neo-400',
-  },
-  {
-    label: t('home.previewTab3Label', 'Manage'),
-    icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>',
-    title: t('home.previewTab3Title', 'Governance Control'),
-    desc: t('home.previewTab3Desc', 'Update verifiers, hooks, and backup owners. Trigger escape recovery or finalize after the timelock expires.'),
-    accentBg: 'bg-aa-info/10',
-    accentText: 'text-aa-info',
-  },
-  {
-    label: t('home.previewTab4Label', 'Source'),
-    icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>',
-    title: t('home.previewTab4Title', 'Contract Source'),
-    desc: t('home.previewTab4Desc', 'Browse the on-chain V3 UnifiedSmartWallet contract source. Inspect registration, execution, and governance methods.'),
-    accentBg: 'bg-aa-purple/10',
-    accentText: 'text-aa-purple-light',
-  },
-]);
 
 const copied = computed(() => copiedKey.value === 'home-snippet');
 
@@ -801,19 +671,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.preview-fade-enter-active,
-.preview-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.preview-fade-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
-}
-.preview-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-
 .faq-answer {
   max-height: 0;
   opacity: 0;
@@ -874,68 +731,4 @@ onUnmounted(() => {
   50% { transform: translateY(6px); opacity: 0.7; }
 }
 
-/* Scroll fade indicators for horizontally scrollable containers */
-.scroll-fade-container {
-  scroll-timeline: --scroll-fade x;
-}
-
-.scroll-fade-inner {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black 40px,
-    black calc(100% - 40px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black 40px,
-    black calc(100% - 40px),
-    transparent 100%
-  );
-  animation: scroll-fade-mask 1s linear both;
-  animation-timeline: --scroll-fade;
-}
-
-@keyframes scroll-fade-mask {
-  from {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black calc(100% - 40px),
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black calc(100% - 40px),
-      transparent 100%
-    );
-  }
-  to {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black 100%
-    );
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-fade-inner {
-    -webkit-mask-image: none;
-    mask-image: none;
-    animation: none;
-  }
-}
 </style>
