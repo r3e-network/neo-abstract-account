@@ -6,10 +6,19 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 export default defineConfig({
   plugins: [vue()],
+  define: {
+    // Node.js globals needed by ethers v6, web3auth, and walletconnect
+    'process.env': {},
+    'process.browser': true,
+    'process.version': JSON.stringify(''),
+    global: 'globalThis',
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@repo': repoRoot
+      '@repo': repoRoot,
+      // Ensure buffer polyfill resolves for any bare `buffer` import
+      buffer: 'buffer/',
     }
   },
   build: {
@@ -23,16 +32,20 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          if (id.includes('/node_modules/buffer/')) return 'buffer-polyfill';
-          if (id.includes('@vue-flow')) return 'vue-flow';
-          if (id.includes('@supabase')) return 'supabase';
-          if (id.includes('jose')) return 'jose';
-          if (id.includes('katex')) return 'katex';
+          // vue core
           if (id.includes('vue-router') || id.includes('/vue/')) return 'vue-vendor';
-          if (id.includes('ethers')) return 'ethers';
-          if (id.includes('@web3auth')) return 'web3auth';
+          // supabase
+          if (id.includes('@supabase')) return 'supabase';
+          // visualization (heavy, rarely needed on first load)
+          if (id.includes('@vue-flow')) return 'vue-flow';
           if (id.includes('highlight.js') || id.includes('@highlightjs')) return 'highlight';
+          if (id.includes('katex')) return 'katex';
           if (id.includes('vue-toastification')) return 'toast';
+          if (id.includes('jose')) return 'jose';
+          // NOTE: ethers, @web3auth, buffer, @noble, @scure are NOT split
+          // into manual chunks. ethers v6 has circular internal deps that
+          // cause TDZ errors ("Cannot access before initialization") when
+          // Rollup isolates them. Let Rollup handle the split naturally.
         }
       }
     }
