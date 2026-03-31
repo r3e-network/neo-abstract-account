@@ -1161,4 +1161,7 @@ module.exports = {
   EVENT_NAMES: require('./events').EVENT_NAMES,
   EventSubscription: require('./events').EventSubscription,
   createEventSubscription: require('./events').createEventSubscription,
+  // Retry utility
+  withRetry: require('./retry').withRetry,
+  isRetryableError: require('./retry').isRetryableError,
 };
