@@ -220,11 +220,11 @@ test('receipt history uses formatted labels instead of raw createdAt fields', ()
 test('console view exists with service cards linking to workspace, identity, market, and docs', () => {
   const consolePath = path.resolve('src/views/ConsoleView.vue');
   const consoleSource = fs.readFileSync(consolePath, 'utf8');
-  assert.match(consoleSource, /Abstract Account Console/);
-  assert.match(consoleSource, /App Workspace/);
-  assert.match(consoleSource, /Identity Workspace/);
+  assert.match(consoleSource, /Console/);
+  assert.match(consoleSource, /Account Workspace/);
+  assert.match(consoleSource, /Identity & DID/);
   assert.match(consoleSource, /Address Market/);
-  assert.match(consoleSource, /Hooks & Plugins/);
+  assert.match(consoleSource, /Plugins & Hooks/);
   assert.match(consoleSource, /Documentation/);
   assert.match(consoleSource, /Getting Started/);
   assert.match(consoleSource, /\/app/);
