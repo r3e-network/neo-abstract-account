@@ -28,6 +28,11 @@ export default defineConfig({
           if (id.includes('@supabase')) return 'supabase';
           if (id.includes('jose')) return 'jose';
           if (id.includes('katex')) return 'katex';
+          if (id.includes('vue-router') || id.includes('/vue/')) return 'vue-vendor';
+          if (id.includes('ethers')) return 'ethers';
+          if (id.includes('@web3auth')) return 'web3auth';
+          if (id.includes('highlight.js') || id.includes('@highlightjs')) return 'highlight';
+          if (id.includes('vue-toastification')) return 'toast';
         }
       }
     }

@@ -18,7 +18,10 @@ const { buildV3UserOperationTypedData } = require('../metaTx');
  * @returns {Object} EIP-712 typed data
  */
 function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountId, userOp, argsHash }) {
-  console.warn('buildEIP712PayloadForWeb3AuthVerifier is deprecated. Use buildV3UserOperationTypedData from metaTx.js instead.');
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.warn('buildEIP712PayloadForWeb3AuthVerifier is deprecated. Use buildV3UserOperationTypedData from metaTx.js instead.');
+  }
   const resolvedArgsHash = argsHash || ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(userOp.Args || [])));
   return buildV3UserOperationTypedData({
     chainId,
@@ -47,7 +50,10 @@ function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountI
  * @returns {Object} UserOperation object
  */
 function buildV3UserOp({ targetContract, method, args, nonce, deadline }) {
-  console.warn('buildV3UserOp is deprecated. Construct the UserOp object directly.');
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.warn('buildV3UserOp is deprecated. Construct the UserOp object directly.');
+  }
   return {
     TargetContract: targetContract,
     Method: method,

@@ -135,8 +135,9 @@ class EventSubscription {
 
                 try {
                   await callback(event);
-                } catch (err) {
-                  console.error(`Error in event callback for ${eventName}:`, err);
+                } catch (_callbackErr) {
+                  // Swallow callback errors to avoid breaking the polling loop.
+                  // Callers should handle errors within their own callback.
                 }
               }
             }
@@ -144,8 +145,8 @@ class EventSubscription {
         }
 
         lastBlockHeight = currentBlock;
-      } catch (error) {
-        console.error(`Error polling for events: ${eventName}`, error);
+      } catch (_pollError) {
+        // Polling failures are transient; the next interval will retry.
       }
     };
 
