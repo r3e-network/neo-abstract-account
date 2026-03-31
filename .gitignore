@@ -12,3 +12,4 @@ tests/VALIDATION_SUMMARY.md
 tests/MIXED_VERIFICATION_PLAN.md
 tests/mixed-verification-test.js
 tests/run-mixed-verification.js
+.env.local
