@@ -5,6 +5,9 @@ const { createError, EC } = require('./errors');
 const NEF_RELATIVE_PATH = path.join('contracts', 'bin', 'sc', 'UnifiedSmartWalletV2.nef');
 const MANIFEST_RELATIVE_PATH = path.join('contracts', 'bin', 'sc', 'UnifiedSmartWalletV2.manifest.json');
 
+/** Cache for resolved artifact data keyed by fromDir. */
+const artifactCache = new Map();
+
 /**
  * Resolves the repository root by searching for contract artifacts.
  *
@@ -47,7 +50,7 @@ function resolveContractArtifactPaths({ fromDir = __dirname } = {}) {
 }
 
 /**
- * Reads contract artifacts from the repository.
+ * Reads contract artifacts from the repository (sync, legacy).
  *
  * @param {Object} options - Read options
  * @param {string} [options.fromDir=__dirname] - Directory to start search from
@@ -68,8 +71,40 @@ function readContractArtifacts({ fromDir = __dirname } = {}) {
   };
 }
 
+/**
+ * Reads contract artifacts asynchronously with caching.
+ * Preferred over the sync version for production use.
+ *
+ * @param {Object} options - Read options
+ * @param {string} [options.fromDir=__dirname] - Directory to start search from
+ * @returns {Promise<Object>} Object with repoRoot, paths, and artifact contents
+ */
+async function readContractArtifactsAsync({ fromDir = __dirname } = {}) {
+  const cacheKey = path.resolve(fromDir);
+  if (artifactCache.has(cacheKey)) return artifactCache.get(cacheKey);
+
+  const { repoRoot, nefPath, manifestPath } = resolveContractArtifactPaths({ fromDir });
+  const [nefBytes, manifestString] = await Promise.all([
+    fs.promises.readFile(nefPath),
+    fs.promises.readFile(manifestPath, 'utf8'),
+  ]);
+
+  const result = {
+    repoRoot,
+    nefPath,
+    manifestPath,
+    nefBytes,
+    nefBase64: nefBytes.toString('base64'),
+    manifestString,
+  };
+
+  artifactCache.set(cacheKey, result);
+  return result;
+}
+
 module.exports = {
   readContractArtifacts,
+  readContractArtifactsAsync,
   resolveContractArtifactPaths,
   resolveRepoRoot,
 };
