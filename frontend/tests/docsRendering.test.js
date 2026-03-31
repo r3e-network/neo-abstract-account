@@ -283,10 +283,11 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
   const viteConfigSource = read('vite.config.js');
 
   assert.match(viteConfigSource, /manualChunks/);
-  assert.match(viteConfigSource, /buffer-polyfill/);
   assert.match(viteConfigSource, /vue-flow/);
   assert.match(viteConfigSource, /supabase/);
   assert.match(viteConfigSource, /jose/);
+  // ethers, @web3auth, buffer are NOT in manualChunks (circular dep TDZ fix)
+  assert.doesNotMatch(viteConfigSource, /return 'ethers'/);
   assert.doesNotMatch(viteConfigSource, /neon-core/);
   assert.doesNotMatch(viteConfigSource, /return 'mermaid'/);
   assert.doesNotMatch(viteConfigSource, /return 'cytoscape'/);
