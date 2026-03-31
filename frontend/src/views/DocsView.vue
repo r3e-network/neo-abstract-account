@@ -264,60 +264,192 @@ watch(activeDoc, (value) => {
 </script>
 
 <style scoped>
-.markdown-body pre {
-  background-color: theme('colors.dark.900') !important;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  overflow-x: auto;
-  border: 1px solid theme('colors.dark.700');
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-}
-.markdown-body code:not(pre code) {
-  background-color: theme('colors.dark.800');
-  color: theme('colors.neo.400');
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.375rem;
-  font-size: 0.875em;
-  font-weight: 600;
-  border: 1px solid theme('colors.dark.700');
-}
+/* ── Typography ── */
 .markdown-body h1 {
   color: theme('colors.aa.text');
   font-weight: 800;
-  font-size: 2.25rem;
-  margin-bottom: 2rem;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
   font-family: 'Outfit', sans-serif;
-  background: linear-gradient(to right, theme('colors.aa.orange'), theme('colors.neo.400'));
+  background: linear-gradient(135deg, theme('colors.aa.orange'), theme('colors.neo.400'));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .markdown-body h2 {
   color: theme('colors.aa.text');
-  border-bottom: 1px solid theme('colors.dark.700');
-  padding-bottom: 0.5rem;
-  margin-top: 2.5rem;
+  border-bottom: 1px solid rgba(255, 68, 0, 0.15);
+  padding-bottom: 0.75rem;
+  margin-top: 3rem;
+  margin-bottom: 1.25rem;
   font-weight: 700;
+  font-size: 1.5rem;
   font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.01em;
 }
 .markdown-body h3 {
   color: theme('colors.aa.text');
-  margin-top: 2rem;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
   font-weight: 600;
+  font-size: 1.25rem;
+  font-family: 'Outfit', sans-serif;
+}
+.markdown-body h4 {
+  color: theme('colors.aa.text');
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  font-family: 'Outfit', sans-serif;
 }
 .markdown-body p {
-  line-height: 1.8;
+  line-height: 1.75;
   color: theme('colors.aa.muted');
+  margin-bottom: 1.25rem;
+  font-size: 1rem;
+  max-width: 720px;
 }
+.markdown-body strong {
+  color: theme('colors.aa.text');
+  font-weight: 700;
+}
+
+/* ── Lists ── */
 .markdown-body ul {
   list-style-type: disc;
   padding-left: 1.5rem;
   color: theme('colors.aa.muted');
+  margin-bottom: 1.5rem;
+}
+.markdown-body ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  color: theme('colors.aa.muted');
+  margin-bottom: 1.5rem;
 }
 .markdown-body li {
   margin-bottom: 0.5rem;
+  line-height: 1.75;
 }
-.markdown-body strong {
+.markdown-body li::marker {
+  color: theme('colors.aa.orange');
+}
+
+/* ── Links ── */
+.markdown-body a {
+  color: theme('colors.aa.orange');
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 68, 0, 0.3);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.markdown-body a:hover {
+  color: theme('colors.aa.lightOrange');
+  border-bottom-color: theme('colors.aa.lightOrange');
+}
+
+/* ── Code Blocks ── */
+.markdown-body pre {
+  background: #0d1117 !important;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 1.5rem 0;
+  position: relative;
+}
+.markdown-body pre code {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  tab-size: 2;
+}
+.markdown-body code:not(pre code) {
+  background-color: rgba(255, 68, 0, 0.08);
+  color: theme('colors.aa.orange');
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  border: 1px solid rgba(255, 68, 0, 0.15);
+}
+
+/* ── Blockquotes / Callouts ── */
+.markdown-body blockquote {
+  border-left: 3px solid theme('colors.aa.orange');
+  background: rgba(255, 68, 0, 0.04);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.markdown-body blockquote p {
+  color: theme('colors.aa.muted');
+  margin-bottom: 0;
+  font-size: 0.95rem;
+}
+.markdown-body blockquote strong {
+  color: theme('colors.aa.orange');
+}
+
+/* ── Tables ── */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.markdown-body thead th {
+  background: rgba(255, 68, 0, 0.06);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: theme('colors.aa.text');
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.markdown-body tbody td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: theme('colors.aa.muted');
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.markdown-body tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+.markdown-body tbody tr:hover {
+  background: rgba(255, 68, 0, 0.03);
+}
+
+/* ── Horizontal Rules ── */
+.markdown-body hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 68, 0, 0.2), transparent);
+  margin: 2.5rem 0;
+}
+
+/* ── Images ── */
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 1.5rem 0;
+}
+
+/* ── Mermaid Diagrams ── */
+.markdown-body :deep(.mermaid-container) {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: center;
+  overflow-x: auto;
 }
 </style>
