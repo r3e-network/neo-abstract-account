@@ -22,20 +22,22 @@ namespace AbstractAccount
         /// </remarks>
         public static object ExecuteUserOp(UInt160 accountId, UserOperation op)
         {
-            ExecutionEngine.Assert(!IsAnyExecutionActive(), "Reentrant call rejected");
+            ExecutionEngine.Assert(!IsExecutionActive(accountId), "Reentrant call rejected");
 
             AccountState state = GetAccountState(accountId);
             AssertNoMarketEscrow(accountId);
 
-            SetExecutionLock();
+            SetExecutionLock(accountId);
 
             try
             {
                 // [ValidateUserOp phase]
                 ExecutionEngine.Assert(Runtime.Time <= op.Deadline, "UserOp expired");
-                ExecutionEngine.Assert(IsNonceAcceptable(accountId, op.Nonce), "Invalid sequence for channel");
-                ConsumeNonce(accountId, op.Nonce);
 
+                // Step 1: Validate nonce WITHOUT consuming (read-only check)
+                ExecutionEngine.Assert(IsNonceAcceptable(accountId, op.Nonce), "Invalid sequence for channel");
+
+                // Step 2: Verify signature
                 if (state.Verifier != UInt160.Zero)
                 {
                     // Delegate to plugin for signature verification (e.g., ecrecover or TEE hardware)
@@ -51,7 +53,7 @@ namespace AbstractAccount
                     ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner!), "Native witness failed");
                 }
 
-                // Security defense: if account is in stolen escape state, normal operations interrupt escape
+                // Step 3: Security defense — escape check
                 // NOTE: Only the backup owner can cancel an active escape to prevent attackers
                 // from repeatedly executing operations to indefinitely delay the escape hatch.
                 if (state.EscapeTriggeredAt > 0)
@@ -64,6 +66,9 @@ namespace AbstractAccount
                     Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
                     OnEscapeCancelled(accountId);
                 }
+
+                // Step 4: NOW consume nonce (all validations passed)
+                ConsumeNonce(accountId, op.Nonce);
 
                 // [Hook phase] pre-execution hook
                 if (state.HookId != UInt160.Zero)
@@ -108,7 +113,7 @@ namespace AbstractAccount
             }
             finally
             {
-                ClearExecutionLock();
+                ClearExecutionLock(accountId);
             }
         }
 
@@ -155,6 +160,8 @@ namespace AbstractAccount
 
         private static bool IsNonceAcceptable(UInt160 accountId, BigInteger nonce)
         {
+            if (nonce < 0) return false;
+
             BigInteger MAX_2D_NONCE = 1_000_000_000_000_000_000;
 
             if (nonce >= MAX_2D_NONCE)

@@ -85,11 +85,7 @@ namespace AbstractAccount
 
             byte[] key2 = Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId);
             ByteString? existing = Storage.Get(Storage.CurrentContext, key2);
-            if (existing != null)
-            {
-                PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(existing);
-                ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Pending update timelock active");
-            }
+            ExecutionEngine.Assert(existing == null, "Cancel or confirm pending update first");
 
             PendingConfigUpdate update = new PendingConfigUpdate
             {
@@ -175,11 +171,7 @@ namespace AbstractAccount
 
             byte[] key2 = Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId);
             ByteString? existing = Storage.Get(Storage.CurrentContext, key2);
-            if (existing != null)
-            {
-                PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(existing);
-                ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Pending update timelock active");
-            }
+            ExecutionEngine.Assert(existing == null, "Cancel or confirm pending update first");
 
             PendingConfigUpdate update = new PendingConfigUpdate
             {
