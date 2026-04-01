@@ -2107,12 +2107,11 @@ export function createI18nController({ storage = null, forceNew = false } = {}) 
     setLocale(nextLocale) {
       const normalized = normalizeLocale(nextLocale);
       if (normalized === 'zh-CN' && !MESSAGES['zh-CN']) {
-        loadZhCN().then(() => {
+        return loadZhCN().then(() => {
           locale.value = normalized;
           backend?.setItem(I18N_STORAGE_KEY, normalized);
           syncDocumentLocale(normalized);
         });
-        return;
       }
       locale.value = normalized;
       backend?.setItem(I18N_STORAGE_KEY, normalized);
