@@ -54,15 +54,20 @@ namespace AbstractAccount
             UInt160 previousHook = state.HookId;
 
             // Clear old plugin state before wiping pointers
+            // Must set config context so the plugin's ValidateConfigCaller succeeds
             if (previousVerifier != UInt160.Zero)
             {
+                SetVerifierConfigContext(accountId, previousVerifier);
                 try { Contract.Call(previousVerifier, "clearAccount", CallFlags.All, new object[] { accountId }); }
                 catch { } // Plugin may not implement clearAccount
+                finally { ClearVerifierConfigContext(accountId); }
             }
             if (previousHook != UInt160.Zero)
             {
+                SetHookConfigContext(accountId, previousHook);
                 try { Contract.Call(previousHook, "clearAccount", CallFlags.All, new object[] { accountId }); }
                 catch { } // Plugin may not implement clearAccount
+                finally { ClearHookConfigContext(accountId); }
             }
 
             state.BackupOwner = newBackupOwner!;
