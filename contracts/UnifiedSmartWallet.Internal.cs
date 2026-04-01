@@ -41,19 +41,22 @@ namespace AbstractAccount
         }
 
         [Safe]
-        public static bool IsAnyExecutionActive()
+        public static bool IsExecutionActive(UInt160 accountId)
         {
-            return Storage.Get(Storage.CurrentContext, Prefix_ExecutionLock) != null;
+            byte[] key = Helper.Concat(Prefix_ExecutionLock, (byte[])accountId);
+            return Storage.Get(Storage.CurrentContext, key) != null;
         }
 
-        private static void SetExecutionLock()
+        private static void SetExecutionLock(UInt160 accountId)
         {
-            Storage.Put(Storage.CurrentContext, Prefix_ExecutionLock, new byte[] { 1 });
+            byte[] key = Helper.Concat(Prefix_ExecutionLock, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
         }
 
-        private static void ClearExecutionLock()
+        private static void ClearExecutionLock(UInt160 accountId)
         {
-            Storage.Delete(Storage.CurrentContext, Prefix_ExecutionLock);
+            byte[] key = Helper.Concat(Prefix_ExecutionLock, (byte[])accountId);
+            Storage.Delete(Storage.CurrentContext, key);
         }
 
         private static void SetVerifierConfigContext(UInt160 accountId, UInt160 verifierContract)
