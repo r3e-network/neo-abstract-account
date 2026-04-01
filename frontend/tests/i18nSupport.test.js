@@ -20,14 +20,14 @@ function createMemoryStorage() {
   };
 }
 
-test('i18n controller defaults to English and persists Chinese selection', () => {
+test('i18n controller defaults to English and persists Chinese selection', async () => {
   const storage = createMemoryStorage();
   const i18n = createI18nController({ storage, forceNew: true });
 
   assert.equal(i18n.locale.value, 'en');
   assert.equal(i18n.t('nav.home', 'Home'), 'Home');
 
-  i18n.setLocale('zh-CN');
+  await i18n.setLocale('zh-CN');
   assert.equal(i18n.locale.value, 'zh-CN');
   assert.equal(i18n.t('nav.home', 'Home'), '首页');
 
