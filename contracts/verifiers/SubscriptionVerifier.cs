@@ -37,23 +37,23 @@ namespace AbstractAccount.Verifiers
             public UInt160 Merchant;
             public UInt160 Token;
             public BigInteger Amount;
-            public BigInteger PeriodMs;
+            public BigInteger PeriodSeconds;
             public BigInteger LastChargeTime;
         }
 
         /// <summary>
         /// Creates or overwrites a subscription configuration for an account and subscription id.
         /// </summary>
-        public static void CreateSubscription(UInt160 accountId, ByteString subId, UInt160 merchant, UInt160 token, BigInteger amount, BigInteger periodMs)
+        public static void CreateSubscription(UInt160 accountId, ByteString subId, UInt160 merchant, UInt160 token, BigInteger amount, BigInteger periodSeconds)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
-            
-            SubscriptionConfig config = new SubscriptionConfig 
-            { 
-                Merchant = merchant, 
-                Token = token, 
-                Amount = amount, 
-                PeriodMs = periodMs,
+
+            SubscriptionConfig config = new SubscriptionConfig
+            {
+                Merchant = merchant,
+                Token = token,
+                Amount = amount,
+                PeriodSeconds = periodSeconds,
                 LastChargeTime = 0
             };
             
@@ -83,8 +83,8 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert((UInt160)op.Args[1] == config.Merchant, "Transfer destination must be merchant");
             ExecutionEngine.Assert((BigInteger)op.Args[2] <= config.Amount, "Transfer amount exceeds subscription");
 
-            ExecutionEngine.Assert(config.PeriodMs > 0, "Invalid subscription period");
-            BigInteger currentPeriod = Runtime.Time / config.PeriodMs;
+            ExecutionEngine.Assert(config.PeriodSeconds > 0, "Invalid subscription period");
+            BigInteger currentPeriod = Runtime.Time / config.PeriodSeconds;
             ExecutionEngine.Assert(currentPeriod > 0, "Subscription period not yet elapsed");
 
             // Get per-subscription nonce counter to prevent replay within the same billing period

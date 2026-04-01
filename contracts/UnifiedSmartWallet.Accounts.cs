@@ -114,6 +114,14 @@ namespace AbstractAccount
 
             AccountState state = GetAccountState(accountId);
             UInt160 previousHook = state.HookId;
+
+            // Clear old plugin's per-account state before replacing it
+            if (previousHook != UInt160.Zero)
+            {
+                try { Contract.Call(previousHook, "clearAccount", CallFlags.All, new object[] { accountId }); }
+                catch { } // Plugin may not implement clearAccount
+            }
+
             state.HookId = pending.NewHookId;
             byte[] stateKey = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, stateKey, StdLib.Serialize(state));
@@ -201,6 +209,14 @@ namespace AbstractAccount
 
             AccountState state = GetAccountState(accountId);
             UInt160 previousVerifier = state.Verifier;
+
+            // Clear old plugin's per-account state before replacing it
+            if (previousVerifier != UInt160.Zero)
+            {
+                try { Contract.Call(previousVerifier, "clearAccount", CallFlags.All, new object[] { accountId }); }
+                catch { } // Plugin may not implement clearAccount
+            }
+
             state.Verifier = pending.NewVerifier;
             byte[] stateKey = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, stateKey, StdLib.Serialize(state));
