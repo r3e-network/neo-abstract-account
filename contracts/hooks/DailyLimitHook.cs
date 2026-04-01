@@ -257,15 +257,15 @@ namespace AbstractAccount.Hooks
         {
             byte[] historyPrefix = Helper.Concat(Helper.Concat(Prefix_TransactionHistory, (byte[])accountId), (byte[])token);
 
-            // Get and increment transaction counter to prevent timestamp collisions
+            // Get and increment sub-counter to handle multiple transactions in the same block
             byte[] counterKey = Helper.Concat(Prefix_TransactionCounter, (byte[])accountId);
             ByteString? counterData = Storage.Get(Storage.CurrentContext, counterKey);
             BigInteger counter = counterData == null ? 0 : (BigInteger)counterData;
             counter++;
             Storage.Put(Storage.CurrentContext, counterKey, counter);
 
-            // Use counter in key to prevent collisions from identical timestamps
-            byte[] txKey = Helper.Concat(historyPrefix, counter.ToByteArray());
+            // Use timestamp as primary key suffix (for correct pruning) with counter appended to prevent collisions
+            byte[] txKey = Helper.Concat(Helper.Concat(historyPrefix, timestamp.ToByteArray()), counter.ToByteArray());
 
             TransactionRecord record = new TransactionRecord { Timestamp = timestamp, Amount = amount };
             Storage.Put(Storage.CurrentContext, txKey, StdLib.Serialize(record));
@@ -302,27 +302,20 @@ namespace AbstractAccount.Hooks
 
         private static void PruneOldRecords(byte[] historyPrefix, BigInteger cutoffTime)
         {
+            // Iterate all history entries, deserialize each to check timestamp, and delete expired ones
             Iterator iterator = Storage.Find(Storage.CurrentContext, historyPrefix, FindOptions.KeysOnly);
             int pruned = 0;
             while (iterator.Next() && pruned < MaxHistorySize)
             {
-                ByteString key = (ByteString)iterator.Value;
-                if (key != null)
+                ByteString fullKey = (ByteString)iterator.Value;
+                ByteString? recordData = Storage.Get(Storage.CurrentContext, fullKey);
+                if (recordData != null)
                 {
-                    byte[] keyBytes = (byte[])key;
-                    // Extract timestamp from end of key
-                    if (keyBytes.Length > historyPrefix.Length)
+                    TransactionRecord record = (TransactionRecord)StdLib.Deserialize(recordData);
+                    if (record.Timestamp < cutoffTime)
                     {
-                        byte[] timestampBytes = Helper.Range(keyBytes, historyPrefix.Length, keyBytes.Length - historyPrefix.Length);
-                        if (timestampBytes.Length > 0)
-                        {
-                            BigInteger timestamp = new BigInteger(timestampBytes);
-                            if (timestamp < cutoffTime)
-                            {
-                                Storage.Delete(Storage.CurrentContext, key);
-                                pruned++;
-                            }
-                        }
+                        Storage.Delete(Storage.CurrentContext, fullKey);
+                        pruned++;
                     }
                 }
             }

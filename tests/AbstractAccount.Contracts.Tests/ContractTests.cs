@@ -25,7 +25,8 @@ public class ContractTests
         "UnifiedSmartWallet.Execution.cs",
         "UnifiedSmartWallet.VerifyContext.cs",
         "UnifiedSmartWallet.Escape.cs",
-        "UnifiedSmartWallet.MarketEscrow.cs"
+        "UnifiedSmartWallet.MarketEscrow.cs",
+        "UnifiedSmartWallet.Admin.cs"
     };
 
     private static readonly string[] HookFiles =
@@ -118,7 +119,11 @@ public class ContractTests
             "FinalizeEscape",
             "EnterMarketEscrow",
             "CancelMarketEscrow",
-            "SettleMarketEscrow"
+            "SettleMarketEscrow",
+            "_deploy",
+            "Update",
+            "GetContractAdmin",
+            "TransferAdmin"
         };
 
         string[] exportedMethods = ContractType

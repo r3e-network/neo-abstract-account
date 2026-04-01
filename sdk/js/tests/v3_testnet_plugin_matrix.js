@@ -567,7 +567,7 @@ function signP256Payload(privateKey, payload) {
     .toString("hex");
 }
 
-function expectedSubscriptionNonce(subIdHex, periodMs, runtimeMs = Date.now()) {
+function expectedSubscriptionNonce(subIdHex, periodSeconds, runtimeMs = Date.now()) {
   const digest = crypto
     .createHash("sha256")
     .update(Buffer.from(sanitizeHex(subIdHex), "hex"))
@@ -576,7 +576,7 @@ function expectedSubscriptionNonce(subIdHex, periodMs, runtimeMs = Date.now()) {
   for (let i = 0; i < 8; i += 1) {
     subTag = (subTag << 8n) + BigInt(digest[i]);
   }
-  const currentPeriod = BigInt(Math.floor(runtimeMs / Number(periodMs)));
+  const currentPeriod = BigInt(Math.floor(runtimeMs / Number(periodSeconds)));
   return 1_000_000_000_000_000_000n + (subTag << 32n) + currentPeriod;
 }
 
@@ -2033,7 +2033,7 @@ async function main() {
   {
     const scenario = await registerAccount("subscription");
     const subId = Buffer.from(ethers.randomBytes(8)).toString("hex");
-    const periodMs = 3600000n;
+    const periodSeconds = 3600n;
     await invokePersisted(
       rpcClient,
       core.hash,
@@ -2061,7 +2061,7 @@ async function main() {
           hash160Param(account.scriptHash),
           hash160Param(mockTarget.hash),
           integerParam(100),
-          integerParam(periodMs),
+          integerParam(periodSeconds),
         ]),
       ],
     );
@@ -2084,7 +2084,7 @@ async function main() {
             integerParam(101),
             stringParam("sub"),
           ],
-          nonce: expectedSubscriptionNonce(subId, periodMs, chainNowMs),
+          nonce: expectedSubscriptionNonce(subId, periodSeconds, chainNowMs),
           deadline: BigInt(chainNowMs + 60 * 60 * 1000),
           signatureHex: subId,
         }),
@@ -2092,7 +2092,7 @@ async function main() {
     );
 
     const nowMs = await getLatestBlockTimeMs(rpcClient);
-    const nonce = expectedSubscriptionNonce(subId, periodMs, nowMs);
+    const nonce = expectedSubscriptionNonce(subId, periodSeconds, nowMs);
     const success = await invokePersisted(
       rpcClient,
       core.hash,

@@ -118,8 +118,8 @@ These failures confirm that configuration must still enter through the V3 core c
   - Reason: `Salt already used`
 
 Note:
-- The matrix originally failed when `periodMs` was set to `1000`, because the expected nonce could cross into the next period between local construction and on-chain evaluation.
-- The successful replay-protected test used a safer test period (`60000 ms`) so the billing period stayed stable during transaction submission.
+- The matrix originally failed when `periodSeconds` was set to `1`, because the expected nonce could cross into the next period between local construction and on-chain evaluation.
+- The successful replay-protected test used a safer test period (`60` seconds) so the billing period stayed stable during transaction submission.
 
 ### ZKEmailVerifier
 

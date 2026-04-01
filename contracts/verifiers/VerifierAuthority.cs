@@ -11,7 +11,7 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_AuthorizedCore = new byte[] { 0xE1 };
         private static readonly byte[] Prefix_PendingAdmin = new byte[] { 0xE2 };
         private static readonly byte[] Prefix_AdminRotationTimelock = new byte[] { 0xE3 };
-        private static readonly BigInteger AdminRotationTimelockMs = 7 * 24 * 3600 * 1000; // 7 days in ms
+        private static readonly BigInteger AdminRotationTimelockSeconds = 604800; // 7 days in seconds
 
         internal static void Initialize(object data, bool update)
         {
@@ -83,7 +83,7 @@ namespace AbstractAccount
             ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_AdminRotationTimelock);
             ExecutionEngine.Assert(timelockData != null, "No timelock set");
             BigInteger timelockStart = (BigInteger)timelockData;
-            ExecutionEngine.Assert(Runtime.Time >= timelockStart + AdminRotationTimelockMs, "Admin rotation timelock not expired");
+            ExecutionEngine.Assert(Runtime.Time >= timelockStart + AdminRotationTimelockSeconds, "Admin rotation timelock not expired");
 
             ExecutionEngine.Assert((UInt160)pending! == newAdmin, "Pending admin mismatch");
             Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin);
