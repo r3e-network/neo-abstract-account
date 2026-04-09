@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveMorpheusRuntimeBase } from '../api/morpheus-base.js';
+import { resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeBase, resolveMorpheusWorkflowIds } from '../api/morpheus-base.js';
 import morpheusNeoDidHandler from '../api/morpheus-neodid.js';
 import morpheusOracleKeyHandler from '../api/morpheus-oracle-public-key.js';
 
@@ -161,6 +161,22 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
     global.fetch = originalFetch;
     if (originalBaseUrl == null) delete process.env.MORPHEUS_API_BASE_URL;
     else process.env.MORPHEUS_API_BASE_URL = originalBaseUrl;
+    if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+    else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+  }
+});
+
+test('morpheus paymaster endpoint resolves from the generated runtime catalog', async () => {
+  const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+  process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://oracle.meshmini.app/testnet';
+
+  try {
+    assert.ok(resolveMorpheusWorkflowIds().includes('paymaster.authorize'));
+    assert.equal(
+      resolveMorpheusPaymasterEndpoint('testnet'),
+      'https://oracle.meshmini.app/testnet/paymaster/authorize'
+    );
+  } finally {
     if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
     else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
   }
