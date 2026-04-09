@@ -1,11 +1,28 @@
+import { MORPHEUS_PUBLIC_REGISTRY } from './generatedMorpheusRegistry.js';
+import { MORPHEUS_PUBLIC_RUNTIME_CATALOG } from './generatedMorpheusRuntimeCatalog.js';
 import { sanitizeHex } from '../utils/hex.js';
 
 export { sanitizeHex };
 
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH = '9742b4ed62a84a886f404d36149da6147528ee33';
-export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38';
-export const DEFAULT_RPC_URL = 'https://mainnet1.neo.coz.io:443';
-export const DEFAULT_RPC_URL_TESTNET = 'https://testnet1.neo.coz.io:443';
+function stripHexPrefix(value) {
+  return String(value || '').replace(/^0x/i, '');
+}
+
+function stripNetworkSuffix(value) {
+  return String(value || '').replace(/\/(mainnet|testnet)\/?$/i, '');
+}
+
+const MAINNET_REGISTRY = MORPHEUS_PUBLIC_REGISTRY.mainnet;
+const TESTNET_REGISTRY = MORPHEUS_PUBLIC_REGISTRY.testnet;
+const MORPHEUS_WORKFLOW_IDS = MORPHEUS_PUBLIC_RUNTIME_CATALOG.workflows.map((workflow) => workflow.id);
+
+export const DEFAULT_MORPHEUS_ENVELOPE_VERSION = MORPHEUS_PUBLIC_RUNTIME_CATALOG.envelope.version;
+export const DEFAULT_MORPHEUS_WORKFLOW_IDS = [...MORPHEUS_WORKFLOW_IDS];
+
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaCore);
+export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = stripHexPrefix(TESTNET_REGISTRY.contracts.aaCore);
+export const DEFAULT_RPC_URL = MAINNET_REGISTRY.rpcUrl;
+export const DEFAULT_RPC_URL_TESTNET = TESTNET_REGISTRY.rpcUrl;
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
 export const DEFAULT_EXPLORER_BASE_URL = 'https://neotube.io/tx/';
 export const DEFAULT_MATRIX_CONTRACT_HASH = '89908093c5ccc463e2c5744d6bacb06108b60a75';
@@ -18,38 +35,38 @@ export const DEFAULT_WEB3AUTH_CHAIN_ID = '0x1';
 export const DEFAULT_WEB3AUTH_RPC_TARGET = 'https://rpc.ankr.com/eth';
 export const DEFAULT_WEB3AUTH_PROJECT_NAME = 'DID.Morpheus';
 export const DEFAULT_DID_PROVIDER = 'web3auth';
-export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = 'smartwallet.neo';
-export const DEFAULT_NEODID_DOMAIN = 'neodid.morpheus.neo';
-export const DEFAULT_MORPHEUS_EDGE_BASE_URL = 'https://edge.meshmini.app';
-export const DEFAULT_MORPHEUS_CONTROL_PLANE_BASE_URL = 'https://control.meshmini.app';
-export const DEFAULT_MORPHEUS_API_BASE_URL = 'https://oracle.meshmini.app/mainnet';
-export const DEFAULT_MORPHEUS_API_BASE_URL_TESTNET = 'https://oracle.meshmini.app/testnet';
-export const DEFAULT_MORPHEUS_ORACLE_CVM_ID = 'ddff154546fe22d15b65667156dd4b7c611e6093';
-export const DEFAULT_MORPHEUS_ORACLE_CVM_NAME = 'oracle-morpheus-neo-r3e';
+export const DEFAULT_ABSTRACT_ACCOUNT_DOMAIN = MAINNET_REGISTRY.domains.aa;
+export const DEFAULT_NEODID_DOMAIN = MAINNET_REGISTRY.domains.neodid;
+export const DEFAULT_MORPHEUS_EDGE_BASE_URL = stripNetworkSuffix(MAINNET_REGISTRY.morpheus.edgeUrl);
+export const DEFAULT_MORPHEUS_CONTROL_PLANE_BASE_URL = MAINNET_REGISTRY.morpheus.controlPlaneBaseUrl;
+export const DEFAULT_MORPHEUS_API_BASE_URL = MAINNET_REGISTRY.morpheus.publicApiUrl;
+export const DEFAULT_MORPHEUS_API_BASE_URL_TESTNET = TESTNET_REGISTRY.morpheus.publicApiUrl;
+export const DEFAULT_MORPHEUS_ORACLE_CVM_ID = MAINNET_REGISTRY.morpheus.oracleCvmId;
+export const DEFAULT_MORPHEUS_ORACLE_CVM_NAME = MAINNET_REGISTRY.morpheus.oracleCvmName;
 export const DEFAULT_MORPHEUS_ORACLE_ATTESTATION_EXPLORER_URL =
-  'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093';
-export const DEFAULT_MORPHEUS_DATAFEED_CVM_ID = '28294e89d490924b79c85cdee057ce55723b3d56';
-export const DEFAULT_MORPHEUS_DATAFEED_CVM_NAME = 'datafeed-morpheus-neo-r3e';
+  MAINNET_REGISTRY.morpheus.oracleAttestationExplorerUrl;
+export const DEFAULT_MORPHEUS_DATAFEED_CVM_ID = TESTNET_REGISTRY.morpheus.datafeedCvmId;
+export const DEFAULT_MORPHEUS_DATAFEED_CVM_NAME = TESTNET_REGISTRY.morpheus.datafeedCvmName;
 export const DEFAULT_MORPHEUS_DATAFEED_ATTESTATION_EXPLORER_URL =
-  'https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56';
-export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
+  TESTNET_REGISTRY.morpheus.datafeedAttestationExplorerUrl;
+export const DEFAULT_MORPHEUS_NEODID_SERVICE_DID = MAINNET_REGISTRY.morpheus.neoDidServiceDid;
 
 export const MORPHEUS_NETWORK_DEFAULTS = {
   mainnet: {
     abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH,
-    abstractAccountDomain: DEFAULT_ABSTRACT_ACCOUNT_DOMAIN,
-    rpcUrl: DEFAULT_RPC_URL,
+    abstractAccountDomain: MAINNET_REGISTRY.domains.aa,
+    rpcUrl: MAINNET_REGISTRY.rpcUrl,
     n3IndexNetwork: 'mainnet',
-    neoDidDomain: DEFAULT_NEODID_DOMAIN,
-    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
+    neoDidDomain: MAINNET_REGISTRY.domains.neodid,
+    morpheusApiBaseUrl: MAINNET_REGISTRY.morpheus.publicApiUrl,
   },
   testnet: {
     abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET,
-    abstractAccountDomain: '',
-    rpcUrl: DEFAULT_RPC_URL_TESTNET,
+    abstractAccountDomain: TESTNET_REGISTRY.domains.aa,
+    rpcUrl: TESTNET_REGISTRY.rpcUrl,
     n3IndexNetwork: 'testnet',
-    neoDidDomain: '',
-    morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL_TESTNET,
+    neoDidDomain: TESTNET_REGISTRY.domains.neodid,
+    morpheusApiBaseUrl: TESTNET_REGISTRY.morpheus.publicApiUrl,
   },
 };
 
@@ -213,6 +230,8 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
       env[`VITE_MORPHEUS_${runtimeNetwork === 'testnet' ? 'TESTNET' : 'MAINNET'}_RUNTIME_URL`] || env.VITE_MORPHEUS_RUNTIME_URL || env.VITE_MORPHEUS_API_BASE_URL,
       networkDefaults.morpheusApiBaseUrl
     ),
+    morpheusEnvelopeVersion: DEFAULT_MORPHEUS_ENVELOPE_VERSION,
+    morpheusWorkflowIds: [...DEFAULT_MORPHEUS_WORKFLOW_IDS],
     morpheusOracleCvmId: resolveOptionalUrl(
       env.VITE_MORPHEUS_ORACLE_CVM_ID,
       DEFAULT_MORPHEUS_ORACLE_CVM_ID

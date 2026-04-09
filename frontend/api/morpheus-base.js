@@ -1,3 +1,6 @@
+import { MORPHEUS_PUBLIC_REGISTRY } from '../src/config/generatedMorpheusRegistry.js';
+import { MORPHEUS_PUBLIC_RUNTIME_CATALOG } from '../src/config/generatedMorpheusRuntimeCatalog.js';
+
 function trim(value) {
   return String(value || '').trim();
 }
@@ -48,9 +51,23 @@ function normalizeBaseCandidate(baseUrl, network) {
   }
 }
 
+function getRegistryRuntimeDefaults(network) {
+  return MORPHEUS_PUBLIC_REGISTRY[normalizeNetwork(network)].morpheus;
+}
+
+function resolveWorkflowRoute(workflowId) {
+  const workflow = MORPHEUS_PUBLIC_RUNTIME_CATALOG.workflows.find((item) => item.id === trim(workflowId));
+  return trim(workflow?.route || '');
+}
+
+export function resolveMorpheusWorkflowIds() {
+  return MORPHEUS_PUBLIC_RUNTIME_CATALOG.workflows.map((item) => item.id);
+}
+
 export function resolveMorpheusRuntimeBase(req) {
   const network = resolveNetwork(req);
   const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
+  const registryDefaults = getRegistryRuntimeDefaults(network);
   const candidates = [
     process.env[`MORPHEUS_${upper}_RUNTIME_URL`],
     process.env.MORPHEUS_RUNTIME_URL,
@@ -58,10 +75,8 @@ export function resolveMorpheusRuntimeBase(req) {
     process.env.MORPHEUS_API_BASE_URL,
     process.env[`MORPHEUS_${upper}_EDGE_BASE_URL`],
     process.env.MORPHEUS_EDGE_BASE_URL,
-    network === 'testnet'
-      ? 'https://oracle.meshmini.app/testnet'
-      : 'https://oracle.meshmini.app/mainnet',
-    `https://edge.meshmini.app/${network}`,
+    registryDefaults.publicApiUrl,
+    registryDefaults.edgeUrl,
   ];
 
   for (const candidate of candidates) {
@@ -82,7 +97,8 @@ export function resolveMorpheusPaymasterEndpoint(networkInput) {
   );
   if (explicit) return explicit;
   const base = resolveMorpheusRuntimeBase({ query: { morpheus_network: network } });
-  return base ? `${base}/paymaster/authorize` : '';
+  const paymasterRoute = resolveWorkflowRoute('paymaster.authorize') || '/paymaster/authorize';
+  return base ? `${base}${paymasterRoute}` : '';
 }
 
 export function resolveMorpheusRuntimeToken() {
