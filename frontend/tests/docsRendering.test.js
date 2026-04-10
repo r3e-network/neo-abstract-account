@@ -305,6 +305,27 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
   assert.doesNotMatch(viteConfigSource, /return 'cytoscape'/);
 });
 
+test('vite config polyfills browser crypto dependencies pulled by web3auth wallet connectors', () => {
+  const viteConfigSource = read('vite.config.js');
+  const frontendPackage = readFrontendPackage();
+
+  assert.ok(frontendPackage.devDependencies?.['vite-plugin-node-polyfills']);
+  assert.match(viteConfigSource, /import { nodePolyfills } from 'vite-plugin-node-polyfills';/);
+  assert.match(viteConfigSource, /nodePolyfills\(\{/);
+  assert.match(viteConfigSource, /include:\s*\[/);
+  assert.match(viteConfigSource, /'crypto'/);
+  assert.match(viteConfigSource, /'buffer'/);
+  assert.match(viteConfigSource, /'process'/);
+});
+
+test('vite config aliases vm to a local browser shim instead of bundling vm-browserify', () => {
+  const viteConfigSource = read('vite.config.js');
+
+  assert.match(viteConfigSource, /vm:\s*fileURLToPath\(new URL\('\.\/src\/shims\/vm\.js', import\.meta\.url\)\)/);
+  assert.doesNotMatch(viteConfigSource, /include:\s*\[[^\]]*'vm'/);
+  assert.match(read('src/shims/vm.js'), /runInThisContext/);
+});
+
 test('studio controller uses local neo helpers instead of Neon SDK bundles', () => {
   const controllerSource = read('src/features/studio/useStudioController.js');
 
