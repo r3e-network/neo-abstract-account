@@ -16,6 +16,7 @@ Current status note:
 - **Backup-Owner Escape Hatch**: Every account can define a native Neo backup owner plus timelocked verifier rotation.
 - **Trustless AA Address Escrow Market**: Deterministic AA addresses can be listed, escrow-locked, purchased with GAS, and transferred atomically on-chain.
 - **Cross-Chain EVM Compatibility**: V3 supports secp256k1 / Keccak256 EIP-712 `UserOperation` signatures through the Web3Auth verifier path.
+- **On-Chain Paymaster (Sponsored Transactions)**: The `AAPaymaster` contract enables trustless gasless execution — sponsors deposit GAS, create per-account or global sponsorship policies, and relays are reimbursed automatically after successful `UserOp` execution. Supports per-op limits, daily budgets, total budgets, target/method restrictions, and expiry timestamps.
 - **Policy-Gated Execution**: New integrations should flow through `executeUserOp(accountId, op)` where nonce handling, verification, hooks, and target execution stay centralized.
 
 ## App + Market Deployment
@@ -33,7 +34,9 @@ For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VIT
 If you deploy the bundled server routes, keep `SUPABASE_SERVICE_ROLE_KEY` and `AA_RELAY_WIF` on the server, prefer `AA_RELAY_RPC_URL` for the relay backend, pin `AA_RELAY_ALLOWED_HASH` to the intended AA contract, and leave `AA_RELAY_ALLOW_RAW_FORWARD=0` unless you explicitly want raw passthrough in `frontend/api/relay-transaction.js`.
 For local setup, start from `frontend/.env.example` and copy the values you need into `frontend/.env.local` or your hosting provider's environment-variable dashboard.
 
-If you want relay submission to request Morpheus sponsorship before broadcasting, also configure the server-side paymaster bridge:
+For on-chain sponsored transactions via the `AAPaymaster` contract, set `VITE_AA_PAYMASTER_HASH` to the deployed Paymaster contract hash. Sponsors deposit GAS into the Paymaster, create sponsorship policies via `setPolicy`, and relays call `executeSponsoredUserOp` on the AA core. The core validates the policy, executes the UserOp, then settles the reimbursement atomically. See the SDK's `createSponsoredUserOpPayload` and `validatePaymasterOp` methods.
+
+If you want relay submission to request Morpheus off-chain sponsorship before broadcasting, also configure the server-side paymaster bridge:
 
 - `MORPHEUS_PAYMASTER_TESTNET_ENDPOINT`
 - `MORPHEUS_PAYMASTER_TESTNET_API_TOKEN`
@@ -56,8 +59,8 @@ The relay is an operator convenience layer, not an authority layer:
 - **relay trust boundary**: the relay can simulate, package, and submit, but it cannot authorize on behalf of the account
 - relay preflight and validation preview help operators simulate readiness before submit
 - relay submission can package and pay for transactions, but it does not replace on-chain signature validation
-- paymaster sponsorship does not replace the configured verifier or backup-owner witness
-- paymaster does not authorize execution
+- paymaster sponsorship (on-chain or off-chain) does not replace the configured verifier or backup-owner witness
+- paymaster does not authorize execution — it only funds the relay reimbursement after successful verification
 
 ### Module Lifecycle
 
@@ -107,7 +110,8 @@ Do not conflate the AA recovery verifier with the independent NeoDID registry:
 Current validation references:
 
 - `docs/PLUGIN_MATRIX.md` captures the active verifier / hook matrix.
-- `docs/PAYMASTER_RELAY_VALIDATION.md` captures the active AA paymaster relay path.
+- `docs/PAYMASTER_RELAY_VALIDATION.md` captures the active AA paymaster relay path (off-chain Morpheus flow).
+- The on-chain `AAPaymaster` contract provides an alternative trustless sponsorship model without off-chain dependencies.
 
 For Morpheus / NeoDID production integration, also set:
 
@@ -333,6 +337,9 @@ A second destructive verification pass was completed on **March 6, 2026** agains
 
 ## Structure
 - `contracts/`: C# Smart Contract implementation of the Master Entry Contract.
+- `contracts/verifiers/`: Verifier plugins (Web3Auth, TEE, WebAuthn, SessionKey, MultiSig, etc.).
+- `contracts/hooks/`: Hook plugins (DailyLimit, Whitelist, TokenRestricted, MultiHook, NeoDIDCredential).
+- `contracts/paymaster/`: On-chain Paymaster contract for sponsored/gasless transactions.
 - `frontend/`: Vue components demonstrating Account creation and signature workflows.
 - `sdk/js/`: JavaScript/TypeScript SDK for dApp integration.
 - `docs/`: Protocol design and specification standards.

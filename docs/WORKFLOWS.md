@@ -53,6 +53,7 @@ Use this rule of thumb:
 | Relay preflight only | Operators who want simulation before submit | Relay endpoint configured | Adds server dependency, but gives VM/gas feedback |
 | Relay raw submission | Existing signed raw transaction | Raw forwarding explicitly enabled | Only use when you intentionally want passthrough |
 | Relay meta submission | EVM signature collection flow | Relay signer + relay meta mode configured | Most flexible for mixed-signature workflows |
+| Sponsored (Paymaster) | Gasless execution for users | AAPaymaster deployed + sponsor has deposit/policy | User pays no GAS; relay reimbursed atomically |
 
 ## 3. Collaboration Lifecycle
 
@@ -157,7 +158,7 @@ Use the failure mode to decide where to look next:
 
 A compatible Neo wallet can batch two invocations into one transaction during account creation:
 
-1. `createAccountWithAddress(...)` on the AA master contract
+1. `registerAccount(accountId, verifier, verifierParams, hookId, backupOwner, escapeTimelock)` on the AA master contract
 2. `register(domain, ownerHash160)` on the `.matrix` contract
 
 In this repository, the `.matrix` domain is registered to the signer wallet address, and the frontend later discovers related AA addresses by querying the admin and manager reverse indexes on the AA contract.

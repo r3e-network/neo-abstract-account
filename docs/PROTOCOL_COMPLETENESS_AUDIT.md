@@ -102,7 +102,7 @@ stateDiagram-v2
 ```
 
 **Features:**
-- **Timelock:** Configurable 7-90 days (604,800-777,600,000 seconds)
+- **Timelock:** Configurable 7-90 days (604,800-7,776,000 seconds)
 - **Cooldown:** 7-day minimum between escape initiation attempts
 - **Cancel-on-Use:** Any normal `ExecuteUserOp()` cancels in-progress escape
 - **Activity Cancellation:** Backup owner can cancel active escape

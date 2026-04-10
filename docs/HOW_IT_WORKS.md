@@ -39,6 +39,7 @@ The result is:
 - isolated account configuration per `accountId`
 - support for both native Neo signatures and EVM EIP-712 signatures
 - one consistent permission surface for native calls, relay-assisted calls, and meta-transactions
+- optional on-chain Paymaster for trustless sponsored/gasless execution
 
 ### Account Discovery and Batch Operations
 
@@ -62,6 +63,7 @@ Use the path that matches your role and risk profile:
 | --- | --- | --- |
 | One user, one browser, ready to submit | Client-side broadcast | Simplest and safest default path. |
 | Shared review and signature collection | Draft + collaborator link | Lets signers review and approve without operator powers. |
+| Gasless / sponsored transaction | On-chain Paymaster + relay | Sponsor deposits GAS, relay submits and gets reimbursed atomically. |
 | Relay simulation before submit | Operator link + relay preflight | Shows VM state, gas, and payload details before final submission. |
 | EVM wallet approval flow | Meta signature + relay-ready invocation | Keeps EIP-712 signing while preserving Neo policy enforcement. |
 | No Supabase configured | Local-only draft flow | Compose, save, and sign in the same browser without cross-device sharing. |
@@ -168,7 +170,24 @@ The draft body and collaboration state live off-chain, while authority and execu
 
 Shared draft metadata is intentionally bounded: the frontend retains only the latest **100 activity entries** and the latest **12 submission receipts** so collaboration records stay lightweight over time.
 
-## 10. Key Security Boundaries
+## 10. Sponsored / Gasless Transactions
+
+The on-chain `AAPaymaster` contract enables users to execute operations without holding GAS:
+
+1. A **sponsor** (dApp, organization, or service) deposits GAS into the Paymaster contract and creates a sponsorship policy specifying which accounts, contracts, methods, and budgets to fund.
+2. The **relay** calls `executeSponsoredUserOp` on the AA core with the sponsor and paymaster details.
+3. Relays can optionally preflight `ValidatePaymasterOp`, while the AA core executes the UserOp normally (verifier + hooks) and then atomically settles the reimbursement — deducting from the sponsor's deposit and sending GAS to the relay.
+
+Sponsors can create **per-account policies** (specific accountId) or **global policies** (accountId = Zero) to sponsor any account. Policies support:
+- Per-operation GAS limits
+- Daily spend budgets (24-hour rolling window)
+- Total lifetime budgets
+- Target contract and method restrictions
+- Expiry timestamps
+
+The Paymaster never replaces the verifier or backup-owner — it only funds the relay after the operation has been fully authorized.
+
+## 11. Key Security Boundaries
 
 Every execution path still flows through the same protection layer:
 
@@ -188,7 +207,7 @@ The practical security result is:
 - operator actions use signed server-side mutations
 - direct proxy-signed external spends remain invalid
 
-## 11. Recommended Reading Order
+## 12. Recommended Reading Order
 
 If you are learning the system for the first time, read these pages in order:
 
@@ -198,7 +217,7 @@ If you are learning the system for the first time, read these pages in order:
 4. **Data Flow & Storage**
 5. **SDK Integration**
 
-## 12. Glossary
+## 13. Glossary
 
 - **Abstract Account** — a logical account identified by an `accountId`, enforced by the shared AA contract
 - **Deterministic account address** — the Neo address derived from the `verify(accountId)` script
@@ -211,3 +230,7 @@ If you are learning the system for the first time, read these pages in order:
 - **Account discovery** — querying all accounts where an address holds admin or manager roles via reverse indices
 - **Batch creation** — creating multiple accounts with shared governance configuration in a single transaction
 - **Reverse index** — on-chain storage mapping addresses to their associated account IDs for O(1) role-based queries
+- **Paymaster** — on-chain contract (`AAPaymaster`) that holds sponsor GAS deposits and reimburses relays after successful execution
+- **Sponsor** — an address that deposits GAS into the Paymaster and creates policies to fund operations for other accounts
+- **Sponsorship policy** — configuration defining which accounts, contracts, methods, and budgets a sponsor will fund
+- **Settlement** — atomic post-execution step where the Paymaster deducts from the sponsor deposit and sends GAS to the relay

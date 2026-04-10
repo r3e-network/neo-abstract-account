@@ -14,6 +14,7 @@ flowchart LR
   Core[UnifiedSmartWalletV3]
   Verifier[Verifier Plugin]
   Hook[Hook Plugin]
+  Paymaster[AAPaymaster]
   Target[Target Contract]
 
   User --> Browser
@@ -24,6 +25,8 @@ flowchart LR
   Relay --> Core
   Core --> Verifier
   Core --> Hook
+  Core --> Paymaster
+  Paymaster -->|reimburse GAS| Relay
   Core --> Target
 ```
 
@@ -76,7 +79,27 @@ flowchart TD
   Post --> Return[Return result]
 ```
 
-## 5. Authorization Modes
+## 5. Sponsored Execution Pipeline
+
+When a sponsor funds gas via the `AAPaymaster` contract, the core wallet uses `executeSponsoredUserOp(accountId, op, paymaster, sponsor, reimbursementAmount)` (or its batch variant) instead of the standard `executeUserOp`.
+
+```mermaid
+flowchart TD
+  Entry[executeSponsoredUserOp] --> Load[Load account state]
+  Load --> Auth{Verifier plugin or backup owner passes?}
+  Auth -- No --> Reject[Abort unauthorized call]
+  Auth -- Yes --> Pre[Run preExecute hook]
+  Pre --> Call[Contract.Call target]
+  Call --> Post[Run postExecute hook]
+  Post --> Policy[Paymaster validates sponsor policy]
+  Policy -- Fail --> RejectPay[Abort: policy or balance insufficient]
+  Policy -- Pass --> Settle[Deduct deposit + transfer GAS to relay]
+  Settle --> Return[Return result]
+```
+
+Sponsors deposit GAS into the Paymaster via NEP-17 transfer and create policies with `setPolicy(accountId, targetContract, method, maxPerOp, dailyBudget, totalBudget, validUntil)`. Use `accountId = UInt160.Zero` for a global policy that sponsors any account. Settlement is atomic: policy check, deposit deduction, and relay reimbursement happen inside a single call.
+
+## 6. Authorization Modes
 
 V3 supports several authorization modes, but they all converge on `executeUserOp(accountId, op)`:
 
@@ -87,7 +110,7 @@ V3 supports several authorization modes, but they all converge on `executeUserOp
 
 This is the critical boundary: verifier plugins decide **who may authorize**, while hook plugins decide **what extra policy runs around execution**.
 
-## 6. Escape Hatch
+## 7. Escape Hatch
 
 Every V3 account can define a backup owner and timelock.
 
@@ -97,7 +120,7 @@ Every V3 account can define a backup owner and timelock.
 
 That makes recovery explicit and auditable without reintroducing the old V2 admin/manager graph.
 
-## 7. Frontend and Relay Model
+## 8. Frontend and Relay Model
 
 The app workspace is V3-first:
 
@@ -109,7 +132,7 @@ The app workspace is V3-first:
 
 Legacy `executeUnifiedByAddress` handling remains compatibility-only and should not be presented as the primary runtime path.
 
-## 8. Module Lifecycle
+## 9. Module Lifecycle
 
 The runtime now exposes a generic module lifecycle in addition to the legacy verifier/hook-specific events.
 
@@ -120,7 +143,7 @@ The runtime now exposes a generic module lifecycle in addition to the legacy ver
 
 For new operational tooling, prefer the generic module lifecycle instead of stitching together verifier-only and hook-only event streams.
 
-## 9. Validation Preview
+## 10. Validation Preview
 
 Relay preflight now has two layers:
 
@@ -135,7 +158,7 @@ The relay trust boundary is explicit:
 - the relay cannot authorize for the account
 - paymaster sponsorship does not authorize execution
 
-## 10. Contract File Map
+## 11. Contract File Map
 
 | File | Responsibility |
 | --- | --- |
@@ -147,8 +170,9 @@ The relay trust boundary is explicit:
 | `contracts/verifiers/ZkLoginVerifier.cs` | Morpheus NeoDID / Web2 identity-root authorization with operation-bound zklogin tickets |
 | `contracts/verifiers/MultiSigVerifier.cs` | Plugin-based multisig authorization |
 | `contracts/hooks/*.cs` | Optional execution policies such as daily limits, token restrictions, credential gating, and hook composition |
+| `contracts/paymaster/Paymaster.cs` | `AAPaymaster`: on-chain GAS deposit pool and policy engine for sponsored/gasless transactions |
 
-## 11. Security Invariants
+## 12. Security Invariants
 
 1. `verify(accountId)` only succeeds during a matching `executeUserOp` context.
 2. Nonces are consumed in the core wallet, not in the verifier plugins.

@@ -32,6 +32,13 @@ This index keeps the root documentation set visible and easy to browse.
 - `docs/MORPHEUS_PRIVATE_ACTIONS.md`
 - `docs/MORPHEUS_PRIVATE_ACTIONS.zh-CN.md`
 
+## Paymaster / Sponsored Transactions
+
+- `docs/PAYMASTER_RELAY_VALIDATION.md` — Morpheus off-chain paymaster relay validation
+- `contracts/paymaster/Paymaster.cs` — on-chain `AAPaymaster` contract (deposits, policies, settlement)
+- `contracts/paymaster/PaymasterAuthority.cs` — authority pattern for Paymaster admin and core validation
+- `contracts/UnifiedSmartWallet.Paymaster.cs` — AA core integration (`executeSponsoredUserOp`)
+
 ## Security Notes
 
 - `SECURITY_IMPROVEMENTS.md`

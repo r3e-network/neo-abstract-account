@@ -206,3 +206,13 @@ Security conclusion:
 
 - The production-capable plugin set now resists the tested direct-config, signature-tampering, nonce-replay, method-scope, amount-limit, restricted-target, and credential-revocation attack scenarios.
 - The previous placeholder `ZKEmailVerifier` is no longer silently permissive and is now blocked until a real proof verifier is implemented.
+
+## Paymaster Compatibility
+
+All production-capable verifiers and hooks in the matrix above are fully compatible with the on-chain `AAPaymaster` contract via `executeSponsoredUserOp`. The Paymaster operates at the core execution layer: relays can preflight `ValidatePaymasterOp` off-chain, while the on-chain path delegates to the standard `executeUserOp` flow (which runs the configured verifier and hooks) and then settles the relay reimbursement atomically. No plugin modifications are required.
+
+Compatible combinations include:
+- **Web3AuthVerifier + DailyLimitHook + Paymaster** — EVM wallet users with spending limits, gas-free
+- **SessionKeyVerifier + WhitelistHook + Paymaster** — delegated game sessions with whitelisted contracts, sponsored
+- **MultiSigVerifier + MultiHook + Paymaster** — threshold-approved DAO treasury ops, gas-free for signers
+- **TEEVerifier + Paymaster** — automated agent operations fully sponsored by the deploying organization

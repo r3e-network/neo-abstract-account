@@ -49,14 +49,23 @@ const payload = client.createAccountBatchPayload(
 ### Account Lifecycle
 
 ```javascript
-// Create single account
-const payload = client.createAccountPayload(accountId, admins, adminThreshold, managers, managerThreshold);
+const accountIdHash = client.deriveRegistrationAccountIdHash({
+  verifierContractHash,
+  verifierParamsHex,
+  hookContractHash,
+  backupOwnerAddress,
+  escapeTimelock: 7 * 24 * 60 * 60,
+});
 
-// Bind account to deterministic address
-const payload = client.bindAccountAddressPayload(accountId, accountAddress);
+const payload = client.createAccountPayload({
+  verifierContractHash,
+  verifierParamsHex,
+  hookContractHash,
+  backupOwnerAddress,
+  escapeTimelock: 7 * 24 * 60 * 60,
+});
 
-// Get account info
-const info = await client.getAccountInfo(accountId);
+const state = await client.getAccountState(accountIdHash);
 ```
 
 ### Role Management
@@ -83,6 +92,46 @@ const payload = client.executeUnifiedByAddressPayload(accountAddress, targetCont
 // Execute meta-transaction
 const payload = client.executeUnifiedByAddressPayload(accountAddress, evmPublicKey, targetContract, method, args, argsHash, nonce, deadline, signature);
 ```
+
+### Sponsored Execution (Paymaster)
+
+```javascript
+// Check sponsor balance
+const balance = await client.querySponsorBalance(paymasterHash, sponsorAddress);
+
+// Validate before submit (relay preflight)
+const ok = await client.validatePaymasterOp({
+  paymasterHash, sponsorAddress, accountAddress,
+  targetContract, method, reimbursementAmount
+});
+
+// Build sponsored execution payload
+const payload = client.createSponsoredUserOpPayload({
+  accountScriptHash, userOp, paymasterHash,
+  sponsorAddress, reimbursementAmount
+});
+
+// Build sponsored batch payload
+const batchPayload = client.createSponsoredBatchPayload({
+  accountScriptHash, userOps, paymasterHash,
+  sponsorAddress, reimbursementAmount
+});
+```
+
+### Paymaster Contract Methods (On-Chain)
+
+| Method | Access | Purpose |
+| --- | --- | --- |
+| `OnNEP17Payment` | GAS transfer | Accept sponsor deposits |
+| `WithdrawDeposit(amount)` | Sponsor witness | Withdraw excess GAS |
+| `SetPolicy(accountId, target, method, maxPerOp, dailyBudget, totalBudget, validUntil)` | Sponsor witness | Create/update sponsorship policy |
+| `RevokePolicy(accountId)` | Sponsor witness | Remove policy + clear counters |
+| `ValidatePaymasterOp(sponsor, accountId, target, method, amount)` | Safe (anyone) | Read-only preflight check |
+| `SettleReimbursement(sponsor, accountId, target, method, relay, amount)` | AA Core only | Atomic settlement after execution |
+| `GetSponsorDeposit(sponsor)` | Safe | Query deposit balance |
+| `GetPolicy(sponsor, accountId)` | Safe | Query policy details |
+| `GetDailySpent(sponsor, accountId)` | Safe | Query 24h spending |
+| `GetTotalSpent(sponsor, accountId)` | Safe | Query lifetime spending |
 
 ## Canonical docs
 

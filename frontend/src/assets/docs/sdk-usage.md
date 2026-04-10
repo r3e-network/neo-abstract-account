@@ -33,19 +33,30 @@ The derived address corresponds to the deterministic `verify(accountId)` script 
 
 ## 3. Build an Account-Creation Payload
 
-`createAccountPayload` returns the invocation payload for `createAccountWithAddress`, including the computed deterministic address binding.
+Use `deriveRegistrationAccountIdHash` when you want the SDK, frontend, and contract to agree on the exact `accountId` that `registerAccount` will accept.
 
 ```javascript
-const payload = aaClient.createAccountPayload(
-  evmPubKey,
-  ['NQh...ownerAddress'],
-  1,
-  [],
-  0,
-);
+const verifierParamsHex = evmPubKey.slice(2);
+const backupOwnerAddress = 'NQh...ownerAddress';
+const web3AuthVerifierHash = '0xb4107cb2cb4bace0ebe15bc4842890734abe133a';
 
+const accountIdHash = aaClient.deriveRegistrationAccountIdHash({
+  verifierContractHash: web3AuthVerifierHash,
+  verifierParamsHex,
+  backupOwnerAddress,
+  escapeTimelock: 7 * 24 * 60 * 60,
+});
+
+const payload = aaClient.createAccountPayload({
+  verifierContractHash: web3AuthVerifierHash,
+  verifierParamsHex,
+  backupOwnerAddress,
+  escapeTimelock: 7 * 24 * 60 * 60,
+});
+
+console.log(accountIdHash);      // deterministic registration-bound accountId
 console.log(payload.scriptHash); // AA master contract
-console.log(payload.operation);  // createAccountWithAddress
+console.log(payload.operation);  // registerAccount
 console.log(payload.args);
 ```
 
@@ -56,7 +67,7 @@ The SDK asks the contract to compute the canonical `argsHash`, then returns the 
 ```javascript
 const typedData = await aaClient.createEIP712Payload({
   chainId: 894710606,
-  accountIdHex: evmPubKey,
+  accountIdHash,
   targetContract: masterHash,
   method: 'setWhitelistModeByAddress',
   args: [
@@ -74,7 +85,55 @@ const signature = await signer.signTypedData(
 );
 ```
 
-## 5. App Workspace Runtime Setup
+## 5. Paymaster / Sponsored Execution
+
+The SDK provides helpers for building sponsored (gasless) transactions that settle relay fees through the on-chain `AAPaymaster` contract (`contracts/paymaster/Paymaster.cs`). Sponsors deposit GAS into the Paymaster via NEP-17 transfer, then create policies that define which accounts, contracts, and methods they are willing to fund.
+
+### Query a Sponsor Balance
+
+```javascript
+const balance = await aaClient.querySponsorBalance(paymasterHash, sponsorAddress);
+console.log(`Sponsor has ${balance} fractions of GAS in the Paymaster`);
+```
+
+### Create a Sponsored UserOp Payload
+
+`createSponsoredUserOpPayload` wraps a standard `executeUserOp` invocation so the relay is reimbursed from the sponsor's Paymaster deposit instead of the account holder.
+
+```javascript
+const payload = await aaClient.createSponsoredUserOpPayload({
+  accountScriptHash: accountIdHash,
+  userOp,
+  paymasterHash,
+  sponsorAddress,
+  reimbursementAmount: 5_000_000,
+});
+```
+
+The AA core method called under the hood is `executeSponsoredUserOp(accountId, op, paymaster, sponsor, reimbursementAmount)`. A batch variant `createSponsoredBatchPayload` works identically but targets the batch execution entrypoint.
+
+### Validate Before Submission
+
+```javascript
+const ok = await aaClient.validatePaymasterOp({
+  paymasterHash,
+  sponsorAddress,
+  accountAddress: accountIdHash,
+  targetContract: userOp.TargetContract,
+  method: userOp.Method,
+  reimbursementAmount: 5_000_000,
+});
+```
+
+`validatePaymasterOp` performs a read-only check against the Paymaster's policy and balance state so the relay can reject infeasible sponsorships before broadcasting.
+
+### Settlement Model
+
+Settlement is atomic: the Paymaster validates the sponsor's policy (`setPolicy(accountId, targetContract, method, maxPerOp, dailyBudget, totalBudget, validUntil)`), deducts the reimbursement from the sponsor's deposit, and transfers GAS to the relay, all inside the same contract call. Use `accountId = UInt160.Zero` when creating a global policy that sponsors any account.
+
+The Paymaster never authorizes execution. Verifier and hook plugins must approve the operation independently; the Paymaster only funds the relay after those checks pass.
+
+## 6. App Workspace Runtime Setup
 
 The app workspace accepts both direct browser-wallet broadcast and optional relay broadcast. For a Vercel deployment, wire these environment variables into the frontend:
 Start from `frontend/.env.example` when creating a local `frontend/.env.local` file or mirroring the same keys into your deployment provider.
@@ -224,7 +283,7 @@ VITE_AA_EXPLORER_BASE_URL=https://testnet.ndoras.com/transaction
 - **Relay hash/raw settings feel inconsistent:** confirm `AA_RELAY_ALLOWED_HASH` matches the deployed AA hash and remember that `AA_RELAY_ALLOW_RAW_FORWARD` is off by default, so raw passthrough only works after an explicit server opt-in.
 - **Missing explorer base url:** if `VITE_AA_EXPLORER_BASE_URL` is absent, explorer links fall back to the default base URL or may not match your preferred explorer.
 
-## 6. Execution Model Reminder
+## 7. Execution Model Reminder
 
 The typed-data signature authorizes an Abstract Account wrapper call. On hardened deployments, external interactions must flow through AA the canonical runtime entrypoints `executeUnified` / `executeUnifiedByAddress` (plus legacy compatibility wrappers); raw direct proxy-signed external spends are intentionally rejected.
 
