@@ -20,24 +20,12 @@ export function removeListRow(listRef, index) {
   listRef.splice(index, 1);
 }
 
-export function createGeneratedAccountId() {
-  const timestamp = Date.now().toString(16);
-  const randomId = typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID().replace(/-/g, '')
-    : Math.random().toString(16).slice(2).padEnd(32, '0');
-  return `${timestamp}-${randomId}`.substring(0, 32);
-}
-
-export function normalizeAccountId(value, isEvmWallet) {
-  if (isEvmWallet && /^[0-9a-fA-F]{130}$/.test(value)) {
-    return value;
+export function normalizeAccountId(value) {
+  const normalized = sanitizeHex(value);
+  if (!/^[0-9a-fA-F]{40}$/.test(normalized)) {
+    throw new Error(EC.addressValidationFailed);
   }
-
-  let hex = '';
-  for (let i = 0; i < value.length; i++) {
-    hex += value.charCodeAt(i).toString(16).padStart(2, '0');
-  }
-  return hex;
+  return normalized;
 }
 
 export function normalizeAddress(input) {

@@ -42,9 +42,7 @@ const PAYMASTER_ENDPOINT = (
 ).trim();
 const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
-const DEFAULT_PAYMASTER_ACCOUNT_ID = "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56";
 const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
-const PAYMASTER_ACCOUNT_ID = EXPLICIT_PAYMASTER_ACCOUNT_ID || DEFAULT_PAYMASTER_ACCOUNT_ID;
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
   process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1"
   || (process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0" && !EXPLICIT_PAYMASTER_ACCOUNT_ID);
@@ -54,6 +52,7 @@ const REMOTE_WORKER_SERVICE =
   || process.env.MORPHEUS_PAYMASTER_REMOTE_WORKER_SERVICE
   || "testnet-request-worker";
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
+const REGISTRATION_ESCAPE_TIMELOCK = 604800;
 const LOCAL_PAYMASTER_SIGNER_ENV_KEYS = [
   "NEO_TESTNET_WIF",
   "NEO_N3_WIF",
@@ -267,7 +266,7 @@ function buildLocalPaymasterOverrides(accountId) {
 async function callRemotePaymaster(
   payload,
   {
-    allowlistAccountId = PAYMASTER_ACCOUNT_ID,
+    allowlistAccountId = EXPLICIT_PAYMASTER_ACCOUNT_ID || null,
     skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE,
   } = {},
 ) {
@@ -358,7 +357,7 @@ JS
 }
 
 async function startPaymasterProxy({
-  allowlistAccountId = PAYMASTER_ACCOUNT_ID,
+  allowlistAccountId = EXPLICIT_PAYMASTER_ACCOUNT_ID || null,
   skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE,
 } = {}) {
   const sockets = new Set();
@@ -409,8 +408,13 @@ async function main() {
   const version = await rpcClient.getVersion();
   const networkMagic = Number(version.protocol.network);
   const aaClient = new AbstractAccountClient(RPC_URL, CORE_HASH);
+  const deriveBootstrapAccountId = (verifierParamsHex = "") => aaClient.deriveRegistrationAccountIdHash({
+    verifierParamsHex,
+    backupOwnerAddress: account.scriptHash,
+    escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
+  });
 
-  let accountId = sanitizeHex(PAYMASTER_ACCOUNT_ID || Buffer.from(randomBytes(20)).toString("hex"));
+  let accountId = sanitizeHex(EXPLICIT_PAYMASTER_ACCOUNT_ID || deriveBootstrapAccountId());
   let skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE;
   const evmSigner = ethers.Wallet.createRandom();
   const verifierPubKey = sanitizeHex(evmSigner.signingKey.publicKey);
@@ -440,7 +444,7 @@ async function main() {
           emptyByteArrayParam(),
           hash160Param("0".repeat(40)),
           hash160Param(account.scriptHash),
-          integerParam(1),
+          integerParam(REGISTRATION_ESCAPE_TIMELOCK),
         ],
       );
     } catch (error) {
@@ -472,16 +476,14 @@ async function main() {
   try {
     ({ register, updateVerifier } = await bootstrapAccount(accountId));
   } catch (error) {
-    const usingStableDefaultAccount =
-      normalizeHash(accountId) === normalizeHash(DEFAULT_PAYMASTER_ACCOUNT_ID)
-      && skipAllowlistUpdate;
-    if (!usingStableDefaultAccount || !isUnauthorizedBootstrapError(error)) {
+    const usingDerivedDefaultAccount = !EXPLICIT_PAYMASTER_ACCOUNT_ID && skipAllowlistUpdate;
+    if (!usingDerivedDefaultAccount || !isUnauthorizedBootstrapError(error)) {
       throw error;
     }
-    accountId = Buffer.from(randomBytes(20)).toString("hex");
+    accountId = deriveBootstrapAccountId(Buffer.from(randomBytes(8)).toString("hex"));
     skipAllowlistUpdate = false;
     console.warn(
-      `Stable paymaster account bootstrap is no longer signer-controlled; falling back to disposable account ${normalizeHash(accountId)}`
+      `Derived paymaster bootstrap account was rejected; falling back to disposable account ${normalizeHash(accountId)}`
     );
     ({ register, updateVerifier } = await bootstrapAccount(accountId));
   }

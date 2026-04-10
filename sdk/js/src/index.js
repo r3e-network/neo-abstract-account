@@ -14,6 +14,9 @@ const {
   sanitizeHex,
 } = require('./validation');
 
+const MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 7 * 24 * 60 * 60;
+const MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 90 * 24 * 60 * 60;
+
 /**
  * Normalizes an address or contract hash to a 40-character hex string.
  * Handles both Neo addresses (N-prefixed) and hex hashes.
@@ -44,6 +47,26 @@ function normalizeAddress(addressHex) {
   validateHash160(hex);
 
   return hex.toLowerCase();
+}
+
+function validateRegistrationEscapeTimelock(uint32) {
+  if (!Number.isInteger(uint32) || uint32 < 0 || uint32 > 0xffffffff) {
+    throw new Error('Invalid escape timelock');
+  }
+  if (uint32 < MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS || uint32 > MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS) {
+    throw new Error('Invalid escape timelock: expected 7-90 days');
+  }
+}
+
+function toUint32LittleEndianHex(uint32) {
+  validateRegistrationEscapeTimelock(uint32);
+
+  return [
+    uint32 & 0xff,
+    (uint32 >>> 8) & 0xff,
+    (uint32 >>> 16) & 0xff,
+    (uint32 >>> 24) & 0xff,
+  ].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -135,9 +158,9 @@ function decodeValidationPreviewStack(item) {
  *
  * // Create a new account registration payload
  * const payload = client.createAccountPayload({
- *   accountIdHex: '0x04...seed',
  *   verifierContractHash: '0xabcd...verifier',
  *   hookContractHash: '0xef01...hook',
+ *   backupOwnerAddress: '0x1234...owner',
  * });
  * ```
  */
@@ -195,6 +218,40 @@ class AbstractAccountClient {
   }
 
   /**
+   * Derives the registration-bound account ID hash used by V3 account creation.
+   *
+   * @param {Object} options - Registration options
+   * @param {string} [options.verifierContractHash=''] - Verifier contract hash
+   * @param {string} [options.verifierParamsHex=''] - Verifier parameters hex
+   * @param {string} [options.hookContractHash=''] - Hook contract hash
+   * @param {string} options.backupOwnerAddress - Backup owner address or hash160
+   * @param {number} [options.escapeTimelock=2592000] - Escape hatch timelock in seconds
+   * @returns {string} 40-character account ID hash
+   */
+  deriveRegistrationAccountIdHash(options = {}) {
+    const {
+      verifierContractHash = '',
+      verifierParamsHex = '',
+      hookContractHash = '',
+      backupOwnerAddress,
+      escapeTimelock = 30 * 24 * 60 * 60,
+    } = options;
+
+    const backupOwner = normalizeAddress(backupOwnerAddress);
+    const verifierHash = verifierContractHash ? normalizeAddress(verifierContractHash) : '00'.repeat(20);
+    const hookHash = hookContractHash ? normalizeAddress(hookContractHash) : '00'.repeat(20);
+
+    return sanitizeHex(u.hash160([
+      'aa524701',
+      backupOwner,
+      verifierHash,
+      hookHash,
+      toUint32LittleEndianHex(escapeTimelock),
+      sanitizeHex(verifierParamsHex || ''),
+    ].join('')));
+  }
+
+  /**
    * Derives a virtual account from an account seed.
    *
    * @param {string} accountIdSeedHex - Account seed (hex or string)
@@ -245,33 +302,28 @@ class AbstractAccountClient {
    * Creates the payload required to register a new V3 Abstract Account.
    *
    * @param {Object} options - Account creation options
-   * @param {string} options.accountIdHex - Account ID hex (used to derive account hash)
-   * @param {string} [options.accountScriptHash] - Direct script hash (overrides derivation)
-   * @param {string} [options.accountAddress] - Neo address (alternative to script hash)
-   * @param {string} options.verifierContractHash - Verifier contract hash (40 hex chars)
+   * @param {string} [options.verifierContractHash=''] - Verifier contract hash (40 hex chars)
    * @param {string} [options.verifierParamsHex=''] - Verifier parameters hex
    * @param {string} [options.hookContractHash=''] - Hook contract hash (40 hex chars)
-   * @param {string} [options.backupOwnerAddress] - Backup owner address (optional)
+   * @param {string} options.backupOwnerAddress - Backup owner address
    * @param {number} [options.escapeTimelock=2592000] - Escape hatch timelock in seconds (default: 30 days)
    * @returns {Object} Contract invocation payload
    * @throws {Error} If required parameters are missing or invalid
    */
   createAccountPayload(options) {
-    validateOptions(options, ['verifierContractHash']);
+    validateOptions(options, ['backupOwnerAddress']);
 
     const {
-      accountIdHex,
-      accountScriptHash = '',
-      accountAddress = '',
-      verifierContractHash,
+      verifierContractHash = '',
       verifierParamsHex = '',
       hookContractHash = '',
       backupOwnerAddress,
       escapeTimelock = 30 * 24 * 60 * 60, // 30 days default
     } = options;
 
-    // Validate verifier contract hash
-    validateHash160(verifierContractHash);
+    if (verifierContractHash) {
+      validateHash160(verifierContractHash);
+    }
 
     // Validate hook contract hash if provided
     if (hookContractHash) {
@@ -283,18 +335,20 @@ class AbstractAccountClient {
       validateAddressOrHash160(backupOwnerAddress);
     }
 
-    const resolvedAccountHash = accountScriptHash
-      ? normalizeAddress(accountScriptHash)
-      : accountAddress
-        ? normalizeAddress(accountAddress)
-        : this.deriveVirtualAccount(accountIdHex).accountIdHash;
+    const resolvedAccountHash = this.deriveRegistrationAccountIdHash({
+      verifierContractHash,
+      verifierParamsHex,
+      hookContractHash,
+      backupOwnerAddress,
+      escapeTimelock,
+    });
 
     return {
       scriptHash: this.masterContractHash,
       operation: 'registerAccount',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
-        sc.ContractParam.hash160(normalizeAddress(verifierContractHash)),
+        sc.ContractParam.hash160(verifierContractHash ? normalizeAddress(verifierContractHash) : '00'.repeat(20)),
         sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(verifierParamsHex), true)),
         sc.ContractParam.hash160(hookContractHash ? normalizeAddress(hookContractHash) : '00'.repeat(20)),
         sc.ContractParam.hash160(backupOwnerAddress ? normalizeAddress(backupOwnerAddress) : '00'.repeat(20)),
@@ -1133,6 +1187,211 @@ class AbstractAccountClient {
     }
 
     return response?.stack?.[0]?.value === true || response?.stack?.[0]?.value === 1;
+  }
+
+  // ========================================================================
+  // Paymaster / Sponsored Transactions
+  // ========================================================================
+
+  /**
+   * Creates the payload for executing a sponsored UserOperation via Paymaster.
+   * The relay (transaction sender) is reimbursed from the sponsor's deposit.
+   *
+   * @param {Object} options - Sponsored operation options
+   * @param {string} [options.accountScriptHash] - Account script hash (40 hex)
+   * @param {string} [options.accountAddress] - Account address (alternative)
+   * @param {Object} options.userOp - The UserOperation object (from UserOperationBuilder.build())
+   * @param {string} options.paymasterHash - Paymaster contract hash (40 hex)
+   * @param {string} options.sponsorAddress - Sponsor address or hash
+   * @param {string|number} options.reimbursementAmount - GAS reimbursement in fractions (10^8 = 1 GAS)
+   * @returns {Object} Contract invocation payload for executeSponsoredUserOp
+   * @throws {Error} If required parameters are missing
+   */
+  createSponsoredUserOpPayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+      userOp,
+      paymasterHash,
+      sponsorAddress,
+      reimbursementAmount,
+    } = options || {};
+
+    if (!userOp) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'userOp is required' });
+    }
+    if (!paymasterHash) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'paymasterHash is required' });
+    }
+    if (!sponsorAddress) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'sponsorAddress is required' });
+    }
+    if (!reimbursementAmount || reimbursementAmount <= 0) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'reimbursementAmount must be positive' });
+    }
+
+    validateHash160(paymasterHash);
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'executeSponsoredUserOp',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+        sc.ContractParam.array(
+          sc.ContractParam.hash160(normalizeAddress(userOp.TargetContract)),
+          sc.ContractParam.string(userOp.Method),
+          { type: 'Array', value: userOp.Args || [] },
+          sc.ContractParam.integer(userOp.Nonce),
+          sc.ContractParam.integer(userOp.Deadline),
+          sc.ContractParam.byteArray(
+            u.HexString.fromHex(sanitizeHex(userOp.Signature || ''), true)
+          ),
+        ),
+        sc.ContractParam.hash160(normalizeAddress(paymasterHash)),
+        sc.ContractParam.hash160(normalizeAddress(sponsorAddress)),
+        sc.ContractParam.integer(reimbursementAmount),
+      ],
+    };
+  }
+
+  /**
+   * Creates the payload for executing a sponsored batch of UserOperations.
+   *
+   * @param {Object} options - Sponsored batch options
+   * @param {string} [options.accountScriptHash] - Account script hash
+   * @param {string} [options.accountAddress] - Account address
+   * @param {Array<Object>} options.userOps - Array of UserOperation objects
+   * @param {string} options.paymasterHash - Paymaster contract hash
+   * @param {string} options.sponsorAddress - Sponsor address
+   * @param {string|number} options.reimbursementAmount - Total GAS reimbursement for the batch
+   * @returns {Object} Contract invocation payload for executeSponsoredUserOps
+   */
+  createSponsoredBatchPayload(options) {
+    const {
+      accountScriptHash = '',
+      accountAddress = '',
+      userOps,
+      paymasterHash,
+      sponsorAddress,
+      reimbursementAmount,
+    } = options || {};
+
+    if (!userOps || !Array.isArray(userOps) || userOps.length === 0) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'userOps array is required' });
+    }
+    if (!paymasterHash) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'paymasterHash is required' });
+    }
+    if (!sponsorAddress) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'sponsorAddress is required' });
+    }
+    if (!reimbursementAmount || reimbursementAmount <= 0) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, { hint: 'reimbursementAmount must be positive' });
+    }
+
+    validateHash160(paymasterHash);
+
+    const resolvedAccountHash = accountScriptHash
+      ? normalizeAddress(accountScriptHash)
+      : normalizeAddress(accountAddress);
+
+    const opsArray = userOps.map(op => sc.ContractParam.array(
+      sc.ContractParam.hash160(normalizeAddress(op.TargetContract)),
+      sc.ContractParam.string(op.Method),
+      { type: 'Array', value: op.Args || [] },
+      sc.ContractParam.integer(op.Nonce),
+      sc.ContractParam.integer(op.Deadline),
+      sc.ContractParam.byteArray(
+        u.HexString.fromHex(sanitizeHex(op.Signature || ''), true)
+      ),
+    ));
+
+    return {
+      scriptHash: this.masterContractHash,
+      operation: 'executeSponsoredUserOps',
+      args: [
+        sc.ContractParam.hash160(resolvedAccountHash),
+        { type: 'Array', value: opsArray },
+        sc.ContractParam.hash160(normalizeAddress(paymasterHash)),
+        sc.ContractParam.hash160(normalizeAddress(sponsorAddress)),
+        sc.ContractParam.integer(reimbursementAmount),
+      ],
+    };
+  }
+
+  /**
+   * Queries the sponsor's GAS deposit balance in a Paymaster contract.
+   *
+   * @param {string} paymasterHash - Paymaster contract hash (40 hex)
+   * @param {string} sponsorAddress - Sponsor address or hash
+   * @returns {Promise<string>} Deposit balance in GAS fractions (BigInteger string)
+   */
+  async querySponsorBalance(paymasterHash, sponsorAddress) {
+    validateHash160(paymasterHash);
+
+    const script = sc.createScript({
+      scriptHash: sanitizeHex(paymasterHash),
+      operation: 'getSponsorDeposit',
+      args: [{ type: 'Hash160', value: normalizeAddress(sponsorAddress) }],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+
+    if (response?.state === 'FAULT') {
+      throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+    }
+
+    return response?.stack?.[0]?.value || '0';
+  }
+
+  /**
+   * Validates whether a sponsored operation would be accepted by the Paymaster.
+   * Use for relay preflight checks before submitting a transaction.
+   *
+   * @param {Object} options - Validation options
+   * @param {string} options.paymasterHash - Paymaster contract hash
+   * @param {string} options.sponsorAddress - Sponsor address
+   * @param {string} options.accountAddress - Account address or hash
+   * @param {string} options.targetContract - Target contract hash
+   * @param {string} options.method - Target method name
+   * @param {string|number} options.reimbursementAmount - Requested reimbursement
+   * @returns {Promise<boolean>} True if the operation would be accepted
+   */
+  async validatePaymasterOp(options) {
+    const {
+      paymasterHash,
+      sponsorAddress,
+      accountAddress,
+      targetContract,
+      method,
+      reimbursementAmount,
+    } = options || {};
+
+    validateHash160(paymasterHash);
+
+    const script = sc.createScript({
+      scriptHash: sanitizeHex(paymasterHash),
+      operation: 'validatePaymasterOp',
+      args: [
+        { type: 'Hash160', value: normalizeAddress(sponsorAddress) },
+        { type: 'Hash160', value: normalizeAddress(accountAddress) },
+        { type: 'Hash160', value: normalizeAddress(targetContract) },
+        { type: 'String', value: method },
+        { type: 'Integer', value: String(reimbursementAmount) },
+      ],
+    });
+
+    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+
+    if (response?.state === 'FAULT') {
+      return false;
+    }
+
+    return decodeStackBoolean(response?.stack?.[0]);
   }
 }
 

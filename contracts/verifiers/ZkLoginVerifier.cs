@@ -172,6 +172,10 @@ namespace AbstractAccount.Verifiers
             );
         }
 
+        public static void PostExecute(UInt160 accountId, ZkLoginUserOperation op, object result)
+        {
+        }
+
         public static void ClearAccount(UInt160 accountId)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);

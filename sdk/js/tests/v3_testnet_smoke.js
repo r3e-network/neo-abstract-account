@@ -18,6 +18,7 @@ if (!TEST_WIF) {
 }
 
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
+const REGISTRATION_ESCAPE_TIMELOCK = 604800;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -254,7 +255,10 @@ async function main() {
   console.log(JSON.stringify({ core, web3Auth, whitelist }, null, 2));
 
   const aaClient = new AbstractAccountClient(RPC_URL, core.hash);
-  const accountId = randomAccountId();
+  const accountId = aaClient.deriveRegistrationAccountIdHash({
+    backupOwnerAddress: account.scriptHash,
+    escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
+  });
   const virtual = aaClient.deriveVirtualAccount(accountId);
 
   logSection('Register Native-Fallback Account');
@@ -270,7 +274,7 @@ async function main() {
       emptyByteArrayParam(),
       hash160Param('0'.repeat(40)),
       hash160Param(account.scriptHash),
-      integerParam(1),
+      integerParam(REGISTRATION_ESCAPE_TIMELOCK),
     ],
   );
   console.log(JSON.stringify({ registerNative: registerNative.txid, accountId: normalizeHash(accountId), virtualAddress: virtual.address }, null, 2));

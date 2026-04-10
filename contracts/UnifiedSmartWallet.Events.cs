@@ -81,5 +81,12 @@ namespace AbstractAccount
 
         [DisplayName("MarketEscrowSettled")]
         public static event MarketEscrowSettledDelegate OnMarketEscrowSettled = null!;
+
+        // --- Paymaster / Sponsored Transactions ---
+
+        public delegate void SponsoredUserOpExecutedDelegate(UInt160 accountId, UInt160 paymaster, UInt160 sponsor, UInt160 relay, BigInteger reimbursementAmount);
+
+        [DisplayName("SponsoredUserOpExecuted")]
+        public static event SponsoredUserOpExecutedDelegate OnSponsoredUserOpExecuted = null!;
     }
 }

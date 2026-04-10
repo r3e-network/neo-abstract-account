@@ -86,6 +86,10 @@ namespace AbstractAccount.Verifiers
             return data == null ? 0 : (int)(BigInteger)data!;
         }
 
+        public static void PostExecute(UInt160 accountId, UserOperation op, object result)
+        {
+        }
+
         /// <summary>
         /// Validates a user operation by checking that enough authorized signers
         /// have witnessed the transaction via Runtime.CheckWitness.

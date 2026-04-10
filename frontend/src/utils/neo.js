@@ -6,6 +6,11 @@ export const DEFAULT_NEO_ADDRESS_VERSION = 53;
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const BASE58_INDEX = new Map([...BASE58_ALPHABET].map((char, index) => [char, index]));
 
+export const MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 7 * 24 * 60 * 60;
+export const MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 90 * 24 * 60 * 60;
+export const MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS = 7;
+export const MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS = 90;
+
 function hexToBytes(hexValue) {
   const hex = sanitizeHex(hexValue);
   if (hex.length % 2 !== 0) {
@@ -125,6 +130,35 @@ export function hash160(hexValue) {
   return hash160Hex(hexValue);
 }
 
+function normalizeHash160Input(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('N') && trimmed.length === 34) {
+    return getScriptHashFromAddress(trimmed);
+  }
+  return sanitizeHex(trimmed);
+}
+
+function validateRegistrationEscapeTimelock(uint32) {
+  if (!Number.isInteger(uint32) || uint32 < 0 || uint32 > 0xffffffff) {
+    throw new Error('Invalid escape timelock');
+  }
+  if (uint32 < MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS || uint32 > MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS) {
+    throw new Error('Invalid escape timelock: expected 7-90 days');
+  }
+}
+
+function toUint32LittleEndianHex(uint32) {
+  validateRegistrationEscapeTimelock(uint32);
+
+  return [
+    uint32 & 0xff,
+    (uint32 >>> 8) & 0xff,
+    (uint32 >>> 16) & 0xff,
+    (uint32 >>> 24) & 0xff,
+  ].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export function deriveAccountIdHash(accountIdHexOrSeed) {
   const normalized = sanitizeHex(accountIdHexOrSeed || '');
   if (!normalized) {
@@ -134,6 +168,39 @@ export function deriveAccountIdHash(accountIdHexOrSeed) {
     return normalized;
   }
   return hash160Hex(normalized);
+}
+
+export function deriveRegistrationAccountIdHash({
+  verifierContractHash = '',
+  verifierParamsHex = '',
+  hookContractHash = '',
+  backupOwnerAddress = '',
+  escapeTimelock = 30 * 24 * 60 * 60,
+} = {}) {
+  const backupOwner = normalizeHash160Input(backupOwnerAddress);
+  if (!/^[0-9a-f]{40}$/i.test(backupOwner)) {
+    throw new Error(EC.addressValidationFailed);
+  }
+
+  const verifierHash = verifierContractHash
+    ? normalizeHash160Input(verifierContractHash)
+    : '00'.repeat(20);
+  const hookHash = hookContractHash
+    ? normalizeHash160Input(hookContractHash)
+    : '00'.repeat(20);
+
+  if (!/^[0-9a-f]{40}$/i.test(verifierHash) || !/^[0-9a-f]{40}$/i.test(hookHash)) {
+    throw new Error(EC.addressValidationFailed);
+  }
+
+  return hash160Hex([
+    'aa524701',
+    backupOwner,
+    verifierHash,
+    hookHash,
+    toUint32LittleEndianHex(escapeTimelock),
+    sanitizeHex(verifierParamsHex || ''),
+  ].join(''));
 }
 
 export function getAddressFromScriptHash(scriptHash, addressVersion = DEFAULT_NEO_ADDRESS_VERSION) {

@@ -355,7 +355,7 @@ import { buildSubmissionReceipt, resolveLatestSubmissionReceipt } from '@/featur
 import { appendSubmissionReceiptEntries, buildSubmissionReceiptHistoryItems, createSubmissionReceiptEntry } from '@/features/operations/submissionReceipts.js';
 import { getAbstractAccountHash, walletService } from '@/services/walletService.js';
 import { morpheusDidService } from '@/services/morpheusDidService.js';
-import { createVerifyScript, deriveAccountIdHash, getAddressFromScriptHash, getScriptHashFromAddress, hash160, reverseHex } from '@/utils/neo.js';
+import { createVerifyScript, getAddressFromScriptHash, getScriptHashFromAddress, hash160, reverseHex } from '@/utils/neo.js';
 import { sanitizeHex } from '@/utils/hex.js';
 import { EC, translateError } from '@/config/errorCodes.js';
 import { isMatrixDomain } from '@/services/matrixDomainService.js';
@@ -936,24 +936,21 @@ async function connectEvmWalletAction() {
 async function loadAccount(overrideAddress = '') {
   const lookup = String(overrideAddress || accountAddressScriptHash.value || '').trim();
   if (!lookup) {
-    toast.error(t('operations.enterAccountSeed', 'Enter a V3 account seed or a 20-byte accountId hash.'));
+    toast.error(t('operations.enterAccountSeed', 'Enter a 20-byte accountId hash.'));
     return;
   }
 
   if (lookup.startsWith('N') || isMatrixDomain(lookup)) {
-    toast.error(t('operations.v3AccountCannotBeDiscovered', 'V3 accounts cannot be discovered from a Neo address or .matrix domain. Load them from the original seed or the 20-byte accountId hash.'));
+    toast.error(t('operations.v3AccountCannotBeDiscovered', 'V3 accounts cannot be discovered from a Neo address or .matrix domain. Load them from the 20-byte accountId hash.'));
     return;
   }
 
-  let resolvedAccountIdHash = '';
-  try {
-    resolvedAccountIdHash = /^(0x)?[0-9a-fA-F]{40}$/.test(lookup)
-      ? sanitizeHex(lookup)
-      : deriveAccountIdHash(lookup);
-  } catch (error) {
-    toast.error(translateError(error?.message, t));
+  if (!/^(0x)?[0-9a-fA-F]{40}$/.test(lookup)) {
+    toast.error(t('operations.enterAccountSeed', 'Enter a 20-byte accountId hash.'));
     return;
   }
+
+  const resolvedAccountIdHash = sanitizeHex(lookup);
 
   const verifyScript = createVerifyScript(getAbstractAccountHash(), resolvedAccountIdHash);
   const resolvedAddressScriptHash = reverseHex(hash160(verifyScript));

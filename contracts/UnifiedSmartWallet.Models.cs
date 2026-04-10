@@ -58,5 +58,12 @@ namespace AbstractAccount
             public ByteString VerifierParams = (ByteString)new byte[0];
             public BigInteger InitiatedAt;
         }
+
+        public class PendingModuleCall
+        {
+            public UInt160 ModuleHash = UInt160.Zero;
+            public ByteString CallHash = (ByteString)new byte[0];
+            public BigInteger InitiatedAt;
+        }
     }
 }

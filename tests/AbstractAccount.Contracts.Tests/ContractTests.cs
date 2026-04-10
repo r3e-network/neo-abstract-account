@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AbstractAccount.Contracts.Tests;
@@ -26,7 +27,8 @@ public class ContractTests
         "UnifiedSmartWallet.VerifyContext.cs",
         "UnifiedSmartWallet.Escape.cs",
         "UnifiedSmartWallet.MarketEscrow.cs",
-        "UnifiedSmartWallet.Admin.cs"
+        "UnifiedSmartWallet.Admin.cs",
+        "UnifiedSmartWallet.Paymaster.cs"
     };
 
     private static readonly string[] HookFiles =
@@ -62,6 +64,7 @@ public class ContractTests
         "hooks/WhitelistHook.csproj",
         "market/AAAddressMarket.csproj",
         "mocks/MockTransferTarget.csproj",
+        "paymaster/Paymaster.csproj",
         "verifiers/MultiSigVerifier.csproj",
         "verifiers/SessionKeyVerifier.csproj",
         "verifiers/SubscriptionVerifier.csproj",
@@ -79,6 +82,17 @@ public class ContractTests
 
     private static string ReadCombinedSource() =>
         string.Join("\n\n", UnifiedSmartWalletFiles.Select(ReadContractFile));
+
+    private static string ExtractSourceBlock(string source, string startMarker, string endMarker)
+    {
+        int start = source.IndexOf(startMarker, StringComparison.Ordinal);
+        Assert.IsTrue(start >= 0, $"Missing source marker: {startMarker}");
+
+        int end = source.IndexOf(endMarker, start, StringComparison.Ordinal);
+        Assert.IsTrue(end > start, $"Missing source marker: {endMarker}");
+
+        return source[start..end];
+    }
 
     [TestMethod]
     public void ContractAssemblyExposesUnifiedSmartWalletV3Metadata()
@@ -115,6 +129,8 @@ public class ContractTests
             "PreviewUserOpValidation",
             "ExecuteUserOp",
             "ExecuteUserOps",
+            "ExecuteSponsoredUserOp",
+            "ExecuteSponsoredUserOps",
             "InitiateEscape",
             "FinalizeEscape",
             "EnterMarketEscrow",
@@ -157,6 +173,54 @@ public class ContractTests
         Assert.IsFalse(executionSource.Contains("op.CallFlags", StringComparison.Ordinal));
         StringAssert.Contains(executionSource, "ConsumeNonce(accountId, op.Nonce);");
         StringAssert.Contains(executionSource, "Contract.Call(state.Verifier, \"validateSignature\", CallFlags.ReadOnly, new object[] { accountId, op });");
+    }
+
+    [TestMethod]
+    public void RegisterAccountBindsAccountIdToRegistrationParameters()
+    {
+        string accountsSource = ReadContractFile("UnifiedSmartWallet.Accounts.cs");
+
+        StringAssert.Contains(accountsSource, "Account id required");
+        StringAssert.Contains(accountsSource, "Account already exists");
+        StringAssert.Contains(accountsSource, "public static UInt160 ComputeRegistrationAccountId(");
+        StringAssert.Contains(accountsSource, "Account id does not match registration parameters");
+        StringAssert.Contains(
+            accountsSource,
+            "ComputeRegistrationAccountId(verifier, verifierParams, hookId, backupOwner!");
+    }
+
+    [TestMethod]
+    public void VerifierAllowlistBlocksImmediateKeyRotationMethods()
+    {
+        string accountsSource = ReadContractFile("UnifiedSmartWallet.Accounts.cs");
+        string allowlistBlock = ExtractSourceBlock(
+            accountsSource,
+            "private static readonly string[] AllowedVerifierMethods = new string[]",
+            "private static readonly string[] AllowedHookMethods = new string[]");
+
+        Assert.IsFalse(allowlistBlock.Contains("\"setPublicKey\"", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void PluginConfigurationCallsRequireReplayAfterTimelock()
+    {
+        string accountsSource = ReadContractFile("UnifiedSmartWallet.Accounts.cs");
+
+        StringAssert.Contains(accountsSource, "PendingModuleCall pending = new PendingModuleCall");
+        StringAssert.Contains(accountsSource, "ComputeModuleCallHash(string method, object[] args)");
+        StringAssert.Contains(accountsSource, "return false;");
+        StringAssert.Contains(accountsSource, "Timelock not elapsed");
+        StringAssert.Contains(accountsSource, "Storage.Delete(Storage.CurrentContext, pendingKey);");
+    }
+
+    [TestMethod]
+    public void ExecutionPathAppliesVerifierPostExecutionEffectsAfterSuccessfulCalls()
+    {
+        string executionSource = ReadContractFile("UnifiedSmartWallet.Execution.cs");
+
+        StringAssert.Contains(
+            executionSource,
+            "Contract.Call(state.Verifier, \"postExecute\", CallFlags.All, new object[] { accountId, op, result });");
     }
 
     [TestMethod]
@@ -298,6 +362,60 @@ public class ContractTests
     }
 
     [TestMethod]
+    public void SessionAndSubscriptionVerifiersKeepValidateSignatureReadOnlyAndPersistStateInPostExecute()
+    {
+        string sessionSource = ReadContractFile("verifiers/SessionKeyVerifier.cs");
+        string subscriptionSource = ReadContractFile("verifiers/SubscriptionVerifier.cs");
+
+        string sessionValidateBlock = ExtractSourceBlock(
+            sessionSource,
+            "public static bool ValidateSignature(UInt160 accountId, UserOperation op)",
+            "private static BigInteger ExtractTransferValue(UserOperation op)");
+        string subscriptionValidateBlock = ExtractSourceBlock(
+            subscriptionSource,
+            "public static bool ValidateSignature(UInt160 accountId, UserOperation op)",
+            "public static void ClearAccount(UInt160 accountId)");
+
+        Assert.IsFalse(sessionValidateBlock.Contains("Storage.Put(", StringComparison.Ordinal));
+        Assert.IsFalse(subscriptionValidateBlock.Contains("Storage.Put(", StringComparison.Ordinal));
+        StringAssert.Contains(sessionSource, "public static void PostExecute(UInt160 accountId, UserOperation op, object result)");
+        StringAssert.Contains(subscriptionSource, "public static void PostExecute(UInt160 accountId, UserOperation op, object result)");
+    }
+
+    [TestMethod]
+    public void MultiSigPropagatesVerifierPostExecutionEffectsToChildVerifiers()
+    {
+        string source = ReadContractFile("verifiers/MultiSigVerifier.cs");
+
+        StringAssert.Contains(source, "public static void PostExecute(UInt160 accountId, UserOperation op, object result)");
+        StringAssert.Contains(
+            source,
+            "Contract.Call(config.Verifiers[i], \"postExecute\", CallFlags.All, new object[] { accountId, subOp, result });");
+    }
+
+    [TestMethod]
+    public void SessionAndSubscriptionPostExecuteDoNotTreatBusinessReturnValuesAsExecutionFailure()
+    {
+        string sessionSource = ReadContractFile("verifiers/SessionKeyVerifier.cs");
+        string subscriptionSource = ReadContractFile("verifiers/SubscriptionVerifier.cs");
+
+        Assert.IsFalse(sessionSource.Contains("DidExecutionSucceed(result)", StringComparison.Ordinal));
+        Assert.IsFalse(subscriptionSource.Contains("DidExecutionSucceed(result)", StringComparison.Ordinal));
+        Assert.IsFalse(sessionSource.Contains("private static bool DidExecutionSucceed", StringComparison.Ordinal));
+        Assert.IsFalse(subscriptionSource.Contains("private static bool DidExecutionSucceed", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void SourceInvariantSuiteDoesNotClaimBehavioralFuzzCoverage()
+    {
+        string source = File.ReadAllText(Path.Combine(RepoRoot, "tests", "AbstractAccount.Contracts.Tests", "SourceInvariantTests.cs"));
+
+        Assert.IsFalse(source.Contains("Fuzz_", StringComparison.Ordinal));
+        Assert.IsFalse(source.Contains("fuzz tests", StringComparison.OrdinalIgnoreCase));
+        Assert.IsFalse(source.Contains("fuzzing", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [TestMethod]
     public void VerifierProjectsCompileSharedAuthorityHelper()
     {
         string[] verifierProjects =
@@ -329,5 +447,253 @@ public class ContractTests
             StringAssert.Contains(projectFile, "<RunNccsAfterBuild>false</RunNccsAfterBuild>");
             StringAssert.Contains(projectFile, "Condition=\"'$(RunNccsAfterBuild)' == 'true'\"");
         }
+    }
+
+    // ========================================================================
+    // Paymaster Contract Tests
+    // ========================================================================
+
+    [TestMethod]
+    public void PaymasterContractHasCorrectMetadata()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        StringAssert.Contains(source, "[DisplayName(\"AAPaymaster\")]");
+        StringAssert.Contains(source, "On-Chain Paymaster for Sponsored Transactions on Neo N3 AA");
+        StringAssert.Contains(source, "0xd2a4cff31913016155e38e474a2c06d08be276cf");
+    }
+
+    [TestMethod]
+    public void PaymasterExposesAllRequiredEntrypoints()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        string[] requiredMethods =
+        {
+            "OnNEP17Payment",
+            "WithdrawDeposit",
+            "SetPolicy",
+            "RevokePolicy",
+            "ValidatePaymasterOp",
+            "SettleReimbursement",
+            "GetSponsorDeposit",
+            "GetPolicy",
+            "GetDailySpent",
+            "GetTotalSpent",
+            "SetAuthorizedCore",
+            "RotateAdmin",
+            "ConfirmAdminRotation",
+            "CancelAdminRotation",
+            "Update",
+        };
+
+        foreach (string method in requiredMethods)
+        {
+            StringAssert.Contains(source, method, $"Missing entrypoint: {method}");
+        }
+    }
+
+    [TestMethod]
+    public void PaymasterOnlyAcceptsGAS()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        StringAssert.Contains(source, "Runtime.CallingScriptHash == GAS.Hash");
+        StringAssert.Contains(source, "Only GAS accepted");
+    }
+
+    [TestMethod]
+    public void PaymasterSettlementOnlyCallableByCore()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        StringAssert.Contains(source, "PaymasterAuthority.ValidateCoreCaller()");
+    }
+
+    [TestMethod]
+    public void PaymasterFollowsChecksEffectsInteractionsPattern()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        // In SettleReimbursement: deposit deducted BEFORE GAS transfer
+        int deductIndex = source.IndexOf("SetSponsorDeposit(sponsor!, deposit - amount)", StringComparison.Ordinal);
+        int transferIndex = source.IndexOf("GAS.Hash, \"transfer\", CallFlags.All", deductIndex, StringComparison.Ordinal);
+        Assert.IsTrue(deductIndex > 0 && transferIndex > deductIndex,
+            "Deposit must be deducted before GAS transfer (checks-effects-interactions)");
+    }
+
+    [TestMethod]
+    public void PaymasterHasOverflowProtection()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        StringAssert.Contains(source, "Deposit overflow");
+        StringAssert.Contains(source, "Daily spend overflow");
+        StringAssert.Contains(source, "Total spend overflow");
+    }
+
+    [TestMethod]
+    public void PaymasterStoragePrefixesAreUnique()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        var expectedPrefixes = new (byte Value, string Name)[]
+        {
+            (0x01, "Prefix_SponsorDeposit"),
+            (0x02, "Prefix_Policy"),
+            (0x03, "Prefix_DailySpent"),
+            (0x04, "Prefix_DailyReset"),
+            (0x05, "Prefix_TotalSpent"),
+        };
+
+        var values = new System.Collections.Generic.HashSet<byte>();
+        foreach (var (value, name) in expectedPrefixes)
+        {
+            StringAssert.Contains(source, name);
+            Assert.IsTrue(values.Add(value), $"Duplicate prefix 0x{value:X2} for {name}");
+        }
+    }
+
+    [TestMethod]
+    public void PaymasterAuthorityPrefixesDoNotCollideWithPaymasterPrefixes()
+    {
+        string authoritySource = ReadContractFile("paymaster/PaymasterAuthority.cs");
+        string paymasterSource = ReadContractFile("paymaster/Paymaster.cs");
+
+        // Authority uses 0xD0-0xD3, Paymaster uses 0x01-0x05 — no collision
+        StringAssert.Contains(authoritySource, "0xD0");
+        StringAssert.Contains(authoritySource, "0xD1");
+        StringAssert.Contains(authoritySource, "0xD2");
+        StringAssert.Contains(authoritySource, "0xD3");
+
+        Assert.IsFalse(paymasterSource.Contains("0xD0", StringComparison.Ordinal));
+        Assert.IsFalse(paymasterSource.Contains("0xD1", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void PaymasterProjectCompilesSharedAuthorityHelper()
+    {
+        string projectFile = ReadContractFile("paymaster/Paymaster.csproj");
+
+        StringAssert.Contains(projectFile, "<Compile Include=\"PaymasterAuthority.cs\" />");
+        StringAssert.Contains(projectFile, "<Compile Include=\"Paymaster.cs\" />");
+    }
+
+    [TestMethod]
+    public void PaymasterAuthorityUsesTimelockForAdminRotation()
+    {
+        string source = ReadContractFile("paymaster/PaymasterAuthority.cs");
+
+        StringAssert.Contains(source, "AdminRotationTimelockSeconds = 604800");
+        StringAssert.Contains(source, "Admin rotation timelock not expired");
+        StringAssert.Contains(source, "Pending admin mismatch");
+    }
+
+    [TestMethod]
+    public void VerifierAndHookAuthorityRequireNewAdminWitnessForRotationConfirmation()
+    {
+        string verifierSource = ReadContractFile("verifiers/VerifierAuthority.cs");
+        string hookSource = ReadContractFile("hooks/HookAuthority.cs");
+
+        StringAssert.Contains(verifierSource, "Runtime.CheckWitness(newAdmin)");
+        StringAssert.Contains(hookSource, "Runtime.CheckWitness(newAdmin)");
+    }
+
+    [TestMethod]
+    public void PaymasterEventsAreComplete()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        string[] requiredEvents =
+        {
+            "Deposited", "Withdrawn", "PolicyCreated", "PolicyRevoked", "Reimbursed"
+        };
+
+        foreach (string evt in requiredEvents)
+        {
+            StringAssert.Contains(source, $"[DisplayName(\"{evt}\")]", $"Event {evt} declared");
+            StringAssert.Contains(source, $"On{evt}", $"On{evt} raised in code");
+        }
+    }
+
+    [TestMethod]
+    public void PaymasterValidatePaymasterOpIsSafe()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        // Extract the block from [Safe] to the next public method
+        int safeIdx = source.IndexOf("[Safe]\n        public static bool ValidatePaymasterOp", StringComparison.Ordinal);
+        Assert.IsTrue(safeIdx >= 0, "ValidatePaymasterOp must have [Safe] attribute");
+
+        // Find the method body
+        int braceStart = source.IndexOf('{', safeIdx);
+        int depth = 1, pos = braceStart + 1;
+        while (pos < source.Length && depth > 0) {
+            if (source[pos] == '{') depth++;
+            else if (source[pos] == '}') depth--;
+            pos++;
+        }
+        string methodBody = source[safeIdx..pos];
+
+        Assert.IsFalse(methodBody.Contains("Storage.Put(", StringComparison.Ordinal),
+            "ValidatePaymasterOp must not mutate storage");
+        Assert.IsFalse(methodBody.Contains("Storage.Delete(", StringComparison.Ordinal),
+            "ValidatePaymasterOp must not delete storage");
+        Assert.IsFalse(methodBody.Contains("Contract.Call(", StringComparison.Ordinal),
+            "ValidatePaymasterOp must not call other contracts");
+    }
+
+    [TestMethod]
+    public void SponsoredExecutionEntrypointsExistInCore()
+    {
+        string source = ReadContractFile("UnifiedSmartWallet.Paymaster.cs");
+
+        StringAssert.Contains(source, "public static object ExecuteSponsoredUserOp(");
+        StringAssert.Contains(source, "public static object[] ExecuteSponsoredUserOps(");
+        StringAssert.Contains(source, "settleReimbursement");
+        StringAssert.Contains(source, "CallFlags.All");
+        StringAssert.Contains(source, "Runtime.Transaction.Sender");
+        StringAssert.Contains(source, "OnSponsoredUserOpExecuted");
+
+        // C-2 fix: verify paymaster trust check
+        StringAssert.Contains(source, "authorizedCore");
+        StringAssert.Contains(source, "Paymaster not bound to this core");
+
+        // M-2 fix: accountId validation
+        StringAssert.Contains(source, "AccountId required");
+
+        // H-2 fix: batch ops must share target/method
+        StringAssert.Contains(source, "Batch ops must share target contract");
+        StringAssert.Contains(source, "Batch ops must share method");
+    }
+
+    [TestMethod]
+    public void SponsoredExecutionEventDeclaredInEvents()
+    {
+        string source = ReadContractFile("UnifiedSmartWallet.Events.cs");
+
+        StringAssert.Contains(source, "SponsoredUserOpExecutedDelegate");
+        StringAssert.Contains(source, "[DisplayName(\"SponsoredUserOpExecuted\")]");
+        StringAssert.Contains(source, "OnSponsoredUserOpExecuted");
+    }
+
+    [TestMethod]
+    public void PaymasterGasPermissionIsTightened()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        // Must use specific GAS hash, not wildcard
+        StringAssert.Contains(source,
+            "[ContractPermission(\"0xd2a4cff31913016155e38e474a2c06d08be276cf\", \"transfer\")]");
+    }
+
+    [TestMethod]
+    public void PaymasterSupportsGlobalPolicyFallback()
+    {
+        string source = ReadContractFile("paymaster/Paymaster.cs");
+
+        StringAssert.Contains(source, "ResolvePolicy(sponsor, accountId, out UInt160 spendingKey)");
+        StringAssert.Contains(source, "ReadPolicy(sponsor, UInt160.Zero)");
+        StringAssert.Contains(source, "spendingAccountId = UInt160.Zero");
     }
 }

@@ -25,7 +25,8 @@
     "testnet:validate:plugin-matrix": "node tests/v3_testnet_plugin_matrix.js",
     "testnet:validate:market": "node tests/v3_testnet_market_escrow.js",
     "testnet:validate:paymaster-policy": "node tests/v3_testnet_paymaster_policy.mjs",
-    "testnet:validate:paymaster": "node tests/v3_testnet_paymaster_relay.mjs"
+    "testnet:validate:paymaster": "node tests/v3_testnet_paymaster_relay.mjs",
+    "testnet:validate:paymaster-onchain": "node tests/v3_testnet_paymaster_onchain.mjs"
   },
   "dependencies": {
     "@cityofzion/neon-js": "^5.4.0",

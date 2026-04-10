@@ -1,5 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue';
-import { createVerifyScript, deriveAccountIdHash, getAddressFromScriptHash, hash160, invokeReadFunction, reverseHex } from '@/utils/neo.js';
+import { MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS, MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS, createVerifyScript, deriveAccountIdHash, deriveRegistrationAccountIdHash, getAddressFromScriptHash, hash160, invokeReadFunction, reverseHex } from '@/utils/neo.js';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
@@ -23,7 +23,6 @@ import {
 } from './constants';
 import {
   addListRow,
-  createGeneratedAccountId,
   decodeStackBoolean,
   decodeStackByteStringHex,
   decodeStackHash160,
@@ -71,14 +70,14 @@ export function useStudioController() {
 
   let contractFilesPromise = null;
 
-  const isEvmWallet = computed(() => walletService.provider === walletService.PROVIDERS.EVM_WALLET);
   const walletConnected = computed(() => !!connectedAccount.value);
 
   const canCreate = computed(() => {
     if (!walletConnected.value) return false;
-    if (!createForm.value.accountId || !computedAddress.value) return false;
+    if (!computedAddress.value) return false;
     if (!createForm.value.backupOwner) return false;
-    if ((Number(createForm.value.escapeTimelockDays) || 0) <= 0) return false;
+    const escapeTimelockDays = Number(createForm.value.escapeTimelockDays) || 0;
+    if (escapeTimelockDays < MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS || escapeTimelockDays > MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS) return false;
     return true;
   });
 
@@ -91,21 +90,21 @@ export function useStudioController() {
   });
 
   watch(connectedAccount, async () => {
-    if (isEvmWallet.value && walletService.account?.pubKey) {
-      createForm.value.accountId = walletService.account.pubKey;
-    } else if (isEvmWallet.value) {
-      const account = connectedAccount.value ? connectedAccount.value.toLowerCase() : '';
-      const cached = account ? localStorage.getItem(`evm_pubkey_${account}`) : '';
-      if (cached) createForm.value.accountId = cached;
-    } else if (!createForm.value.accountId || createForm.value.accountId.length === 130) {
-      createForm.value.accountId = createGeneratedAccountId();
-    }
     if (walletConnected.value && !createForm.value.backupOwner) {
       createForm.value.backupOwner = walletService.address || connectedAccount.value || '';
     }
   }, { immediate: true });
 
-  watch(() => createForm.value.accountId, computeAA);
+  watch(
+    () => [
+      createForm.value.verifierContract,
+      createForm.value.verifierParams,
+      createForm.value.hookContract,
+      createForm.value.backupOwner,
+      createForm.value.escapeTimelockDays,
+    ],
+    computeAA
+  );
 
   watch(activePanel, (panel) => {
     if (panel === 'source') {
@@ -115,9 +114,6 @@ export function useStudioController() {
 
   onMounted(() => {
     restoreRecentTransactions();
-    if (!isEvmWallet.value) {
-      createForm.value.accountId = createGeneratedAccountId();
-    }
     void computeAA();
   });
 
@@ -136,10 +132,6 @@ export function useStudioController() {
 
   function removeRow(listRef, index) {
     removeListRow(listRef, index);
-  }
-
-  function generateUUID() {
-    createForm.value.accountId = createGeneratedAccountId();
   }
 
   async function ensureContractFilesLoaded() {
@@ -187,7 +179,8 @@ export function useStudioController() {
   }
 
   async function computeAA() {
-    if (!createForm.value.accountId) {
+    const escapeTimelockDays = Number(createForm.value.escapeTimelockDays) || 0;
+    if (!createForm.value.backupOwner || escapeTimelockDays < MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS || escapeTimelockDays > MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS) {
       computedScriptHex.value = '';
       computedAddress.value = '';
       return;
@@ -197,8 +190,20 @@ export function useStudioController() {
       const aaHash = getAbstractAccountHash();
       if (!aaHash) return;
 
-      const accountSeedHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
-      const accountIdHash = deriveAccountIdHash(accountSeedHex);
+      const verifierHash = createForm.value.verifierContract.trim()
+        ? hash160Param(createForm.value.verifierContract)
+        : '0000000000000000000000000000000000000000';
+      const hookHash = createForm.value.hookContract.trim()
+        ? hash160Param(createForm.value.hookContract)
+        : '0000000000000000000000000000000000000000';
+      const verifierParamsHex = sanitizeHex(createForm.value.verifierParams || '');
+      const accountIdHash = deriveRegistrationAccountIdHash({
+        verifierContractHash: verifierHash,
+        verifierParamsHex,
+        hookContractHash: hookHash,
+        backupOwnerAddress: createForm.value.backupOwner,
+        escapeTimelock: Math.floor(escapeTimelockDays * 24 * 60 * 60),
+      });
       const script = createVerifyScript(aaHash, accountIdHash);
 
       computedScriptHex.value = script;
@@ -265,7 +270,7 @@ export function useStudioController() {
 
     manageBusy.value.load = true;
     try {
-      const accountHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const accountHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress));
 
       const [
         verifierRes,
@@ -339,8 +344,6 @@ export function useStudioController() {
 
     isCreating.value = true;
     try {
-      const accountSeedHex = normalizeAccountId(createForm.value.accountId, isEvmWallet.value);
-      const accountIdHash = deriveAccountIdHash(accountSeedHex);
       const verifierHash = createForm.value.verifierContract.trim()
         ? hash160Param(createForm.value.verifierContract)
         : '0000000000000000000000000000000000000000';
@@ -349,7 +352,14 @@ export function useStudioController() {
         : '0000000000000000000000000000000000000000';
       const backupOwnerHash = hash160Param(createForm.value.backupOwner);
       const verifierParamsHex = sanitizeHex(createForm.value.verifierParams || '');
-      const escapeTimelockSeconds = Math.max(1, Math.floor((Number(createForm.value.escapeTimelockDays) || 0) * 24 * 60 * 60));
+      const escapeTimelockSeconds = Math.floor((Number(createForm.value.escapeTimelockDays) || 0) * 24 * 60 * 60);
+      const accountIdHash = deriveRegistrationAccountIdHash({
+        verifierContractHash: verifierHash,
+        verifierParamsHex,
+        hookContractHash: hookHash,
+        backupOwnerAddress: createForm.value.backupOwner,
+        escapeTimelock: escapeTimelockSeconds,
+      });
       const createInvocation = {
         scriptHash: getAbstractAccountHash(),
         operation: 'registerAccount',
@@ -396,7 +406,7 @@ export function useStudioController() {
     if (!requireWallet() || !canManageTarget.value) return;
     manageBusy.value.verifier = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress));
       const verifierHash = manageForm.value.verifierContract.trim()
         ? hash160Param(manageForm.value.verifierContract)
         : '0000000000000000000000000000000000000000';
@@ -417,7 +427,7 @@ export function useStudioController() {
     if (!requireWallet() || !canManageTarget.value) return;
     manageBusy.value.hook = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress));
       const hookHash = manageForm.value.hookContract.trim()
         ? hash160Param(manageForm.value.hookContract)
         : '0000000000000000000000000000000000000000';
@@ -436,7 +446,7 @@ export function useStudioController() {
     if (!requireWallet() || !canManageTarget.value) return;
     manageBusy.value.initiateEscape = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress));
       await invokeOperation('Initiate escape', 'initiateEscape', [
         { type: 'Hash160', value: accountIdHash },
       ]);
@@ -455,7 +465,7 @@ export function useStudioController() {
     }
     manageBusy.value.finalizeEscape = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress));
       await invokeOperation('Finalize escape', 'finalizeEscape', [
         { type: 'Hash160', value: accountIdHash },
         { type: 'Hash160', value: hash160Param(manageForm.value.escapeNewVerifier) },
@@ -471,7 +481,7 @@ export function useStudioController() {
     if (!requireWallet() || !canManageTarget.value) return;
     metadataBusy.value.save = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(manageForm.value.accountAddress));
 
       // On-chain: set MetadataUri
       const metadataUri = metadataForm.value.metadataUri.trim();
@@ -520,7 +530,7 @@ export function useStudioController() {
     }
     permissionsBusy.value.verifierCall = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(permissionsForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(permissionsForm.value.accountAddress));
       await invokeOperation('Call verifier plugin', 'callVerifier', [
         { type: 'Hash160', value: accountIdHash },
         { type: 'String', value: permissionsForm.value.verifierMethod.trim() },
@@ -541,7 +551,7 @@ export function useStudioController() {
     }
     permissionsBusy.value.hookCall = true;
     try {
-      const accountIdHash = deriveAccountIdHash(normalizeAccountId(permissionsForm.value.accountAddress, false));
+      const accountIdHash = deriveAccountIdHash(normalizeAccountId(permissionsForm.value.accountAddress));
       await invokeOperation('Call hook plugin', 'callHook', [
         { type: 'Hash160', value: accountIdHash },
         { type: 'String', value: permissionsForm.value.hookMethod.trim() },
@@ -580,7 +590,6 @@ export function useStudioController() {
     computedAddress,
     contractFiles,
     isContractFilesLoading,
-    isEvmWallet,
     walletConnected,
     autoLoadedAccounts,
     canCreate,
@@ -589,7 +598,6 @@ export function useStudioController() {
     validCreateAdmins,
     addRow,
     removeRow,
-    generateUUID,
     computeAA,
     loadAccountConfiguration,
     createAccount,

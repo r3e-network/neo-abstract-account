@@ -41,6 +41,10 @@ namespace AbstractAccount.Verifiers
             Storage.Put(Storage.CurrentContext, key, dkimHash);
         }
 
+        public static void PostExecute(UInt160 accountId, UserOperation op, object result)
+        {
+        }
+
         /// <summary>
         /// Always faults today because the verifier is intentionally disabled pending real proof verification.
         /// </summary>
