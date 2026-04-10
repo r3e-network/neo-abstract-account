@@ -51,7 +51,28 @@
   "overrides": {
     "dompurify": "3.3.2",
     "esbuild": "0.27.3",
-    "h3": "1.15.9",
-    "socket.io-parser": "4.2.6"
+    "h3": {
+      "defu": "6.1.7"
+    },
+    "socket.io-parser": "4.2.6",
+    "@metamask/utils": {
+      "lodash": "4.18.1"
+    },
+    "xrpl": {
+      "lodash": "4.18.1"
+    },
+    "lodash-es": "4.18.1",
+    "anymatch": {
+      "picomatch": "2.3.2"
+    },
+    "readdirp": {
+      "picomatch": "2.3.2"
+    },
+    "tinyglobby": {
+      "picomatch": "4.0.4",
+      "fdir": {
+        "picomatch": "4.0.4"
+      }
+    }
   }
 }
