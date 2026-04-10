@@ -56,6 +56,16 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
       'neodid.recovery_ticket',
       'paymaster.authorize',
     ],
+    morpheusTopology: {
+      ingressPlane: 'edge_gateway',
+      orchestrationPlane: 'control_plane',
+      schedulerPlane: 'control_plane',
+      executionPlane: 'tee_runtime',
+      riskPlane: 'independent_observer',
+    },
+    morpheusRiskPlane: 'independent_observer',
+    morpheusRiskActions: ['observe', 'review', 'pause_scope'],
+    morpheusAutomationTriggerKinds: ['interval', 'threshold'],
     morpheusOracleCvmId: 'ddff154546fe22d15b65667156dd4b7c611e6093',
     morpheusOracleCvmName: 'oracle-morpheus-neo-r3e',
     morpheusOracleAttestationExplorerUrl:
