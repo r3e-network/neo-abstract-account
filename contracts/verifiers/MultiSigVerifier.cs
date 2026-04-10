@@ -18,7 +18,9 @@ namespace AbstractAccount.Verifiers
     /// </remarks>
     [DisplayName("MultiSigVerifier")]
     [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "canExecuteVerifier")]
     [ContractPermission("*", "computeArgsHash")]
+    [ContractPermission("*", "postExecute")]
     [ContractPermission("*", "validateSignature")]
     [ManifestExtra("Description", "Heterogeneous Threshold Multi-Sig Verifier")]
     public class MultiSigVerifier : SmartContract
@@ -93,16 +95,7 @@ namespace AbstractAccount.Verifiers
             {
                 if (signatures[i] != null)
                 {
-                    // Create a cloned UserOp with just the individual signature
-                    UserOperation subOp = new UserOperation
-                    {
-                        TargetContract = op.TargetContract,
-                        Method = op.Method,
-                        Args = op.Args,
-                        Nonce = op.Nonce,
-                        Deadline = op.Deadline,
-                        Signature = (ByteString)signatures[i]
-                    };
+                    UserOperation subOp = CreateSubOperation(op, signatures[i]);
 
                     // Wrap in try-catch so a throwing child verifier doesn't block
                     // the entire multisig when threshold can still be met
@@ -118,10 +111,65 @@ namespace AbstractAccount.Verifiers
             return validCount >= config.Threshold;
         }
 
+        public static void PostExecute(UInt160 accountId, UserOperation op, object result)
+        {
+            VerifierAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
+
+            byte[] key = Helper.Concat(Prefix_Config, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            ExecutionEngine.Assert(data != null, "No MultiSig config");
+
+            MultiSigConfig config = (MultiSigConfig)StdLib.Deserialize(data!);
+            object[] signatures = (object[])StdLib.Deserialize(op.Signature);
+            ExecutionEngine.Assert(signatures.Length == config.Verifiers.Length, "Signature array length mismatch");
+
+            int validCount = 0;
+            bool[] validChildren = new bool[config.Verifiers.Length];
+            for (int i = 0; i < config.Verifiers.Length; i++)
+            {
+                if (signatures[i] == null) continue;
+
+                UserOperation subOp = CreateSubOperation(op, signatures[i]);
+                try
+                {
+                    bool isValid = (bool)Contract.Call(config.Verifiers[i], "validateSignature", CallFlags.ReadOnly, new object[] { accountId, subOp });
+                    if (!isValid) continue;
+
+                    validChildren[i] = true;
+                    validCount++;
+                }
+                catch
+                {
+                }
+            }
+
+            ExecutionEngine.Assert(validCount >= config.Threshold, "Verifier rejected signature");
+            for (int i = 0; i < config.Verifiers.Length; i++)
+            {
+                if (!validChildren[i]) continue;
+
+                UserOperation subOp = CreateSubOperation(op, signatures[i]);
+                Contract.Call(config.Verifiers[i], "postExecute", CallFlags.All, new object[] { accountId, subOp, result });
+            }
+        }
+
         public static void ClearAccount(UInt160 accountId)
         {
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_Config, (byte[])accountId));
+        }
+
+        private static UserOperation CreateSubOperation(UserOperation op, object signature)
+        {
+            return new UserOperation
+            {
+                TargetContract = op.TargetContract,
+                Method = op.Method,
+                Args = op.Args,
+                Nonce = op.Nonce,
+                Deadline = op.Deadline,
+                Signature = (ByteString)signature
+            };
         }
     }
 }

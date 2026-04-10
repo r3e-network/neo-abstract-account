@@ -1,6 +1,7 @@
 using Neo;
 using Neo.SmartContract;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 
@@ -12,6 +13,51 @@ namespace AbstractAccount
         // 2. Account Initialization / Configuration
         // ========================================================================
 
+        private static readonly byte[] RegistrationAccountIdDomain = new byte[] { 0xAA, 0x52, 0x47, 0x01 };
+
+        [Safe]
+        public static UInt160 ComputeRegistrationAccountId(UInt160 verifier, ByteString verifierParams, UInt160 hookId, UInt160 backupOwner, uint escapeTimelock)
+        {
+            byte[] payload = RegistrationAccountIdDomain;
+            payload = Helper.Concat(payload, ToRegistrationHashBytes(backupOwner));
+            payload = Helper.Concat(payload, ToRegistrationHashBytes(verifier));
+            payload = Helper.Concat(payload, ToRegistrationHashBytes(hookId));
+            payload = Helper.Concat(payload, UInt32ToLittleEndianBytes(escapeTimelock));
+            if (verifierParams != null && verifierParams.Length > 0)
+            {
+                payload = Helper.Concat(payload, (byte[])verifierParams);
+            }
+
+            byte[] hash = (byte[])CryptoLib.Ripemd160((ByteString)CryptoLib.Sha256((ByteString)payload));
+            return (UInt160)(ByteString)ReverseBytes(hash);
+        }
+
+        private static byte[] UInt32ToLittleEndianBytes(uint value)
+        {
+            return new byte[]
+            {
+                (byte)(value & 0xFF),
+                (byte)((value >> 8) & 0xFF),
+                (byte)((value >> 16) & 0xFF),
+                (byte)((value >> 24) & 0xFF)
+            };
+        }
+
+        private static byte[] ToRegistrationHashBytes(UInt160 value)
+        {
+            return ReverseBytes((byte[])value);
+        }
+
+        private static byte[] ReverseBytes(byte[] source)
+        {
+            byte[] reversed = new byte[source.Length];
+            for (int i = 0; i < source.Length; i++)
+            {
+                reversed[i] = source[source.Length - 1 - i];
+            }
+            return reversed;
+        }
+
         /// <summary>
         /// Creates a new deterministic AA account and optionally configures its initial verifier and hook.
         /// </summary>
@@ -19,9 +65,10 @@ namespace AbstractAccount
         {
             ExecutionEngine.Assert(accountId != null && accountId != UInt160.Zero, "Account id required");
             ExecutionEngine.Assert(backupOwner != null && backupOwner != UInt160.Zero, "Backup owner required");
-            ExecutionEngine.Assert(Runtime.CheckWitness(backupOwner), "Backup owner witness required");
+            ExecutionEngine.Assert(Runtime.CheckWitness(backupOwner!), "Backup owner witness required");
             ExecutionEngine.Assert(escapeTimelock >= 604800, "Escape timelock must be at least 7 days");
             ExecutionEngine.Assert(escapeTimelock <= 7776000, "Escape timelock must not exceed 90 days");
+            ExecutionEngine.Assert(accountId == ComputeRegistrationAccountId(verifier, verifierParams, hookId, backupOwner!, escapeTimelock), "Account id does not match registration parameters");
 
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId!);
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Account already exists");
@@ -35,29 +82,30 @@ namespace AbstractAccount
                 EscapeTriggeredAt = 0
             };
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
-            OnAccountRegistered(accountId, backupOwner!, verifier, hookId);
+            OnAccountRegistered(accountId!, backupOwner!, verifier, hookId);
             if (verifier != UInt160.Zero)
             {
-                OnModuleInstalled(accountId, ModuleTypeVerifier, verifier);
+                OnModuleInstalled(accountId!, ModuleTypeVerifier, verifier);
             }
             if (hookId != UInt160.Zero)
             {
-                OnModuleInstalled(accountId, ModuleTypeHook, hookId);
+                OnModuleInstalled(accountId!, ModuleTypeHook, hookId);
             }
 
             if (verifier != UInt160.Zero && verifierParams != null && verifierParams.Length > 0)
             {
-                SetVerifierConfigContext(accountId, verifier);
+                SetVerifierConfigContext(accountId!, verifier);
                 try
                 {
-                    Contract.Call(verifier, "setPublicKey", CallFlags.All, new object[] { accountId, verifierParams });
+                    Contract.Call(verifier, "setPublicKey", CallFlags.All, new object[] { accountId!, verifierParams });
                 }
                 finally
                 {
-                    ClearVerifierConfigContext(accountId);
+                    ClearVerifierConfigContext(accountId!);
                 }
             }
         }
+
 
         /// <summary>
         /// Initiates a hook plugin replacement with a timelock delay for security.
@@ -169,7 +217,7 @@ namespace AbstractAccount
                     }
                     finally
                     {
-                        ClearVerifierConfigContext(accountId);
+                        ClearVerifierConfigContext(accountId!);
                     }
                 }
                 if (newVerifier != UInt160.Zero)
@@ -220,7 +268,7 @@ namespace AbstractAccount
                 SetVerifierConfigContext(accountId, previousVerifier);
                 try { Contract.Call(previousVerifier, "clearAccount", CallFlags.All, new object[] { accountId }); }
                 catch { } // Plugin may not implement clearAccount
-                finally { ClearVerifierConfigContext(accountId); }
+                finally { ClearVerifierConfigContext(accountId!); }
             }
 
             state.Verifier = pending.NewVerifier;
@@ -236,7 +284,7 @@ namespace AbstractAccount
                 }
                 finally
                 {
-                    ClearVerifierConfigContext(accountId);
+                    ClearVerifierConfigContext(accountId!);
                 }
             }
 
@@ -257,7 +305,6 @@ namespace AbstractAccount
 
         private static readonly string[] AllowedVerifierMethods = new string[]
         {
-            "setPublicKey",
             "clearAccount",
             "setSessionKey",
             "clearSessionKey",
@@ -287,6 +334,44 @@ namespace AbstractAccount
             return false;
         }
 
+        private static ByteString ComputeModuleCallHash(string method, object[] args)
+        {
+            return CryptoLib.Sha256(StdLib.Serialize(new object[] { method, args }));
+        }
+
+        private static void StorePendingModuleCall(byte[] pendingKey, UInt160 moduleHash, ByteString callHash)
+        {
+            PendingModuleCall pending = new PendingModuleCall
+            {
+                ModuleHash = moduleHash,
+                CallHash = callHash,
+                InitiatedAt = Runtime.Time
+            };
+            Storage.Put(Storage.CurrentContext, pendingKey, StdLib.Serialize(pending));
+        }
+
+        private static bool TryConfirmPendingModuleCall(byte[] pendingKey, UInt160 moduleHash, string method, object[] args)
+        {
+            ByteString callHash = ComputeModuleCallHash(method, args);
+            ByteString? data = Storage.Get(Storage.CurrentContext, pendingKey);
+            if (data == null)
+            {
+                StorePendingModuleCall(pendingKey, moduleHash, callHash);
+                return false;
+            }
+
+            PendingModuleCall pending = (PendingModuleCall)StdLib.Deserialize(data!);
+            if (pending.ModuleHash != moduleHash || pending.CallHash != callHash)
+            {
+                StorePendingModuleCall(pendingKey, moduleHash, callHash);
+                return false;
+            }
+
+            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
+            Storage.Delete(Storage.CurrentContext, pendingKey);
+            return true;
+        }
+
         /// <summary>
         /// Allows the backup owner to call an account verifier for configuration or maintenance tasks.
         /// Only methods in the allowlist may be called to prevent timelock bypass.
@@ -299,6 +384,12 @@ namespace AbstractAccount
             AccountState state = GetAccountState(accountId);
             ExecutionEngine.Assert(state.Verifier != null && state.Verifier != UInt160.Zero, "Verifier not configured");
 
+            byte[] pendingKey = Helper.Concat(Prefix_PendingVerifierCall, (byte[])accountId);
+            if (!TryConfirmPendingModuleCall(pendingKey, state.Verifier!, method, args))
+            {
+                return false;
+            }
+
             SetVerifierConfigContext(accountId, state.Verifier!);
             try
             {
@@ -306,7 +397,7 @@ namespace AbstractAccount
             }
             finally
             {
-                ClearVerifierConfigContext(accountId);
+                ClearVerifierConfigContext(accountId!);
             }
         }
 
@@ -321,6 +412,12 @@ namespace AbstractAccount
             AssertNoMarketEscrow(accountId);
             AccountState state = GetAccountState(accountId);
             ExecutionEngine.Assert(state.HookId != null && state.HookId != UInt160.Zero, "Hook not configured");
+
+            byte[] pendingKey = Helper.Concat(Prefix_PendingHookCall, (byte[])accountId);
+            if (!TryConfirmPendingModuleCall(pendingKey, state.HookId!, method, args))
+            {
+                return false;
+            }
 
             SetHookConfigContext(accountId, state.HookId!);
             try

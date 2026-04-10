@@ -18,26 +18,28 @@ namespace AbstractAccount
 
         public static void Update(ByteString nef, string manifest)
         {
-            ByteString admin = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
+            ByteString? admin = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
             ExecutionEngine.Assert(admin != null, "No admin set");
-            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)admin), "Not admin");
+            UInt160 adminHash = (UInt160)admin!;
+            ExecutionEngine.Assert(Runtime.CheckWitness(adminHash), "Not admin");
             ContractManagement.Update(nef, manifest);
         }
 
         [Safe]
         public static UInt160 GetContractAdmin()
         {
-            ByteString val = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
+            ByteString? val = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
             return val == null ? UInt160.Zero : (UInt160)val;
         }
 
         public static void TransferAdmin(UInt160 newAdmin)
         {
-            ByteString admin = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
+            ByteString? admin = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
             ExecutionEngine.Assert(admin != null, "No admin set");
-            ExecutionEngine.Assert(Runtime.CheckWitness((UInt160)admin), "Not admin");
+            UInt160 adminHash = (UInt160)admin!;
+            ExecutionEngine.Assert(Runtime.CheckWitness(adminHash), "Not admin");
             ExecutionEngine.Assert(newAdmin != null && newAdmin != UInt160.Zero, "Invalid admin");
-            Storage.Put(Storage.CurrentContext, Prefix_ContractAdmin, (ByteString)(byte[])newAdmin);
+            Storage.Put(Storage.CurrentContext, Prefix_ContractAdmin, (ByteString)(byte[])newAdmin!);
         }
     }
 }

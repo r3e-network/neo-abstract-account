@@ -11,7 +11,6 @@ export const DEFAULT_RECENT_TRANSACTIONS_LIMIT = 8;
 
 export function createCreateFormState() {
   return {
-    accountId: '',
     matrixDomain: '',
     verifierContract: '',
     verifierParams: '',

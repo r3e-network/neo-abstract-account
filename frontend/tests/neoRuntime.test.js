@@ -5,6 +5,7 @@ import {
   DEFAULT_NEO_ADDRESS_VERSION,
   createVerifyScript,
   deriveAccountIdHash,
+  deriveRegistrationAccountIdHash,
   getAddressFromScriptHash,
   getScriptHashFromAddress,
   reverseHex,
@@ -28,6 +29,36 @@ test('deriveAccountIdHash normalizes arbitrary seeds into a 20-byte account id',
   assert.equal(
     deriveAccountIdHash('56e5bbd0603bdf01699c047b2397ee0e'),
     'f951cd3eb5196dacde99b339c5dcca37ac38cc22'
+  );
+});
+
+test('deriveRegistrationAccountIdHash binds the V3 account id to the registration config', () => {
+  assert.equal(
+    deriveRegistrationAccountIdHash({
+      verifierContractHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
+      verifierParamsHex: '11223344',
+      backupOwnerAddress: '0x13ef519c362973f9a34648a9eac5b71250b2a80a',
+      escapeTimelock: 2592000,
+    }),
+    '27c01243fca45e1b821dc3bb45267a579762d530'
+  );
+});
+
+test('deriveRegistrationAccountIdHash rejects escape timelocks outside the contract registration bounds', () => {
+  assert.throws(
+    () => deriveRegistrationAccountIdHash({
+      backupOwnerAddress: '0x13ef519c362973f9a34648a9eac5b71250b2a80a',
+      escapeTimelock: 604799,
+    }),
+    /escape timelock/i
+  );
+
+  assert.throws(
+    () => deriveRegistrationAccountIdHash({
+      backupOwnerAddress: '0x13ef519c362973f9a34648a9eac5b71250b2a80a',
+      escapeTimelock: 7776001,
+    }),
+    /escape timelock/i
   );
 });
 

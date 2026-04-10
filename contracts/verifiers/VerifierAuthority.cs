@@ -64,6 +64,19 @@ namespace AbstractAccount
             ExecutionEngine.Assert(authorized, "Unauthorized");
         }
 
+        internal static void ValidateExecutionCaller(UInt160 accountId, UInt160 callerContract, UInt160 verifierContract)
+        {
+            UInt160 core = AuthorizedCore();
+            ExecutionEngine.Assert(core != UInt160.Zero && core.IsValid, "AA core not configured");
+
+            bool authorized = (bool)Contract.Call(
+                core,
+                "canExecuteVerifier",
+                CallFlags.ReadOnly,
+                new object[] { accountId, callerContract, verifierContract });
+            ExecutionEngine.Assert(authorized, "Unauthorized");
+        }
+
         internal static void RotateAdmin(UInt160 newAdmin)
         {
             ValidateAdmin();
@@ -86,6 +99,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(Runtime.Time >= timelockStart + AdminRotationTimelockSeconds, "Admin rotation timelock not expired");
 
             ExecutionEngine.Assert((UInt160)pending! == newAdmin, "Pending admin mismatch");
+            ExecutionEngine.Assert(Runtime.CheckWitness(newAdmin), "New admin must confirm rotation");
             Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin);
             Storage.Delete(Storage.CurrentContext, Prefix_PendingAdmin);
             Storage.Delete(Storage.CurrentContext, Prefix_AdminRotationTimelock);

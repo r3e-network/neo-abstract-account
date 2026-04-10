@@ -109,6 +109,26 @@ namespace AbstractAccount
         }
 
         /// <summary>
+        /// Authorizes a verifier plugin to apply post-execution effects during the verifier phase.
+        /// </summary>
+        [Safe]
+        public static bool CanExecuteVerifier(UInt160 accountId, UInt160 callerContract, UInt160 verifierContract)
+        {
+            byte[] key = Helper.Concat(Prefix_VerifierExecutionContext, (byte[])accountId);
+            ByteString? expectedRoot = Storage.Get(Storage.CurrentContext, key);
+            if (expectedRoot == null) return false;
+            if (Runtime.CallingScriptHash != verifierContract) return false;
+
+            UInt160 activeRootVerifier = (UInt160)expectedRoot;
+            if (callerContract == Runtime.ExecutingScriptHash)
+            {
+                return activeRootVerifier == verifierContract;
+            }
+
+            return callerContract == activeRootVerifier;
+        }
+
+        /// <summary>
         /// Authorizes a hook plugin to execute during the hook phase of UserOperation execution.
         /// </summary>
         /// <remarks>

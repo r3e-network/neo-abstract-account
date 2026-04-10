@@ -24,6 +24,7 @@
     <Compile Include="UnifiedSmartWallet.Escape.cs" />
     <Compile Include="UnifiedSmartWallet.MarketEscrow.cs" />
     <Compile Include="UnifiedSmartWallet.Admin.cs" />
+    <Compile Include="UnifiedSmartWallet.Paymaster.cs" />
   </ItemGroup>
 
   <Target Name="CompileSmartContract" AfterTargets="Build" Condition="'$(RunNccsAfterBuild)' == 'true'">

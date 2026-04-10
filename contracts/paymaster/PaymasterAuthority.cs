@@ -3,15 +3,15 @@ using Neo;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Services;
 
-namespace AbstractAccount.Hooks
+namespace AbstractAccount
 {
-    internal static class HookAuthority
+    internal static class PaymasterAuthority
     {
-        private static readonly byte[] Prefix_Admin = new byte[] { 0xF0 };
-        private static readonly byte[] Prefix_AuthorizedCore = new byte[] { 0xF1 };
-        private static readonly byte[] Prefix_PendingAdmin = new byte[] { 0xF2 };
-        private static readonly byte[] Prefix_AdminRotationTimelock = new byte[] { 0xF3 };
-        private static readonly BigInteger AdminRotationTimelockSeconds = 604800; // 7 days in seconds
+        private static readonly byte[] Prefix_Admin = new byte[] { 0xD0 };
+        private static readonly byte[] Prefix_AuthorizedCore = new byte[] { 0xD1 };
+        private static readonly byte[] Prefix_PendingAdmin = new byte[] { 0xD2 };
+        private static readonly byte[] Prefix_AdminRotationTimelock = new byte[] { 0xD3 };
+        private static readonly BigInteger AdminRotationTimelockSeconds = 604800; // 7 days
 
         internal static void Initialize(object data, bool update)
         {
@@ -50,36 +50,11 @@ namespace AbstractAccount.Hooks
             Storage.Put(Storage.CurrentContext, Prefix_AuthorizedCore, (byte[])coreContract);
         }
 
-        internal static void ValidateAdminCaller()
-        {
-            ValidateAdmin();
-        }
-
-        internal static void ValidateConfigCaller(UInt160 accountId, UInt160 hookContract)
+        internal static void ValidateCoreCaller()
         {
             UInt160 core = AuthorizedCore();
             ExecutionEngine.Assert(core != UInt160.Zero && core.IsValid, "AA core not configured");
             ExecutionEngine.Assert(Runtime.CallingScriptHash == core, "Unauthorized caller");
-
-            bool authorized = (bool)Contract.Call(
-                core,
-                "canConfigureHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, hookContract });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
-        }
-
-        internal static void ValidateExecutionCaller(UInt160 accountId, UInt160 callerContract, UInt160 hookContract)
-        {
-            UInt160 core = AuthorizedCore();
-            ExecutionEngine.Assert(core != UInt160.Zero && core.IsValid, "AA core not configured");
-
-            bool authorized = (bool)Contract.Call(
-                core,
-                "canExecuteHook",
-                CallFlags.ReadOnly,
-                new object[] { accountId, callerContract, hookContract });
-            ExecutionEngine.Assert(authorized, "Unauthorized");
         }
 
         internal static void RotateAdmin(UInt160 newAdmin)
@@ -87,8 +62,6 @@ namespace AbstractAccount.Hooks
             ValidateAdmin();
             ExecutionEngine.Assert(newAdmin != null && newAdmin.IsValid, "Invalid admin");
             ExecutionEngine.Assert(newAdmin != Admin(), "New admin must differ from current");
-
-            // Initiate timelocked rotation instead of instant swap
             Storage.Put(Storage.CurrentContext, Prefix_PendingAdmin, (byte[])newAdmin!);
             Storage.Put(Storage.CurrentContext, Prefix_AdminRotationTimelock, Runtime.Time);
         }

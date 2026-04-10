@@ -5,7 +5,7 @@
 
     <div class="space-y-8">
       <div class="bg-aa-panel p-5 rounded-lg border border-aa-border/60">
-        <label for="manage-target-account" class="block text-sm font-semibold text-aa-text mb-3">{{ t('studioPanels.targetAccountLabel', 'Target Account Seed / AccountId Hash') }}</label>
+        <label for="manage-target-account" class="block text-sm font-semibold text-aa-text mb-3">{{ t('studioPanels.targetAccountLabel', 'Target AccountId Hash') }}</label>
         <div class="flex flex-col sm:flex-row gap-4">
           <input
             id="manage-target-account"
@@ -13,7 +13,7 @@
             type="text"
             list="loaded-manage-accounts"
             class="input-field flex-1 font-mono text-sm py-2.5 px-4 bg-aa-dark"
-            :placeholder="t('studioPanels.targetAccountPlaceholder', '20-byte hash160 or raw seed')"
+            :placeholder="t('studioPanels.targetAccountPlaceholder', '20-byte hash160')"
           />
           <datalist id="loaded-manage-accounts">
             <option v-for="addr in autoLoadedAccounts" :key="addr" :value="addr" />
@@ -31,7 +31,7 @@
           <svg aria-hidden="true" class="w-6 h-6 text-aa-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
         </div>
         <p class="text-sm text-aa-text font-medium mb-1">{{ t('studioPanels.noAccountLoaded', 'No account loaded') }}</p>
-        <p class="text-xs text-aa-muted">{{ t('studioPanels.loadAccountHint', 'Enter a seed or account ID hash above and click "Load V3 State" to get started.') }}</p>
+        <p class="text-xs text-aa-muted">{{ t('studioPanels.loadAccountHint', 'Enter an accountId hash above and click "Load V3 State" to get started.') }}</p>
       </div>
 
       <transition name="fade-in-up">

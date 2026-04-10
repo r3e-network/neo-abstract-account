@@ -97,7 +97,7 @@ const EC = {
   },
   ACCOUNT_MISSING_BINDING: {
     code: 'ACCOUNT_004',
-    message: 'createEIP712Payload requires either an accountId path or a legacy bound address',
+    message: 'createEIP712Payload requires an accountIdHash or accountAddress',
   },
 
   // === Signature Errors ===

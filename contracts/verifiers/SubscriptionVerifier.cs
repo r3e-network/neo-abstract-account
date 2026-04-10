@@ -18,6 +18,7 @@ namespace AbstractAccount.Verifiers
     /// </remarks>
     [DisplayName("SubscriptionVerifier")]
     [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "canExecuteVerifier")]
     [ContractPermission("*", "computeArgsHash")]
     [ManifestExtra("Description", "Time-based Subscription Auto-Payment Verifier")]
     public class SubscriptionVerifier : SmartContract
@@ -104,9 +105,6 @@ namespace AbstractAccount.Verifiers
             BigInteger expectedNonce = saltBase + (subTag << 32) + currentPeriod + nonceCounter;
             ExecutionEngine.Assert(op.Nonce == expectedNonce, "Subscription nonce mismatch");
 
-            // Increment counter for next charge to prevent replay within the same billing period
-            Storage.Put(Storage.CurrentContext, counterKey, nonceCounter + 1);
-
             return true;
         }
 
@@ -128,6 +126,24 @@ namespace AbstractAccount.Verifiers
             {
                 Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
             }
+        }
+
+        public static void PostExecute(UInt160 accountId, UserOperation op, object result)
+        {
+            VerifierAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
+            ByteString subId = op.Signature;
+            byte[] key = Helper.Concat(Helper.Concat(Prefix_Subscription, (byte[])accountId), (byte[])subId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            ExecutionEngine.Assert(data != null, "Subscription not found");
+
+            SubscriptionConfig config = (SubscriptionConfig)StdLib.Deserialize(data!);
+            config.LastChargeTime = Runtime.Time;
+            Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
+
+            byte[] counterKey = Helper.Concat(Helper.Concat(Prefix_SubscriptionNonceCounter, (byte[])accountId), (byte[])subId);
+            ByteString? counterData = Storage.Get(Storage.CurrentContext, counterKey);
+            BigInteger nonceCounter = counterData == null ? 0 : (BigInteger)counterData;
+            Storage.Put(Storage.CurrentContext, counterKey, nonceCounter + 1);
         }
     }
 }

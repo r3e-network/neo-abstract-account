@@ -58,22 +58,94 @@ test('buildV3UserOperationTypedData constructs correct domain and message', () =
   assert.equal(payload.message.method, 'transfer');
 });
 
-test('createAccountPayload uses V3 registerAccount entrypoint and hash160 account id', () => {
+test('deriveRegistrationAccountIdHash matches the frontend V3 registration vector', () => {
   const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
-  const payload = client.createAccountPayload({
-    accountIdHex: '04'.padEnd(130, '1'),
+  const accountId = client.deriveRegistrationAccountIdHash({
+    verifierContractHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
+    verifierParamsHex: '11223344',
+    backupOwnerAddress: '0x13ef519c362973f9a34648a9eac5b71250b2a80a',
+    escapeTimelock: 2592000,
+  });
+
+  assert.equal(accountId, '27c01243fca45e1b821dc3bb45267a579762d530');
+});
+
+test('createAccountPayload derives the registration-bound account id', () => {
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  const options = {
     verifierContractHash: '0x2222222222222222222222222222222222222222',
     verifierParamsHex: 'abcd',
     hookContractHash: '0x3333333333333333333333333333333333333333',
     backupOwnerAddress: '0x4444444444444444444444444444444444444444',
-    escapeTimelock: 3600,
-  });
+    escapeTimelock: 604800,
+  };
+  const payload = client.createAccountPayload(options);
 
   assert.equal(payload.operation, 'registerAccount');
   assert.equal(payload.args[0].type, 20);
   assert.equal(payload.args[1].type, 20);
   assert.equal(payload.args.length, 6);
-  assert.equal(client.deriveVirtualAccount('04'.padEnd(130, '1')).accountIdHash.length, 40);
+  assert.equal(payload.args[0].value.toString(), '4d36b9ed890256b601e09604f2b9370861a1642b');
+});
+
+test('SDK registration helpers reject escape timelocks outside the contract registration bounds', () => {
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+
+  assert.throws(
+    () => client.deriveRegistrationAccountIdHash({
+      backupOwnerAddress: '0x4444444444444444444444444444444444444444',
+      escapeTimelock: 604799,
+    }),
+    /escape timelock/i
+  );
+
+  assert.throws(
+    () => client.createAccountPayload({
+      backupOwnerAddress: '0x4444444444444444444444444444444444444444',
+      escapeTimelock: 7776001,
+    }),
+    /escape timelock/i
+  );
+});
+
+test('testnet validators derive registration-bound account ids with the contract minimum escape timelock', () => {
+  const smokeSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_smoke.js'), 'utf8');
+  const marketEscrowSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_market_escrow.js'), 'utf8');
+  const pluginMatrixSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_plugin_matrix.js'), 'utf8');
+  const paymasterRelaySource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_relay.mjs'), 'utf8');
+  const paymasterOnchainSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_onchain.mjs'), 'utf8');
+
+  assert.match(smokeSource, /deriveRegistrationAccountIdHash\(\{/);
+  assert.match(smokeSource, /backupOwnerAddress: account\.scriptHash/);
+  assert.match(smokeSource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
+
+  assert.match(pluginMatrixSource, /deriveRegistrationAccountIdHash\(\{/);
+  assert.match(pluginMatrixSource, /verifierContractHash: initialVerifier/);
+  assert.match(pluginMatrixSource, /verifierParamsHex: initialVerifierParams/);
+  assert.match(pluginMatrixSource, /hookContractHash: initialHook/);
+  assert.match(pluginMatrixSource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
+
+  assert.match(marketEscrowSource, /deriveRegistrationAccountIdHash\(\{/);
+  assert.match(marketEscrowSource, /verifierContractHash: teeVerifier\.hash/);
+  assert.match(marketEscrowSource, /verifierParamsHex: sanitizeHex\(seller\.publicKey\)/);
+  assert.match(marketEscrowSource, /hookContractHash: whitelistHook\.hash/);
+  assert.match(marketEscrowSource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
+
+  assert.match(paymasterRelaySource, /deriveRegistrationAccountIdHash\(\{/);
+  assert.match(paymasterRelaySource, /backupOwnerAddress: account\.scriptHash/);
+  assert.match(paymasterRelaySource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
+  assert.doesNotMatch(paymasterRelaySource, /\ballowlistAccountId = PAYMASTER_ACCOUNT_ID\b/);
+  assert.doesNotMatch(paymasterRelaySource, /\bDEFAULT_PAYMASTER_ACCOUNT_ID\b/);
+
+  assert.match(paymasterOnchainSource, /deriveRegistrationAccountIdHash\(\{/);
+  assert.match(paymasterOnchainSource, /verifierContractHash: verifier\.hash/);
+  assert.match(paymasterOnchainSource, /verifierParamsHex: evmPubKeyUncompressed/);
+  assert.match(paymasterOnchainSource, /escapeTimelock: ESCAPE_TIMELOCK/);
+
+  assert.doesNotMatch(smokeSource, /const accountId = randomAccountId();/);
+  assert.doesNotMatch(pluginMatrixSource, /const accountId = randomAccountId();/);
+  assert.doesNotMatch(marketEscrowSource, /const accountId = randomAccountId();/);
+  assert.doesNotMatch(paymasterOnchainSource, /Buffer.from(ethers.randomBytes(20)).toString('hex')/);
 });
 
 test('createEIP712Payload builds the V3 UserOperation schema when accountIdHash is provided', async () => {

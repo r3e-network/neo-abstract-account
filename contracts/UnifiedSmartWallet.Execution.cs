@@ -28,6 +28,10 @@ namespace AbstractAccount
             AssertNoMarketEscrow(accountId);
 
             SetExecutionLock(accountId);
+            if (state.Verifier != UInt160.Zero)
+            {
+                SetVerifierExecutionContext(accountId, state.Verifier);
+            }
 
             try
             {
@@ -98,6 +102,10 @@ namespace AbstractAccount
                     {
                         Contract.Call(state.HookId, "postExecute", CallFlags.All, new object[] { accountId, op, result });
                     }
+                    if (state.Verifier != UInt160.Zero)
+                    {
+                        Contract.Call(state.Verifier, "postExecute", CallFlags.All, new object[] { accountId, op, result });
+                    }
 
                     OnUserOpExecuted(accountId, op.TargetContract, op.Method, op.Nonce);
                     return result;
@@ -113,6 +121,10 @@ namespace AbstractAccount
             }
             finally
             {
+                if (state.Verifier != UInt160.Zero)
+                {
+                    ClearVerifierExecutionContext(accountId);
+                }
                 ClearExecutionLock(accountId);
             }
         }

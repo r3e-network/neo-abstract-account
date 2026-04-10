@@ -37,7 +37,7 @@
       </div>
 
       <div class="bg-aa-panel p-5 rounded-lg border border-aa-border/60">
-        <label for="permissions-target-account" class="block text-sm font-semibold text-aa-text mb-3">{{ t('studioPanels.targetAccountLabel', 'Target Account Seed / AccountId Hash') }}</label>
+        <label for="permissions-target-account" class="block text-sm font-semibold text-aa-text mb-3">{{ t('studioPanels.targetAccountLabel', 'Target AccountId Hash') }}</label>
         <div class="flex flex-col sm:flex-row gap-4">
           <input
             id="permissions-target-account"
@@ -45,7 +45,7 @@
             type="text"
             list="loaded-permissions-accounts"
             class="input-field flex-1 font-mono text-sm py-2.5 px-4 bg-aa-dark"
-            :placeholder="t('studioPanels.targetAccountPlaceholder', '20-byte hash160 or raw seed')"
+            :placeholder="t('studioPanels.targetAccountPlaceholder', '20-byte hash160')"
           />
           <datalist id="loaded-permissions-accounts">
             <option v-for="addr in autoLoadedAccounts" :key="addr" :value="addr" />

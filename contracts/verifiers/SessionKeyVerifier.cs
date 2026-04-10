@@ -18,6 +18,7 @@ namespace AbstractAccount.Verifiers
     /// </remarks>
     [DisplayName("SessionKeyVerifier")]
     [ContractPermission("*", "canConfigureVerifier")]
+    [ContractPermission("*", "canExecuteVerifier")]
     [ContractPermission("*", "computeArgsHash")]
     [ManifestExtra("Description", "Temporary Session Key Verifier for High Frequency Actions")]
     public class SessionKeyVerifier : SmartContract
@@ -186,30 +187,14 @@ namespace AbstractAccount.Verifiers
             // Verify against the raw payload; secp256r1SHA256 hashes internally.
             bool isValid = CryptoLib.VerifyWithECDsa((ByteString)payload, (ECPoint)sessionKey.PubKey, signature, NamedCurveHash.secp256r1SHA256);
 
-            if (isValid)
+            if (isValid && sessionKey.SpendingLimit > 0)
             {
-                // Enforce spending limit if configured
-                if (sessionKey.SpendingLimit > 0)
+                BigInteger spent = GetSpentAmount(accountId);
+                BigInteger operationValue = ExtractTransferValue(op);
+                if (operationValue > 0)
                 {
-                    BigInteger spent = GetSpentAmount(accountId);
-                    BigInteger operationValue = ExtractTransferValue(op);
-                    if (operationValue > 0)
-                    {
-                        BigInteger newSpent = spent + operationValue;
-                        ExecutionEngine.Assert(newSpent <= sessionKey.SpendingLimit, "Session key spending limit exceeded");
-                        byte[] spentKey = Helper.Concat(Prefix_SpentAmount, (byte[])accountId);
-                        Storage.Put(Storage.CurrentContext, spentKey, newSpent);
-                    }
-                }
-
-                // Update last used timestamp
-                byte[] metadataKey = Helper.Concat(Prefix_SessionMetadata, (byte[])accountId);
-                ByteString? metadataData = Storage.Get(Storage.CurrentContext, metadataKey);
-                if (metadataData != null)
-                {
-                    SessionKeyMetadata metadata = (SessionKeyMetadata)StdLib.Deserialize(metadataData);
-                    metadata.LastUsedAt = Runtime.Time;
-                    Storage.Put(Storage.CurrentContext, metadataKey, StdLib.Serialize(metadata));
+                    BigInteger newSpent = spent + operationValue;
+                    ExecutionEngine.Assert(newSpent <= sessionKey.SpendingLimit, "Session key spending limit exceeded");
                 }
             }
 
@@ -230,6 +215,35 @@ namespace AbstractAccount.Verifiers
 
             if (args[2] is BigInteger amount) return amount;
             return 0;
+        }
+
+        public static void PostExecute(UInt160 accountId, UserOperation op, object result)
+        {
+            VerifierAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
+            SessionKeyData? sk = GetSessionKey(accountId);
+            if (sk == null) return;
+
+            SessionKeyData sessionKey = sk!;
+            if (sessionKey.SpendingLimit > 0)
+            {
+                BigInteger operationValue = ExtractTransferValue(op);
+                if (operationValue > 0)
+                {
+                    BigInteger spent = GetSpentAmount(accountId);
+                    BigInteger newSpent = spent + operationValue;
+                    ExecutionEngine.Assert(newSpent <= sessionKey.SpendingLimit, "Session key spending limit exceeded");
+                    byte[] spentKey = Helper.Concat(Prefix_SpentAmount, (byte[])accountId);
+                    Storage.Put(Storage.CurrentContext, spentKey, newSpent);
+                }
+            }
+
+            byte[] metadataKey = Helper.Concat(Prefix_SessionMetadata, (byte[])accountId);
+            ByteString? metadataData = Storage.Get(Storage.CurrentContext, metadataKey);
+            if (metadataData == null) return;
+
+            SessionKeyMetadata metadata = (SessionKeyMetadata)StdLib.Deserialize(metadataData);
+            metadata.LastUsedAt = Runtime.Time;
+            Storage.Put(Storage.CurrentContext, metadataKey, StdLib.Serialize(metadata));
         }
     }
 }

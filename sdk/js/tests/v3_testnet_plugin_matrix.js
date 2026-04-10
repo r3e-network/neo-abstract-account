@@ -37,6 +37,7 @@ if (!TEST_WIF) {
 
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const STDLIB_HASH = CONST.NATIVE_CONTRACT_HASH.StdLib;
+const REGISTRATION_ESCAPE_TIMELOCK = 604800;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -971,7 +972,13 @@ async function main() {
     const initialVerifier = normalizeHash(options.verifier || "0".repeat(40));
     const initialVerifierParams = sanitizeHex(options.verifierParams || "");
     const initialHook = normalizeHash(options.hook || "0".repeat(40));
-    const accountId = randomAccountId();
+    const accountId = aaClient.deriveRegistrationAccountIdHash({
+      verifierContractHash: initialVerifier,
+      verifierParamsHex: initialVerifierParams,
+      hookContractHash: initialHook,
+      backupOwnerAddress: account.scriptHash,
+      escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
+    });
     const virtual = aaClient.deriveVirtualAccount(accountId);
     const register = await invokePersisted(
       rpcClient,
@@ -987,7 +994,7 @@ async function main() {
           : emptyByteArrayParam(),
         hash160Param(sanitizeHex(initialHook || "0".repeat(40))),
         hash160Param(account.scriptHash),
-        integerParam(1),
+        integerParam(REGISTRATION_ESCAPE_TIMELOCK),
       ],
     );
     return {

@@ -6,6 +6,7 @@ const { rpc, sc, wallet, experimental, tx, u, CONST } = require('@cityofzion/neo
 const { ethers } = require('ethers');
 
 const { extractDeployedContractHash } = require('../src/deployLog');
+const { AbstractAccountClient } = require('../src/index');
 const { sanitizeHex } = require('../src/metaTx');
 
 const RPC_URL = process.env.TESTNET_RPC_URL || 'https://testnet1.neo.coz.io:443';
@@ -18,6 +19,7 @@ if (!TEST_WIF) {
 
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const ZERO_HASH160 = '0000000000000000000000000000000000000000';
+const REGISTRATION_ESCAPE_TIMELOCK = 604800;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -240,7 +242,14 @@ async function main() {
   const whitelistHook = await deployContract(client, seller, networkMagic, 'WhitelistHook', `${deploymentTag}-whitelist`);
   await authorizeHook(client, core.hash, whitelistHook.hash, seller, networkMagic);
 
-  const accountId = randomAccountId();
+  const aaClient = new AbstractAccountClient(RPC_URL, core.hash);
+  const accountId = aaClient.deriveRegistrationAccountIdHash({
+    verifierContractHash: teeVerifier.hash,
+    verifierParamsHex: sanitizeHex(seller.publicKey),
+    hookContractHash: whitelistHook.hash,
+    backupOwnerAddress: seller.scriptHash,
+    escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
+  });
 
   await invokePersisted(client, core.hash, seller, networkMagic, 'registerAccount', [
     hash160Param(accountId),
@@ -248,7 +257,7 @@ async function main() {
     byteArrayParam(sanitizeHex(seller.publicKey)),
     hash160Param(whitelistHook.hash),
     hash160Param(seller.scriptHash),
-    integerParam(3600),
+    integerParam(REGISTRATION_ESCAPE_TIMELOCK),
   ], [makeSigner(seller.scriptHash)]);
 
   await invokePersisted(client, core.hash, seller, networkMagic, 'callHook', [
