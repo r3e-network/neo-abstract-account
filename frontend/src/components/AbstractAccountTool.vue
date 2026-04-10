@@ -1,23 +1,19 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up relative z-10">
-    <div class="mb-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8 border-b border-[#333]">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-aa-orange/20 text-aa-orange text-sm font-semibold border border-aa-orange/40 shadow-sm backdrop-blur-sm mb-4">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-orange opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-aa-orange"></span>
-            </span>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#111] text-[#888] border border-[#333] text-xs font-medium mb-4">
             {{ t('studio.powered', 'Neo N3 Powered') }}
           </div>
-          <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-2 drop-shadow-lg uppercase font-outfit">{{ t('studio.title', 'Abstract Account Workspace') }}</h1>
-          <p class="text-base md:text-lg text-aa-muted max-w-3xl leading-relaxed">
+          <h1 class="text-2xl md:text-3xl font-medium text-white tracking-tight leading-tight mb-2">{{ t('studio.title', 'Abstract Account Workspace') }}</h1>
+          <p class="text-sm md:text-base text-[#888] max-w-3xl leading-relaxed">
             {{ t('studio.subtitle', 'Create programmable wallets with built-in recovery, plugin permissions, and gasless transactions.') }}
           </p>
         </div>
       </div>
 
-      <nav class="flex space-x-1 bg-aa-panel/60 p-1.5 rounded-xl shadow-lg border border-aa-border backdrop-blur-xl w-fit max-w-full overflow-x-auto" role="tablist" :aria-label="t('studio.tabsAriaLabel', 'Tabs')">
+      <nav class="flex space-x-6 w-full overflow-x-auto" role="tablist" :aria-label="t('studio.tabsAriaLabel', 'Tabs')">
         <button
           v-for="(tab, tabIndex) in studio.tabs"
           :key="tab.key"
@@ -29,68 +25,68 @@
           :aria-selected="studio.activePanel.value === tab.key"
           :id="'tab-' + tab.key"
           :aria-controls="'panel-' + tab.key"
-          class="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 transform active:scale-95 whitespace-nowrap"
+          class="relative pb-3 text-sm font-medium transition-colors whitespace-nowrap"
           :class="[
             studio.activePanel.value === tab.key
-              ? 'bg-aa-orange/15 text-aa-orange shadow-glow-orange-inset'
-              : 'text-aa-muted hover:text-aa-text hover:bg-aa-dark/60',
+              ? 'text-white border-b-2 border-white'
+              : 'text-[#888] hover:text-[#EDEDED] border-b-2 border-transparent',
             !studio.walletConnected.value ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
           ]"
         >
-          <component :is="getTabIcon(tab.key)" class="w-4 h-4" />
-          {{ tabLabel(tab) }}
-          <span v-if="studio.activePanel.value === tab.key" class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-aa-orange shadow-glow-orange-hot"></span>
+          <div class="flex items-center gap-2">
+            <component :is="getTabIcon(tab.key)" class="w-4 h-4" />
+            {{ tabLabel(tab) }}
+          </div>
         </button>
       </nav>
     </div>
 
     <!-- Tab description line -->
     <transition name="desc-fade" mode="out-in">
-      <p :key="studio.activePanel.value" class="text-sm text-aa-muted mb-6 pl-1">{{ activeTabDescription }}</p>
+      <p :key="studio.activePanel.value" class="text-sm text-[#888] mb-6">{{ activeTabDescription }}</p>
     </transition>
 
     <!-- Guided onboarding state when wallet not connected -->
-    <div v-if="!studio.walletConnected.value" class="animate-fade-in-up relative">
-      <div class="absolute inset-0 bg-mesh pointer-events-none opacity-50"></div>
-      <div class="relative max-w-3xl mx-auto py-12">
-        <div class="text-center mb-10">
-          <div class="w-16 h-16 gradient-border-card bg-aa-orange/10 flex items-center justify-center mx-auto mb-6">
-            <svg aria-hidden="true" class="w-8 h-8 text-aa-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+    <div v-if="!studio.walletConnected.value">
+      <div class="max-w-2xl py-12">
+        <div class="mb-8">
+          <div class="w-12 h-12 rounded-md border border-[#333] bg-[#111] flex items-center justify-center mb-6">
+            <svg aria-hidden="true" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
           </div>
-          <h2 class="text-2xl font-bold text-white mb-3 font-outfit">{{ t('studio.onboardingTitle', 'Connect your wallet to get started') }}</h2>
-          <p class="text-aa-muted max-w-lg mx-auto leading-relaxed">{{ t('studio.onboardingBody', 'The Abstract Account workspace lets you create, configure, and operate programmable smart-contract accounts on Neo N3.') }}</p>
+          <h2 class="text-xl font-medium text-white mb-2">{{ t('studio.onboardingTitle', 'Connect your wallet to get started') }}</h2>
+          <p class="text-[#888] text-sm leading-relaxed mb-8">{{ t('studio.onboardingBody', 'The Abstract Account workspace lets you create, configure, and operate programmable smart-contract accounts on Neo N3.') }}</p>
         </div>
 
         <!-- AA Pipeline Steps -->
-        <div class="flex items-center justify-center gap-2 mb-10 stagger-children">
+        <div class="flex items-center gap-2 mb-8 stagger-children overflow-x-auto pb-2">
           <template v-for="(step, i) in pipelineSteps" :key="i">
-            <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-aa-panel/60 border border-aa-border hover:border-aa-orange/30 hover:bg-aa-panel/80 transition-all duration-200 cursor-default group">
-              <div class="w-7 h-7 rounded-full bg-aa-orange/10 border border-aa-orange/30 flex items-center justify-center text-xs font-bold text-aa-orange font-mono group-hover:bg-aa-orange/15 group-hover:border-aa-orange/40 transition-all duration-200">{{ i + 1 }}</div>
-              <span class="text-xs font-semibold text-aa-text">{{ step }}</span>
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#333] bg-[#0A0A0A] text-[#EDEDED] text-sm shrink-0">
+              <div class="text-[#888] font-mono text-xs">{{ i + 1 }}</div>
+              <span>{{ step }}</span>
             </div>
-            <svg v-if="i < pipelineSteps.length - 1" aria-hidden="true" class="w-4 h-4 text-aa-border shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <svg v-if="i < pipelineSteps.length - 1" aria-hidden="true" class="w-4 h-4 text-[#333] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
           </template>
         </div>
 
         <!-- CTA -->
-        <div class="text-center mb-10">
-          <button @click="connectWallet" :class="{ 'btn-loading': isWalletConnecting }" :disabled="isWalletConnecting" class="btn-primary btn-lg font-bold shadow-glow-orange hover:shadow-glow-orange-lg transition-all duration-200">{{ isWalletConnecting ? t('studio.connecting', 'Connecting…') : t('studio.onboardingAction', 'Connect Wallet') }}</button>
+        <div class="mb-10">
+          <button @click="connectWallet" :class="{ 'btn-loading': isWalletConnecting }" :disabled="isWalletConnecting" class="btn-primary">{{ isWalletConnecting ? t('studio.connecting', 'Connecting…') : t('studio.onboardingAction', 'Connect Wallet') }}</button>
         </div>
 
         <!-- What happens expandable -->
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 backdrop-blur-xl overflow-hidden">
-          <button @click="showWhatHappens = !showWhatHappens" :aria-expanded="showWhatHappens" aria-controls="what-happens-content" class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-aa-dark/30 transition-colors duration-200">
-            <span class="text-sm font-semibold text-aa-text">{{ t('studio.whatHappens', 'What happens when I connect?') }}</span>
-            <svg aria-hidden="true" class="w-4 h-4 text-aa-muted transition-transform duration-200" :class="showWhatHappens ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <div class="rounded-md border border-[#333] bg-[#0A0A0A] overflow-hidden">
+          <button @click="showWhatHappens = !showWhatHappens" :aria-expanded="showWhatHappens" aria-controls="what-happens-content" class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#111] transition-colors duration-200">
+            <span class="text-sm font-medium text-[#EDEDED]">{{ t('studio.whatHappens', 'What happens when I connect?') }}</span>
+            <svg aria-hidden="true" class="w-4 h-4 text-[#888] transition-transform duration-200" :class="showWhatHappens ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </button>
-          <div id="what-happens-content" v-show="showWhatHappens" class="px-6 pb-5 border-t border-aa-border/60 animate-fade-in">
+          <div id="what-happens-content" v-show="showWhatHappens" class="px-4 pb-4 border-t border-[#333]">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-              <div v-for="(hint, i) in onboardingHints" :key="i" class="p-4 rounded-lg bg-aa-dark/30 border border-aa-border/40 group hover:border-aa-border transition-all duration-200">
-                <div class="w-9 h-9 rounded-lg bg-neo-500/10 border border-neo-500/20 flex items-center justify-center mb-3 group-hover:bg-neo-500/15 transition-all duration-200">
-                  <svg aria-hidden="true" class="w-4 h-4 text-neo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" v-html="hint.icon"></svg>
+              <div v-for="(hint, i) in onboardingHints" :key="i" class="p-3 rounded-md border border-[#333] bg-[#000]">
+                <div class="mb-2">
+                  <svg aria-hidden="true" class="w-4 h-4 text-[#EDEDED]" fill="none" stroke="currentColor" viewBox="0 0 24 24" v-html="hint.icon"></svg>
                 </div>
-                <p class="text-sm font-semibold text-aa-text">{{ hint.label }}</p>
-                <p class="text-xs text-aa-muted mt-1">{{ hint.desc }}</p>
+                <p class="text-sm font-medium text-[#EDEDED]">{{ hint.label }}</p>
+                <p class="text-xs text-[#888] mt-1">{{ hint.desc }}</p>
               </div>
             </div>
           </div>
@@ -131,7 +127,7 @@ import { useWalletConnection } from '@/composables/useWalletConnection';
 const { t } = useI18n();
 const PanelSkeleton = { template: '<div class="skeleton h-64 w-full"></div>' };
 const panelErrorMsg = t('studio.panelLoadError', 'Failed to load panel. Please refresh.');
-const PanelError = { template: `<div class="glass-panel p-6 text-center"><p class="text-aa-error-light text-sm font-medium">${panelErrorMsg}</p></div>` };
+const PanelError = { template: `<div class="card p-6 text-center"><p class="text-[#fda4af] text-sm font-medium">${panelErrorMsg}</p></div>` };
 const asyncErr = { loadingComponent: PanelSkeleton, errorComponent: PanelError, timeout: 8000 };
 const HomeOperationsWorkspace = defineAsyncComponent({ loader: () => import('@/features/operations/components/HomeOperationsWorkspace.vue'), ...asyncErr });
 const CreateAccountPanel = defineAsyncComponent({ loader: () => import('@/features/studio/components/CreateAccountPanel.vue'), ...asyncErr });
@@ -238,21 +234,5 @@ provide('studio', studio);
 .desc-fade-leave-to {
   opacity: 0;
   transform: translateY(4px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fade-slide-enter-active,
-  .fade-slide-leave-active,
-  .desc-fade-enter-active,
-  .desc-fade-leave-active {
-    transition: none;
-  }
-  .fade-slide-enter-from,
-  .fade-slide-leave-to,
-  .desc-fade-enter-from,
-  .desc-fade-leave-to {
-    opacity: 1;
-    transform: none;
-  }
 }
 </style>

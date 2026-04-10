@@ -1,25 +1,25 @@
 <template>
-  <div class="min-h-screen bg-aa-dark flex flex-col font-sans text-aa-text selection:bg-aa-lightOrange selection:text-white transition-colors duration-200 relative overflow-hidden">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-aa-orange focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white">{{ t('nav.skipToContent', 'Skip to content') }}</a>
-    <nav class="sticky top-0 z-50 bg-aa-dark/90 backdrop-blur-md border-b border-aa-border" :aria-label="t('nav.mainNavigation', 'Main navigation')">
+  <div class="min-h-screen bg-black flex flex-col font-sans text-[#EDEDED] selection:bg-[#333] selection:text-white transition-colors duration-200 relative overflow-hidden">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-black">{{ t('nav.skipToContent', 'Skip to content') }}</a>
+    <nav class="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-[#333]" :aria-label="t('nav.mainNavigation', 'Main navigation')">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 transition-all duration-200 gap-4">
           <div class="flex items-center">
             <div class="flex-shrink-0 flex items-center group">
               <router-link to="/" class="flex items-center gap-3">
-                <div class="w-8 h-8 gradient-border-card bg-aa-panel text-white rounded flex items-center justify-center font-bold text-lg shadow-sm transform group-hover:scale-105 transition-transform duration-200 font-mono">
+                <div class="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg font-mono">
                   N
                 </div>
-                <span class="font-bold text-sm text-white hidden sm:inline">{{ t('brand.name', 'Abstract Account') }}</span>
+                <span class="font-medium text-sm text-white hidden sm:inline tracking-tight">{{ t('brand.name', 'Abstract Account') }}</span>
               </router-link>
             </div>
-            <div class="hidden sm:-my-px sm:ml-10 sm:flex sm:space-x-8 sm:items-center">
+            <div class="hidden sm:-my-px sm:ml-10 sm:flex sm:space-x-4 sm:items-center">
               <template v-for="link in navLinks" :key="link.to">
                 <router-link
                   v-if="link.isConsole"
                   :to="link.to"
-                  class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-aa-orange/10 text-aa-orange border border-aa-orange/30 hover:bg-aa-orange/20 hover:border-aa-orange/50 transition-all duration-200"
-                  active-class="bg-aa-orange/20 border-aa-orange/50"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-black hover:bg-[#EAEAEA] transition-colors duration-200"
+                  active-class="bg-[#EAEAEA]"
                   :aria-current="route.path === link.to ? 'page' : undefined"
                 >
                   <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -28,8 +28,8 @@
                 <router-link
                   v-else
                   :to="link.to"
-                  class="relative text-aa-muted hover:text-aa-text inline-flex items-center px-1 pt-1 text-sm font-medium transition-all duration-200 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-aa-orange after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 hover:bg-aa-orange/5 rounded-t-md"
-                  active-class="text-aa-text font-semibold after:scale-x-100 bg-aa-orange/5"
+                  class="text-[#888] hover:text-[#EDEDED] px-3 py-2 text-sm font-medium transition-colors rounded-md"
+                  active-class="text-[#EDEDED] bg-[#111]"
                   :aria-current="route.path === link.to ? 'page' : undefined"
                 >
                   {{ t(link.label, link.fallback) }}
@@ -38,15 +38,15 @@
             </div>
           </div>
           <div class="flex items-center gap-4">
-            <div class="hidden sm:flex items-center gap-1 bg-aa-panel border border-aa-border rounded p-1 text-xs font-semibold text-aa-muted" role="group" :aria-label="t('nav.languageSwitcher', 'Language selector')">
+            <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-[#333] rounded-md p-1 text-xs font-medium text-[#888]" role="group" :aria-label="t('nav.languageSwitcher', 'Language selector')">
               <button
                 v-for="item in locales"
                 :key="item.code"
                 @click="setLocale(item.code)"
                 :aria-pressed="locale === item.code"
                 :aria-label="item.code === 'en' ? t('nav.switchToEn', 'Switch to English') : t('nav.switchToZh', '切换到中文')"
-                :class="locale === item.code ? 'bg-aa-border text-aa-text shadow-sm' : 'text-aa-muted hover:text-aa-text'"
-                class="rounded px-2 py-1 transition-all duration-200 font-mono"
+                :class="locale === item.code ? 'bg-[#333] text-white shadow-sm rounded-sm' : 'text-[#888] hover:text-white'"
+                class="px-2 py-1 transition-colors duration-200 font-mono"
               >
                 {{ item.code === 'en' ? 'English' : '中文' }}
               </button>
@@ -54,14 +54,14 @@
             <ConnectionControls />
           </div>
         </div>
-        <div class="scroll-fade-container relative">
-          <div class="scroll-fade-inner flex items-center gap-2 overflow-x-auto pb-3 sm:hidden snap-x snap-proximity">
+        <div class="relative">
+          <div class="flex items-center gap-2 overflow-x-auto pb-3 sm:hidden">
           <template v-for="link in navLinks" :key="link.to">
             <router-link
               v-if="link.isConsole"
               :to="link.to"
-              class="snap-start rounded-full border border-aa-orange/40 bg-aa-orange/10 px-4 py-2 text-xs font-bold text-aa-orange transition-all duration-200 hover:bg-aa-orange/20"
-              active-class="border-aa-orange bg-aa-orange/20"
+              class="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-black transition-colors duration-200 hover:bg-[#EAEAEA]"
+              active-class="bg-[#EAEAEA]"
               :aria-current="route.path === link.to ? 'page' : undefined"
             >
               {{ t(link.label, link.fallback) }}
@@ -69,22 +69,20 @@
             <router-link
               v-else
               :to="link.to"
-              class="snap-start rounded-full border border-aa-border bg-aa-panel px-4 py-2 text-xs font-semibold text-aa-muted transition-all duration-200 hover:text-aa-text hover:border-aa-border"
-              active-class="border-aa-orange text-aa-text bg-aa-orange/10"
+              class="rounded-md border border-transparent px-3 py-1.5 text-xs font-medium text-[#888] transition-colors duration-200 hover:text-white"
+              active-class="text-white bg-[#111]"
               :aria-current="route.path === link.to ? 'page' : undefined"
             >
               {{ t(link.label, link.fallback) }}
             </router-link>
           </template>
-          <div class="ml-auto flex items-center gap-1 bg-aa-panel border border-aa-border rounded p-1 text-xs font-semibold text-aa-muted shrink-0" role="group" :aria-label="t('nav.languageSwitcher', 'Language selector')">
+          <div class="ml-auto flex items-center gap-1 bg-[#111] border border-[#333] rounded-md p-1 text-xs font-medium text-[#888] shrink-0" role="group">
             <button
               v-for="item in locales"
               :key="item.code"
               @click="setLocale(item.code)"
-              :aria-pressed="locale === item.code"
-              :aria-label="item.code === 'en' ? t('nav.switchToEn', 'Switch to English') : t('nav.switchToZh', '切换到中文')"
-              :class="locale === item.code ? 'bg-aa-border text-aa-text shadow-sm' : 'text-aa-muted hover:text-aa-text'"
-              class="rounded px-2 py-1 transition-all duration-200 font-mono"
+              :class="locale === item.code ? 'bg-[#333] text-white shadow-sm rounded-sm' : 'text-[#888] hover:text-white'"
+              class="px-2 py-1 transition-colors duration-200 font-mono"
             >
               {{ item.code === 'en' ? 'EN' : '中' }}
             </button>
@@ -97,7 +95,7 @@
 
     <Breadcrumb v-if="breadcrumbItems.length" :items="breadcrumbItems" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4" />
 
-    <main id="main-content" class="flex-1 w-full animate-fade-in-up">
+    <main id="main-content" class="flex-1 w-full">
       <router-view v-slot="{ Component }">
         <transition name="page-slide-up" mode="out-in">
           <component :is="Component" />
@@ -105,27 +103,25 @@
       </router-view>
     </main>
 
-    <footer class="bg-aa-dark mt-auto relative before:absolute before:top-0 before:left-[10%] before:right-[10%] before:h-px before:bg-gradient-to-r before:from-transparent before:via-aa-orange/30 before:to-transparent">
+    <footer class="bg-black mt-auto relative border-t border-[#333]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-          <!-- Brand column -->
           <div class="col-span-2 md:col-span-1">
             <div class="flex items-center gap-3 mb-4">
-              <div class="w-8 h-8 gradient-border-card bg-aa-panel text-white rounded flex items-center justify-center font-bold text-lg font-mono">N</div>
-              <span class="font-bold text-sm text-white">{{ t('brand.name', 'Abstract Account') }}</span>
+              <div class="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg font-mono">N</div>
+              <span class="font-medium text-sm text-white">{{ t('brand.name', 'Abstract Account') }}</span>
             </div>
-            <p class="text-sm text-aa-muted leading-relaxed">{{ t('footer.tagline', 'Programmable accounts for Neo N3.') }}</p>
+            <p class="text-sm text-[#888] leading-relaxed">{{ t('footer.tagline', 'Programmable accounts for Neo N3.') }}</p>
           </div>
-          <!-- Link columns -->
           <div v-for="column in footerColumns" :key="column.titleKey">
-            <p class="text-xs font-bold text-aa-text uppercase tracking-wider mb-4">{{ t(column.titleKey, column.titleFallback) }}</p>
+            <p class="text-xs font-medium text-white mb-4">{{ t(column.titleKey, column.titleFallback) }}</p>
             <ul class="space-y-2.5">
               <li v-for="link in column.links" :key="link.to || link.href">
-                <router-link v-if="link.to" :to="link.to" class="text-sm text-aa-muted hover:text-aa-text transition-colors duration-200 flex items-center gap-2">
+                <router-link v-if="link.to" :to="link.to" class="text-sm text-[#888] hover:text-white transition-colors duration-200 flex items-center gap-2">
                   <svg aria-hidden="true" v-if="link.icon" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path :d="link.icon" /></svg>
                   {{ t(link.label, link.fallback) }}
                 </router-link>
-                <a v-else :href="link.href" target="_blank" rel="noopener noreferrer" class="text-sm text-aa-muted hover:text-aa-text transition-colors duration-200 flex items-center gap-2">
+                <a v-else :href="link.href" target="_blank" rel="noopener noreferrer" class="text-sm text-[#888] hover:text-white transition-colors duration-200 flex items-center gap-2">
                   <svg aria-hidden="true" v-if="link.icon" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path :d="link.icon" /></svg>
                   {{ t(link.label, link.fallback) }}
                 </a>
@@ -133,28 +129,27 @@
             </ul>
           </div>
         </div>
-        <div class="border-t border-aa-border pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="border-t border-[#333] pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center gap-2 text-sm">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-success opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-aa-success"></span>
+              <span class="absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]"></span>
             </span>
-            <span class="text-aa-muted font-medium">{{ t(networkLabelKey, networkLabelFallback) }}</span>
+            <span class="text-[#888] font-medium">{{ t(networkLabelKey, networkLabelFallback) }}</span>
           </div>
-          <div class="flex items-center gap-4 text-xs text-aa-muted">
+          <div class="flex items-center gap-4 text-xs text-[#888]">
             <span>&copy; {{ new Date().getFullYear() }} {{ t('footer.copyright', 'NEO ABSTRACT ACCOUNT') }}</span>
           </div>
         </div>
       </div>
     </footer>
 
-    <!-- Scroll to top button -->
     <transition name="scroll-top-fade">
       <button
         v-show="showScrollTop"
         @click="scrollToTop"
         :aria-label="t('nav.scrollToTop', 'Scroll to top')"
-        class="fixed bottom-8 right-8 z-50 w-11 h-11 rounded-full bg-aa-panel border border-aa-border shadow-lg backdrop-blur-xl flex items-center justify-center text-aa-muted hover:text-aa-orange hover:border-aa-orange/40 transition-all duration-200 hover:shadow-glow-orange active:scale-90"
+        class="fixed bottom-8 right-8 z-50 w-10 h-10 rounded-md bg-[#111] border border-[#333] flex items-center justify-center text-[#888] hover:text-white hover:bg-[#222] transition-colors duration-200"
       >
         <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
       </button>
@@ -243,90 +238,3 @@ const footerColumns = [
   }
 ];
 </script>
-
-<style scoped>
-.scroll-top-fade-enter-active,
-.scroll-top-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.scroll-top-fade-enter-from,
-.scroll-top-fade-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-/* Scroll fade indicators for horizontally scrollable containers */
-.scroll-fade-container {
-  scroll-timeline: --scroll-fade x;
-}
-
-.scroll-fade-inner {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black 40px,
-    black calc(100% - 40px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    black 40px,
-    black calc(100% - 40px),
-    transparent 100%
-  );
-  animation: scroll-fade-mask 1s linear both;
-  animation-timeline: --scroll-fade;
-}
-
-@keyframes scroll-fade-mask {
-  from {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black calc(100% - 40px),
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black calc(100% - 40px),
-      transparent 100%
-    );
-  }
-  to {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0,
-      black 40px,
-      black 100%
-    );
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-top-fade-enter-active,
-  .scroll-top-fade-leave-active {
-    transition: none;
-  }
-  .scroll-top-fade-enter-from,
-  .scroll-top-fade-leave-to {
-    opacity: 1;
-    transform: none;
-  }
-  .scroll-fade-inner {
-    -webkit-mask-image: none;
-    mask-image: none;
-    animation: none;
-  }
-}
-</style>
