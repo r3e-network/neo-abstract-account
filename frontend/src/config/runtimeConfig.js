@@ -15,9 +15,15 @@ function stripNetworkSuffix(value) {
 const MAINNET_REGISTRY = MORPHEUS_PUBLIC_REGISTRY.mainnet;
 const TESTNET_REGISTRY = MORPHEUS_PUBLIC_REGISTRY.testnet;
 const MORPHEUS_WORKFLOW_IDS = MORPHEUS_PUBLIC_RUNTIME_CATALOG.workflows.map((workflow) => workflow.id);
+const MORPHEUS_RUNTIME_TOPOLOGY = MORPHEUS_PUBLIC_RUNTIME_CATALOG.topology;
+const MORPHEUS_RISK_ACTIONS = [...(MORPHEUS_PUBLIC_RUNTIME_CATALOG.risk?.actions || [])];
+const MORPHEUS_AUTOMATION_TRIGGER_KINDS = [...(MORPHEUS_PUBLIC_RUNTIME_CATALOG.automation?.triggerKinds || [])];
 
 export const DEFAULT_MORPHEUS_ENVELOPE_VERSION = MORPHEUS_PUBLIC_RUNTIME_CATALOG.envelope.version;
 export const DEFAULT_MORPHEUS_WORKFLOW_IDS = [...MORPHEUS_WORKFLOW_IDS];
+export const DEFAULT_MORPHEUS_TOPOLOGY = { ...MORPHEUS_RUNTIME_TOPOLOGY };
+export const DEFAULT_MORPHEUS_RISK_ACTIONS = [...MORPHEUS_RISK_ACTIONS];
+export const DEFAULT_MORPHEUS_AUTOMATION_TRIGGER_KINDS = [...MORPHEUS_AUTOMATION_TRIGGER_KINDS];
 
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaCore);
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = stripHexPrefix(TESTNET_REGISTRY.contracts.aaCore);
@@ -232,6 +238,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     ),
     morpheusEnvelopeVersion: DEFAULT_MORPHEUS_ENVELOPE_VERSION,
     morpheusWorkflowIds: [...DEFAULT_MORPHEUS_WORKFLOW_IDS],
+    morpheusTopology: { ...DEFAULT_MORPHEUS_TOPOLOGY },
+    morpheusRiskPlane: DEFAULT_MORPHEUS_TOPOLOGY.riskPlane || '',
+    morpheusRiskActions: [...DEFAULT_MORPHEUS_RISK_ACTIONS],
+    morpheusAutomationTriggerKinds: [...DEFAULT_MORPHEUS_AUTOMATION_TRIGGER_KINDS],
     morpheusOracleCvmId: resolveOptionalUrl(
       env.VITE_MORPHEUS_ORACLE_CVM_ID,
       DEFAULT_MORPHEUS_ORACLE_CVM_ID
