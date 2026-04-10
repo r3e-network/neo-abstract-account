@@ -414,7 +414,8 @@ async function main() {
     escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
   });
 
-  let accountId = sanitizeHex(EXPLICIT_PAYMASTER_ACCOUNT_ID || deriveBootstrapAccountId());
+  const defaultBootstrapAccountId = sanitizeHex(EXPLICIT_PAYMASTER_ACCOUNT_ID || deriveBootstrapAccountId());
+  let accountId = defaultBootstrapAccountId;
   let skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE;
   const evmSigner = ethers.Wallet.createRandom();
   const verifierPubKey = sanitizeHex(evmSigner.signingKey.publicKey);
@@ -476,14 +477,14 @@ async function main() {
   try {
     ({ register, updateVerifier } = await bootstrapAccount(accountId));
   } catch (error) {
-    const usingDerivedDefaultAccount = !EXPLICIT_PAYMASTER_ACCOUNT_ID && skipAllowlistUpdate;
-    if (!usingDerivedDefaultAccount || !isUnauthorizedBootstrapError(error)) {
+    const usingReusableBootstrapAccount = skipAllowlistUpdate && normalizeHash(accountId) === normalizeHash(defaultBootstrapAccountId);
+    if (!usingReusableBootstrapAccount || !isUnauthorizedBootstrapError(error)) {
       throw error;
     }
     accountId = deriveBootstrapAccountId(Buffer.from(randomBytes(8)).toString("hex"));
     skipAllowlistUpdate = false;
     console.warn(
-      `Derived paymaster bootstrap account was rejected; falling back to disposable account ${normalizeHash(accountId)}`
+      `Reusable paymaster bootstrap account was rejected; falling back to disposable account ${normalizeHash(accountId)}`
     );
     ({ register, updateVerifier } = await bootstrapAccount(accountId));
   }
