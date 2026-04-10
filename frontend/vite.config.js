@@ -1,11 +1,22 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { fileURLToPath, URL } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    nodePolyfills({
+      include: ['buffer', 'process', 'crypto', 'stream', 'events', 'util'],
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
+    }),
+  ],
   define: {
     // Node.js globals needed by ethers v6, web3auth, and walletconnect
     'process.env': {},
@@ -19,6 +30,8 @@ export default defineConfig({
       '@repo': repoRoot,
       // Ensure buffer polyfill resolves for any bare `buffer` import
       buffer: 'buffer/',
+      // Let browser bundles hit library fallback paths without vm-browserify.
+      vm: fileURLToPath(new URL('./src/shims/vm.js', import.meta.url)),
     }
   },
   build: {
