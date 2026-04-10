@@ -13,7 +13,7 @@ This document maps Ethereum ERC-4337 (Account Abstraction) and ERC-7579 (Modular
 | **EntryPoint Contract** | `UnifiedSmartWallet` | Global singleton contract serving all accounts. No per-account deployment needed. |
 | **Smart Account** | Virtual Account (`accountId`) | Deterministic address derived from `verify(accountId)` script, not a deployed contract. |
 | **WalletContract** | N/A | Neo uses native `CheckWitness` with `VerifyContext` instead of separate wallet contract. |
-| **Paymaster** | Paymaster Integration | Off-chain service sponsoring gas, similar to ERC-4337 paymasters. |
+| **Paymaster** | `AAPaymaster` Contract + Off-chain Morpheus | On-chain Paymaster contract for trustless sponsorship with deposit/policy/settlement, plus optional off-chain Morpheus integration. |
 | **Bundler** | Relay Server | Packages `UserOperation`s into Neo transactions. |
 | **Aggregator** | MultiHook | Combines multiple validation/policy modules (hooks) into one. |
 | **Validator** | Verifier Plugin | Signature verification logic (ECDSA, WebAuthn, TEE, etc.). |
@@ -105,7 +105,7 @@ flowchart TD
 - Verifier called with `CallFlags.ReadOnly` (no state changes)
 - Hooks enforce policies around execution
 - No per-op gas limits (see security note below)
-- Paymaster optional/off-chain
+- Paymaster optional (on-chain AAPaymaster or off-chain Morpheus)
 
 **Critical Difference:** Neo does NOT enforce gas limits on verifier calls. This is a **known vulnerability** - see SECURITY_AUDIT.md.
 
@@ -231,17 +231,43 @@ interface IPaymaster {
 - Returns context for EntryPoint
 - Can decline sponsorship
 
-### Neo N3 Paymaster
+### Neo N3 Paymaster (On-Chain)
+
+```csharp
+// AAPaymaster contract
+public class SponsorshipPolicy {
+    public UInt160 TargetContract;  // Zero = any contract
+    public string Method;            // empty = any method
+    public BigInteger MaxPerOp;      // Max GAS per operation
+    public BigInteger DailyBudget;   // Max GAS per day (0 = unlimited)
+    public BigInteger TotalBudget;   // Max total GAS (0 = unlimited)
+    public BigInteger ValidUntil;    // Expiry timestamp (0 = no expiry)
+}
+
+// Core integration
+object result = ExecuteSponsoredUserOp(accountId, op, paymaster, sponsor, reimbursementAmount);
+// 1. Optional relay preflight via Paymaster.validatePaymasterOp()
+// 2. ExecuteUserOp() — full verification + execution
+// 3. Paymaster.settleReimbursement() — atomic policy enforcement + GAS to relay
+```
+
+- Sponsors deposit GAS into the Paymaster via NEP-17 transfer
+- Per-account or global (`accountId = Zero`) sponsorship policies
+- Atomic settlement: policy validation + deposit deduction + relay reimbursement
+- Daily/total budget tracking with automatic 24-hour window reset
+- `ValidatePaymasterOp` available as `[Safe]` read-only for relay preflight
+
+### Neo N3 Paymaster (Off-Chain — Morpheus)
 
 - **Off-chain service** (Morpheus Paymaster)
 - **Authorization endpoint:** `/api/paymaster/authorize`
 - **Response:** `{ approved: boolean, reason?: string }`
 
-**Key Differences:**
-- Neo paymaster is fully off-chain
-- No on-chain paymaster contract required
-- Simpler integration but less verifiable on-chain
-- Relay server enforces paymaster approval before submission
+**Key Differences vs Ethereum:**
+- Neo supports both on-chain (AAPaymaster) and off-chain (Morpheus) paymaster models
+- On-chain model is closer to ERC-4337: deposit + policy + settlement, but without per-op gas metering (Neo transactions have fixed fees)
+- Off-chain model is simpler to integrate but less verifiable on-chain
+- Both models: paymaster never authorizes execution — only the verifier or backup owner can
 
 ---
 
@@ -299,7 +325,7 @@ stateDiagram-v2
 | --- | --- |
 | **Deploying new account** | Use `RegisterAccount()` instead of deploying a proxy. Account address is deterministic. |
 | **Sending UserOperation** | Call `executeUserOp(accountId, op)` instead of `handleUserOps()`. |
-| **Paymaster integration** | Implement off-chain auth endpoint instead of on-chain `validatePaymasterUserOp()`. |
+| **Paymaster integration** | Use `AAPaymaster` contract (on-chain deposit/policy/settlement) or off-chain Morpheus endpoint. Call `executeSponsoredUserOp()` for on-chain, or implement off-chain auth for Morpheus. |
 | **Aggregator pattern** | Use `MultiHook` to combine policy modules. |
 | **Bundler integration** | Implement relay server that calls `simulateMetaInvocation()` then `relayMetaInvocation()`. |
 | **Signature schemes** | Use `Web3AuthVerifier` for EVM sigs, `WebAuthnVerifier` for passkeys. |
@@ -325,11 +351,10 @@ relayMetaInvocation({ scriptHash: aaContract, operation: "executeUserOps", args:
 
 ## 11. Known Limitations vs Ethereum AA
 
-1. **No On-Chain Paymaster Contract:** Paymaster decisions are off-chain only.
-2. **No Verifier Gas Limits:** Malicious verifiers can DoS operations (critical).
-3. **Simpler Fee Model:** No per-op gas estimation hooks.
-4. **No Staking/Sponsored Paymasters:** Paymaster must be pre-funded (no staking).
-5. **Limited Aggregation:** `MultiHook` doesn't aggregate signatures like Ethereum aggregators.
+1. **No Verifier Gas Limits:** Malicious verifiers can DoS operations (critical).
+2. **Simpler Fee Model:** No per-op gas estimation hooks (Neo has fixed transaction fees).
+3. **No Staking Mechanism:** On-chain Paymaster uses direct GAS deposits, not staking.
+4. **Limited Aggregation:** `MultiHook` doesn't aggregate signatures like Ethereum aggregators.
 
 ---
 
@@ -341,3 +366,4 @@ relayMetaInvocation({ scriptHash: aaContract, operation: "executeUserOps", args:
 4. **Account Discovery:** Reverse indices for O(1) account lookup.
 5. **Unified Execution Context:** Single contract for all accounts simplifies indexing.
 6. **TEE-First Design:** Built for trusted execution environments.
+7. **Dual Paymaster Model:** Both on-chain trustless (`AAPaymaster`) and off-chain flexible (Morpheus) sponsorship.

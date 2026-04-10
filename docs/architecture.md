@@ -14,6 +14,7 @@ flowchart LR
   Core[UnifiedSmartWalletV3]
   Verifier[Verifier Plugin]
   Hook[Hook Plugin]
+  Paymaster[AAPaymaster]
   Target[Target Contract]
 
   User --> Frontend
@@ -25,6 +26,8 @@ flowchart LR
   Core --> Verifier
   Core --> Hook
   Core --> Target
+  Core --> Paymaster
+  Paymaster -->|GAS| Relay
 ```
 
 ## 2. Account Model
@@ -63,12 +66,18 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  Entry[executeUserOp] --> Load[Load V3 account state]
-  Load --> Auth[Validate verifier or backup owner]
+  Entry[executeUserOp / executeSponsoredUserOp] --> Load[Load V3 account state]
+  Load --> PM{Paymaster?}
+  PM -- Yes --> PMValidate[Optional relay preflight via ValidatePaymasterOp]
+  PM -- No --> Auth
+  PMValidate --> Auth[Validate verifier or backup owner]
   Auth --> Pre[preExecute hook]
-  Pre --> Call[Contract.Call(target, method, args)]
+  Pre --> Call[Contract.Call target, method, args]
   Call --> Post[postExecute hook]
-  Post --> Done[Return result]
+  Post --> Settle{Paymaster?}
+  Settle -- Yes --> PMSettle[Paymaster settles reimbursement → GAS to relay]
+  Settle -- No --> Done[Return result]
+  PMSettle --> Done
 ```
 
 The V3 core is intentionally small: authorization is delegated to verifier plugins, policy is delegated to hook plugins, and the core enforces nonce consumption, recovery state, and execution context.
@@ -92,6 +101,8 @@ The V3 core is intentionally small: authorization is delegated to verifier plugi
 | `contracts/verifiers/MultiSigVerifier.cs` | Plugin multisig |
 | `contracts/verifiers/ZKEmailVerifier.cs` | Email-based authorization extension |
 | `contracts/hooks/*.cs` | Optional policies such as daily limits, token restrictions, and credential gating |
+| `contracts/paymaster/Paymaster.cs` | On-chain Paymaster for sponsored/gasless transactions (GAS deposits, policies, settlement) |
+| `contracts/paymaster/PaymasterAuthority.cs` | Paymaster admin + authorized core validation |
 
 ## 7. Module Lifecycle
 
@@ -119,10 +130,23 @@ V3 recovery is explicit:
 
 This keeps recovery auditable without reintroducing large role graphs into the core wallet.
 
-## 9. Security Invariants
+## 9. Paymaster (Sponsored Transactions)
+
+The `AAPaymaster` contract enables trustless gasless execution on Neo N3:
+
+1. **Deposit:** Sponsors send GAS to the Paymaster via NEP-17 transfer.
+2. **Policy:** Sponsors call `setPolicy(accountId, targetContract, method, maxPerOp, dailyBudget, totalBudget, validUntil)`. Use `accountId = Zero` for a global policy sponsoring any account.
+3. **Execution:** Relay calls `executeSponsoredUserOp(accountId, op, paymaster, sponsor, reimbursementAmount)` on the AA core.
+4. **Settlement:** Core validates policy, executes the UserOp, then calls `paymaster.settleReimbursement()` to atomically deduct from the sponsor deposit and transfer GAS to the relay.
+
+The Paymaster never authorizes execution — it only funds the relay after the verifier and hooks have already approved the operation.
+
+## 10. Security Invariants
 
 1. `verify(accountId)` is only valid inside the expected `executeUserOp` context.
 2. Nonces are consumed by the core wallet, not verifier plugins.
 3. Verifier plugins do not bypass hook or target-contract policy.
 4. Backup-owner recovery is timelocked.
 5. New integrations should target `executeUserOp`; legacy `executeUnifiedByAddress` is compatibility-only.
+6. Paymaster settlement only succeeds when called by the authorized AA core contract.
+7. Paymaster deposit deduction happens before the GAS transfer to the relay (checks-effects-interactions).

@@ -25,7 +25,8 @@ Solves the "Who proves, and who pays?" problem.
 * **Session Key Issuers**: Upon user login, the TEE or frontend issues a high-frequency temporary session key (e.g., restricted to infinite attacks in a fully on-chain game for 1 hour).
 * **Bundler & Paymaster**:
   * Official or third-party operated nodes. They receive the user's `UserOperation` (containing various signatures) and package them into standard N3 transactions.
-  * **Paymaster Logic**: If the operation falls under an allowlisted sponsorship policy, the Bundler can pay GAS on the user's behalf. This is an operational convenience, not an authorization boundary.
+  * **On-Chain Paymaster (`AAPaymaster`)**: Sponsors deposit GAS and create sponsorship policies (per-account or global, with per-op/daily/total budgets, target/method restrictions, and expiry). The AA core calls `executeSponsoredUserOp`, validates the policy, executes the UserOp, then atomically settles the reimbursement — deducting from the sponsor deposit and sending GAS to the relay. This is fully trustless and verifiable on-chain.
+  * **Off-Chain Paymaster (Morpheus)**: If the operation falls under an allowlisted sponsorship policy, the Bundler can request Morpheus pre-authorization before broadcasting. This is an operational convenience, not an authorization boundary.
 
 ### 3. Core Gateway Engine
 The heart of the system and the only Neo N3 contract that stores state. It employs a **Global Singleton** pattern, providing users with a shared runtime and deterministic virtual accounts.

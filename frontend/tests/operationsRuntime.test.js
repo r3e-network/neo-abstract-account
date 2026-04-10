@@ -44,6 +44,18 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     neoDidProvider: 'web3auth',
     neoDidDomain: 'neodid.morpheus.neo',
     morpheusApiBaseUrl: 'https://oracle.meshmini.app/mainnet',
+    morpheusEnvelopeVersion: '2026-04-tee-v1',
+    morpheusWorkflowIds: [
+      'oracle.query',
+      'oracle.smart_fetch',
+      'feed.sync',
+      'automation.upkeep',
+      'compute.execute',
+      'neodid.bind',
+      'neodid.action_ticket',
+      'neodid.recovery_ticket',
+      'paymaster.authorize',
+    ],
     morpheusOracleCvmId: 'ddff154546fe22d15b65667156dd4b7c611e6093',
     morpheusOracleCvmName: 'oracle-morpheus-neo-r3e',
     morpheusOracleAttestationExplorerUrl:

@@ -196,6 +196,42 @@ Operational notes:
 - Each signature is a compact proof blob containing the provider id, `master_nullifier`, `action_nullifier`, and Morpheus signer signature.
 - The account still relies on AA nonce + deadline replay protection; the verifier only binds the private identity root to each operation payload.
 
+## Paymaster + Hook Combinations
+
+The on-chain `AAPaymaster` contract (`contracts/paymaster/Paymaster.cs`) lets sponsors cover relay fees for accounts, but it never authorizes execution. Verifier and hook plugins still run independently. This separation makes it safe to combine Paymaster sponsorship with any policy stack.
+
+### Sponsored Consumer Wallet
+
+- Verifier: `Web3AuthVerifier`
+- Hook: `DailyLimitHook`
+- Paymaster: sponsor sets a global policy (`accountId = UInt160.Zero`) targeting the dApp contract
+
+Use this when a dApp operator wants gasless onboarding. The `DailyLimitHook` caps daily outflow even though the sponsor pays the gas, so a compromised session cannot drain the account.
+
+### Sponsored Automation
+
+- Verifier: `SessionKeyVerifier`
+- Hook: `WhitelistHook`
+- Paymaster: sponsor sets a per-account policy with `maxPerOp` and `dailyBudget` limits
+
+Use this when a backend bot executes on behalf of users and the service provider funds the gas. The `WhitelistHook` restricts which contracts the bot can touch, while the Paymaster policy caps how much GAS the sponsor is willing to burn per operation and per day.
+
+### Sponsored Subscription
+
+- Verifier: `SubscriptionVerifier`
+- Hook: `DailyLimitHook`
+- Paymaster: sponsor sets a policy scoped to the subscription target contract and method
+
+Use this when a merchant sponsors recurring billing gas. The `SubscriptionVerifier` ensures cadence and expiry, the `DailyLimitHook` bounds exposure, and the Paymaster policy limits total GAS the merchant commits.
+
+### Key Principle
+
+The Paymaster only funds the relay after verifier and hook checks pass. This means:
+
+- a sponsor cannot bypass a hook by paying for gas
+- a hook cannot override a Paymaster budget limit
+- the relay receives GAS atomically inside `executeSponsoredUserOp`, so there is no window where execution succeeds but reimbursement fails
+
 ## Market Readiness
 
 When listing an AA address in the market, publish at minimum:

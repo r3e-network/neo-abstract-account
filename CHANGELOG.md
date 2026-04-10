@@ -5,9 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
-## [Unreleased] - 2026-03-09
+## [Unreleased] - 2026-04-06
 
 ### Added
+- Added on-chain `AAPaymaster` contract for trustless sponsored/gasless transactions. Sponsors deposit GAS, create per-account or global sponsorship policies with per-op limits, daily budgets, total budgets, target/method restrictions, and expiry timestamps. Relays are reimbursed automatically after successful `UserOp` execution via atomic settlement.
+- Added `ExecuteSponsoredUserOp` and `ExecuteSponsoredUserOps` to the AA core for paymaster-integrated execution with pre-validation and post-execution settlement.
+- Added `SponsoredUserOpExecuted` event to the AA core for indexing sponsored operations.
+- Added SDK methods: `createSponsoredUserOpPayload`, `createSponsoredBatchPayload`, `querySponsorBalance`, and `validatePaymasterOp` for relay and dApp integration with the on-chain Paymaster.
+- Added `PaymasterAuthority` with 7-day timelocked admin rotation and authorized-core validation for settlement security.
 - Added the home operations workspace for account loading, draft persistence, scoped collaboration links, relay preflight, submission receipts, and mixed Neo + EVM approval flows.
 - Added comprehensive explainer docs covering how the abstract account works, architecture, workflow lifecycle, data flow, a root documentation index, and supplemental English/Chinese reference docs.
 - Added validated recovery verifier support for Argent, Safe, and Loopring flows, including reproducible build scripts, deployment checklists, official SDK validators, and recorded testnet deployment results.

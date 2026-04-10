@@ -16,6 +16,7 @@ The Neo N3 Abstract Account system implements a policy-gated, plugin-based accou
 | **Compromised Verifier** | Control of verifier signing key | Unauthorize withdrawals, bypass hooks |
 | **Compromised Relay** | Can submit to bundler/relay | Censorship, front-running, selective relay |
 | **Compromised TEE Node** | TEE private key access | Unlimited automated transactions |
+| **Compromised Paymaster Sponsor** | Sponsor wallet private key | Policy manipulation, deposit withdrawal |
 | **Stolen Cold Wallet** | Backup owner private key | Escape hatch takeover |
 | **Smart Contract Developer** | Plugin code deployment | Logic bugs, backdoors, malicious hooks/verifiers |
 
@@ -56,7 +57,8 @@ The Neo N3 Abstract Account system implements a policy-gated, plugin-based accou
 | **Plugin deployment is authorized** | Only backup owner can install | Unauthorized plugin installation |
 | **TEE enclaves are secure** | Hardware-level isolation | TEE key compromise |
 | **Relays are semi-honest** | Multiple competing relays | Censorship or front-running |
-| **Paymaster is solvent** | Off-chain gas sponsorship | Failed transactions |
+| **Paymaster is solvent** | On-chain deposit balance or off-chain gas sponsorship | Failed transactions if deposit exhausted |
+| **Paymaster policy is honest** | Sponsor controls policy creation | Sponsor can revoke/expire policies at will |
 
 ### 2.4 Layer 4: Frontend & SDK
 
@@ -210,7 +212,8 @@ flowchart TD
 | **Hook Censorship** | Hooks only reject, don't modify | ✓ Mitigated |
 | **Verifier Bypass** | Authority checks on all calls | ✓ Mitigated |
 | **Market Escrow Censorship** | Direct cancel available | ✓ Mitigated |
-| **Paymaster Front-Running** | Paymaster decision off-chain | ✓ Partially mitigated |
+| **Paymaster Front-Running** | On-chain atomic settlement; off-chain decision pre-submission | ✓ Mitigated (on-chain) / Partially mitigated (off-chain) |
+| **Paymaster Deposit Drain** | Per-op limits + daily budgets + total budgets | ✓ Mitigated |
 | **RPC Censorship** | Multiple relays + client-side broadcast | ✓ Mitigated |
 
 ---
@@ -262,6 +265,22 @@ flowchart TD
 | **Simulation First** | Validate before broadcasting to save gas |
 
 ### 8.2 Paymaster Security
+
+#### On-Chain Paymaster (`AAPaymaster`)
+
+| Mechanism | Purpose |
+| --- | --- |
+| **Deposit-Backed** | Sponsorship is only possible with pre-deposited GAS |
+| **Policy Enforcement** | Per-account or global policies with target/method restrictions |
+| **Per-Op Limits** | Each operation capped to `MaxPerOp` GAS |
+| **Daily Budget** | Rolling 24-hour spend cap per (sponsor, account) pair |
+| **Total Budget** | Lifetime spend cap with overflow protection |
+| **Expiry Timestamps** | Policies auto-expire at `ValidUntil` |
+| **Core-Only Settlement** | Only the authorized AA core contract can call `settleReimbursement` |
+| **Checks-Effects-Interactions** | Deposit deducted before GAS transferred to relay |
+| **Atomic Execution** | Settlement reverts if policy check or GAS transfer fails |
+
+#### Off-Chain Paymaster (Morpheus)
 
 | Mechanism | Purpose |
 | --- | --- |
@@ -342,7 +361,7 @@ stateDiagram-v2
 ### 11.2 Medium Priority
 
 4. **TEE Attestation:** Integrate remote attestation verification
-5. **Paymaster Staking:** On-chain paymaster registration with stake
+5. ~~**Paymaster Staking:**~~ Resolved — `AAPaymaster` contract provides on-chain deposit-backed sponsorship
 6. **Plugin Audit System:** Verified plugin marketplace
 
 ### 11.3 Low Priority

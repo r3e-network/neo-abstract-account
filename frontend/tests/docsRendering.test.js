@@ -71,6 +71,18 @@ test('sdk doc references the verified hardened testnet hash', () => {
   assert.match(sdkDoc, /0x5be915aea3ce85e4752d522632f0a9520e377aaf/i);
 });
 
+test('sdk paymaster docs track the current helper signatures', () => {
+  const sdkDoc = read('src/assets/docs/sdk-usage.md');
+
+  assert.match(sdkDoc, /querySponsorBalance\(paymasterHash, sponsorAddress\)/);
+  assert.match(sdkDoc, /createSponsoredUserOpPayload\({/);
+  assert.match(sdkDoc, /accountScriptHash|accountAddress/);
+  assert.match(sdkDoc, /userOp/);
+  assert.match(sdkDoc, /paymasterHash/);
+  assert.match(sdkDoc, /sponsorAddress/);
+  assert.match(sdkDoc, /validatePaymasterOp\({/);
+});
+
 test('repo docs describe a hardened policy-gated execution surface', () => {
   const readme = readRepo('README.md');
   const architectureDoc = readRepo('docs/architecture.md');
@@ -299,6 +311,37 @@ test('studio controller uses local neo helpers instead of Neon SDK bundles', () 
   assert.match(controllerSource, /from '\@\/utils\/neo\.js'/);
   assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-core'\)/);
   assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-js'\)/);
+});
+
+test('studio account creation derives account id from the registration config', () => {
+  const controllerSource = read('src/features/studio/useStudioController.js');
+  const panelSource = read('src/features/studio/components/CreateAccountPanel.vue');
+  const i18nSource = read('src/i18n/index.js');
+  const zhSource = read('src/i18n/zh-CN.js');
+
+  assert.match(controllerSource, /deriveRegistrationAccountIdHash/);
+  assert.doesNotMatch(controllerSource, /deriveAccountIdHash\(createForm\.value\.accountId\)/);
+  assert.doesNotMatch(controllerSource, /createForm\.value\.accountId/);
+  assert.doesNotMatch(panelSource, /Advanced: Custom Account Seed/);
+  assert.doesNotMatch(panelSource, /Account Seed \(UUID\)/);
+  assert.doesNotMatch(panelSource, /v-model="createForm\.accountId"/);
+  assert.match(panelSource, /min="7"/);
+  assert.match(panelSource, /max="90"/);
+  assert.match(i18nSource, /Countdown before escape hatch activates \(7-90 days\)/);
+  assert.match(zhSource, /逃生舱激活前的倒计时（7-90 天）/);
+});
+
+test('studio governance and permissions panels expect accountId hashes instead of legacy seeds', () => {
+  const managePanelSource = read('src/features/studio/components/ManageGovernancePanel.vue');
+  const permissionsPanelSource = read('src/features/studio/components/PermissionsLimitsPanel.vue');
+  const helpersSource = read('src/features/studio/helpers.js');
+
+  assert.doesNotMatch(managePanelSource, /Target Account Seed \/ AccountId Hash/);
+  assert.doesNotMatch(permissionsPanelSource, /Target Account Seed \/ AccountId Hash/);
+  assert.doesNotMatch(managePanelSource, /20-byte hash160 or raw seed/);
+  assert.doesNotMatch(permissionsPanelSource, /20-byte hash160 or raw seed/);
+  assert.doesNotMatch(helpersSource, /isEvmWallet/);
+  assert.doesNotMatch(helpersSource, /export function normalizeAccountId\(value, isEvmWallet\)/);
 });
 
 test('frontend package does not depend on Neon SDK bundles directly', () => {

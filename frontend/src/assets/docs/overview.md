@@ -21,6 +21,9 @@ mindmap
     Extensibility
       Custom Verifiers
       EVM EIP-712 MetaTx
+    Sponsored Execution
+      AAPaymaster
+      Policy-Based Gas Sponsorship
     Recovery
       Oracle Gating
 ```
@@ -32,6 +35,7 @@ mindmap
 3. **Execution Limits:** Policy-gated method access plus universal Blacklists, Whitelists, and Token Transfer Limits.
 4. **EIP-712 Compatibility:** Support for standard EVM wallets like MetaMask natively.
 5. **Custom Verifiers:** Build and deploy fully custom C# smart contracts to govern verification (e.g. ZK-proofs, time-locks).
+6. **Sponsored / Gasless Transactions:** The on-chain `AAPaymaster` contract lets sponsors deposit GAS and create policies that cover relay fees for specific accounts, contracts, or methods. Settlement is atomic: policy validation, deposit deduction, and relay reimbursement happen in a single call, and the Paymaster never authorizes execution itself.
 
 ## Navigation Guide
 
@@ -43,3 +47,4 @@ Use the sidebar to explore the technical depths of this protocol:
 * **Ethereum / EVM Integration**: Instructions for cross-chain users.
 * **Mixed Multi-Sig (N3 + EVM)**: How to aggregate native Neo and MetaMask signatures simultaneously.
 * **SDK Usage**: A guide on how to integrate the JavaScript SDK into your dApps.
+* **Paymaster / Sponsored Execution**: Learn how sponsors fund gasless transactions via on-chain policies.
