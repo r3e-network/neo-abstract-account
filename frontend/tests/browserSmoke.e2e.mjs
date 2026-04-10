@@ -13,6 +13,7 @@ const FRONTEND_DIR = path.resolve(MODULE_DIR, "..");
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AA_FRONTEND_E2E_PORT || 4173);
 const BASE_URL = `http://${HOST}:${PORT}`;
+const VITE_BIN = path.resolve(FRONTEND_DIR, "node_modules", "vite", "bin", "vite.js");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -55,8 +56,8 @@ async function stopProcess(child) {
 
 async function startPreviewServer() {
   const child = spawn(
-    "npm",
-    ["run", "preview", "--", "--host", HOST, "--port", String(PORT), "--strictPort"],
+    process.execPath,
+    [VITE_BIN, "preview", "--host", HOST, "--port", String(PORT), "--strictPort"],
     {
       cwd: FRONTEND_DIR,
       env: { ...process.env, CI: "1" },
@@ -102,7 +103,7 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
 
   await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByRole("heading", { name: /Smart Wallets That Never Lock You Out/i }), "home hero");
-  await waitForVisible(page.getByRole("link", { name: /Launch App/i }).first(), "launch app link");
+  await waitForVisible(page.getByRole("link", { name: /Open Console/i }).first(), "open console link");
   await assert.doesNotReject(() => page.title(), "home title should be readable");
 
   await page.goto(`${BASE_URL}/app`, { waitUntil: "domcontentloaded" });
