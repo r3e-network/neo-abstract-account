@@ -136,6 +136,9 @@ test('testnet validators derive registration-bound account ids with the contract
   assert.match(paymasterRelaySource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
   assert.doesNotMatch(paymasterRelaySource, /\ballowlistAccountId = PAYMASTER_ACCOUNT_ID\b/);
   assert.doesNotMatch(paymasterRelaySource, /\bDEFAULT_PAYMASTER_ACCOUNT_ID\b/);
+  assert.match(paymasterRelaySource, /const defaultBootstrapAccountId = sanitizeHex\(EXPLICIT_PAYMASTER_ACCOUNT_ID \|\| deriveBootstrapAccountId\(\)\);/);
+  assert.match(paymasterRelaySource, /const usingReusableBootstrapAccount = skipAllowlistUpdate && normalizeHash\(accountId\) === normalizeHash\(defaultBootstrapAccountId\);/);
+  assert.doesNotMatch(paymasterRelaySource, /const usingDerivedDefaultAccount = !EXPLICIT_PAYMASTER_ACCOUNT_ID && skipAllowlistUpdate;/);
 
   assert.match(paymasterOnchainSource, /deriveRegistrationAccountIdHash\(\{/);
   assert.match(paymasterOnchainSource, /verifierContractHash: verifier\.hash/);
