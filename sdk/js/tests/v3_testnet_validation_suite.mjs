@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -12,6 +13,10 @@ const SDK_REPORT_DIR = path.resolve(ROOT_DIR, "..", "docs", "reports");
 const REPO_REPORT_DIR = path.resolve(ROOT_DIR, "..", "..", "docs");
 const REPO_ROOT = path.resolve(ROOT_DIR, "..", "..");
 const DATE_PREFIX = "2026-03-14";
+const { shouldSkipPaymasterRelayValidation } = paymasterRuntimeConfig;
+const PAYMASTER_CAPABILITIES = {
+  hasPhalaCli: spawnSync("bash", ["-lc", "command -v phala >/dev/null 2>&1"]).status === 0,
+};
 
 const STAGES = [
   {
@@ -64,6 +69,7 @@ function envSnapshot() {
     morpheusPaymasterAppId: process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093",
     paymasterAccountId: process.env.PAYMASTER_ACCOUNT_ID || null,
     skipPaymasterAllowlistUpdate: process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1",
+    hasPhalaCli: PAYMASTER_CAPABILITIES.hasPhalaCli,
   };
 }
 
@@ -277,6 +283,13 @@ function markdownList(items = []) {
   return items.map((item) => `- ${item}`).join("\n");
 }
 
+function optionalSkipReason(stage) {
+  if (stage.id === "paymaster") {
+    return shouldSkipPaymasterRelayValidation(process.env, PAYMASTER_CAPABILITIES);
+  }
+  return "";
+}
+
 function buildMarkdownReport(report) {
   const smoke = report.stages.find((stage) => stage.id === "smoke");
   const pluginMatrix = report.stages.find((stage) => stage.id === "plugin_matrix");
@@ -300,6 +313,7 @@ function buildMarkdownReport(report) {
       `Paymaster app id: \`${report.environment.morpheusPaymasterAppId}\``,
       `Paymaster account override: \`${report.environment.paymasterAccountId || "none"}\``,
       `Skip allowlist update: \`${report.environment.skipPaymasterAllowlistUpdate}\``,
+      `Has phala CLI: \`${report.environment.hasPhalaCli}\``,
     ]),
     "",
     "## Stages",
@@ -404,6 +418,11 @@ async function main() {
     console.log("Dry run only. Planned stages:");
     for (const stage of STAGES) {
       const missingEnv = missingRequiredEnv(stage);
+      const skipReason = optionalSkipReason(stage);
+      if (skipReason) {
+        console.log(`- ${stage.title}: skip (${skipReason})`);
+        continue;
+      }
       if (stage.optional && missingEnv.length > 0) {
         console.log(`- ${stage.title}: skip (${missingEnv.join(", ")} missing)`);
         continue;
@@ -415,6 +434,12 @@ async function main() {
 
   for (const stage of STAGES) {
     const missingEnv = missingRequiredEnv(stage);
+    const skipReason = optionalSkipReason(stage);
+    if (skipReason) {
+      report.skippedStages.push({ id: stage.id, title: stage.title, reason: skipReason });
+      console.log(`\n==> skipping ${stage.command.join(" ")} (${skipReason})`);
+      continue;
+    }
     if (missingEnv.length > 0) {
       if (stage.optional) {
         const reason = `skipped because ${missingEnv.join(", ")} ${missingEnv.length > 1 ? "are" : "is"} missing`;

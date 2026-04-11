@@ -20,7 +20,8 @@ Refresh note on 2026-03-17:
 - the current cross-repo direct replay succeeded with:
   - `updateVerifier`: `0xd54fe4813693df0f244ada1c1daf8966ba70d0ced76bcdefc5e9fa6ba05aab2d`
   - relay-backed `executeUserOp`: `0xd433d9dbc435dc83835aa8ff7eb36e757d2a77499728ad6d09cb599044172e20`
-- `sdk/js/tests/v3_testnet_paymaster_relay.mjs` now defaults to the current stable allowlisted account and skips remote allowlist mutation unless a custom `PAYMASTER_ACCOUNT_ID` is explicitly provided
+- `sdk/js/tests/v3_testnet_paymaster_relay.mjs` replays the fixed allowlisted account only when `PAYMASTER_ACCOUNT_ID` is explicitly provided; otherwise it derives the bootstrap account id from the active test WIF and keeps the remote allowlist mutation path available when needed
+- the paymaster policy and relay validators now both fall back to the public testnet runtime endpoint `https://oracle.meshmini.app/testnet/paymaster/authorize` when no runtime URL override is provided
 
 ## Scope
 

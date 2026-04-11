@@ -6,6 +6,7 @@ import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
+import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -22,14 +23,8 @@ const REMOTE_WORKER_SERVICE =
   process.env.MORPHEUS_REMOTE_WORKER_SERVICE
   || process.env.MORPHEUS_PAYMASTER_REMOTE_WORKER_SERVICE
   || "testnet-request-worker";
-const PAYMASTER_ENDPOINT = (
-  process.env.MORPHEUS_PAYMASTER_TESTNET_ENDPOINT
-  || process.env.MORPHEUS_PAYMASTER_ENDPOINT
-  || process.env.MORPHEUS_TESTNET_RUNTIME_URL
-  || process.env.MORPHEUS_RUNTIME_URL
-  || process.env.PHALA_API_URL
-  || ""
-).trim().replace(/\/$/, "");
+const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
+const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPORT_DIR = path.resolve(MODULE_DIR, "..", "..", "docs", "reports");
 
