@@ -8,6 +8,7 @@ import { createRequire } from "node:module";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -30,16 +31,8 @@ const PAYMASTER_API_TOKEN =
   || process.env.PHALA_API_TOKEN
   || process.env.PHALA_SHARED_SECRET
   || "";
-const PHALA_API_URL = (
-  process.env.MORPHEUS_TESTNET_RUNTIME_URL
-  || process.env.MORPHEUS_RUNTIME_URL
-  || process.env.PHALA_API_URL
-  || "https://oracle.meshmini.app/testnet"
-).trim().replace(/\/$/, "");
-const PAYMASTER_ENDPOINT = (
-  process.env.MORPHEUS_PAYMASTER_TESTNET_ENDPOINT
-  || (PHALA_API_URL ? `${PHALA_API_URL}/paymaster/authorize` : "")
-).trim();
+const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
+const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
 const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
