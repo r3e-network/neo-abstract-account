@@ -85,7 +85,8 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert((BigInteger)op.Args[2] <= config.Amount, "Transfer amount exceeds subscription");
 
             ExecutionEngine.Assert(config.PeriodSeconds > 0, "Invalid subscription period");
-            BigInteger currentPeriod = Runtime.Time / config.PeriodSeconds;
+            BigInteger billingPeriodMs = config.PeriodSeconds * 1000;
+            BigInteger currentPeriod = Runtime.Time / billingPeriodMs;
             ExecutionEngine.Assert(currentPeriod > 0, "Subscription period not yet elapsed");
 
             // Get per-subscription nonce counter to prevent replay within the same billing period
