@@ -134,6 +134,35 @@ function decodeValidationPreviewStack(item) {
   };
 }
 
+const DEFAULT_RPC_READ_RETRY_ATTEMPTS = 4;
+const DEFAULT_RPC_READ_RETRY_DELAY_MS = 250;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableTransportError(error) {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|socket disconnected before secure TLS connection was established|TLS connection was established/i.test(message);
+}
+
+async function invokeRpcReadWithRetry(fn, attempts = DEFAULT_RPC_READ_RETRY_ATTEMPTS) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableTransportError(error) || attempt >= attempts) {
+        throw error;
+      }
+      await sleep(DEFAULT_RPC_READ_RETRY_DELAY_MS * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
 /**
  * Neo N3 Abstract Account SDK Client.
  *
@@ -176,6 +205,14 @@ class AbstractAccountClient {
     validateRpcUrl(rpcUrl);
     this.rpcClient = new rpc.RPCClient(rpcUrl);
     this.masterContractHash = sanitizeHex(masterContractHash);
+  }
+
+  async invokeScriptWithRetry(script, signers = []) {
+    return invokeRpcReadWithRetry(() => this.rpcClient.invokeScript(script, signers));
+  }
+
+  async invokeFunctionWithRetry(scriptHash, operation, params = [], signers = undefined) {
+    return invokeRpcReadWithRetry(() => this.rpcClient.invokeFunction(scriptHash, operation, params, signers));
   }
 
   /**
@@ -488,7 +525,7 @@ class AbstractAccountClient {
       args: [{ type: 'Array', value: args }],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       const mappedError = mapRpcError({ message: response.exception });
@@ -602,7 +639,7 @@ class AbstractAccountClient {
           operation: 'getVerifier',
           args: [{ type: 'Hash160', value: resolvedAccountIdHash }],
         });
-        const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+        const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
         if (response?.state === 'FAULT') {
           const mappedError = mapRpcError({ message: response.exception });
@@ -686,7 +723,7 @@ class AbstractAccountClient {
       operation: 'getAccountImplementationId',
       args: [],
     });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -708,7 +745,7 @@ class AbstractAccountClient {
       operation: 'supportsExecutionMode',
       args: [{ type: 'String', value: String(mode || '') }],
     });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -730,7 +767,7 @@ class AbstractAccountClient {
       operation: 'supportsModuleType',
       args: [{ type: 'String', value: String(moduleType || '') }],
     });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -761,7 +798,7 @@ class AbstractAccountClient {
         { type: 'Hash160', value: moduleHash },
       ],
     });
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -803,7 +840,7 @@ class AbstractAccountClient {
       ? normalizeAddress(accountIdHash)
       : normalizeAddress(accountAddress);
 
-    const response = await this.rpcClient.invokeFunction(this.masterContractHash, 'previewUserOpValidation', [
+    const response = await this.invokeFunctionWithRetry(this.masterContractHash, 'previewUserOpValidation', [
       { type: 'Hash160', value: accountId },
       {
         type: 'Struct',
@@ -889,7 +926,7 @@ class AbstractAccountClient {
         operation,
         args: [{ type: 'Hash160', value: accountId }],
       });
-      const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+      const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
       if (response?.state === 'FAULT') {
         throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1083,7 +1120,7 @@ class AbstractAccountClient {
       args: [{ type: 'Hash160', value: accountId }],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1108,7 +1145,7 @@ class AbstractAccountClient {
       args: [{ type: 'Hash160', value: accountId }],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1133,7 +1170,7 @@ class AbstractAccountClient {
       args: [{ type: 'Hash160', value: accountId }],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1158,7 +1195,7 @@ class AbstractAccountClient {
       args: [{ type: 'Hash160', value: accountId }],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1180,7 +1217,7 @@ class AbstractAccountClient {
       args: [],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1339,7 +1376,7 @@ class AbstractAccountClient {
       args: [{ type: 'Hash160', value: normalizeAddress(sponsorAddress) }],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1385,7 +1422,7 @@ class AbstractAccountClient {
       ],
     });
 
-    const response = await this.rpcClient.invokeScript(u.HexString.fromHex(script), []);
+    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
 
     if (response?.state === 'FAULT') {
       return false;
