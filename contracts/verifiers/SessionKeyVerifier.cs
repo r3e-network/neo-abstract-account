@@ -31,11 +31,11 @@ namespace AbstractAccount.Verifiers
         private static readonly byte[] Prefix_SpentAmount = new byte[] { 0x03 };
         // AccountId -> LastKeyRotation timestamp (for rotation cooldown)
         private static readonly byte[] Prefix_LastKeyRotation = new byte[] { 0x04 };
-        // Key rotation cooldown: 24 hours in seconds to prevent spending limit bypass
-        private static readonly BigInteger KeyRotationCooldownSeconds = 86400;
+        // Key rotation cooldown: 24 hours in milliseconds to match Runtime.Time
+        private static readonly BigInteger KeyRotationCooldownMs = 24L * 60 * 60 * 1000;
 
-        // Maximum session key lifetime: 30 days in seconds
-        private static readonly BigInteger MaxSessionDurationSeconds = 2592000;
+        // Maximum session key lifetime: 30 days in milliseconds
+        private static readonly BigInteger MaxSessionDurationMs = 30L * 24 * 60 * 60 * 1000;
 
         public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
 
@@ -68,7 +68,7 @@ namespace AbstractAccount.Verifiers
             VerifierAuthority.ValidateConfigCaller(accountId, Runtime.ExecutingScriptHash);
             ExecutionEngine.Assert(pubKey.Length == 33 || pubKey.Length == 65, "Invalid public key length");
             ExecutionEngine.Assert(validUntil > Runtime.Time, "Session key must expire in the future");
-            ExecutionEngine.Assert(validUntil <= Runtime.Time + MaxSessionDurationSeconds, "Session key lifetime exceeds maximum of 30 days");
+            ExecutionEngine.Assert(validUntil <= Runtime.Time + MaxSessionDurationMs, "Session key lifetime exceeds maximum of 30 days");
             ExecutionEngine.Assert(spendingLimit >= 0, "Spending limit must be non-negative");
             ExecutionEngine.Assert(description == null || description.Length <= 128, "Description too long (max 128 chars)");
 
@@ -78,7 +78,7 @@ namespace AbstractAccount.Verifiers
             if (lastRotationData != null)
             {
                 BigInteger lastRotation = (BigInteger)lastRotationData;
-                ExecutionEngine.Assert(Runtime.Time >= lastRotation + KeyRotationCooldownSeconds, "Key rotation cooldown active (24h)");
+                ExecutionEngine.Assert(Runtime.Time >= lastRotation + KeyRotationCooldownMs, "Key rotation cooldown active (24h)");
             }
 
             SessionKeyData data = new SessionKeyData
