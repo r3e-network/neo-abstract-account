@@ -318,6 +318,16 @@ test('vite config polyfills browser crypto dependencies pulled by web3auth walle
   assert.match(viteConfigSource, /'process'/);
 });
 
+test('frontend pins a non-vulnerable vite release in both manifest and lockfile', () => {
+  const frontendPackage = readFrontendPackage();
+  const packageLock = JSON.parse(read('package-lock.json'));
+  const viteEntry = packageLock.packages?.['node_modules/vite'];
+
+  assert.equal(frontendPackage.devDependencies?.vite, '^6.4.2');
+  assert.ok(viteEntry);
+  assert.match(viteEntry.version, /^6\.4\.[2-9]|^[7-9]\./);
+});
+
 test('vite config aliases vm to a local browser shim instead of bundling vm-browserify', () => {
   const viteConfigSource = read('vite.config.js');
 
