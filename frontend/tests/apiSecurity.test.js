@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import relayHandler from '../api/relay-transaction.js';
+import relayHandler, { resolveRelayExecutionConfig } from '../api/relay-transaction.js';
 import draftOperatorHandler from '../api/draft-operator.js';
 
 function createResponse() {
@@ -136,6 +136,60 @@ test('relay API binds paymaster requests to dapp and operation hashes', () => {
   assert.match(source, /userop_method/);
   assert.match(source, /sha256Hex\(metaInvocation\)/);
   assert.match(source, /paymaster \? \{ \.\.\.result, paymaster \} : result/);
+});
+
+test('relay execution config prefers network-scoped server settings when request network is testnet', () => {
+  const snapshot = {
+    AA_RELAY_MAINNET_RPC_URL: process.env.AA_RELAY_MAINNET_RPC_URL,
+    AA_RELAY_TESTNET_RPC_URL: process.env.AA_RELAY_TESTNET_RPC_URL,
+    AA_RELAY_RPC_URL: process.env.AA_RELAY_RPC_URL,
+    AA_RELAY_MAINNET_ALLOWED_HASH: process.env.AA_RELAY_MAINNET_ALLOWED_HASH,
+    AA_RELAY_TESTNET_ALLOWED_HASH: process.env.AA_RELAY_TESTNET_ALLOWED_HASH,
+    AA_RELAY_ALLOWED_HASH: process.env.AA_RELAY_ALLOWED_HASH,
+    AA_RELAY_MAINNET_WIF: process.env.AA_RELAY_MAINNET_WIF,
+    AA_RELAY_TESTNET_WIF: process.env.AA_RELAY_TESTNET_WIF,
+    AA_RELAY_WIF: process.env.AA_RELAY_WIF,
+    AA_RELAY_MAINNET_ALLOW_RAW_FORWARD: process.env.AA_RELAY_MAINNET_ALLOW_RAW_FORWARD,
+    AA_RELAY_TESTNET_ALLOW_RAW_FORWARD: process.env.AA_RELAY_TESTNET_ALLOW_RAW_FORWARD,
+    AA_RELAY_ALLOW_RAW_FORWARD: process.env.AA_RELAY_ALLOW_RAW_FORWARD,
+  };
+
+  process.env.AA_RELAY_MAINNET_RPC_URL = 'https://mainnet.rpc.example';
+  process.env.AA_RELAY_TESTNET_RPC_URL = 'https://testnet.rpc.example';
+  process.env.AA_RELAY_RPC_URL = 'https://global.rpc.example';
+  process.env.AA_RELAY_MAINNET_ALLOWED_HASH = `0x${'11'.repeat(20)}`;
+  process.env.AA_RELAY_TESTNET_ALLOWED_HASH = `0x${'22'.repeat(20)}`;
+  process.env.AA_RELAY_ALLOWED_HASH = `0x${'33'.repeat(20)}`;
+  process.env.AA_RELAY_MAINNET_WIF = 'mainnet-wif';
+  process.env.AA_RELAY_TESTNET_WIF = 'testnet-wif';
+  process.env.AA_RELAY_WIF = 'global-wif';
+  process.env.AA_RELAY_MAINNET_ALLOW_RAW_FORWARD = '0';
+  process.env.AA_RELAY_TESTNET_ALLOW_RAW_FORWARD = '1';
+  process.env.AA_RELAY_ALLOW_RAW_FORWARD = '0';
+
+  try {
+    const config = resolveRelayExecutionConfig({
+      req: {
+        query: {},
+        headers: {},
+      },
+      requestPayload: {
+        morpheus_network: 'testnet',
+      },
+      paymaster: null,
+    });
+
+    assert.equal(config.network, 'testnet');
+    assert.equal(config.rpcUrl, 'https://testnet.rpc.example');
+    assert.equal(config.allowedAaContractHash, '2222222222222222222222222222222222222222');
+    assert.equal(config.relayWif, 'testnet-wif');
+    assert.equal(config.allowRawRelayForwarding, true);
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 test('account metadata API does not require a browser-visible API key for upserts', () => {

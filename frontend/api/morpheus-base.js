@@ -101,9 +101,13 @@ export function resolveMorpheusPaymasterEndpoint(networkInput) {
   return base ? `${base}${paymasterRoute}` : '';
 }
 
-export function resolveMorpheusRuntimeToken() {
+export function resolveMorpheusRuntimeToken(networkInput) {
+  const network = normalizeNetwork(networkInput);
+  const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
   return trim(
-    process.env.MORPHEUS_RUNTIME_TOKEN
+    process.env[`MORPHEUS_${upper}_RUNTIME_TOKEN`]
+      || process.env[`MORPHEUS_${upper}_PHALA_API_TOKEN`]
+      || process.env.MORPHEUS_RUNTIME_TOKEN
       || process.env.PHALA_API_TOKEN
       || process.env.PHALA_SHARED_SECRET
       || ''

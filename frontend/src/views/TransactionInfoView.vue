@@ -670,6 +670,7 @@ async function checkRelay() {
       relayEndpoint: runtime.relayEndpoint,
       relayPayloadMode: relayPayloadMode.value,
       relayRawEnabled: runtime.relayRawEnabled,
+      morpheusNetwork: runtime.morpheusNetwork,
       transactionBody: draft.value?.transaction_body || {},
       signatures: draft.value?.signatures || [],
     });
@@ -678,6 +679,7 @@ async function checkRelay() {
       relayEndpoint: runtime.relayEndpoint,
       relayPayloadMode: relayPayloadMode.value,
       relayRawEnabled: runtime.relayRawEnabled,
+      morpheusNetwork: runtime.morpheusNetwork,
       transactionBody: draft.value?.transaction_body || {},
       signatures: draft.value?.signatures || [],
       t,

@@ -3,6 +3,7 @@ import { sanitizeHex } from '../../utils/hex.js';
 import { cloneImmutable } from './helpers.js';
 import { buildDraftCollaborationUrl, buildDraftShareUrl } from './shareLinks.js';
 import { EC } from '../../config/errorCodes.js';
+import { RUNTIME_CONFIG } from '../../config/runtimeConfig.js';
 import {
   buildExecuteUnifiedByAddressInvocation,
   buildExecuteUserOpInvocation as buildV3ExecuteUserOpInvocation,
@@ -235,11 +236,17 @@ export function buildClientBroadcastRequest({ signerAddress = '', transactionBod
   return invocation;
 }
 
-export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMode = 'best', relayRawEnabled = true, transactionBody = {}, signatures = [] } = {}) {
+export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMode = 'best', relayRawEnabled = true, transactionBody = {}, signatures = [], morpheusNetwork = RUNTIME_CONFIG.morpheusNetwork } = {}) {
   if (!relayEndpoint) {
     throw new Error(EC.relayEndpointMissing);
   }
 
+  const normalizedMorpheusNetwork = String(morpheusNetwork || '').trim().toLowerCase();
+  const relayNetwork = normalizedMorpheusNetwork === 'testnet'
+    ? 'testnet'
+    : normalizedMorpheusNetwork === 'mainnet'
+      ? 'mainnet'
+      : '';
   const rawTransaction = sanitizeHex(
     transactionBody?.rawTransaction || transactionBody?.raw_transaction || transactionBody?.txHex || ''
   );
@@ -261,6 +268,7 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
     }
     return {
       relayEndpoint,
+      ...(relayNetwork ? { morpheus_network: relayNetwork } : {}),
       rawTransaction,
       ...(paymaster ? { paymaster } : {}),
     };
@@ -269,6 +277,7 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
   if (resolvedMode === 'meta' && metaInvocation) {
     return {
       relayEndpoint,
+      ...(relayNetwork ? { morpheus_network: relayNetwork } : {}),
       metaInvocation,
       ...(paymaster ? { paymaster } : {}),
     };
@@ -282,6 +291,7 @@ export async function executeBroadcast({
   signerAddress = '',
   relayPayloadMode = 'best',
   relayRawEnabled = true,
+  morpheusNetwork = RUNTIME_CONFIG.morpheusNetwork,
   transactionBody = {},
   signatures = [],
   walletService,
@@ -293,7 +303,7 @@ export async function executeBroadcast({
 
   if (mode === 'relay') {
     return walletService.relayTransaction(
-      buildRelayBroadcastRequest({ relayEndpoint, relayPayloadMode, relayRawEnabled, transactionBody, signatures })
+      buildRelayBroadcastRequest({ relayEndpoint, relayPayloadMode, relayRawEnabled, transactionBody, signatures, morpheusNetwork })
     );
   }
 

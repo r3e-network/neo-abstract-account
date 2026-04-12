@@ -11,6 +11,7 @@ test('buildRelayPreflightRequest reuses the selected relay payload and adds simu
   const request = buildRelayPreflightRequest({
     relayEndpoint: '/api/relay-transaction',
     relayPayloadMode: 'meta',
+    morpheusNetwork: 'testnet',
     transactionBody: {},
     signatures: [{
       kind: 'evm',
@@ -26,6 +27,7 @@ test('buildRelayPreflightRequest reuses the selected relay payload and adds simu
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    morpheus_network: 'testnet',
     simulate: true,
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
