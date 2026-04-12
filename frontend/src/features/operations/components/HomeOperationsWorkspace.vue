@@ -1229,8 +1229,8 @@ async function persistRelayCheckMetadata(snapshot) {
 async function checkRelay() {
   setSubmissionPending('relay-check');
   try {
-    relayCheckRequest.value = buildRelayPreflightRequest({ relayEndpoint: runtime.relayEndpoint, relayPayloadMode: relayPayloadMode.value, relayRawEnabled: runtime.relayRawEnabled, transactionBody: workspace.transactionBody.value, signatures: workspace.signatures.value });
-    relayCheck.value = await runRelayPreflight({ walletService, relayEndpoint: runtime.relayEndpoint, relayPayloadMode: relayPayloadMode.value, relayRawEnabled: runtime.relayRawEnabled, transactionBody: workspace.transactionBody.value, signatures: workspace.signatures.value, t });
+    relayCheckRequest.value = buildRelayPreflightRequest({ relayEndpoint: runtime.relayEndpoint, relayPayloadMode: relayPayloadMode.value, relayRawEnabled: runtime.relayRawEnabled, morpheusNetwork: runtime.morpheusNetwork, transactionBody: workspace.transactionBody.value, signatures: workspace.signatures.value });
+    relayCheck.value = await runRelayPreflight({ walletService, relayEndpoint: runtime.relayEndpoint, relayPayloadMode: relayPayloadMode.value, relayRawEnabled: runtime.relayRawEnabled, morpheusNetwork: runtime.morpheusNetwork, transactionBody: workspace.transactionBody.value, signatures: workspace.signatures.value, t });
     await persistRelayCheckMetadata(relayCheck.value);
     await appendActivity(createActivityEvent({ type: 'relay_preflight', actor: 'relay', detail: relayCheck.value.label }));
     toast.success(`${t('operations.relayCheckLabelDetailPrefix', 'Relay check completed:')} ${relayCheck.value.detail}`);

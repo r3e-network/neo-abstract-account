@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeBase, resolveMorpheusWorkflowIds } from '../api/morpheus-base.js';
+import {
+  resolveMorpheusPaymasterEndpoint,
+  resolveMorpheusRuntimeBase,
+  resolveMorpheusRuntimeToken,
+  resolveMorpheusWorkflowIds,
+} from '../api/morpheus-base.js';
 import morpheusNeoDidHandler from '../api/morpheus-neodid.js';
 import morpheusOracleKeyHandler from '../api/morpheus-oracle-public-key.js';
 
@@ -37,6 +42,32 @@ test('morpheus runtime base prefers direct testnet runtime domains', async () =>
   } finally {
     if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
     else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+  }
+});
+
+test('morpheus runtime token prefers network-scoped values when present', () => {
+  const snapshot = {
+    MORPHEUS_MAINNET_RUNTIME_TOKEN: process.env.MORPHEUS_MAINNET_RUNTIME_TOKEN,
+    MORPHEUS_TESTNET_RUNTIME_TOKEN: process.env.MORPHEUS_TESTNET_RUNTIME_TOKEN,
+    MORPHEUS_RUNTIME_TOKEN: process.env.MORPHEUS_RUNTIME_TOKEN,
+    MORPHEUS_TESTNET_PHALA_API_TOKEN: process.env.MORPHEUS_TESTNET_PHALA_API_TOKEN,
+    PHALA_API_TOKEN: process.env.PHALA_API_TOKEN,
+  };
+
+  process.env.MORPHEUS_MAINNET_RUNTIME_TOKEN = 'mainnet-runtime-token';
+  process.env.MORPHEUS_TESTNET_RUNTIME_TOKEN = 'testnet-runtime-token';
+  process.env.MORPHEUS_RUNTIME_TOKEN = 'global-runtime-token';
+  process.env.MORPHEUS_TESTNET_PHALA_API_TOKEN = 'testnet-phala-token';
+  process.env.PHALA_API_TOKEN = 'global-phala-token';
+
+  try {
+    assert.equal(resolveMorpheusRuntimeToken('mainnet'), 'mainnet-runtime-token');
+    assert.equal(resolveMorpheusRuntimeToken('testnet'), 'testnet-runtime-token');
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
   }
 });
 

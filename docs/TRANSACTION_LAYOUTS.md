@@ -380,7 +380,7 @@ The frontend provides `buildExecuteUnifiedByAddressInvocation()` which construct
 ## Frontend Helper: buildExecuteUnifiedByAddressInvocation
 ## 前端辅助函数：buildExecuteUnifiedByAddressInvocation
 
-From `/home/neo/git/neo-abstract-account/frontend/src/features/operations/metaTx.js`:
+From `frontend/src/features/operations/metaTx.js`:
 
 ```javascript
 export function buildExecuteUnifiedByAddressInvocation({
@@ -597,6 +597,6 @@ This document provides complete transaction layouts for all three verification t
 本文档为 Neo 抽象账户系统中的所有三种验证类型提供了完整的交易布局。用户可以在构造交易或调试验证问题时参考这些结构。
 
 **Related Files**:
-- Contract: `/home/neo/git/neo-abstract-account/contracts/AbstractAccount.cs`
-- Frontend: `/home/neo/git/neo-abstract-account/frontend/src/features/operations/metaTx.js`
-- Flow Documentation: `/home/neo/git/neo-abstract-account/docs/TRANSACTION_FLOW.md`
+- Contract: `contracts/AbstractAccount.cs`
+- Frontend: `frontend/src/features/operations/metaTx.js`
+- Flow Documentation: `docs/TRANSACTION_FLOW.md`

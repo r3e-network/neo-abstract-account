@@ -1,11 +1,11 @@
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { DEFAULT_ABSTRACT_ACCOUNT_HASH, resolveAbstractAccountHash, resolveOptionalBoolean } from '../src/config/runtimeConfig.js';
+import { DEFAULT_ABSTRACT_ACCOUNT_HASH, DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, resolveAbstractAccountHash, resolveOptionalBoolean } from '../src/config/runtimeConfig.js';
 import { sanitizeHex } from '../src/utils/hex.js';
 import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvocationForRelay } from './relayHelpers.js';
 import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
 import { checkRateLimit, sanitizeError } from './rateLimiter.js';
-import { resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeToken } from './morpheus-base.js';
+import { resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeToken, resolveNetwork } from './morpheus-base.js';
 
 const RAW_TRANSACTION_PATTERN = /^(0x)?[0-9a-fA-F]+$/;
 const MAX_RAW_TRANSACTION_LENGTH = 200000;
@@ -72,24 +72,82 @@ function sendJson(res, statusCode, payload, requestId) {
   res.status(statusCode).json(attachRequestId(payload, requestId));
 }
 
-function resolvePaymasterNetwork() {
-  const normalized = trimString(
-    process.env.MORPHEUS_NETWORK
-      || process.env.NEXT_PUBLIC_MORPHEUS_NETWORK
-      || process.env.VITE_MORPHEUS_NETWORK
-      || 'mainnet'
-  ).toLowerCase();
-  return normalized === 'testnet' ? 'testnet' : 'mainnet';
+function resolveRelayEnv(network, key) {
+  const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
+  return trimString(
+    process.env[`AA_RELAY_${upper}_${key}`]
+      || process.env[`AA_RELAY_${key}`]
+      || ''
+  );
 }
 
-function resolvePaymasterConfig() {
-  const network = resolvePaymasterNetwork();
+function resolveRelayNetwork({ req = {}, requestPayload = {}, paymaster = null } = {}) {
+  const payload = requestPayload && typeof requestPayload === 'object' ? requestPayload : {};
+  const paymasterConfig = paymaster && typeof paymaster === 'object' ? paymaster : {};
+  return resolveNetwork({
+    query: {
+      ...(req?.query || {}),
+      morpheus_network:
+        payload?.morpheus_network
+        || paymasterConfig?.morpheus_network
+        || paymasterConfig?.network
+        || req?.query?.morpheus_network,
+    },
+    body: {
+      ...(req?.body || {}),
+      morpheus_network:
+        payload?.morpheus_network
+        || paymasterConfig?.morpheus_network
+        || paymasterConfig?.network
+        || req?.body?.morpheus_network,
+    },
+    headers: req?.headers || {},
+  });
+}
+
+function resolveAllowedAaContractHash(network) {
+  const defaultHash = network === 'testnet'
+    ? DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET
+    : DEFAULT_ABSTRACT_ACCOUNT_HASH;
+  const fallbackClientHash = network === 'testnet'
+    ? process.env.VITE_AA_HASH_TESTNET || process.env.VITE_ABSTRACT_ACCOUNT_HASH_TESTNET
+    : process.env.VITE_AA_HASH || process.env.VITE_ABSTRACT_ACCOUNT_HASH;
+  return resolveAbstractAccountHash(
+    resolveRelayEnv(network, 'ALLOWED_HASH')
+      || fallbackClientHash
+      || process.env.VITE_ABSTRACT_ACCOUNT_HASH
+      || defaultHash,
+    defaultHash,
+  );
+}
+
+export function resolveRelayExecutionConfig({ req = {}, requestPayload = {}, paymaster = null } = {}) {
+  const network = resolveRelayNetwork({ req, requestPayload, paymaster });
+  return {
+    network,
+    rpcUrl: trimString(
+      resolveRelayEnv(network, 'RPC_URL')
+        || process.env.VITE_AA_RELAY_RPC_URL
+        || process.env.VITE_NEO_RPC_URL
+        || ''
+    ),
+    relayWif: trimString(resolveRelayEnv(network, 'WIF') || ''),
+    allowedAaContractHash: resolveAllowedAaContractHash(network),
+    allowRawRelayForwarding: resolveOptionalBoolean(
+      resolveRelayEnv(network, 'ALLOW_RAW_FORWARD')
+        || process.env.VITE_AA_RELAY_RAW_ENABLED,
+      false,
+    ),
+  };
+}
+
+function resolvePaymasterConfig(network) {
   const endpoint = trimString(resolveMorpheusPaymasterEndpoint(network));
   const apiToken = trimString(
     process.env[`MORPHEUS_PAYMASTER_${network === 'testnet' ? 'TESTNET' : 'MAINNET'}_API_TOKEN`]
       || process.env.MORPHEUS_PAYMASTER_API_TOKEN
       || process.env.AA_PAYMASTER_API_TOKEN
-      || resolveMorpheusRuntimeToken()
+      || resolveMorpheusRuntimeToken(network)
       || ''
   );
   return { network, endpoint, apiToken, enabled: Boolean(endpoint) };
@@ -125,8 +183,8 @@ function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimatedGasUni
   };
 }
 
-async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estimatedGasUnits = 0 }) {
-  const config = resolvePaymasterConfig();
+async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estimatedGasUnits = 0, network = 'mainnet' }) {
+  const config = resolvePaymasterConfig(network);
   if (!config.enabled) return null;
 
   const requestBody = buildPaymasterRequest({
@@ -318,24 +376,16 @@ export default async function handler(req, res) {
     }, requestId);
   }
 
-  const rpcUrl = process.env.AA_RELAY_RPC_URL || process.env.VITE_AA_RELAY_RPC_URL || process.env.VITE_NEO_RPC_URL || '';
+  const relayConfig = resolveRelayExecutionConfig({
+    req,
+    requestPayload,
+    paymaster: paymasterInput,
+  });
+  const { rpcUrl, relayWif, allowedAaContractHash, allowRawRelayForwarding } = relayConfig;
   if (!rpcUrl) {
     await failDurableRequest(durable.context, { statusCode: 501, error: 'relay_not_configured', phase: 'config' });
     return sendJson(res, 501, { error: 'relay_not_configured' }, requestId);
   }
-
-  const allowRawRelayForwarding = resolveOptionalBoolean(
-    process.env.AA_RELAY_ALLOW_RAW_FORWARD || process.env.VITE_AA_RELAY_RAW_ENABLED,
-    false,
-  );
-  const allowedAaContractHash = resolveAbstractAccountHash(
-    process.env.AA_RELAY_ALLOWED_HASH
-      || process.env.VITE_AA_HASH
-      || process.env.VITE_ABSTRACT_ACCOUNT_HASH
-      || process.env.VITE_AA_HASH_TESTNET
-      || DEFAULT_ABSTRACT_ACCOUNT_HASH,
-    DEFAULT_ABSTRACT_ACCOUNT_HASH,
-  );
 
   if (normalized.mode === 'raw') {
     if (!allowRawRelayForwarding) {
@@ -414,7 +464,6 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: 'relay_meta_invocation_not_allowed' }, requestId);
   }
 
-  const relayWif = process.env.AA_RELAY_WIF || '';
   if (!relayWif) {
     await failDurableRequest(durable.context, { statusCode: 501, error: 'relay_signer_not_configured', phase: 'config' });
     return sendJson(res, 501, { error: 'relay_signer_not_configured' }, requestId);
@@ -432,6 +481,7 @@ export default async function handler(req, res) {
         metaInvocation: sanitizedMetaInvocation,
         paymaster: paymasterInput,
         estimatedGasUnits: Number(result?.gasConsumed || 0),
+        network: relayConfig.network,
       });
       if (paymaster && paymaster.approved === false) {
         const body = {
@@ -467,6 +517,7 @@ export default async function handler(req, res) {
       metaInvocation: sanitizedMetaInvocation,
       paymaster: paymasterInput,
       estimatedGasUnits: Number(preview?.gasConsumed || 0),
+      network: relayConfig.network,
     });
     if (paymaster && paymaster.approved === false) {
       const body = {

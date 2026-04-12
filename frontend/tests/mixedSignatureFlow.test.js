@@ -184,6 +184,7 @@ test('broadcast helpers route client broadcasts through the wallet and relay bro
 
   const relayResult = await executeBroadcast({
     mode: 'relay',
+    morpheusNetwork: 'testnet',
     transactionBody: {
       rawTransaction: '0xDEADBEEF',
     },
@@ -206,6 +207,7 @@ test('broadcast helpers route client broadcasts through the wallet and relay bro
     kind: 'relay',
     input: {
       relayEndpoint: '/api/relay-transaction',
+      morpheus_network: 'testnet',
       rawTransaction: 'deadbeef',
     },
   });
@@ -266,6 +268,7 @@ test('buildRelayPayloadOptions exposes raw mode only when raw relay forwarding i
 test('buildRelayBroadcastRequest uses stored meta invocations when raw transaction bytes are absent', () => {
   const request = buildRelayBroadcastRequest({
     relayEndpoint: '/api/relay-transaction',
+    morpheusNetwork: 'testnet',
     relayPayloadMode: 'meta',
     transactionBody: {},
     signatures: [{
@@ -283,6 +286,7 @@ test('buildRelayBroadcastRequest uses stored meta invocations when raw transacti
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    morpheus_network: 'testnet',
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
       operation: 'executeUnifiedByAddress',
@@ -306,6 +310,7 @@ test('buildRelayBroadcastRequest rejects raw relay when raw forwarding is disabl
 test('buildRelayBroadcastRequest honors explicit meta selection when raw and meta payloads both exist', () => {
   const request = buildRelayBroadcastRequest({
     relayEndpoint: '/api/relay-transaction',
+    morpheusNetwork: 'testnet',
     relayPayloadMode: 'meta',
     transactionBody: { rawTransaction: '0xdeadbeef' },
     signatures: [{
@@ -323,6 +328,7 @@ test('buildRelayBroadcastRequest honors explicit meta selection when raw and met
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    morpheus_network: 'testnet',
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
       operation: 'executeUnifiedByAddress',
@@ -334,6 +340,7 @@ test('buildRelayBroadcastRequest honors explicit meta selection when raw and met
 test('buildRelayBroadcastRequest forwards paymaster metadata when present', () => {
   const request = buildRelayBroadcastRequest({
     relayEndpoint: '/api/relay-transaction',
+    morpheusNetwork: 'testnet',
     relayPayloadMode: 'meta',
     transactionBody: {
       paymaster: {
@@ -358,6 +365,7 @@ test('buildRelayBroadcastRequest forwards paymaster metadata when present', () =
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    morpheus_network: 'testnet',
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
       operation: 'executeUserOp',
