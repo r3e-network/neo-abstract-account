@@ -18,7 +18,7 @@ const { sanitizeHex } = require('../sdk/js/src/metaTx');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const WIF = 'Kx2BeyUv1dBr99QtjrRsE7xxQqcHHZJmEWXvV8ivyShgWq7BbA4U';
+const WIF = process.env.MARKET_DEPLOY_WIF || process.env.NEO_TESTNET_WIF || '';
 const RPC_URL = 'http://seed1t5.neo.org:20332';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 
@@ -163,6 +163,10 @@ function loadAccountsFromDB() {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  if (!WIF) {
+    throw new Error('MARKET_DEPLOY_WIF or NEO_TESTNET_WIF is required');
+  }
+
   const account = new wallet.Account(WIF);
   const client = new rpc.RPCClient(RPC_URL);
   const version = await withRpcRetry('getVersion', () => client.getVersion());

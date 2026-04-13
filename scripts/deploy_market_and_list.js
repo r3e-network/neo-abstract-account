@@ -13,8 +13,8 @@
  *   node scripts/deploy_market_and_list.js
  *
  * Environment:
- *   WIF is hardcoded for testnet disposable account.
- *   DB connection reads from Neon DB.
+ *   Set `NEO_TESTNET_WIF` (or `MARKET_DEPLOY_WIF`) to the funded deployer WIF.
+ *   Set `NEON_DB_URL` to the target Neon/Postgres connection string.
  */
 
 const fs = require('fs');
@@ -26,7 +26,7 @@ const { sanitizeHex } = require('../sdk/js/src/metaTx');
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const WIF = 'Kx2BeyUv1dBr99QtjrRsE7xxQqcHHZJmEWXvV8ivyShgWq7BbA4U';
+const WIF = process.env.MARKET_DEPLOY_WIF || process.env.NEO_TESTNET_WIF || '';
 const RPC_URLS = [
   'http://seed1t5.neo.org:20332',
   'http://seed2t5.neo.org:20332',
@@ -34,7 +34,7 @@ const RPC_URLS = [
   'http://seed4t5.neo.org:20332',
   'http://seed5t5.neo.org:20332',
 ];
-const NEON_DB_URL = 'postgresql://neondb_owner:npg_jUF8Jf0YdKbw@ep-noisy-bar-annbarx2-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require';
+const NEON_DB_URL = process.env.NEON_DB_URL || '';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const DEPLOY_TAG = `market-${Date.now().toString(36)}`;
 const ZERO_HASH160 = '0000000000000000000000000000000000000000';
@@ -253,6 +253,13 @@ async function loadAccountsFromDB() {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  if (!WIF) {
+    throw new Error('MARKET_DEPLOY_WIF or NEO_TESTNET_WIF is required');
+  }
+  if (!NEON_DB_URL) {
+    throw new Error('NEON_DB_URL is required');
+  }
+
   const account = new wallet.Account(WIF);
   const client = new rpc.RPCClient(RPC_URLS[0]);
   const version = await withRpcRetry('getVersion', () => client.getVersion());
