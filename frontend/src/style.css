@@ -1,10 +1,10 @@
 :root {
-  --aa-orange: #EDEDED;
-  --aa-orange-rgb: 237, 237, 237;
-  --aa-dark-orange: #FFFFFF;
-  --aa-light-orange: #FFFFFF;
-  --aa-blue: #EDEDED;
-  --aa-blue-rgb: 237, 237, 237;
+  --aa-orange: #FF4400;
+  --aa-orange-rgb: 255, 68, 0;
+  --aa-dark-orange: #CC3600;
+  --aa-light-orange: #FF6A33;
+  --aa-blue: #00A3FF;
+  --aa-blue-rgb: 0, 163, 255;
   --aa-dark: #000000;
   --aa-panel: #0A0A0A;
   --aa-border: #333333;
@@ -18,9 +18,9 @@
   --aa-warning-light: #fcd34d;
   --aa-error: #f43f5e;
   --aa-error-light: #fda4af;
-  --neo-500: #EDEDED;
-  --neo-500-rgb: 237, 237, 237;
-  --neo-400: #EDEDED;
+  --neo-500: #22c55e;
+  --neo-500-rgb: 34, 197, 94;
+  --neo-400: #4ade80;
 }
 
 @tailwind base;
