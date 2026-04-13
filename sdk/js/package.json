@@ -29,7 +29,7 @@
     "testnet:validate:paymaster-onchain": "node tests/v3_testnet_paymaster_onchain.mjs"
   },
   "dependencies": {
-    "@cityofzion/neon-js": "^5.4.0",
+    "@cityofzion/neon-js": "^5.8.1",
     "ethers": "^6.11.1"
   }
 }
