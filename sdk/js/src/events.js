@@ -3,7 +3,7 @@
  * Provides utilities for listening to contract events.
  */
 
-const { rpc } = require('@cityofzion/neon-js');
+const { rpc } = require('./neonCompat');
 const { EC, createError } = require('./errors');
 const { validateHash160, sanitizeHex } = require('./validation');
 

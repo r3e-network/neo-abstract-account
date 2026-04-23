@@ -6,7 +6,7 @@ import { resolveMatrixDomain } from '@/services/matrixDomainService.js';
 import { resolveContractIdentifier } from '@/services/domainResolverService.js';
 
 export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
-export const DEFAULT_MAINNET_RPC_URL = 'https://mainnet1.neo.coz.io:443';
+export const DEFAULT_MAINNET_RPC_URL = 'http://seed1.neo.org:10332';
 
 const CONTRACT_SEARCH_LIMIT = 10;
 

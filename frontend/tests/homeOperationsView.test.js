@@ -69,9 +69,11 @@ test('operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /NeoDID \/ Web3Auth/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /fetchVerifierContractByAddress/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /fetchUnifiedVerifierState/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /fetchAccountMaintenanceState/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Refresh Chain State/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Pending Recovery/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Active Private Session/);
+  assert.match(fs.readFileSync(didPanelPath, 'utf8'), /Pending Account Maintenance/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /emit\('status'/);
   assert.match(fs.readFileSync(didPanelPath, 'utf8'), /emit\('activity'/);
   assert.match(fs.readFileSync(loadPanelPath, 'utf8'), /Load V3 Account/);

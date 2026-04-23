@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  resolveMorpheusOracleCvmId,
   resolveMorpheusPaymasterEndpoint,
   resolveMorpheusRuntimeBase,
   resolveMorpheusRuntimeToken,
@@ -210,5 +211,28 @@ test('morpheus paymaster endpoint resolves from the generated runtime catalog', 
   } finally {
     if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
     else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+  }
+});
+
+test('morpheus oracle CVM id resolves from network-scoped env or runtime catalog', () => {
+  const snapshot = {
+    MORPHEUS_TESTNET_PAYMASTER_APP_ID: process.env.MORPHEUS_TESTNET_PAYMASTER_APP_ID,
+    MORPHEUS_PAYMASTER_APP_ID: process.env.MORPHEUS_PAYMASTER_APP_ID,
+  };
+
+  process.env.MORPHEUS_TESTNET_PAYMASTER_APP_ID = 'testnet-app-override';
+  process.env.MORPHEUS_PAYMASTER_APP_ID = 'global-app-override';
+
+  try {
+    assert.equal(resolveMorpheusOracleCvmId('testnet'), 'testnet-app-override');
+    delete process.env.MORPHEUS_TESTNET_PAYMASTER_APP_ID;
+    assert.equal(resolveMorpheusOracleCvmId('testnet'), 'global-app-override');
+    delete process.env.MORPHEUS_PAYMASTER_APP_ID;
+    assert.equal(resolveMorpheusOracleCvmId('testnet'), 'ddff154546fe22d15b65667156dd4b7c611e6093');
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
   }
 });

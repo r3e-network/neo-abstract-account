@@ -1,4 +1,4 @@
-const { rpc, sc, u, wallet } = require('@cityofzion/neon-js');
+const { rpc, sc, u, wallet } = require('./neonCompat');
 const metaTxExports = require('./metaTx');
 const { EC, createError, mapRpcError, formatError } = require('./errors');
 const {
@@ -519,13 +519,12 @@ class AbstractAccountClient {
    * @throws {Error} If computation fails or returns empty result
    */
   async computeArgsHash(args = []) {
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'computeArgsHash',
-      args: [{ type: 'Array', value: args }],
-    });
-
-    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
+    const response = await this.invokeFunctionWithRetry(
+      this.masterContractHash,
+      'computeArgsHash',
+      [{ type: 'Array', value: args }],
+      []
+    );
 
     if (response?.state === 'FAULT') {
       const mappedError = mapRpcError({ message: response.exception });
@@ -921,12 +920,12 @@ class AbstractAccountClient {
     const accountId = normalizeAddress(accountHashOrAddress);
 
     const invokeSafe = async (operation) => {
-      const script = sc.createScript({
-        scriptHash: this.masterContractHash,
+      const response = await this.invokeFunctionWithRetry(
+        this.masterContractHash,
         operation,
-        args: [{ type: 'Hash160', value: accountId }],
-      });
-      const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
+        [{ type: 'Hash160', value: accountId }],
+        []
+      );
 
       if (response?.state === 'FAULT') {
         throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -958,13 +957,13 @@ class AbstractAccountClient {
 
     return {
       accountId,
-      verifier: verifier?.value || '',
-      hook: hook?.value || '',
-      backupOwner: backupOwner?.value || '',
-      escapeTimelock: escapeTimelock?.value || '0',
-      escapeTriggeredAt: escapeTriggeredAt?.value || '0',
+      verifier: decodeHash160Stack(verifier),
+      hook: decodeHash160Stack(hook),
+      backupOwner: decodeHash160Stack(backupOwner),
+      escapeTimelock: String(escapeTimelock?.value || '0'),
+      escapeTriggeredAt: String(escapeTriggeredAt?.value || '0'),
       escapeActive: Boolean(escapeActive?.value),
-      metadataUri: metadataUri?.value || '',
+      metadataUri: decodeByteStringStackText(metadataUri),
     };
   }
 
@@ -1113,14 +1112,12 @@ class AbstractAccountClient {
    */
   async getHasPendingVerifierUpdate(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
-
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'HasPendingVerifierUpdate',
-      args: [{ type: 'Hash160', value: accountId }],
-    });
-
-    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
+    const response = await this.invokeFunctionWithRetry(
+      this.masterContractHash,
+      'hasPendingVerifierUpdate',
+      [{ type: 'Hash160', value: accountId }],
+      []
+    );
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1138,14 +1135,12 @@ class AbstractAccountClient {
    */
   async getHasPendingHookUpdate(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
-
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'HasPendingHookUpdate',
-      args: [{ type: 'Hash160', value: accountId }],
-    });
-
-    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
+    const response = await this.invokeFunctionWithRetry(
+      this.masterContractHash,
+      'hasPendingHookUpdate',
+      [{ type: 'Hash160', value: accountId }],
+      []
+    );
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1163,14 +1158,12 @@ class AbstractAccountClient {
    */
   async getPendingVerifierUpdateTime(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
-
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'GetPendingVerifierUpdateTime',
-      args: [{ type: 'Hash160', value: accountId }],
-    });
-
-    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
+    const response = await this.invokeFunctionWithRetry(
+      this.masterContractHash,
+      'getPendingVerifierUpdateTime',
+      [{ type: 'Hash160', value: accountId }],
+      []
+    );
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
@@ -1188,20 +1181,104 @@ class AbstractAccountClient {
    */
   async getPendingHookUpdateTime(accountHashOrAddress) {
     const accountId = normalizeAddress(accountHashOrAddress);
-
-    const script = sc.createScript({
-      scriptHash: this.masterContractHash,
-      operation: 'GetPendingHookUpdateTime',
-      args: [{ type: 'Hash160', value: accountId }],
-    });
-
-    const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
+    const response = await this.invokeFunctionWithRetry(
+      this.masterContractHash,
+      'getPendingHookUpdateTime',
+      [{ type: 'Hash160', value: accountId }],
+      []
+    );
 
     if (response?.state === 'FAULT') {
       throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
     }
 
     return response?.stack?.[0]?.value || 0;
+  }
+
+  async getPendingVerifierCall(accountHashOrAddress) {
+    const accountId = normalizeAddress(accountHashOrAddress);
+    const [hasPending, executeAfter, moduleHashItem, callHashItem] = await Promise.all([
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'hasPendingVerifierCall',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'getPendingVerifierCallTime',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'getPendingVerifierCallModule',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'getPendingVerifierCallHash',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+    ]);
+
+    for (const response of [hasPending, executeAfter, moduleHashItem, callHashItem]) {
+      if (response?.state === 'FAULT') {
+        throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+      }
+    }
+
+    return {
+      hasPending: decodeStackBoolean(hasPending?.stack?.[0]),
+      executeAfter: String(executeAfter?.stack?.[0]?.value || '0'),
+      moduleHash: decodeHash160Stack(moduleHashItem?.stack?.[0]),
+      callHash: metaTxExports.decodeByteStringStackHex(callHashItem?.stack?.[0]),
+    };
+  }
+
+  async getPendingHookCall(accountHashOrAddress) {
+    const accountId = normalizeAddress(accountHashOrAddress);
+    const [hasPending, executeAfter, moduleHashItem, callHashItem] = await Promise.all([
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'hasPendingHookCall',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'getPendingHookCallTime',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'getPendingHookCallModule',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+      this.invokeFunctionWithRetry(
+        this.masterContractHash,
+        'getPendingHookCallHash',
+        [{ type: 'Hash160', value: accountId }],
+        []
+      ),
+    ]);
+
+    for (const response of [hasPending, executeAfter, moduleHashItem, callHashItem]) {
+      if (response?.state === 'FAULT') {
+        throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
+      }
+    }
+
+    return {
+      hasPending: decodeStackBoolean(hasPending?.stack?.[0]),
+      executeAfter: String(executeAfter?.stack?.[0]?.value || '0'),
+      moduleHash: decodeHash160Stack(moduleHashItem?.stack?.[0]),
+      callHash: metaTxExports.decodeByteStringStackHex(callHashItem?.stack?.[0]),
+    };
   }
 
   /**

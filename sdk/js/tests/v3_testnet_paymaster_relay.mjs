@@ -9,6 +9,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
+import phalaCliHelpers from "./phala-cli.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -17,12 +18,14 @@ const { rpc, sc, wallet, experimental, tx, u, CONST } = require("@cityofzion/neo
 const { ethers } = require("ethers");
 const { buildV3UserOperationTypedData, sanitizeHex } = require("../src/metaTx");
 const { AbstractAccountClient } = require("../src/index");
+const { resolveTestnetRpcUrl } = require("./testnet-rpc.js");
+const { resolvePhalaCliCommand } = phalaCliHelpers;
 
 const relayModule = await import("../../../frontend/api/relay-transaction.js");
 const relayHandler = relayModule.default;
 
 const TEST_WIF = process.env.TEST_WIF || process.env.NEO_TESTNET_WIF || "";
-const RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https://testnet1.neo.coz.io:443";
+let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "";
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
 const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
@@ -33,6 +36,7 @@ const PAYMASTER_API_TOKEN =
   || "";
 const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
 const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
+const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
 const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
@@ -84,6 +88,22 @@ if (!PAYMASTER_API_TOKEN) {
 function normalizeHash(value) {
   const hex = sanitizeHex(value || "");
   return hex ? `0x${hex}` : "";
+}
+
+function isAuthFailureStatus(status) {
+  return Number(status) === 401 || Number(status) === 403;
+}
+
+function parseLastJsonLine(stdout = "") {
+  const lines = String(stdout || "").trim().split("\n").map((line) => line.trim()).filter(Boolean);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (!line.startsWith("{")) continue;
+    try {
+      return JSON.parse(line);
+    } catch {}
+  }
+  return null;
 }
 
 function isUnauthorizedBootstrapError(error) {
@@ -202,6 +222,9 @@ function decodeByteStringHex(item) {
 }
 
 async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 } = {}) {
+  if (!PHALA_CLI_COMMAND) {
+    throw new Error("phala CLI is required for remote paymaster validation (global phala or npx phala)");
+  }
   let lastError = null;
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "morpheus-phala-"));
   const localScriptPath = path.join(tempDir, "remote.sh");
@@ -210,18 +233,18 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
     const remoteScriptPath = `/tmp/morpheus-paymaster-${Date.now()}-${attempt}.sh`;
     try {
       await execFileAsync(
-        "phala",
-        ["cp", "--api-token", PAYMASTER_API_TOKEN, localScriptPath, `${PAYMASTER_APP_ID}:${remoteScriptPath}`],
+        PHALA_CLI_COMMAND[0],
+        [...PHALA_CLI_COMMAND.slice(1), "cp", "--api-token", PAYMASTER_API_TOKEN, localScriptPath, `${PAYMASTER_APP_ID}:${remoteScriptPath}`],
         { maxBuffer },
       );
       const result = await execFileAsync(
-        "phala",
-        ["ssh", "--api-token", PAYMASTER_API_TOKEN, PAYMASTER_APP_ID, "--", "sh", remoteScriptPath],
+        PHALA_CLI_COMMAND[0],
+        [...PHALA_CLI_COMMAND.slice(1), "ssh", "--api-token", PAYMASTER_API_TOKEN, PAYMASTER_APP_ID, "--", "sh", remoteScriptPath],
         { maxBuffer },
       );
       await execFileAsync(
-        "phala",
-        ["ssh", "--api-token", PAYMASTER_API_TOKEN, PAYMASTER_APP_ID, "--", "rm", "-f", remoteScriptPath],
+        PHALA_CLI_COMMAND[0],
+        [...PHALA_CLI_COMMAND.slice(1), "ssh", "--api-token", PAYMASTER_API_TOKEN, PAYMASTER_APP_ID, "--", "rm", "-f", remoteScriptPath],
         { maxBuffer },
       ).catch(() => {});
       await rm(tempDir, { recursive: true, force: true }).catch(() => {});
@@ -270,7 +293,7 @@ async function callRemotePaymaster(
     : null;
   if (LOCAL_PAYMASTER_HANDLER_PATH) {
     const snapshot = new Map();
-    const localOverrides = normalizedAllowlistAccountId
+    const localOverrides = (!skipAllowlistUpdate && normalizedAllowlistAccountId)
       ? buildLocalPaymasterOverrides(normalizedAllowlistAccountId)
       : null;
     if (localOverrides) {
@@ -316,7 +339,11 @@ async function callRemotePaymaster(
       body: Buffer.from(bodyBase64, "base64").toString("utf8"),
     });
     const body = await response.json().catch(() => ({}));
-    return { status: response.status, body };
+    const direct = { status: response.status, body };
+    if (!isAuthFailureStatus(direct.status) || !PHALA_CLI_COMMAND) {
+      return direct;
+    }
+    console.warn("[paymaster-relay] direct authorize endpoint rejected the provided token; retrying via Phala CLI remote worker path");
   }
   const overrideAssignments = remoteOverrides
     ? Object.entries(remoteOverrides)
@@ -325,8 +352,12 @@ async function callRemotePaymaster(
     : "";
   const shellScript = `
 set -e
-cd /dstack
-docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T ${REMOTE_WORKER_SERVICE} node --input-type=module - <<'JS'
+WORKER_CONTAINER="$(docker ps --format '{{.Names}}' | awk '/request-worker/ { print; exit }')"
+if [ -z "$WORKER_CONTAINER" ]; then
+  echo "request-worker container not found" >&2
+  exit 1
+fi
+docker exec -i "$WORKER_CONTAINER" node --input-type=module - <<'JS'
 ${overrideAssignments}
 process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
@@ -344,9 +375,9 @@ console.log(JSON.stringify({ status: res.status, body: parsed }));
 JS
 `;
   const { stdout } = await runPhalaRemoteShell(shellScript, { maxBuffer: 10 * 1024 * 1024 });
-  const jsonLine = stdout.trim().split("\n").find((line) => line.trim().startsWith("{"));
-  if (!jsonLine) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
-  return JSON.parse(jsonLine);
+  const parsed = parseLastJsonLine(stdout);
+  if (!parsed) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
+  return parsed;
 }
 
 async function startPaymasterProxy({
@@ -396,6 +427,7 @@ async function startPaymasterProxy({
 }
 
 async function main() {
+  RPC_URL = await resolveTestnetRpcUrl({ env: process.env });
   const account = new wallet.Account(TEST_WIF);
   const rpcClient = new rpc.RPCClient(RPC_URL);
   const version = await rpcClient.getVersion();

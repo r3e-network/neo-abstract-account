@@ -59,6 +59,7 @@
       <DidIdentityPanel
         :aa-contract-hash="aaContractHash"
         :account-address-script-hash="accountAddressScriptHash"
+        :account-id-prefill="accountIdPrefill"
         :neo-wallet-address="neoWalletAddress"
         :recovery-verifier-prefill="recoveryVerifierPrefill"
         :recovery-new-owner-prefill="recoveryNewOwnerPrefill"
@@ -81,6 +82,7 @@ const route = useRoute();
 const { t } = useI18n();
 
 const aaContractHash = getAbstractAccountHash();
+const accountIdPrefill = computed(() => String(route.query.accountId || '').trim());
 const accountAddressScriptHash = computed(() => {
   const raw = String(route.query.account || '').trim();
   if (!raw) return '';
@@ -102,7 +104,7 @@ const autoPreviewRecovery = computed(() => {
 });
 const neoWalletAddress = computed(() => walletService.address || '');
 const walletLabel = computed(() => neoWalletAddress.value || t('identity.walletNotConnected', 'not connected'));
-const accountContextLabel = computed(() => accountAddressScriptHash.value || t('identity.noAccountContext', 'no account bound'));
+const accountContextLabel = computed(() => accountAddressScriptHash.value || accountIdPrefill.value || t('identity.noAccountContext', 'no account bound'));
 const workspaceLink = computed(() =>
   accountAddressScriptHash.value
     ? { path: '/app', query: { account: accountAddressScriptHash.value } }

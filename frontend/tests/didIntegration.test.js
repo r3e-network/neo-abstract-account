@@ -39,6 +39,12 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   assert.match(source, /revokeProxySession/);
   assert.match(source, /zklogin_verifier_params_hex/);
   assert.match(source, /fetchVerifierContractByAddress/);
+  assert.match(source, /fetchAccountMaintenanceState/);
+  assert.match(source, /hasPendingVerifierCall/);
+  assert.match(source, /getPendingHookCallTime/);
+  assert.match(source, /hex\.length === 40 \|\| hex\.length === 64/);
+  assert.match(source, /pendingVerifierCall/);
+  assert.match(source, /pendingHookCall/);
   assert.match(source, /fetchUnifiedVerifierState/);
   assert.match(source, /requestRecoveryTicket/);
   assert.match(source, /requestActionSession/);
@@ -98,8 +104,10 @@ test('main layout and home workspace expose a DID connection path', () => {
   assert.match(workspace, /Open Identity Workspace/);
   assert.match(identityView, /Web3Auth \/ NeoDID Workspace/);
   assert.match(identityView, /DidIdentityPanel/);
+  assert.match(identityView, /route\.query\.accountId/);
   assert.match(identityView, /route\.query\.recoveryVerifier/);
   assert.match(identityView, /route\.query\.autoPreviewRecovery/);
+  assert.match(panel, /accountIdPrefill/);
   assert.match(panel, /recoveryVerifierPrefill/);
   assert.match(panel, /autoPreviewRecovery/);
   assert.match(panel, /previewRecoveryAction/);
@@ -112,6 +120,14 @@ test('main layout and home workspace expose a DID connection path', () => {
   assert.match(panel, /Finalize Recovery/);
   assert.match(panel, /Cancel Recovery/);
   assert.match(panel, /Revoke Session/);
+  assert.match(panel, /Pending Account Maintenance/);
+  assert.match(panel, /Pending Verifier Maintenance Call/);
+  assert.match(panel, /Pending Hook Maintenance Call/);
+  assert.match(panel, /Pending Verifier Rotation/);
+  assert.match(panel, /Pending Hook Rotation/);
+  assert.match(panel, /Bound Module/);
+  assert.match(panel, /Pending Call Hash/);
+  assert.match(panel, /formatScheduledTimestamp/);
   assert.match(panel, /ZK Login Verifier Params/);
   assert.match(panel, /notificationService/);
 });

@@ -8,13 +8,17 @@ This runbook executes the current V3 SDK testnet validation scripts in the safes
 
 ## Optional environment
 
-- `TESTNET_RPC_URL` or `NEO_RPC_URL` to override the default Neo N3 testnet RPC
+- `TESTNET_RPC_URL` or `NEO_RPC_URL` to force one Neo N3 testnet RPC
+- `TESTNET_RPC_URLS` as a comma- or whitespace-separated Neo N3 testnet RPC candidate list; when unset, the validators auto-probe the official public seeds `seed1` through `seed5.neo.org:20332` and then fall back to `https://testnet1.neo.coz.io:443`
 - `MORPHEUS_RUNTIME_TOKEN` preferred, or `PHALA_API_TOKEN` / `PHALA_SHARED_SECRET`, to enable the live Morpheus paymaster relay validator
 - `MORPHEUS_TESTNET_RUNTIME_URL` or `MORPHEUS_RUNTIME_URL` to override the default Morpheus testnet runtime URL; otherwise the validators use `https://oracle.meshmini.app/testnet/paymaster/authorize`
 - `MORPHEUS_PAYMASTER_APP_ID` if the paymaster validator should target a non-default CVM app
 - `PAYMASTER_ACCOUNT_ID` if you want to replay against a fixed existing allowlisted account instead of deriving the bootstrap account from `TEST_WIF`
 - `SKIP_PAYMASTER_ALLOWLIST_UPDATE=1` if you already manually allowlisted the account on the Morpheus worker
 - `PHALA_SSH_RETRIES` to tune CVM bridge retries for the paymaster validator
+- `PHALA_CLI` to override the Phala CLI launch command. When unset, the validators prefer a global `phala` binary and otherwise fall back to `npx --yes phala`.
+
+If the public `paymaster/authorize` endpoint returns `401` or `403` for a valid Phala Cloud API token, the off-chain validators automatically retry through the remote worker path via `phala` / `npx phala`.
 
 ## Dry run
 
@@ -38,14 +42,18 @@ The suite writes machine-readable JSON reports to `sdk/docs/reports/`.
 
 1. `tests/v3_testnet_smoke.js`
 2. `tests/v3_testnet_plugin_matrix.js`
-3. `tests/v3_testnet_paymaster_policy.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is present
-4. `tests/v3_testnet_paymaster_relay.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is present
+3. `tests/v3_testnet_market_escrow.js`
+4. `tests/v3_testnet_paymaster_onchain.mjs`
+5. `tests/v3_testnet_paymaster_policy.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is present
+6. `tests/v3_testnet_paymaster_relay.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is present
 
 ## Individual commands
 
 ```bash
 npm run testnet:validate:smoke
 npm run testnet:validate:plugin-matrix
+npm run testnet:validate:market
+npm run testnet:validate:paymaster-onchain
 npm run testnet:validate:paymaster-policy
 npm run testnet:validate:paymaster
 npm run testnet:validate:report

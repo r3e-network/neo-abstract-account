@@ -7,8 +7,10 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
+import phalaCliHelpers from "./phala-cli.js";
 
 const execFileAsync = promisify(execFile);
+const { resolvePhalaCliCommand } = phalaCliHelpers;
 
 const PHALA_API_TOKEN = process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
@@ -25,6 +27,7 @@ const REMOTE_WORKER_SERVICE =
   || "testnet-request-worker";
 const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
 const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
+const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPORT_DIR = path.resolve(MODULE_DIR, "..", "..", "docs", "reports");
 
@@ -38,7 +41,26 @@ function normalizeHash(value = "") {
   return hex ? `0x${hex}` : "";
 }
 
+function isAuthFailureStatus(status) {
+  return Number(status) === 401 || Number(status) === 403;
+}
+
+function parseLastJsonLine(stdout = "") {
+  const lines = String(stdout || "").trim().split("\n").map((line) => line.trim()).filter(Boolean);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (!line.startsWith("{")) continue;
+    try {
+      return JSON.parse(line);
+    } catch {}
+  }
+  return null;
+}
+
 async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 } = {}) {
+  if (!PHALA_CLI_COMMAND) {
+    throw new Error('phala CLI is required for remote paymaster validation (global phala or npx phala)');
+  }
   let lastError = null;
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "morpheus-paymaster-policy-"));
   const localScriptPath = path.join(tempDir, "remote.sh");
@@ -48,18 +70,18 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
     const remoteScriptPath = `/tmp/morpheus-paymaster-policy-${Date.now()}-${attempt}.sh`;
     try {
       await execFileAsync(
-        "phala",
-        ["cp", "--api-token", PHALA_API_TOKEN, localScriptPath, `${PAYMASTER_APP_ID}:${remoteScriptPath}`],
+        PHALA_CLI_COMMAND[0],
+        [...PHALA_CLI_COMMAND.slice(1), "cp", "--api-token", PHALA_API_TOKEN, localScriptPath, `${PAYMASTER_APP_ID}:${remoteScriptPath}`],
         { maxBuffer },
       );
       const result = await execFileAsync(
-        "phala",
-        ["ssh", "--api-token", PHALA_API_TOKEN, PAYMASTER_APP_ID, "--", "sh", remoteScriptPath],
+        PHALA_CLI_COMMAND[0],
+        [...PHALA_CLI_COMMAND.slice(1), "ssh", "--api-token", PHALA_API_TOKEN, PAYMASTER_APP_ID, "--", "sh", remoteScriptPath],
         { maxBuffer },
       );
       await execFileAsync(
-        "phala",
-        ["ssh", "--api-token", PHALA_API_TOKEN, PAYMASTER_APP_ID, "--", "rm", "-f", remoteScriptPath],
+        PHALA_CLI_COMMAND[0],
+        [...PHALA_CLI_COMMAND.slice(1), "ssh", "--api-token", PHALA_API_TOKEN, PAYMASTER_APP_ID, "--", "rm", "-f", remoteScriptPath],
         { maxBuffer },
       ).catch(() => {});
       await rm(tempDir, { recursive: true, force: true }).catch(() => {});
@@ -92,8 +114,12 @@ async function callRemotePaymaster(payload) {
     .join("\n");
 const shellScript = `
 set -e
-cd /dstack
-docker compose --env-file /dstack/.host-shared/.decrypted-env -f /dstack/docker-compose.yaml exec -T ${REMOTE_WORKER_SERVICE} node --input-type=module - <<'JS'
+WORKER_CONTAINER="$(docker ps --format '{{.Names}}' | awk '/request-worker/ { print; exit }')"
+if [ -z "$WORKER_CONTAINER" ]; then
+  echo "request-worker container not found" >&2
+  exit 1
+fi
+docker exec -i "$WORKER_CONTAINER" node --input-type=module - <<'JS'
 ${overrideAssignments}
 process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const body = JSON.parse(Buffer.from('${bodyBase64}', 'base64').toString('utf8'));
@@ -111,9 +137,9 @@ console.log(JSON.stringify({ status: res.status, body: parsed }));
 JS
 `;
   const { stdout } = await runPhalaRemoteShell(shellScript, { maxBuffer: 10 * 1024 * 1024 });
-  const jsonLine = stdout.trim().split("\n").find((line) => line.trim().startsWith("{"));
-  if (!jsonLine) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
-  return JSON.parse(jsonLine);
+  const parsed = parseLastJsonLine(stdout);
+  if (!parsed) throw new Error(`unexpected paymaster output: ${stdout.trim()}`);
+  return parsed;
 }
 
 async function callDirectPaymaster(payload) {
@@ -131,6 +157,20 @@ async function callDirectPaymaster(payload) {
   });
   const body = await response.json().catch(() => ({}));
   return { status: response.status, body };
+}
+
+async function callPaymaster(payload) {
+  if (!PAYMASTER_ENDPOINT) {
+    return callRemotePaymaster(payload);
+  }
+
+  const direct = await callDirectPaymaster(payload);
+  if (!isAuthFailureStatus(direct?.status) || !PHALA_CLI_COMMAND) {
+    return direct;
+  }
+
+  console.warn('[paymaster-policy] direct authorize endpoint rejected the provided token; retrying via Phala CLI remote worker path');
+  return callRemotePaymaster(payload);
 }
 
 function assertApproved(response, label) {
@@ -171,9 +211,7 @@ async function main() {
     operation_hash: `0x${"44".repeat(32)}`,
   };
 
-  const approved = PAYMASTER_ENDPOINT
-    ? await callDirectPaymaster(approvedPayload)
-    : await callRemotePaymaster(approvedPayload);
+  const approved = await callPaymaster(approvedPayload);
   assertApproved(approved, "approved");
 
   const cases = [
@@ -216,9 +254,7 @@ async function main() {
 
   const deniedCases = {};
   for (const item of cases) {
-    const response = PAYMASTER_ENDPOINT
-      ? await callDirectPaymaster(item.payload)
-      : await callRemotePaymaster(item.payload);
+    const response = await callPaymaster(item.payload);
     assertDenied(response, item.id, item.reason);
     deniedCases[item.id] = {
       approved: response.body.approved,

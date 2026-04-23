@@ -170,6 +170,68 @@ namespace AbstractAccount
             return pending.InitiatedAt + ConfigUpdateTimelockSeconds;
         }
 
+        private static PendingModuleCall? GetPendingModuleCallRecord(byte[] prefix, UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(prefix, (byte[])accountId);
+            ByteString? data = Storage.Get(Storage.CurrentContext, key);
+            if (data == null) return null;
+            return (PendingModuleCall)StdLib.Deserialize(data!);
+        }
+
+        [Safe]
+        public static bool HasPendingVerifierCall(UInt160 accountId)
+        {
+            return GetPendingModuleCallRecord(Prefix_PendingVerifierCall, accountId) != null;
+        }
+
+        [Safe]
+        public static bool HasPendingHookCall(UInt160 accountId)
+        {
+            return GetPendingModuleCallRecord(Prefix_PendingHookCall, accountId) != null;
+        }
+
+        [Safe]
+        public static UInt160 GetPendingVerifierCallModule(UInt160 accountId)
+        {
+            PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingVerifierCall, accountId);
+            return pending == null ? UInt160.Zero : pending.ModuleHash;
+        }
+
+        [Safe]
+        public static UInt160 GetPendingHookCallModule(UInt160 accountId)
+        {
+            PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingHookCall, accountId);
+            return pending == null ? UInt160.Zero : pending.ModuleHash;
+        }
+
+        [Safe]
+        public static ByteString GetPendingVerifierCallHash(UInt160 accountId)
+        {
+            PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingVerifierCall, accountId);
+            return pending == null ? (ByteString)new byte[0] : pending.CallHash;
+        }
+
+        [Safe]
+        public static ByteString GetPendingHookCallHash(UInt160 accountId)
+        {
+            PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingHookCall, accountId);
+            return pending == null ? (ByteString)new byte[0] : pending.CallHash;
+        }
+
+        [Safe]
+        public static BigInteger GetPendingVerifierCallTime(UInt160 accountId)
+        {
+            PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingVerifierCall, accountId);
+            return pending == null ? 0 : pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+        }
+
+        [Safe]
+        public static BigInteger GetPendingHookCallTime(UInt160 accountId)
+        {
+            PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingHookCall, accountId);
+            return pending == null ? 0 : pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+        }
+
         /// <summary>
         /// Cancels a pending verifier update.
         /// </summary>

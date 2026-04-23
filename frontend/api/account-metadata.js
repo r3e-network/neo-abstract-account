@@ -10,14 +10,39 @@ function getServiceSupabaseClient() {
   });
 }
 
-function setCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
+function getAllowedOrigins() {
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+  }
+  if (process.env.ALLOWED_ORIGIN) {
+    return [process.env.ALLOWED_ORIGIN];
+  }
+  // Default to the app's own Vercel-hosted origin
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) {
+    return [`https://${vercelUrl}`];
+  }
+  return [];
+}
+
+function isOriginAllowed(origin, allowedOrigins) {
+  if (!origin) return false;
+  return allowedOrigins.includes(origin);
+}
+
+function setCorsHeaders(req, res) {
+  const allowedOrigins = getAllowedOrigins();
+  const origin = req.headers.origin;
+  if (allowedOrigins.length > 0 && isOriginAllowed(origin, allowedOrigins)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 export default async function handler(req, res) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 

@@ -1,4 +1,4 @@
-const { u } = require('@cityofzion/neon-js');
+const { u } = require('./neonCompat');
 
 /**
  * Decodes a contract hash from a ByteString stack item.

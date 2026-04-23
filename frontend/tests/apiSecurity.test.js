@@ -136,6 +136,9 @@ test('relay API binds paymaster requests to dapp and operation hashes', () => {
   assert.match(source, /userop_method/);
   assert.match(source, /sha256Hex\(metaInvocation\)/);
   assert.match(source, /paymaster \? \{ \.\.\.result, paymaster \} : result/);
+  assert.match(source, /callRemotePaymasterAuthorize/);
+  assert.match(source, /x-phala-token/);
+  assert.match(source, /resolveMorpheusOracleCvmId/);
 });
 
 test('relay execution config prefers network-scoped server settings when request network is testnet', () => {

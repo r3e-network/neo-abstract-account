@@ -70,7 +70,7 @@ function decodeStackItem(item) {
     case 'ByteString': {
       const hex = decodeBase64ToHex(item.value || '');
       if (!hex) return '';
-      if (hex.length === 40) return `0x${hex}`;
+      if (hex.length === 40 || hex.length === 64) return `0x${hex}`;
       try {
         if (typeof Buffer !== 'undefined') {
           return Buffer.from(item.value || '', 'base64').toString('utf8');
@@ -146,6 +146,72 @@ async function readVerifierMethod({ rpcUrl, verifierHash, operation, args = [] }
     throw err;
   }
   return decodeStackItem(result?.stack?.[0]);
+}
+
+async function readAccountMethod({ rpcUrl, aaContractHash, operation, args = [] } = {}) {
+  const result = await invokeReadFunction(rpcUrl, sanitizeHex(aaContractHash), operation, args);
+  if (result?.state === 'FAULT') {
+    const err = new Error(EC.rpcFault);
+    err.rpcDetail = result?.exception || null;
+    throw err;
+  }
+  return decodeStackItem(result?.stack?.[0]);
+}
+
+export async function fetchAccountMaintenanceState({ rpcUrl, aaContractHash, accountIdHex } = {}) {
+  const normalizedAaHash = sanitizeHex(aaContractHash);
+  const accountIdParam = toHash160Param(accountIdHex);
+  const [
+    hasPendingVerifierUpdate,
+    pendingVerifierUpdateTime,
+    hasPendingHookUpdate,
+    pendingHookUpdateTime,
+    pendingVerifierCall,
+    pendingHookCall,
+  ] = await Promise.all([
+    readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'hasPendingVerifierUpdate', args: [accountIdParam] }).catch(() => false),
+    readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingVerifierUpdateTime', args: [accountIdParam] }).catch(() => '0'),
+    readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'hasPendingHookUpdate', args: [accountIdParam] }).catch(() => false),
+    readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingHookUpdateTime', args: [accountIdParam] }).catch(() => '0'),
+    Promise.all([
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'hasPendingVerifierCall', args: [accountIdParam] }).catch(() => false),
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingVerifierCallTime', args: [accountIdParam] }).catch(() => '0'),
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingVerifierCallModule', args: [accountIdParam] }).catch(() => ''),
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingVerifierCallHash', args: [accountIdParam] }).catch(() => ''),
+    ]),
+    Promise.all([
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'hasPendingHookCall', args: [accountIdParam] }).catch(() => false),
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingHookCallTime', args: [accountIdParam] }).catch(() => '0'),
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingHookCallModule', args: [accountIdParam] }).catch(() => ''),
+      readAccountMethod({ rpcUrl, aaContractHash: normalizedAaHash, operation: 'getPendingHookCallHash', args: [accountIdParam] }).catch(() => ''),
+    ]),
+  ]);
+
+  const [hasVerifierCall, verifierCallTime, verifierCallModule, verifierCallHash] = pendingVerifierCall;
+  const [hasHookCall, hookCallTime, hookCallModule, hookCallHash] = pendingHookCall;
+
+  return {
+    pendingVerifierUpdate: {
+      active: Boolean(hasPendingVerifierUpdate),
+      executeAfter: String(pendingVerifierUpdateTime || '0'),
+    },
+    pendingHookUpdate: {
+      active: Boolean(hasPendingHookUpdate),
+      executeAfter: String(pendingHookUpdateTime || '0'),
+    },
+    pendingVerifierCall: {
+      active: Boolean(hasVerifierCall),
+      executeAfter: String(verifierCallTime || '0'),
+      moduleHash: trim(verifierCallModule || ''),
+      callHash: trim(verifierCallHash || ''),
+    },
+    pendingHookCall: {
+      active: Boolean(hasHookCall),
+      executeAfter: String(hookCallTime || '0'),
+      moduleHash: trim(hookCallModule || ''),
+      callHash: trim(hookCallHash || ''),
+    },
+  };
 }
 
 export async function fetchUnifiedVerifierState({ rpcUrl, verifierHash, accountIdHex } = {}) {

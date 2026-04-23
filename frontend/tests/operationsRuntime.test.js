@@ -70,10 +70,10 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     morpheusOracleCvmName: 'oracle-morpheus-neo-r3e',
     morpheusOracleAttestationExplorerUrl:
       'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093',
-    morpheusDatafeedCvmId: '28294e89d490924b79c85cdee057ce55723b3d56',
+    morpheusDatafeedCvmId: 'ac5b6886a2832df36e479294206611652400178f',
     morpheusDatafeedCvmName: 'datafeed-morpheus-neo-r3e',
     morpheusDatafeedAttestationExplorerUrl:
-      'https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56',
+      'https://cloud.phala.com/explorer/app_ac5b6886a2832df36e479294206611652400178f',
     morpheusNeoDidServiceDid: 'did:morpheus:neo_n3:service:neodid',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
@@ -107,7 +107,7 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
   );
   assert.equal(
     config.morpheusDatafeedAttestationExplorerUrl,
-    'https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56'
+    'https://cloud.phala.com/explorer/app_ac5b6886a2832df36e479294206611652400178f'
   );
 });
 

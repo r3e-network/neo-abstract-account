@@ -2,14 +2,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { rpc, sc, wallet, experimental, tx, u, CONST } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
 
 const { extractDeployedContractHash } = require('../src/deployLog');
 const { AbstractAccountClient } = require('../src/index');
 const { buildV3UserOperationTypedData, sanitizeHex } = require('../src/metaTx');
+const { resolveTestnetRpcUrl } = require('./testnet-rpc');
 
-const RPC_URL = process.env.TESTNET_RPC_URL || 'https://testnet1.neo.coz.io:443';
+let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || '';
 const TEST_WIF = process.env.TEST_WIF || '';
 
 if (!TEST_WIF) {
@@ -26,7 +28,7 @@ function sleep(ms) {
 
 function isRetryableRpcError(error) {
   const message = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(message);
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|socket disconnected before secure TLS connection was established|TLS connection was established|premature close|invalid response body/i.test(message);
 }
 
 async function withRpcRetry(label, fn, attempts = 5) {
@@ -225,7 +227,7 @@ function randomAccountId() {
 }
 
 function validationRunId() {
-  return (process.env.AA_VALIDATION_RUN_ID || Date.now().toString(36)).toLowerCase();
+  return (process.env.AA_VALIDATION_RUN_ID || `${Date.now().toString(36)}-${process.pid.toString(36)}-${crypto.randomBytes(3).toString('hex')}`).toLowerCase();
 }
 
 function logSection(title) {
@@ -233,6 +235,7 @@ function logSection(title) {
 }
 
 async function main() {
+  RPC_URL = await resolveTestnetRpcUrl({ env: process.env });
   const account = new wallet.Account(TEST_WIF);
   const rpcClient = new rpc.RPCClient(RPC_URL);
   const version = await withRpcRetry('rpc.getVersion', () => rpcClient.getVersion());
@@ -305,7 +308,7 @@ async function main() {
   }, null, 2));
 
   logSection('Hook Gating');
-  await invokePersisted(
+  const hookConfigRequest = await invokePersisted(
     rpcClient,
     core.hash,
     account,
@@ -351,25 +354,10 @@ async function main() {
       ]),
     ],
   );
-
-  const hookExec = await invokePersisted(
-    rpcClient,
-    core.hash,
-    account,
-    networkMagic,
-    'executeUserOp',
-    [hash160Param(accountId), userOpParam({
-      targetContract: GAS_HASH,
-      method: 'symbol',
-      args: [],
-      nonce: 1n,
-      deadline: BigInt(Date.now() + (60 * 60 * 1000)),
-      signatureHex: '',
-    })],
-  );
   console.log(JSON.stringify({
-    hookExec: hookExec.txid,
-    result: stackItemToText(hookExec.execution.stack?.[0]),
+    hookConfigRequest: hookConfigRequest.txid,
+    result: stackItemToText(hookConfigRequest.execution.stack?.[0]),
+    note: 'callHook(setWhitelist) is timelocked on V3 and first emits a pending maintenance request rather than applying immediately.',
   }, null, 2));
 
   logSection('Escape Flow');
@@ -383,8 +371,7 @@ async function main() {
   );
   const escapeActive = await readAndDecode(rpcClient, core.hash, 'isEscapeActive', [hash160Param(accountId)]);
   console.log(JSON.stringify({ escapeActive: stackItemToText(escapeActive) }, null, 2));
-  await sleep(3000);
-  await invokePersisted(
+  const finalizeEscapePreview = await testInvoke(
     rpcClient,
     core.hash,
     account,
@@ -392,53 +379,70 @@ async function main() {
     'finalizeEscape',
     [hash160Param(accountId), hash160Param('0'.repeat(40))],
   );
-  const escapeCleared = await readAndDecode(rpcClient, core.hash, 'isEscapeActive', [hash160Param(accountId)]);
-  console.log(JSON.stringify({ escapeCleared: stackItemToText(escapeCleared) }, null, 2));
+  console.log(JSON.stringify({
+    finalizeEscapeState: finalizeEscapePreview.state,
+    finalizeEscapeException: finalizeEscapePreview.exception || '',
+  }, null, 2));
 
-  logSection('Web3Auth Verifier Upgrade');
+  logSection('Web3Auth Verifier Registration');
   const evmSigner1 = ethers.Wallet.createRandom();
   const evmSigner2 = ethers.Wallet.createRandom();
   const pubKey1 = sanitizeHex(evmSigner1.signingKey.publicKey);
   const pubKey2 = sanitizeHex(evmSigner2.signingKey.publicKey);
+  const web3AuthAccountId = aaClient.deriveRegistrationAccountIdHash({
+    verifierContractHash: web3Auth.hash,
+    verifierParamsHex: pubKey1,
+    backupOwnerAddress: account.scriptHash,
+    escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
+  });
+  const web3AuthVirtual = aaClient.deriveVirtualAccount(web3AuthAccountId);
 
-  await invokePersisted(
+  const verifierConfigRequest = await invokePersisted(
     rpcClient,
     core.hash,
     account,
     networkMagic,
-    'updateVerifier',
+    'registerAccount',
     [
-      hash160Param(accountId),
+      hash160Param(web3AuthAccountId),
       hash160Param(sanitizeHex(web3Auth.hash)),
       byteArrayParam(pubKey1),
+      hash160Param('0'.repeat(40)),
+      hash160Param(account.scriptHash),
+      integerParam(REGISTRATION_ESCAPE_TIMELOCK),
     ],
   );
 
-  await invokePersisted(
+  const storedVerifier = await readAndDecode(rpcClient, core.hash, 'getVerifier', [hash160Param(web3AuthAccountId)]);
+  const storedPubKey = await readAndDecode(rpcClient, web3Auth.hash, 'getPublicKey', [hash160Param(web3AuthAccountId)]);
+  const verifierConfigPreview = await testInvoke(
     rpcClient,
     core.hash,
     account,
     networkMagic,
     'callVerifier',
     [
-      hash160Param(accountId),
+      hash160Param(web3AuthAccountId),
       stringParam('setPublicKey'),
       arrayParam([
-        hash160Param(accountId),
+        hash160Param(web3AuthAccountId),
         byteArrayParam(pubKey2),
       ]),
     ],
   );
-
-  const storedVerifier = await readAndDecode(rpcClient, core.hash, 'getVerifier', [hash160Param(accountId)]);
-  const storedPubKey = await readAndDecode(rpcClient, web3Auth.hash, 'getPublicKey', [hash160Param(accountId)]);
   console.log(JSON.stringify({
+    web3AuthAccountId: normalizeHash(web3AuthAccountId),
+    web3AuthVirtualAddress: web3AuthVirtual.address,
     storedVerifier: stackItemToText(storedVerifier),
     storedPubKeyBytes: stackItemToText(storedPubKey).slice(0, 18),
+    verifierConfigRequest: verifierConfigRequest.txid,
+    verifierConfigResult: stackItemToText(verifierConfigRequest.execution.stack?.[0]),
+    verifierConfigState: verifierConfigPreview.state,
+    verifierConfigException: verifierConfigPreview.exception || '',
   }, null, 2));
 
   logSection('Web3Auth ExecuteUserOp');
-  const nonceStack = await readAndDecode(rpcClient, core.hash, 'getNonce', [hash160Param(accountId), integerParam(0)]);
+  const nonceStack = await readAndDecode(rpcClient, core.hash, 'getNonce', [hash160Param(web3AuthAccountId), integerParam(0)]);
   const nonce = BigInt(nonceStack.value || '0');
   const argsHashStack = await readAndDecode(rpcClient, core.hash, 'computeArgsHash', [arrayParam([])]);
   const argsHash = Buffer.from(argsHashStack.value || '', 'base64').toString('hex');
@@ -446,14 +450,14 @@ async function main() {
   const typedData = buildV3UserOperationTypedData({
     chainId: networkMagic,
     verifyingContract: sanitizeHex(web3Auth.hash),
-    accountIdHash: accountId,
+    accountIdHash: web3AuthAccountId,
     targetContract: GAS_HASH,
     method: 'symbol',
     argsHashHex: argsHash,
     nonce,
     deadline,
   });
-  const signature = await evmSigner2.signTypedData(typedData.domain, typedData.types, typedData.message);
+  const signature = await evmSigner1.signTypedData(typedData.domain, typedData.types, typedData.message);
   const compact = compactSignature(signature);
 
   const evmExec = await invokePersisted(
@@ -462,7 +466,7 @@ async function main() {
     account,
     networkMagic,
     'executeUserOp',
-    [hash160Param(accountId), userOpParam({
+    [hash160Param(web3AuthAccountId), userOpParam({
       targetContract: GAS_HASH,
       method: 'symbol',
       args: [],
@@ -472,7 +476,7 @@ async function main() {
     })],
   );
 
-  const finalNonceStack = await readAndDecode(rpcClient, core.hash, 'getNonce', [hash160Param(accountId), integerParam(0)]);
+  const finalNonceStack = await readAndDecode(rpcClient, core.hash, 'getNonce', [hash160Param(web3AuthAccountId), integerParam(0)]);
   console.log(JSON.stringify({
     evmExec: evmExec.txid,
     result: stackItemToText(evmExec.execution.stack?.[0]),
@@ -486,12 +490,15 @@ async function main() {
     coreHash: core.hash,
     web3AuthHash: web3Auth.hash,
     whitelistHash: whitelist.hash,
-    accountId: normalizeHash(accountId),
-    virtualAddress: virtual.address,
+    nativeAccountId: normalizeHash(accountId),
+    nativeVirtualAddress: virtual.address,
+    web3AuthAccountId: normalizeHash(web3AuthAccountId),
+    web3AuthVirtualAddress: web3AuthVirtual.address,
     txids: {
       registerAccount: registerNative.txid,
       nativeExecute: nativeExec.txid,
-      hookExecute: hookExec.txid,
+      hookConfigRequest: hookConfigRequest.txid,
+      verifierConfigRequest: verifierConfigRequest.txid,
       evmExecute: evmExec.txid,
     },
   }, null, 2));

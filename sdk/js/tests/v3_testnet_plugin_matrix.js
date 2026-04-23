@@ -17,9 +17,10 @@ const { ethers } = require("ethers");
 const { extractDeployedContractHash } = require("../src/deployLog");
 const { AbstractAccountClient } = require("../src/index");
 const { buildV3UserOperationTypedData, sanitizeHex } = require("../src/metaTx");
+const { resolveTestnetRpcUrl } = require("./testnet-rpc");
 
-const RPC_URL =
-  process.env.TESTNET_RPC_URL || "https://testnet1.neo.coz.io:443";
+let RPC_URL =
+  process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "";
 const TEST_WIF = process.env.TEST_WIF || "";
 const REPORT_DIR = path.resolve(__dirname, "..", "..", "docs", "reports");
 const SELECTED_SCENARIOS = new Set(
@@ -66,7 +67,7 @@ function writePluginMatrixReport(context, status, error = null) {
 
 function isRetryableRpcError(error) {
   const message = error instanceof Error ? error.message : String(error || "");
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|socket disconnected before secure TLS connection was established|TLS connection was established|premature close|invalid response body/i.test(
     message,
   );
 }
@@ -496,7 +497,7 @@ function randomAccountId() {
 
 function validationRunId() {
   return (
-    process.env.AA_VALIDATION_RUN_ID || Date.now().toString(36)
+    process.env.AA_VALIDATION_RUN_ID || `${Date.now().toString(36)}-${process.pid.toString(36)}-${crypto.randomBytes(3).toString("hex")}`
   ).toLowerCase();
 }
 
@@ -613,7 +614,82 @@ function assertFaultResult(result, label, pattern) {
   return { state, exception: result?.exception || "" };
 }
 
+async function initiatePendingVerifierCall(
+  rpcClient,
+  core,
+  account,
+  networkMagic,
+  accountId,
+  method,
+  args,
+) {
+  const request = await invokePersisted(
+    rpcClient,
+    core.hash,
+    account,
+    networkMagic,
+    "callVerifier",
+    [hash160Param(accountId), stringParam(method), arrayParam(args)],
+  );
+  const confirmationPreview = await testInvoke(
+    rpcClient,
+    core.hash,
+    account,
+    networkMagic,
+    "callVerifier",
+    [hash160Param(accountId), stringParam(method), arrayParam(args)],
+    [makeSigner(account.scriptHash)],
+  );
+  return {
+    requestTxid: request.txid,
+    requestResult: stackItemToText(request.execution.stack?.[0]),
+    pending: assertFaultResult(
+      confirmationPreview,
+      `callVerifier.${method}.pending`,
+      /Timelock not elapsed/,
+    ),
+  };
+}
+
+async function initiatePendingHookCall(
+  rpcClient,
+  core,
+  account,
+  networkMagic,
+  accountId,
+  method,
+  args,
+) {
+  const request = await invokePersisted(
+    rpcClient,
+    core.hash,
+    account,
+    networkMagic,
+    "callHook",
+    [hash160Param(accountId), stringParam(method), arrayParam(args)],
+  );
+  const confirmationPreview = await testInvoke(
+    rpcClient,
+    core.hash,
+    account,
+    networkMagic,
+    "callHook",
+    [hash160Param(accountId), stringParam(method), arrayParam(args)],
+    [makeSigner(account.scriptHash)],
+  );
+  return {
+    requestTxid: request.txid,
+    requestResult: stackItemToText(request.execution.stack?.[0]),
+    pending: assertFaultResult(
+      confirmationPreview,
+      `callHook.${method}.pending`,
+      /Timelock not elapsed/,
+    ),
+  };
+}
+
 async function main() {
+  RPC_URL = await resolveTestnetRpcUrl({ env: process.env });
   const account = new wallet.Account(TEST_WIF);
   const rpcClient = new rpc.RPCClient(RPC_URL);
   const version = await withRpcRetry("rpc.getVersion", () =>
@@ -971,10 +1047,14 @@ async function main() {
   async function registerAccount(label, options = {}) {
     const initialVerifier = normalizeHash(options.verifier || "0".repeat(40));
     const initialVerifierParams = sanitizeHex(options.verifierParams || "");
+    const registrationSalt = !initialVerifierParams && initialVerifier === "0x0000000000000000000000000000000000000000"
+      ? crypto.createHash("sha256").update(`plugin-matrix:${label}`).digest("hex").slice(0, 64)
+      : "";
+    const effectiveVerifierParams = initialVerifierParams || registrationSalt;
     const initialHook = normalizeHash(options.hook || "0".repeat(40));
     const accountId = aaClient.deriveRegistrationAccountIdHash({
       verifierContractHash: initialVerifier,
-      verifierParamsHex: initialVerifierParams,
+      verifierParamsHex: effectiveVerifierParams,
       hookContractHash: initialHook,
       backupOwnerAddress: account.scriptHash,
       escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
@@ -989,8 +1069,8 @@ async function main() {
       [
         hash160Param(accountId),
         hash160Param(sanitizeHex(initialVerifier || "0".repeat(40))),
-        initialVerifierParams
-          ? byteArrayParam(initialVerifierParams)
+        effectiveVerifierParams
+          ? byteArrayParam(effectiveVerifierParams)
           : emptyByteArrayParam(),
         hash160Param(sanitizeHex(initialHook || "0".repeat(40))),
         hash160Param(account.scriptHash),
@@ -1059,20 +1139,18 @@ async function main() {
         );
         console.log("[daily-limit] updateHook:done");
         console.log("[daily-limit] setDailyLimit:start");
-        await invokePersisted(
+        const pendingConfig = await initiatePendingHookCall(
           rpcClient,
-          core.hash,
+          core,
           account,
           networkMagic,
-          "callHook",
+          scenario.accountId,
+          "setDailyLimit",
           [
             hash160Param(scenario.accountId),
-            stringParam("setDailyLimit"),
-            arrayParam([
-              hash160Param(scenario.accountId),
-              hash160Param(mockTarget.hash),
-              integerParam(100),
-            ]),
+            hash160Param(mockTarget.hash),
+            integerParam(100),
+            boolParam(false),
           ],
         );
         console.log("[daily-limit] setDailyLimit:done");
@@ -1161,18 +1239,11 @@ async function main() {
         );
         results.matrix.dailyLimitHook = {
           accountId: normalizeHash(scenario.accountId),
+          maintenance: pendingConfig,
           txid: exec1.txid,
           result: String(exec1.execution.stack?.[0]?.value ?? ""),
-          overflow: assertFaultResult(
-            overflow,
-            "daily.overflow",
-            /Daily limit exceeded/,
-          ),
-          wrongSource: assertFaultResult(
-            wrongSource,
-            "daily.wrongSource",
-            /Transfer source not permitted/,
-          ),
+          note:
+            "The hook installs immediately, but the configured ceiling is deferred behind the maintenance timelock; same-session transfers still use the unconfigured default path.",
         };
         console.log(JSON.stringify(results.matrix.dailyLimitHook, null, 2));
       }
@@ -1190,25 +1261,22 @@ async function main() {
           normalizeHash(scenario.accountId),
         );
         console.log("[multihook] setHooks:start");
-        const configured = await invokePersisted(
+        const pendingConfig = await initiatePendingHookCall(
           rpcClient,
-          core.hash,
+          core,
           account,
           networkMagic,
-          "callHook",
+          scenario.accountId,
+          "setHooks",
           [
             hash160Param(scenario.accountId),
-            stringParam("setHooks"),
             arrayParam([
-              hash160Param(scenario.accountId),
-              arrayParam([
-                hash160Param(whitelistHook.hash),
-                hash160Param(tokenRestrictedHook.hash),
-              ]),
+              hash160Param(whitelistHook.hash),
+              hash160Param(tokenRestrictedHook.hash),
             ]),
           ],
         );
-        console.log("[multihook] setHooks:done", configured.txid);
+        console.log("[multihook] setHooks:done", pendingConfig.requestTxid);
         const storedHooks = await readAndDecode(
           rpcClient,
           multiHook.hash,
@@ -1312,30 +1380,16 @@ async function main() {
         );
         results.matrix.multiHook = {
           accountId: normalizeHash(scenario.accountId),
-          txid: configured.txid,
+          maintenance: pendingConfig,
           hookCount: Array.isArray(storedHooks?.value)
             ? storedHooks.value.length
             : 0,
-          blocked: assertFaultResult(
-            blocked,
-            "multihook.blocked",
-            /Target contract not in whitelist|Interaction with restricted token is forbidden/,
-          ),
-          duplicateHooks: assertFaultResult(
-            duplicateHooks,
-            "multihook.duplicate",
-            /Duplicate hook not allowed/,
-          ),
-          selfHook: assertFaultResult(
-            selfHook,
-            "multihook.self",
-            /Self hook not allowed/,
-          ),
-          tooManyHooks: assertFaultResult(
-            tooManyHooks,
-            "multihook.tooMany",
-            /Too many hooks|Duplicate hook not allowed/,
-          ),
+          unconfiguredExecutionState: String(blocked?.state || ""),
+          duplicateHooks: { state: String(duplicateHooks?.state || ""), exception: duplicateHooks?.exception || "" },
+          selfHook: { state: String(selfHook?.state || ""), exception: selfHook?.exception || "" },
+          tooManyHooks: { state: String(tooManyHooks?.state || ""), exception: tooManyHooks?.exception || "" },
+          note:
+            "MultiHook composition is deferred behind the maintenance timelock; stored hook sets remain unchanged in the same live session.",
         };
         console.log(JSON.stringify(results.matrix.multiHook, null, 2));
       }
@@ -1371,22 +1425,19 @@ async function main() {
         );
         console.log("[neodid-hook] setRegistry:done");
         console.log("[neodid-hook] requireCredential:start");
-        await invokePersisted(
+        const pendingConfig = await initiatePendingHookCall(
           rpcClient,
-          core.hash,
+          core,
           account,
           networkMagic,
-          "callHook",
+          scenario.accountId,
+          "requireCredentialForContract",
           [
             hash160Param(scenario.accountId),
-            stringParam("requireCredentialForContract"),
-            arrayParam([
-              hash160Param(scenario.accountId),
-              hash160Param(mockTarget.hash),
-              stringParam("github"),
-              stringParam("Github_VerifiedUser"),
-              stringParam("true"),
-            ]),
+            hash160Param(mockTarget.hash),
+            stringParam("github"),
+            stringParam("Github_VerifiedUser"),
+            stringParam("true"),
           ],
         );
         console.log("[neodid-hook] requireCredential:done");
@@ -1496,18 +1547,13 @@ async function main() {
         results.matrix.neoDidCredentialHook = {
           accountId: normalizeHash(scenario.accountId),
           registry: normalizeHash(neoDidRegistry.hash),
+          maintenance: pendingConfig,
           txid: success.txid,
           result: stackItemToText(success.execution.stack?.[0]),
-          missing: assertFaultResult(
-            missing,
-            "neodid.missing",
-            /NeoDID Credential Missing/,
-          ),
-          revoked: assertFaultResult(
-            revoked,
-            "neodid.revoked",
-            /NeoDID Credential Missing/,
-          ),
+          missing: { state: String(missing?.state || ""), exception: missing?.exception || "" },
+          revoked: { state: String(revoked?.state || ""), exception: revoked?.exception || "" },
+          note:
+            "Credential requirement activation is deferred behind the hook maintenance timelock; registry binding and revocation still execute live.",
         };
         console.log(
           JSON.stringify(results.matrix.neoDidCredentialHook, null, 2),
@@ -1785,36 +1831,25 @@ async function main() {
 
   logSection("Session Key Verifier");
   {
-    const scenario = await registerAccount("session-key");
-    await invokePersisted(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "updateVerifier",
-      [
-        hash160Param(scenario.accountId),
-        hash160Param(sessionKeyVerifier.hash),
-        emptyByteArrayParam(),
-      ],
-    );
+    const scenario = await registerAccount("session-key", {
+      verifier: sessionKeyVerifier.hash,
+    });
     const validUntil = 2_000_000_000_000n;
-    await invokePersisted(
+    const pendingConfig = await initiatePendingVerifierCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "callVerifier",
+      scenario.accountId,
+      "setSessionKey",
       [
         hash160Param(scenario.accountId),
-        stringParam("setSessionKey"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          byteArrayParam(account.publicKey),
-          hash160Param(mockTarget.hash),
-          stringParam("symbol"),
-          integerParam(validUntil),
-        ]),
+        byteArrayParam(account.publicKey),
+        hash160Param(mockTarget.hash),
+        stringParam("symbol"),
+        integerParam(validUntil),
+        integerParam(0),
+        stringParam("session-key"),
       ],
     );
     const nonce = await getNonce(scenario.accountId);
@@ -1834,7 +1869,7 @@ async function main() {
     );
     const payload = Buffer.from(payloadStack.value || "", "base64");
     const signature = wallet.sign(payload.toString("hex"), account.privateKey);
-    const success = await invokePersisted(
+    const activationBlocked = await testInvoke(
       rpcClient,
       core.hash,
       account,
@@ -1853,133 +1888,42 @@ async function main() {
       ],
     );
 
-    const wrongTarget = await testInvoke(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "executeUserOp",
-      [
-        hash160Param(scenario.accountId),
-        userOpParam({
-          targetContract: GAS_HASH,
-          method: "symbol",
-          args: [],
-          nonce: nonce + 1n,
-          deadline: BigInt(deadline),
-          signatureHex: signature,
-        }),
-      ],
-    );
-    const expiredConfig = await testInvoke(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "callVerifier",
-      [
-        hash160Param(scenario.accountId),
-        stringParam("setSessionKey"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          byteArrayParam(account.publicKey),
-          hash160Param(mockTarget.hash),
-          stringParam("symbol"),
-          integerParam(1),
-        ]),
-      ],
-      [makeSigner(account.scriptHash)],
-    );
-
     results.matrix.sessionKeyVerifier = {
       accountId: normalizeHash(scenario.accountId),
-      txid: success.txid,
-      result: stackItemToText(success.execution.stack?.[0]),
-      wrongTarget: assertFaultResult(
-        wrongTarget,
-        "session.wrongTarget",
-        /Target contract not permitted|Method not permitted/,
+      maintenance: pendingConfig,
+      activationBlocked: assertFaultResult(
+        activationBlocked,
+        "session.activationBlocked",
+        /No session key active/,
       ),
-      expiredConfig: assertFaultResult(
-        expiredConfig,
-        "session.expiredConfig",
-        /Session key must expire in the future/,
-      ),
+      note:
+        "Session key activation is timelocked and cannot become active in the same live session.",
     };
     console.log(JSON.stringify(results.matrix.sessionKeyVerifier, null, 2));
   }
 
   logSection("MultiSig Verifier");
   {
-    const signerA = ethers.Wallet.createRandom();
     const scenario = await registerAccount("multisig", {
-      verifier: web3AuthA.hash,
-      verifierParams: sanitizeHex(signerA.signingKey.publicKey),
+      verifier: multiSigVerifier.hash,
     });
-    await invokePersisted(
+    const pendingConfig = await initiatePendingVerifierCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "initiateEscape",
-      [hash160Param(scenario.accountId)],
-    );
-    await sleep(3000);
-    await invokePersisted(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "finalizeEscape",
-      [hash160Param(scenario.accountId), hash160Param(multiSigVerifier.hash)],
-    );
-    await invokePersisted(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "callVerifier",
+      scenario.accountId,
+      "setConfig",
       [
         hash160Param(scenario.accountId),
-        stringParam("setConfig"),
         arrayParam([
-          hash160Param(scenario.accountId),
-          arrayParam([
-            hash160Param(web3AuthA.hash),
-            hash160Param(web3AuthA.hash),
-          ]),
-          integerParam(2),
+          hash160Param(web3AuthA.hash),
+          hash160Param(web3AuthB.hash),
         ]),
+        integerParam(2),
       ],
     );
-
-    const nonce = await getNonce(scenario.accountId);
-    const argsHash = await computeArgsHash([]);
-    const deadline = Date.now() + 60 * 60 * 1000;
-    const typedDataA = buildV3UserOperationTypedData({
-      chainId: networkMagic,
-      verifyingContract: sanitizeHex(web3AuthA.hash),
-      accountIdHash: scenario.accountId,
-      targetContract: mockTarget.hash,
-      method: "symbol",
-      argsHashHex: argsHash,
-      nonce,
-      deadline,
-    });
-    const sigA = compactSignature(
-      await signerA.signTypedData(
-        typedDataA.domain,
-        typedDataA.types,
-        typedDataA.message,
-      ),
-    );
-    const serializedGood = (
-      await stdLibSerialize(
-        rpcClient,
-        arrayParam([byteArrayParam(sigA), byteArrayParam(sigA)]),
-      )
-    ).toString("hex");
-    const success = await invokePersisted(
+    const inactive = await testInvoke(
       rpcClient,
       core.hash,
       account,
@@ -1991,90 +1935,52 @@ async function main() {
           targetContract: mockTarget.hash,
           method: "symbol",
           args: [],
-          nonce,
-          deadline: BigInt(deadline),
-          signatureHex: serializedGood,
-        }),
-      ],
-    );
-
-    const serializedBad = (
-      await stdLibSerialize(
-        rpcClient,
-        arrayParam([byteArrayParam(sigA), byteArrayParam("11".repeat(64))]),
-      )
-    ).toString("hex");
-    const insufficient = await testInvoke(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "executeUserOp",
-      [
-        hash160Param(scenario.accountId),
-        userOpParam({
-          targetContract: mockTarget.hash,
-          method: "symbol",
-          args: [],
-          nonce: nonce + 1n,
-          deadline: BigInt(deadline),
-          signatureHex: serializedBad,
+          nonce: 0n,
+          deadline: BigInt(Date.now() + 60 * 60 * 1000),
+          signatureHex: Buffer.from(JSON.stringify(["", ""]), "utf8").toString("hex"),
         }),
       ],
     );
 
     results.matrix.multiSigVerifier = {
       accountId: normalizeHash(scenario.accountId),
-      txid: success.txid,
-      result: stackItemToText(success.execution.stack?.[0]),
-      insufficient: assertFaultResult(
-        insufficient,
-        "multisig.insufficient",
-        /Verifier rejected signature|Invalid signature/,
+      maintenance: pendingConfig,
+      inactive: assertFaultResult(
+        inactive,
+        "multisig.inactive",
+        /No MultiSig config|Verifier rejected signature/,
       ),
+      note: "MultiSig child verifier configuration is timelocked and cannot become active in the same live session.",
     };
     console.log(JSON.stringify(results.matrix.multiSigVerifier, null, 2));
   }
 
   logSection("Subscription Verifier");
   {
-    const scenario = await registerAccount("subscription");
+    const scenario = await registerAccount("subscription", {
+      verifier: subscriptionVerifier.hash,
+    });
     const subId = Buffer.from(ethers.randomBytes(8)).toString("hex");
     const periodSeconds = 3600n;
-    await invokePersisted(
+    const pendingConfig = await initiatePendingVerifierCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "updateVerifier",
+      scenario.accountId,
+      "createSubscription",
       [
         hash160Param(scenario.accountId),
-        hash160Param(subscriptionVerifier.hash),
-        emptyByteArrayParam(),
-      ],
-    );
-    await invokePersisted(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "callVerifier",
-      [
-        hash160Param(scenario.accountId),
-        stringParam("createSubscription"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          byteArrayParam(subId),
-          hash160Param(account.scriptHash),
-          hash160Param(mockTarget.hash),
-          integerParam(100),
-          integerParam(periodSeconds),
-        ]),
+        byteArrayParam(subId),
+        hash160Param(account.scriptHash),
+        hash160Param(mockTarget.hash),
+        integerParam(100),
+        integerParam(periodSeconds),
       ],
     );
 
     const chainNowMs = await getLatestBlockTimeMs(rpcClient);
-    const overAmount = await testInvoke(
+    const inactive = await testInvoke(
       rpcClient,
       core.hash,
       account,
@@ -2088,7 +1994,7 @@ async function main() {
           args: [
             hash160Param(scenario.virtualScriptHash),
             hash160Param(account.scriptHash),
-            integerParam(101),
+            integerParam(50),
             stringParam("sub"),
           ],
           nonce: expectedSubscriptionNonce(subId, periodSeconds, chainNowMs),
@@ -2098,103 +2004,35 @@ async function main() {
       ],
     );
 
-    const nowMs = await getLatestBlockTimeMs(rpcClient);
-    const nonce = expectedSubscriptionNonce(subId, periodSeconds, nowMs);
-    const success = await invokePersisted(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "executeUserOp",
-      [
-        hash160Param(scenario.accountId),
-        userOpParam({
-          targetContract: mockTarget.hash,
-          method: "transfer",
-          args: [
-            hash160Param(scenario.virtualScriptHash),
-            hash160Param(account.scriptHash),
-            integerParam(50),
-            stringParam("sub"),
-          ],
-          nonce,
-          deadline: BigInt(nowMs + 60 * 60 * 1000),
-          signatureHex: subId,
-        }),
-      ],
-    );
-
-    const replay = await testInvoke(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "executeUserOp",
-      [
-        hash160Param(scenario.accountId),
-        userOpParam({
-          targetContract: mockTarget.hash,
-          method: "transfer",
-          args: [
-            hash160Param(scenario.virtualScriptHash),
-            hash160Param(account.scriptHash),
-            integerParam(50),
-            stringParam("sub"),
-          ],
-          nonce,
-          deadline: BigInt(nowMs + 60 * 60 * 1000),
-          signatureHex: subId,
-        }),
-      ],
-    );
-
     results.matrix.subscriptionVerifier = {
       accountId: normalizeHash(scenario.accountId),
-      txid: success.txid,
-      result: String(success.execution.stack?.[0]?.value ?? ""),
-      overAmount: assertFaultResult(
-        overAmount,
-        "subscription.overAmount",
-        /Transfer amount exceeds subscription/,
+      maintenance: pendingConfig,
+      inactive: assertFaultResult(
+        inactive,
+        "subscription.inactive",
+        /Subscription not found/,
       ),
-      replay: assertFaultResult(
-        replay,
-        "subscription.replay",
-        /Salt already used/,
-      ),
+      note: "Subscription creation is timelocked and cannot become active in the same live session.",
     };
     console.log(JSON.stringify(results.matrix.subscriptionVerifier, null, 2));
   }
 
   logSection("ZKEmail Verifier");
   {
-    const scenario = await registerAccount("zkemail");
-    await invokePersisted(
+    const scenario = await registerAccount("zkemail", {
+      verifier: zkEmailVerifier.hash,
+    });
+    const pendingConfig = await initiatePendingVerifierCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "updateVerifier",
-      [
-        hash160Param(scenario.accountId),
-        hash160Param(zkEmailVerifier.hash),
-        emptyByteArrayParam(),
-      ],
-    );
-    await invokePersisted(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "callVerifier",
-      [
-        hash160Param(scenario.accountId),
-        stringParam("setDKIMRegistry"),
-        arrayParam([hash160Param(scenario.accountId), byteArrayParam("aa")]),
-      ],
+      scenario.accountId,
+      "setDKIMRegistry",
+      [hash160Param(scenario.accountId), byteArrayParam("aa")],
     );
 
-    const disabled = await testInvoke(
+    const inactive = await testInvoke(
       rpcClient,
       core.hash,
       account,
@@ -2215,11 +2053,13 @@ async function main() {
 
     results.matrix.zkEmailVerifier = {
       accountId: normalizeHash(scenario.accountId),
-      disabled: assertFaultResult(
-        disabled,
-        "zkemail.disabled",
-        /disabled pending real proof verification/,
+      maintenance: pendingConfig,
+      inactive: assertFaultResult(
+        inactive,
+        "zkemail.inactive",
+        /No DKIM configured/,
       ),
+      note: "DKIM registry configuration is timelocked; same-session live runs cannot reach the disabled-proof branch.",
     };
     console.log(JSON.stringify(results.matrix.zkEmailVerifier, null, 2));
   }
@@ -2254,23 +2094,20 @@ async function main() {
       ],
       [makeSigner(account.scriptHash)],
     );
-    await invokePersisted(
+    const pendingConfig = await initiatePendingHookCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "callHook",
+      scenario.accountId,
+      "setWhitelist",
       [
         hash160Param(scenario.accountId),
-        stringParam("setWhitelist"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          hash160Param(mockTarget.hash),
-          boolParam(true),
-        ]),
+        hash160Param(mockTarget.hash),
+        boolParam(true),
       ],
     );
-    const success = await invokePersisted(
+    const stillBlocked = await testInvoke(
       rpcClient,
       core.hash,
       account,
@@ -2290,13 +2127,18 @@ async function main() {
     );
     results.matrix.whitelistHook = {
       accountId: normalizeHash(scenario.accountId),
-      txid: success.txid,
-      result: stackItemToText(success.execution.stack?.[0]),
+      maintenance: pendingConfig,
       denied: assertFaultResult(
         denied,
         "whitelist.denied",
         /Target contract not in whitelist/,
       ),
+      stillBlocked: assertFaultResult(
+        stillBlocked,
+        "whitelist.stillBlocked",
+        /Target contract not in whitelist|Native witness failed/,
+      ),
+      note: "Whitelist activation is timelocked; same-session execution remains blocked.",
     };
     console.log(JSON.stringify(results.matrix.whitelistHook, null, 2));
   }
@@ -2312,20 +2154,18 @@ async function main() {
       "updateHook",
       [hash160Param(scenario.accountId), hash160Param(dailyLimitHook.hash)],
     );
-    await invokePersisted(
+    const pendingConfig = await initiatePendingHookCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "callHook",
+      scenario.accountId,
+      "setDailyLimit",
       [
         hash160Param(scenario.accountId),
-        stringParam("setDailyLimit"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          hash160Param(mockTarget.hash),
-          integerParam(100),
-        ]),
+        hash160Param(mockTarget.hash),
+        integerParam(100),
+        boolParam(false),
       ],
     );
     const exec1 = await invokePersisted(
@@ -2351,68 +2191,12 @@ async function main() {
         }),
       ],
     );
-    const overflow = await testInvoke(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "executeUserOp",
-      [
-        hash160Param(scenario.accountId),
-        userOpParam({
-          targetContract: mockTarget.hash,
-          method: "transfer",
-          args: [
-            hash160Param(scenario.accountId),
-            hash160Param(account.scriptHash),
-            integerParam(61),
-            stringParam("two"),
-          ],
-          nonce: 1n,
-          deadline: BigInt(Date.now() + 60 * 60 * 1000),
-          signatureHex: "",
-        }),
-      ],
-      [makeSigner(account.scriptHash)],
-    );
-    const wrongSource = await testInvoke(
-      rpcClient,
-      core.hash,
-      account,
-      networkMagic,
-      "executeUserOp",
-      [
-        hash160Param(scenario.accountId),
-        userOpParam({
-          targetContract: mockTarget.hash,
-          method: "transfer",
-          args: [
-            hash160Param("11".repeat(20)),
-            hash160Param(account.scriptHash),
-            integerParam(1),
-            stringParam("bad-source"),
-          ],
-          nonce: 1n,
-          deadline: BigInt(Date.now() + 60 * 60 * 1000),
-          signatureHex: "",
-        }),
-      ],
-      [makeSigner(account.scriptHash)],
-    );
     results.matrix.dailyLimitHook = {
       accountId: normalizeHash(scenario.accountId),
+      maintenance: pendingConfig,
       txid: exec1.txid,
       result: String(exec1.execution.stack?.[0]?.value ?? ""),
-      overflow: assertFaultResult(
-        overflow,
-        "daily.overflow",
-        /Daily limit exceeded/,
-      ),
-      wrongSource: assertFaultResult(
-        wrongSource,
-        "daily.wrongSource",
-        /Transfer source not permitted/,
-      ),
+      note: "The hook installs immediately, but the configured ceiling is deferred behind the maintenance timelock; same-session transfers still use the unconfigured default path.",
     };
     console.log(JSON.stringify(results.matrix.dailyLimitHook, null, 2));
   }
@@ -2431,20 +2215,17 @@ async function main() {
         hash160Param(tokenRestrictedHook.hash),
       ],
     );
-    await invokePersisted(
+    const pendingConfig = await initiatePendingHookCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "callHook",
+      scenario.accountId,
+      "setRestrictedToken",
       [
         hash160Param(scenario.accountId),
-        stringParam("setRestrictedToken"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          hash160Param(GAS_HASH),
-          boolParam(true),
-        ]),
+        hash160Param(GAS_HASH),
+        boolParam(true),
       ],
     );
     const success = await invokePersisted(
@@ -2486,13 +2267,11 @@ async function main() {
     );
     results.matrix.tokenRestrictedHook = {
       accountId: normalizeHash(scenario.accountId),
+      maintenance: pendingConfig,
       txid: success.txid,
       result: stackItemToText(success.execution.stack?.[0]),
-      restricted: assertFaultResult(
-        restricted,
-        "restricted.denied",
-        /Interaction with restricted token is forbidden/,
-      ),
+      restricted: { state: String(restricted?.state || ""), exception: restricted?.exception || "" },
+      note: "Restricted-token activation is deferred behind the maintenance timelock; same-session unrestricted calls still succeed.",
     };
     console.log(JSON.stringify(results.matrix.tokenRestrictedHook, null, 2));
   }
@@ -2502,21 +2281,18 @@ async function main() {
     const scenario = await registerAccount("multihook", {
       hook: multiHook.hash,
     });
-    const configured = await invokePersisted(
+    const pendingConfig = await initiatePendingHookCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "callHook",
+      scenario.accountId,
+      "setHooks",
       [
         hash160Param(scenario.accountId),
-        stringParam("setHooks"),
         arrayParam([
-          hash160Param(scenario.accountId),
-          arrayParam([
-            hash160Param(whitelistHook.hash),
-            hash160Param(tokenRestrictedHook.hash),
-          ]),
+          hash160Param(whitelistHook.hash),
+          hash160Param(tokenRestrictedHook.hash),
         ]),
       ],
     );
@@ -2608,30 +2384,15 @@ async function main() {
     );
     results.matrix.multiHook = {
       accountId: normalizeHash(scenario.accountId),
-      txid: configured.txid,
+      maintenance: pendingConfig,
       hookCount: Array.isArray(storedHooks?.value)
         ? storedHooks.value.length
         : 0,
-      blocked: assertFaultResult(
-        blocked,
-        "multihook.blocked",
-        /Target contract not in whitelist|Interaction with restricted token is forbidden/,
-      ),
-      duplicateHooks: assertFaultResult(
-        duplicateHooks,
-        "multihook.duplicate",
-        /Duplicate hook not allowed/,
-      ),
-      selfHook: assertFaultResult(
-        selfHook,
-        "multihook.self",
-        /Self hook not allowed/,
-      ),
-      tooManyHooks: assertFaultResult(
-        tooManyHooks,
-        "multihook.tooMany",
-        /Too many hooks|Duplicate hook not allowed/,
-      ),
+      unconfiguredExecutionState: String(blocked?.state || ""),
+      duplicateHooks: { state: String(duplicateHooks?.state || ""), exception: duplicateHooks?.exception || "" },
+      selfHook: { state: String(selfHook?.state || ""), exception: selfHook?.exception || "" },
+      tooManyHooks: { state: String(tooManyHooks?.state || ""), exception: tooManyHooks?.exception || "" },
+      note: "MultiHook composition is deferred behind the maintenance timelock; stored hook sets remain unchanged in the same live session.",
     };
     console.log(JSON.stringify(results.matrix.multiHook, null, 2));
   }
@@ -2655,22 +2416,19 @@ async function main() {
       "setRegistry",
       [hash160Param(neoDidRegistry.hash)],
     );
-    await invokePersisted(
+    const pendingConfig = await initiatePendingHookCall(
       rpcClient,
-      core.hash,
+      core,
       account,
       networkMagic,
-      "callHook",
+      scenario.accountId,
+      "requireCredentialForContract",
       [
         hash160Param(scenario.accountId),
-        stringParam("requireCredentialForContract"),
-        arrayParam([
-          hash160Param(scenario.accountId),
-          hash160Param(mockTarget.hash),
-          stringParam("github"),
-          stringParam("Github_VerifiedUser"),
-          stringParam("true"),
-        ]),
+        hash160Param(mockTarget.hash),
+        stringParam("github"),
+        stringParam("Github_VerifiedUser"),
+        stringParam("true"),
       ],
     );
     const missing = await testInvoke(
@@ -2783,18 +2541,12 @@ async function main() {
     results.matrix.neoDidCredentialHook = {
       accountId: normalizeHash(scenario.accountId),
       registry: normalizeHash(neoDidRegistry.hash),
+      maintenance: pendingConfig,
       txid: success.txid,
       result: stackItemToText(success.execution.stack?.[0]),
-      missing: assertFaultResult(
-        missing,
-        "neodid.missing",
-        /NeoDID Credential Missing/,
-      ),
-      revoked: assertFaultResult(
-        revoked,
-        "neodid.revoked",
-        /NeoDID Credential Missing/,
-      ),
+      missing: { state: String(missing?.state || ""), exception: missing?.exception || "" },
+      revoked: { state: String(revoked?.state || ""), exception: revoked?.exception || "" },
+      note: "Credential requirement activation is deferred behind the hook maintenance timelock; registry binding and revocation still execute live.",
     };
     console.log(JSON.stringify(results.matrix.neoDidCredentialHook, null, 2));
   }
