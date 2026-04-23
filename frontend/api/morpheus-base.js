@@ -101,6 +101,19 @@ export function resolveMorpheusPaymasterEndpoint(networkInput) {
   return base ? `${base}${paymasterRoute}` : '';
 }
 
+export function resolveMorpheusOracleCvmId(networkInput) {
+  const network = normalizeNetwork(networkInput);
+  const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
+  return trim(
+    process.env[`MORPHEUS_${upper}_PAYMASTER_APP_ID`]
+      || process.env[`MORPHEUS_${upper}_ORACLE_CVM_ID`]
+      || process.env.MORPHEUS_PAYMASTER_APP_ID
+      || process.env.MORPHEUS_ORACLE_CVM_ID
+      || MORPHEUS_PUBLIC_RUNTIME_CATALOG.networks?.[network]?.morpheus?.oracleCvmId
+      || ''
+  );
+}
+
 export function resolveMorpheusRuntimeToken(networkInput) {
   const network = normalizeNetwork(networkInput);
   const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';

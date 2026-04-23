@@ -50,7 +50,7 @@
     "vite-plugin-node-polyfills": "^0.25.0"
   },
   "overrides": {
-    "dompurify": "3.3.2",
+    "dompurify": "3.4.0",
     "esbuild": "0.27.3",
     "h3": {
       "defu": "6.1.7"

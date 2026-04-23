@@ -121,7 +121,7 @@ test('testnet validators derive registration-bound account ids with the contract
 
   assert.match(pluginMatrixSource, /deriveRegistrationAccountIdHash\(\{/);
   assert.match(pluginMatrixSource, /verifierContractHash: initialVerifier/);
-  assert.match(pluginMatrixSource, /verifierParamsHex: initialVerifierParams/);
+  assert.match(pluginMatrixSource, /verifierParamsHex: effectiveVerifierParams/);
   assert.match(pluginMatrixSource, /hookContractHash: initialHook/);
   assert.match(pluginMatrixSource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
 
@@ -139,6 +139,8 @@ test('testnet validators derive registration-bound account ids with the contract
   assert.match(paymasterRelaySource, /const defaultBootstrapAccountId = sanitizeHex\(EXPLICIT_PAYMASTER_ACCOUNT_ID \|\| deriveBootstrapAccountId\(\)\);/);
   assert.match(paymasterRelaySource, /const usingReusableBootstrapAccount = skipAllowlistUpdate && normalizeHash\(accountId\) === normalizeHash\(defaultBootstrapAccountId\);/);
   assert.doesNotMatch(paymasterRelaySource, /const usingDerivedDefaultAccount = !EXPLICIT_PAYMASTER_ACCOUNT_ID && skipAllowlistUpdate;/);
+  assert.match(paymasterRelaySource, /resolveTestnetRpcUrl/);
+  assert.match(paymasterRelaySource, /const localOverrides = \(!skipAllowlistUpdate && normalizedAllowlistAccountId\)/);
 
   assert.match(paymasterOnchainSource, /deriveRegistrationAccountIdHash\(\{/);
   assert.match(paymasterOnchainSource, /verifierContractHash: verifier\.hash/);
@@ -149,6 +151,45 @@ test('testnet validators derive registration-bound account ids with the contract
   assert.doesNotMatch(pluginMatrixSource, /const accountId = randomAccountId();/);
   assert.doesNotMatch(marketEscrowSource, /const accountId = randomAccountId();/);
   assert.doesNotMatch(paymasterOnchainSource, /Buffer.from(ethers.randomBytes(20)).toString('hex')/);
+});
+
+test('testnet validation suite includes smoke, plugin matrix, market escrow, and on-chain paymaster lanes', () => {
+  const suiteSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_validation_suite.mjs'), 'utf8');
+  const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
+
+  assert.match(suiteSource, /id: "smoke"/);
+  assert.match(suiteSource, /id: "plugin_matrix"/);
+  assert.match(suiteSource, /id: "market_escrow"/);
+  assert.match(suiteSource, /id: "paymaster_onchain"/);
+  assert.match(readme, /v3_testnet_market_escrow\.js/);
+  assert.match(readme, /v3_testnet_paymaster_onchain\.mjs/);
+  assert.match(readme, /testnet:validate:market/);
+  assert.match(readme, /testnet:validate:paymaster-onchain/);
+});
+
+test('live testnet deploy scripts use entropy-backed deployment tags for reruns', () => {
+  const smokeSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_smoke.js'), 'utf8');
+  const pluginMatrixSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_plugin_matrix.js'), 'utf8');
+  const marketEscrowSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_market_escrow.js'), 'utf8');
+  const paymasterOnchainSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_onchain.mjs'), 'utf8');
+  const runbook = fs.readFileSync(path.join(repoRoot, 'docs', 'testnet-validation-runbook.md'), 'utf8');
+
+  assert.match(smokeSource, /crypto\.randomBytes\(3\)\.toString\('hex'\)/);
+  assert.match(pluginMatrixSource, /crypto\.randomBytes\(3\)\.toString\("hex"\)/);
+  assert.match(marketEscrowSource, /crypto\.randomBytes\(3\)\.toString\('hex'\)/);
+  assert.match(paymasterOnchainSource, /randomBytes\(3\)\.toString\('hex'\)/);
+  assert.match(smokeSource, /premature close\|invalid response body/i);
+  assert.match(pluginMatrixSource, /premature close\|invalid response body/i);
+  assert.match(marketEscrowSource, /premature close\|invalid response body/i);
+  assert.match(paymasterOnchainSource, /premature close\|invalid response body/i);
+  assert.match(smokeSource, /resolveTestnetRpcUrl/);
+  assert.match(pluginMatrixSource, /resolveTestnetRpcUrl/);
+  assert.match(marketEscrowSource, /resolveTestnetRpcUrl/);
+  assert.match(paymasterOnchainSource, /resolveTestnetRpcUrl/);
+  assert.match(runbook, /TESTNET_RPC_URLS/);
+  assert.match(runbook, /seed1/);
+  assert.match(runbook, /v3_testnet_market_escrow\.js/);
+  assert.match(runbook, /v3_testnet_paymaster_onchain\.mjs/);
 });
 
 test('createEIP712Payload builds the V3 UserOperation schema when accountIdHash is provided', async () => {
@@ -272,6 +313,124 @@ test('client decodes previewUserOpValidation into a structured validation previe
   });
 });
 
+test('getAccountState uses invokefunction for every V3 getter', async () => {
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  const responses = new Map([
+    ['getVerifier', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('b4107cb2cb4bace0ebe15bc4842890734abe133a', 'hex').toString('base64') }] }],
+    ['getHook', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('1111111111111111111111111111111111111111', 'hex').toString('base64') }] }],
+    ['getBackupOwner', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('2222222222222222222222222222222222222222', 'hex').toString('base64') }] }],
+    ['getEscapeTimelock', { state: 'HALT', stack: [{ type: 'Integer', value: '604800' }] }],
+    ['getEscapeTriggeredAt', { state: 'HALT', stack: [{ type: 'Integer', value: '0' }] }],
+    ['isEscapeActive', { state: 'HALT', stack: [{ type: 'Boolean', value: false }] }],
+    ['getMetadataUri', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('ipfs://demo', 'utf8').toString('base64') }] }],
+  ]);
+  const seen = [];
+
+  client.rpcClient = {
+    async invokeScript() {
+      throw new Error('invokeScript should not be used for getAccountState');
+    },
+    async invokeFunction(_scriptHash, operation) {
+      seen.push(operation);
+      return responses.get(operation);
+    },
+  };
+
+  const state = await client.getAccountState('0xf951cd3eb5196dacde99b339c5dcca37ac38cc22');
+
+  assert.deepEqual(seen, [
+    'getVerifier',
+    'getHook',
+    'getBackupOwner',
+    'getEscapeTimelock',
+    'getEscapeTriggeredAt',
+    'isEscapeActive',
+    'getMetadataUri',
+  ]);
+  assert.equal(state.verifier, 'b4107cb2cb4bace0ebe15bc4842890734abe133a');
+  assert.equal(state.hook, '1111111111111111111111111111111111111111');
+  assert.equal(state.backupOwner, '2222222222222222222222222222222222222222');
+  assert.equal(state.escapeTimelock, '604800');
+  assert.equal(state.escapeTriggeredAt, '0');
+  assert.equal(state.escapeActive, false);
+  assert.equal(state.metadataUri, 'ipfs://demo');
+});
+
+test('computeArgsHash uses invokefunction for array payloads', async () => {
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  let invokeFunctionCalled = false;
+
+  client.rpcClient = {
+    async invokeScript() {
+      throw new Error('invokeScript should not be used for computeArgsHash');
+    },
+    async invokeFunction(_scriptHash, operation) {
+      invokeFunctionCalled = true;
+      assert.equal(operation, 'computeArgsHash');
+      return {
+        state: 'HALT',
+        stack: [{ type: 'ByteString', value: Buffer.from('ab'.repeat(32), 'hex').toString('base64') }],
+      };
+    },
+  };
+
+  const hash = await client.computeArgsHash([]);
+
+  assert.equal(invokeFunctionCalled, true);
+  assert.equal(hash, 'ab'.repeat(32));
+});
+
+test('pending maintenance helpers read pending verifier and hook calls through invokefunction', async () => {
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  const responses = {
+    hasPendingVerifierCall: { state: 'HALT', stack: [{ type: 'Boolean', value: true }] },
+    getPendingVerifierCallTime: { state: 'HALT', stack: [{ type: 'Integer', value: '123456' }] },
+    getPendingVerifierCallModule: { state: 'HALT', stack: [{ type: 'Hash160', value: '0xb4107cb2cb4bace0ebe15bc4842890734abe133a' }] },
+    getPendingVerifierCallHash: { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('ab'.repeat(32), 'hex').toString('base64') }] },
+    hasPendingHookCall: { state: 'HALT', stack: [{ type: 'Boolean', value: false }] },
+    getPendingHookCallTime: { state: 'HALT', stack: [{ type: 'Integer', value: '0' }] },
+    getPendingHookCallModule: { state: 'HALT', stack: [{ type: 'Hash160', value: '0x0000000000000000000000000000000000000000' }] },
+    getPendingHookCallHash: { state: 'HALT', stack: [{ type: 'ByteString', value: '' }] },
+  };
+  const seen = [];
+
+  client.rpcClient = {
+    async invokeScript() {
+      throw new Error('invokeScript should not be used for pending maintenance helpers');
+    },
+    async invokeFunction(_scriptHash, operation) {
+      seen.push(operation);
+      return responses[operation];
+    },
+  };
+
+  const pendingVerifier = await client.getPendingVerifierCall('0xf951cd3eb5196dacde99b339c5dcca37ac38cc22');
+  const pendingHook = await client.getPendingHookCall('0xf951cd3eb5196dacde99b339c5dcca37ac38cc22');
+
+  assert.deepEqual(seen, [
+    'hasPendingVerifierCall',
+    'getPendingVerifierCallTime',
+    'getPendingVerifierCallModule',
+    'getPendingVerifierCallHash',
+    'hasPendingHookCall',
+    'getPendingHookCallTime',
+    'getPendingHookCallModule',
+    'getPendingHookCallHash',
+  ]);
+  assert.deepEqual(pendingVerifier, {
+    hasPending: true,
+    executeAfter: '123456',
+    moduleHash: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+    callHash: 'ab'.repeat(32),
+  });
+  assert.deepEqual(pendingHook, {
+    hasPending: false,
+    executeAfter: '0',
+    moduleHash: '0000000000000000000000000000000000000000',
+    callHash: '',
+  });
+});
+
 test('contract and docs expose a generic module lifecycle alongside legacy verifier and hook events', () => {
   const eventsSource = fs.readFileSync(path.join(repoRoot, 'contracts', 'UnifiedSmartWallet.Events.cs'), 'utf8');
   const accountsSource = fs.readFileSync(path.join(repoRoot, 'contracts', 'UnifiedSmartWallet.Accounts.cs'), 'utf8');
@@ -299,6 +458,19 @@ test('contract and docs expose a generic module lifecycle alongside legacy verif
   assert.match(architectureDoc, /replace/i);
   assert.match(architectureDoc, /remove/i);
   assert.match(architectureDoc, /cancel/i);
+});
+
+test('contract state exposes pending verifier and hook maintenance-call getters', () => {
+  const stateSource = fs.readFileSync(path.join(repoRoot, 'contracts', 'UnifiedSmartWallet.State.cs'), 'utf8');
+
+  assert.match(stateSource, /HasPendingVerifierCall/);
+  assert.match(stateSource, /HasPendingHookCall/);
+  assert.match(stateSource, /GetPendingVerifierCallModule/);
+  assert.match(stateSource, /GetPendingHookCallModule/);
+  assert.match(stateSource, /GetPendingVerifierCallHash/);
+  assert.match(stateSource, /GetPendingHookCallHash/);
+  assert.match(stateSource, /GetPendingVerifierCallTime/);
+  assert.match(stateSource, /GetPendingHookCallTime/);
 });
 
 test('native secp256r1 verifiers share one canonical payload builder', () => {

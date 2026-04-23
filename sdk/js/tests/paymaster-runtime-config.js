@@ -27,7 +27,7 @@ function shouldSkipPaymasterRelayValidation(env = process.env, capabilities = {}
   if (String(env.PAYMASTER_ACCOUNT_ID || '').trim()) return '';
   if (String(env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || '').trim()) return '';
   if (capabilities.hasPhalaCli) return '';
-  return 'skipped because paymaster relay needs PAYMASTER_ACCOUNT_ID or a local paymaster handler / phala CLI to update the allowlist for the derived account';
+  return 'skipped because paymaster relay needs PAYMASTER_ACCOUNT_ID or a local paymaster handler / phala CLI (global or npx) to update the allowlist for the derived account';
 }
 
 module.exports = {

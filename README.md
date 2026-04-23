@@ -99,8 +99,8 @@ Current published Morpheus CVM attestation anchors:
 
 - Oracle request/response CVM: `oracle-morpheus-neo-r3e` / `ddff154546fe22d15b65667156dd4b7c611e6093`
 - Oracle attestation explorer: `https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093`
-- DataFeed CVM: `datafeed-morpheus-neo-r3e` / `28294e89d490924b79c85cdee057ce55723b3d56`
-- DataFeed attestation explorer: `https://cloud.phala.com/explorer/app_28294e89d490924b79c85cdee057ce55723b3d56`
+- DataFeed CVM: `datafeed-morpheus-neo-r3e` / `ac5b6886a2832df36e479294206611652400178f`
+- DataFeed attestation explorer: `https://cloud.phala.com/explorer/app_ac5b6886a2832df36e479294206611652400178f`
 
 Do not conflate the AA recovery verifier with the independent NeoDID registry:
 
@@ -178,6 +178,8 @@ cd frontend && npm test
 cd sdk/js && npm test
 ```
 
+`./scripts/verify_repo.sh` is the preferred local verification entrypoint for this repository.
+
 To run the full local verification sequence in one command:
 
 ```bash
@@ -194,10 +196,16 @@ npm run testnet:validate:dry-run
 npm run testnet:validate
 ```
 
+When public testnet RPC reliability matters, you can pin one endpoint with `TESTNET_RPC_URL` or provide a candidate list with `TESTNET_RPC_URLS`. When neither is set, the validators auto-probe the official public seeds `seed1` through `seed5.neo.org:20332` before falling back to `https://testnet1.neo.coz.io:443`.
+
+For the off-chain Morpheus paymaster lanes, the validators also fall back to the remote worker path through `phala` (or `npx --yes phala`) when the public `paymaster/authorize` endpoint rejects a valid Phala Cloud API token with `401` or `403`.
+
 The runner now executes the current V3 live testnet flow in order:
 
 - `v3_testnet_smoke.js`
 - `v3_testnet_plugin_matrix.js`
+- `v3_testnet_market_escrow.js`
+- `v3_testnet_paymaster_onchain.mjs`
 - `v3_testnet_paymaster_policy.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is available
 - `v3_testnet_paymaster_relay.mjs` when `MORPHEUS_RUNTIME_TOKEN` or `PHALA_API_TOKEN` is available
 
@@ -206,6 +214,8 @@ You can also run the stages individually with:
 ```bash
 npm run testnet:validate:smoke
 npm run testnet:validate:plugin-matrix
+npm run testnet:validate:market
+npm run testnet:validate:paymaster-onchain
 npm run testnet:validate:paymaster-policy
 npm run testnet:validate:paymaster
 npm run testnet:validate:report
@@ -346,4 +356,6 @@ A second destructive verification pass was completed on **March 6, 2026** agains
 
 ## Frontend Security Status
 
-As of **March 7, 2026**, `frontend` passes `npm audit --omit=dev` with **0 known production vulnerabilities**.
+As of **April 23, 2026**, `frontend` still passes the repo audit gate with **0 high/critical vulnerabilities**.
+
+The remaining findings are the current upstream Web3Auth/Torus/MetaMask/Solana dependency chain required by the active NeoDID/Web3Auth login flow: **16 low** and **14 moderate** findings across the latest published `@web3auth/modal` / `@web3auth/no-modal` `10.15.0` stack. `scripts/check_frontend_audit_allowlist.mjs` is part of `scripts/verify_repo.sh` and fails if anything outside that accepted upstream baseline appears or if any finding rises to `high` / `critical`.

@@ -298,6 +298,13 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
   assert.match(viteConfigSource, /vue-flow/);
   assert.match(viteConfigSource, /supabase/);
   assert.match(viteConfigSource, /jose/);
+  assert.match(viteConfigSource, /react-runtime/);
+  assert.match(viteConfigSource, /identity-runtime/);
+  assert.match(viteConfigSource, /walletconnect-runtime/);
+  assert.match(viteConfigSource, /@walletconnect/);
+  assert.match(viteConfigSource, /@toruslabs/);
+  assert.match(viteConfigSource, /deferredIdentityChunks/);
+  assert.match(viteConfigSource, /chunkSizeWarningLimit:\s*3500/);
   // ethers, @web3auth, buffer are NOT in manualChunks (circular dep TDZ fix)
   assert.doesNotMatch(viteConfigSource, /return 'ethers'/);
   assert.doesNotMatch(viteConfigSource, /neon-core/);

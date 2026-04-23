@@ -8,7 +8,7 @@ namespace AbstractAccount
 {
     public partial class UnifiedSmartWallet
     {
-        private static readonly byte[] Prefix_ContractAdmin = new byte[] { 0x0E };
+        private static readonly byte[] Prefix_ContractAdmin = new byte[] { 0x11 };
 
         public static void _deploy(object data, bool update)
         {

@@ -20,15 +20,18 @@
  */
 
 import fs from 'fs';
+import { randomBytes } from 'node:crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { rpc, sc, wallet, experimental, tx, u, CONST } from '@cityofzion/neon-js';
 import { ethers } from 'ethers';
+import testnetRpcHelpers from './testnet-rpc.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
+const { resolveTestnetRpcUrl } = testnetRpcHelpers;
 
-const RPC_URL = process.env.TESTNET_RPC_URL || 'https://testnet1.neo.coz.io:443';
+let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || '';
 const TEST_WIF = process.env.TEST_WIF || '';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const ESCAPE_TIMELOCK = 604800; // 7 days minimum
@@ -49,7 +52,7 @@ const { buildV3UserOperationTypedData, sanitizeHex } = await import('../src/meta
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function isRetryableRpcError(error) {
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|socket disconnected before secure TLS connection was established|TLS connection was established|premature close|invalid response body/i.test(
     String(error?.message || '')
   );
 }
@@ -194,11 +197,12 @@ function logSection(title) { console.log(`\n== ${title} ==`); }
 // ======================================================================
 
 async function main() {
+  RPC_URL = await resolveTestnetRpcUrl({ env: process.env });
   const account = new wallet.Account(TEST_WIF);
   const rpcClient = new rpc.RPCClient(RPC_URL);
   const version = await withRpcRetry('rpc.getVersion', () => rpcClient.getVersion());
   const networkMagic = Number(version.protocol.network);
-  const tag = `paymaster-${Date.now().toString(36)}`;
+  const tag = `paymaster-${Date.now().toString(36)}-${process.pid.toString(36)}-${randomBytes(3).toString('hex')}`;
   const results = {};
 
   console.log(JSON.stringify({

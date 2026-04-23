@@ -2,14 +2,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { rpc, sc, wallet, experimental, tx, u, CONST } = require('@cityofzion/neon-js');
 const { ethers } = require('ethers');
 
 const { extractDeployedContractHash } = require('../src/deployLog');
 const { AbstractAccountClient } = require('../src/index');
 const { sanitizeHex } = require('../src/metaTx');
+const { resolveTestnetRpcUrl } = require('./testnet-rpc');
 
-const RPC_URL = process.env.TESTNET_RPC_URL || 'https://testnet1.neo.coz.io:443';
+let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || '';
 const TEST_WIF = process.env.TEST_WIF || '';
 
 if (!TEST_WIF) {
@@ -27,7 +29,7 @@ function sleep(ms) {
 
 function isRetryableRpcError(error) {
   const message = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(message);
+  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|socket disconnected before secure TLS connection was established|TLS connection was established|premature close|invalid response body/i.test(message);
 }
 
 async function withRpcRetry(label, fn, attempts = 5) {
@@ -149,6 +151,12 @@ async function authorizeHook(client, coreHash, hookHash, account, networkMagic) 
   ]);
 }
 
+async function authorizeVerifier(client, coreHash, verifierHash, account, networkMagic) {
+  return invokePersisted(client, verifierHash, account, networkMagic, 'setAuthorizedCore', [
+    hash160Param(coreHash),
+  ]);
+}
+
 async function invokePersisted(client, contractHash, account, networkMagic, operation, params = [], signers = undefined) {
   const contract = new experimental.SmartContract(sanitizeHex(contractHash), buildConfig(account, networkMagic));
   const preview = await withRpcRetry(`${sanitizeHex(contractHash)}.${operation}.preview`, () => contract.testInvoke(operation, params, signers));
@@ -217,10 +225,11 @@ function randomAccountId() {
 }
 
 function validationRunId() {
-  return (process.env.AA_VALIDATION_RUN_ID || Date.now().toString(36)).toLowerCase();
+  return (process.env.AA_VALIDATION_RUN_ID || `${Date.now().toString(36)}-${process.pid.toString(36)}-${crypto.randomBytes(3).toString('hex')}`).toLowerCase();
 }
 
 async function main() {
+  RPC_URL = await resolveTestnetRpcUrl({ env: process.env });
   const seller = new wallet.Account(TEST_WIF);
   const buyer = new wallet.Account();
   const client = new rpc.RPCClient(RPC_URL);
@@ -240,6 +249,7 @@ async function main() {
   const market = await deployContract(client, seller, networkMagic, 'AAAddressMarket', `${deploymentTag}-market`);
   const teeVerifier = await deployContract(client, seller, networkMagic, 'TEEVerifier', `${deploymentTag}-tee`);
   const whitelistHook = await deployContract(client, seller, networkMagic, 'WhitelistHook', `${deploymentTag}-whitelist`);
+  await authorizeVerifier(client, core.hash, teeVerifier.hash, seller, networkMagic);
   await authorizeHook(client, core.hash, whitelistHook.hash, seller, networkMagic);
 
   const aaClient = new AbstractAccountClient(RPC_URL, core.hash);
@@ -260,7 +270,7 @@ async function main() {
     integerParam(REGISTRATION_ESCAPE_TIMELOCK),
   ], [makeSigner(seller.scriptHash)]);
 
-  await invokePersisted(client, core.hash, seller, networkMagic, 'callHook', [
+  const hookConfigRequest = await invokePersisted(client, core.hash, seller, networkMagic, 'callHook', [
     hash160Param(accountId),
     stringParam('setWhitelist'),
     sc.ContractParam.array(
@@ -275,9 +285,12 @@ async function main() {
   if (!Buffer.from(verifierBeforeSale?.stack?.[0]?.value || '', 'base64').length) {
     throw new Error('verifier state should exist before sale');
   }
-  if (hookStateBeforeSale?.stack?.[0]?.value !== true) {
-    throw new Error('hook state should exist before sale');
-  }
+  console.log(JSON.stringify({
+    hookConfigRequest: hookConfigRequest.txid,
+    hookConfigResult: hookConfigRequest.execution?.stack?.[0] || null,
+    hookStateBeforeSale: hookStateBeforeSale?.stack?.[0]?.value ?? null,
+    note: 'WhitelistHook configuration is timelocked on V3, so the first callHook(setWhitelist) only records a pending maintenance request.',
+  }, null, 2));
 
   await invokePersisted(client, market.hash, seller, networkMagic, 'createListing', [
     hash160Param(core.hash),

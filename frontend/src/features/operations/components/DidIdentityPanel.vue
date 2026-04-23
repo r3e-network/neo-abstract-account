@@ -165,6 +165,31 @@
         </div>
       </div>
 
+      <div v-if="maintenanceItems.length > 0" class="rounded-xl border border-aa-warning/30 bg-aa-warning/5 p-4 space-y-3">
+        <p class="text-xs uppercase tracking-wider text-aa-warning font-bold">{{ t('didPanel.pendingMaintenance', 'Pending Account Maintenance') }}</p>
+        <div v-for="item in maintenanceItems" :key="item.id" class="rounded-lg border border-aa-warning/20 bg-aa-panel/40 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-semibold text-aa-text">{{ item.title }}</p>
+            <span class="text-xs font-medium text-aa-warning">{{ t('didPanel.statusPending', '(pending)').replace(/[()（）]/g, '').trim() }}</span>
+          </div>
+          <p class="mt-1 text-xs text-aa-muted">{{ item.description }}</p>
+          <div class="mt-3 grid gap-3 md:grid-cols-3">
+            <div>
+              <p class="text-[10px] uppercase tracking-wider text-aa-muted font-bold">{{ t('didPanel.executableAt', 'executable at') }}</p>
+              <p class="mt-1 text-sm text-aa-text break-all">{{ item.executeAfter }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase tracking-wider text-aa-muted font-bold">{{ t('didPanel.boundModule', 'Bound Module') }}</p>
+              <p class="mt-1 text-sm text-aa-text break-all">{{ item.moduleHash || t('didPanel.unset', 'unset') }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase tracking-wider text-aa-muted font-bold">{{ t('didPanel.pendingCallHash', 'Pending Call Hash') }}</p>
+              <p class="mt-1 text-sm text-aa-text break-all">{{ item.callHash || t('didPanel.unset', 'unset') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="grid gap-6 xl:grid-cols-3">
         <section class="rounded-xl border border-aa-border bg-aa-panel/40 p-5 space-y-4">
           <div>
@@ -320,7 +345,7 @@ import { useI18n } from '@/i18n';
 import { useToast } from 'vue-toastification';
 import { useClipboard } from '@/composables/useClipboard.js';
 import { useDidConnection } from '@/composables/useDidConnection.js';
-import { morpheusDidService, fetchAccountIdByAddress, fetchVerifierContractByAddress, fetchUnifiedVerifierState } from '@/services/morpheusDidService.js';
+import { morpheusDidService, fetchAccountIdByAddress, fetchAccountMaintenanceState, fetchVerifierContractByAddress, fetchUnifiedVerifierState } from '@/services/morpheusDidService.js';
 import { notificationService } from '@/services/notificationService.js';
 import { getAbstractAccountHash } from '@/services/walletService.js';
 import { getScriptHashFromAddress } from '@/utils/neo.js';
@@ -334,6 +359,10 @@ const props = defineProps({
     default: '',
   },
   accountAddressScriptHash: {
+    type: String,
+    default: '',
+  },
+  accountIdPrefill: {
     type: String,
     default: '',
   },
@@ -385,6 +414,7 @@ const canEmailNotice = computed(() => Boolean(notificationService.canEmail && di
 const canSmsNotice = computed(() => Boolean(notificationService.canSms && didProfile.value?.phone));
 const resolvedAccountId = ref('');
 const verifierState = ref(null);
+const maintenanceState = ref(null);
 const busy = ref('');
 const resultJson = ref('');
 const { copiedKey, markCopied, copyText: clipboardCopy } = useClipboard();
@@ -407,6 +437,63 @@ const proxyExpiryMinutes = ref(15);
 const bindStatusLabel = computed(() => didConnected.value ? t('didPanel.statusReady', '(ready)') : t('didPanel.statusConnectDid', '(connect Web3Auth)'));
 const recoveryStatusLabel = computed(() => verifierState.value?.pendingRecovery?.active ? t('didPanel.statusPending', '(pending)') : t('didPanel.statusReady', '(ready)'));
 const sessionStatusLabel = computed(() => verifierState.value?.activeSession?.active ? t('didPanel.statusActive', '(active)') : t('didPanel.statusReady', '(ready)'));
+
+function formatScheduledTimestamp(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric <= 0) return raw;
+  const millis = raw.length >= 13 ? numeric : numeric * 1000;
+  const date = new Date(millis);
+  if (Number.isNaN(date.getTime())) return raw;
+  return `${date.toISOString()} (${raw})`;
+}
+
+const maintenanceItems = computed(() => {
+  if (!maintenanceState.value) return [];
+  const items = [];
+  if (maintenanceState.value.pendingVerifierCall?.active) {
+    items.push({
+      id: 'pending-verifier-call',
+      title: t('didPanel.pendingVerifierCall', 'Pending Verifier Maintenance Call'),
+      description: t('didPanel.pendingVerifierCallHint', 'A delayed verifier maintenance request is staged and can only be confirmed after the contract timelock expires.'),
+      executeAfter: formatScheduledTimestamp(maintenanceState.value.pendingVerifierCall.executeAfter),
+      moduleHash: maintenanceState.value.pendingVerifierCall.moduleHash,
+      callHash: maintenanceState.value.pendingVerifierCall.callHash,
+    });
+  }
+  if (maintenanceState.value.pendingHookCall?.active) {
+    items.push({
+      id: 'pending-hook-call',
+      title: t('didPanel.pendingHookCall', 'Pending Hook Maintenance Call'),
+      description: t('didPanel.pendingHookCallHint', 'A delayed hook maintenance request is staged and can only be confirmed after the contract timelock expires.'),
+      executeAfter: formatScheduledTimestamp(maintenanceState.value.pendingHookCall.executeAfter),
+      moduleHash: maintenanceState.value.pendingHookCall.moduleHash,
+      callHash: maintenanceState.value.pendingHookCall.callHash,
+    });
+  }
+  if (maintenanceState.value.pendingVerifierUpdate?.active) {
+    items.push({
+      id: 'pending-verifier-update',
+      title: t('didPanel.pendingVerifierUpdate', 'Pending Verifier Rotation'),
+      description: t('didPanel.pendingVerifierUpdateHint', 'A verifier rotation is queued behind the V3 config-update timelock.'),
+      executeAfter: formatScheduledTimestamp(maintenanceState.value.pendingVerifierUpdate.executeAfter),
+      moduleHash: '',
+      callHash: '',
+    });
+  }
+  if (maintenanceState.value.pendingHookUpdate?.active) {
+    items.push({
+      id: 'pending-hook-update',
+      title: t('didPanel.pendingHookUpdate', 'Pending Hook Rotation'),
+      description: t('didPanel.pendingHookUpdateHint', 'A hook rotation is queued behind the V3 config-update timelock.'),
+      executeAfter: formatScheduledTimestamp(maintenanceState.value.pendingHookUpdate.executeAfter),
+      moduleHash: '',
+      callHash: '',
+    });
+  }
+  return items;
+});
 const prefillRecoveryVerifier = computed(() => String(props.recoveryVerifierPrefill || '').trim());
 const prefillRecoveryNewOwner = computed(() => String(props.recoveryNewOwnerPrefill || '').trim());
 const prefillRecoveryExpiryMinutes = computed(() => {
@@ -429,6 +516,10 @@ function toExpiry(minutes) {
 }
 
 async function refreshAccountId() {
+  if (props.accountIdPrefill) {
+    resolvedAccountId.value = sanitizeHex(props.accountIdPrefill);
+    return;
+  }
   if (!props.accountAddressScriptHash) {
     resolvedAccountId.value = '';
     return;
@@ -447,19 +538,27 @@ async function refreshAccountId() {
 }
 
 async function refreshBoundVerifier() {
-  if (!props.accountAddressScriptHash) return;
   try {
-    const bound = await fetchVerifierContractByAddress({
-      rpcUrl: RUNTIME_CONFIG.rpcUrl,
-      aaContractHash: props.aaContractHash || getAbstractAccountHash(),
-      accountAddressScriptHash: props.accountAddressScriptHash,
-    });
+    const bound = props.accountAddressScriptHash
+      ? await fetchVerifierContractByAddress({
+          rpcUrl: RUNTIME_CONFIG.rpcUrl,
+          aaContractHash: props.aaContractHash || getAbstractAccountHash(),
+          accountAddressScriptHash: props.accountAddressScriptHash,
+        })
+      : '';
     const preferredRecoveryVerifier = prefillRecoveryVerifier.value || bound;
     if (!recoveryVerifierHash.value && preferredRecoveryVerifier) {
       recoveryVerifierHash.value = preferredRecoveryVerifier;
     }
     if (!proxyVerifierHash.value && bound) {
       proxyVerifierHash.value = bound;
+    }
+    if (resolvedAccountId.value) {
+      maintenanceState.value = await fetchAccountMaintenanceState({
+        rpcUrl: RUNTIME_CONFIG.rpcUrl,
+        aaContractHash: props.aaContractHash || getAbstractAccountHash(),
+        accountIdHex: resolvedAccountId.value,
+      }).catch((err) => { if (import.meta.env.DEV) console.error('[DidIdentityPanel] fetchAccountMaintenanceState failed:', err?.message); return null; });
     }
     if ((preferredRecoveryVerifier || bound) && resolvedAccountId.value) {
       verifierState.value = await fetchUnifiedVerifierState({
@@ -474,6 +573,7 @@ async function refreshBoundVerifier() {
     recoveryVerifierHash.value = prefillRecoveryVerifier.value || '';
     proxyVerifierHash.value = '';
     verifierState.value = null;
+    maintenanceState.value = null;
   }
 }
 
@@ -504,9 +604,20 @@ watch(
 
 let verifierStateRequestId = 0;
 watch([resolvedAccountId, recoveryVerifierHash], async ([accountId, verifier]) => {
-  if (!accountId || !verifier) return;
+  if (!accountId) return;
   const requestId = ++verifierStateRequestId;
   try {
+    const maintenance = await fetchAccountMaintenanceState({
+      rpcUrl: RUNTIME_CONFIG.rpcUrl,
+      aaContractHash: props.aaContractHash || getAbstractAccountHash(),
+      accountIdHex: accountId,
+    });
+    if (requestId !== verifierStateRequestId) return;
+    maintenanceState.value = maintenance;
+    if (!verifier) {
+      verifierState.value = null;
+      return;
+    }
     const state = await fetchUnifiedVerifierState({
       rpcUrl: RUNTIME_CONFIG.rpcUrl,
       verifierHash: verifier,
@@ -519,12 +630,20 @@ watch([resolvedAccountId, recoveryVerifierHash], async ([accountId, verifier]) =
     if (import.meta.env.DEV) console.error('[DidIdentityPanel] fetchUnifiedVerifierState failed:', error?.message);
     toast.error(translateError(error?.message, t));
     verifierState.value = null;
+    maintenanceState.value = null;
   }
 });
 
 async function refreshVerifierStateAction() {
   busy.value = 'refreshState';
   try {
+    if (resolvedAccountId.value) {
+      maintenanceState.value = await fetchAccountMaintenanceState({
+        rpcUrl: RUNTIME_CONFIG.rpcUrl,
+        aaContractHash: props.aaContractHash || getAbstractAccountHash(),
+        accountIdHex: resolvedAccountId.value,
+      });
+    }
     if (resolvedAccountId.value && (recoveryVerifierHash.value || proxyVerifierHash.value)) {
       verifierState.value = await fetchUnifiedVerifierState({
         rpcUrl: RUNTIME_CONFIG.rpcUrl,

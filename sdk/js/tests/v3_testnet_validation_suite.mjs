@@ -2,6 +2,8 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
+import phalaCliHelpers from "./phala-cli.js";
+import testnetRpcHelpers from "./testnet-rpc.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -14,8 +16,12 @@ const REPO_REPORT_DIR = path.resolve(ROOT_DIR, "..", "..", "docs");
 const REPO_ROOT = path.resolve(ROOT_DIR, "..", "..");
 const DATE_PREFIX = "2026-03-14";
 const { shouldSkipPaymasterRelayValidation } = paymasterRuntimeConfig;
+const { resolvePhalaCliCommand } = phalaCliHelpers;
+const { DEFAULT_TESTNET_RPC_URLS, resolveTestnetRpcCandidates } = testnetRpcHelpers;
+const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
 const PAYMASTER_CAPABILITIES = {
-  hasPhalaCli: spawnSync("bash", ["-lc", "command -v phala >/dev/null 2>&1"]).status === 0,
+  hasPhalaCli: Boolean(PHALA_CLI_COMMAND),
+  phalaCommand: PHALA_CLI_COMMAND ? PHALA_CLI_COMMAND.join(' ') : null,
 };
 
 const STAGES = [
@@ -29,6 +35,18 @@ const STAGES = [
     id: "plugin_matrix",
     title: "V3 Plugin Matrix",
     command: ["node", "tests/v3_testnet_plugin_matrix.js"],
+    requiredEnv: ["TEST_WIF"],
+  },
+  {
+    id: "market_escrow",
+    title: "V3 Market Escrow",
+    command: ["node", "tests/v3_testnet_market_escrow.js"],
+    requiredEnv: ["TEST_WIF"],
+  },
+  {
+    id: "paymaster_onchain",
+    title: "V3 Paymaster On-Chain",
+    command: ["node", "tests/v3_testnet_paymaster_onchain.mjs"],
     requiredEnv: ["TEST_WIF"],
   },
   {
@@ -63,13 +81,17 @@ function nowIso() {
 
 function envSnapshot() {
   return {
-    TESTNET_RPC_URL: process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "https://testnet1.neo.coz.io:443",
+    TESTNET_RPC_URL: process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || null,
+    TESTNET_RPC_URLS: process.env.TESTNET_RPC_URLS || null,
+    rpcCandidateCount: resolveTestnetRpcCandidates(process.env).length,
+    defaultRpcCandidates: DEFAULT_TESTNET_RPC_URLS,
     hasTestWif: Boolean(process.env.TEST_WIF),
     hasMorpheusRuntimeToken: Boolean(process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET),
     morpheusPaymasterAppId: process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093",
     paymasterAccountId: process.env.PAYMASTER_ACCOUNT_ID || null,
     skipPaymasterAllowlistUpdate: process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1",
     hasPhalaCli: PAYMASTER_CAPABILITIES.hasPhalaCli,
+    phalaCommand: PAYMASTER_CAPABILITIES.phalaCommand,
   };
 }
 
@@ -206,12 +228,49 @@ function summarizePaymaster(stdout = "") {
   };
 }
 
+function summarizeMarketEscrow(stdout = "") {
+  const summary = latestJsonObject(stdout) || {};
+  return {
+    core: summary.core?.hash || null,
+    market: summary.market?.hash || null,
+    verifier: summary.teeVerifier?.hash || null,
+    hook: summary.whitelistHook?.hash || null,
+    listingId: summary.listingId ?? null,
+    accountId: summary.accountId || null,
+    buyerRecorded: summary.buyerRecorded || null,
+    backupOwner: summary.backupOwner || null,
+    status: summary.status ?? null,
+  };
+}
+
+function summarizePaymasterOnchain(stdout = "") {
+  const summary = latestJsonObject(stdout) || {};
+  return {
+    core: summary.deployments?.core || null,
+    verifier: summary.deployments?.verifier || null,
+    paymaster: summary.deployments?.paymaster || null,
+    accountId: summary.account?.id || null,
+    sponsoredTxid: summary.sponsoredExec?.txid || null,
+    sponsoredResult: summary.sponsoredExec?.result || null,
+    depositBefore: summary.sponsoredExec?.depositBefore || null,
+    depositAfter: summary.sponsoredExec?.depositAfter || null,
+    reimbursement: summary.sponsoredExec?.reimbursement || null,
+    overLimitRejected: summary.negativeOverLimit?.rejected ?? null,
+    revokedRejected: summary.negativeRevoked?.rejected ?? null,
+    withdrawSuccess: summary.withdraw?.success ?? null,
+  };
+}
+
 async function summarizeStage(stageId, stdout) {
   switch (stageId) {
     case "smoke":
       return summarizeSmoke(stdout);
     case "plugin_matrix":
       return summarizePluginMatrix(stdout);
+    case "market_escrow":
+      return summarizeMarketEscrow(stdout);
+    case "paymaster_onchain":
+      return summarizePaymasterOnchain(stdout);
     case "paymaster_policy":
       return summarizePaymasterPolicy(stdout);
     case "paymaster":
@@ -293,6 +352,8 @@ function optionalSkipReason(stage) {
 function buildMarkdownReport(report) {
   const smoke = report.stages.find((stage) => stage.id === "smoke");
   const pluginMatrix = report.stages.find((stage) => stage.id === "plugin_matrix");
+  const marketEscrow = report.stages.find((stage) => stage.id === "market_escrow");
+  const paymasterOnchain = report.stages.find((stage) => stage.id === "paymaster_onchain");
   const paymasterPolicy = report.stages.find((stage) => stage.id === "paymaster_policy");
   const paymaster = report.stages.find((stage) => stage.id === "paymaster");
 
@@ -342,6 +403,47 @@ function buildMarkdownReport(report) {
     "",
     ...(pluginScenarioLines.length > 0 ? ["Scenarios:", "", markdownList(pluginScenarioLines), ""] : []),
   ];
+
+  if (marketEscrow) {
+    lines.push(
+      "## Market Escrow Summary",
+      "",
+      markdownList([
+        `Core hash: \`${marketEscrow.summary.core || "n/a"}\``,
+        `Market hash: \`${marketEscrow.summary.market || "n/a"}\``,
+        `TEE verifier: \`${marketEscrow.summary.verifier || "n/a"}\``,
+        `Whitelist hook: \`${marketEscrow.summary.hook || "n/a"}\``,
+        `Listing ID: \`${marketEscrow.summary.listingId ?? "n/a"}\``,
+        `Account ID: \`${marketEscrow.summary.accountId || "n/a"}\``,
+        `Buyer recorded: \`${marketEscrow.summary.buyerRecorded || "n/a"}\``,
+        `Backup owner after sale: \`${marketEscrow.summary.backupOwner || "n/a"}\``,
+        `Listing status: \`${marketEscrow.summary.status ?? "n/a"}\``,
+      ]),
+      "",
+    );
+  }
+
+  if (paymasterOnchain) {
+    lines.push(
+      "## Paymaster On-Chain Summary",
+      "",
+      markdownList([
+        `Core hash: \`${paymasterOnchain.summary.core || "n/a"}\``,
+        `Verifier hash: \`${paymasterOnchain.summary.verifier || "n/a"}\``,
+        `Paymaster hash: \`${paymasterOnchain.summary.paymaster || "n/a"}\``,
+        `Account ID: \`${paymasterOnchain.summary.accountId || "n/a"}\``,
+        `Sponsored txid: \`${paymasterOnchain.summary.sponsoredTxid || "n/a"}\``,
+        `Sponsored result: \`${paymasterOnchain.summary.sponsoredResult || "n/a"}\``,
+        `Deposit before: \`${paymasterOnchain.summary.depositBefore || "n/a"}\``,
+        `Deposit after: \`${paymasterOnchain.summary.depositAfter || "n/a"}\``,
+        `Reimbursement: \`${paymasterOnchain.summary.reimbursement || "n/a"}\``,
+        `Over-limit rejected: \`${paymasterOnchain.summary.overLimitRejected}\``,
+        `Revoked rejected: \`${paymasterOnchain.summary.revokedRejected}\``,
+        `Withdraw success: \`${paymasterOnchain.summary.withdrawSuccess}\``,
+      ]),
+      "",
+    );
+  }
 
   if (paymasterPolicy) {
     lines.push(
