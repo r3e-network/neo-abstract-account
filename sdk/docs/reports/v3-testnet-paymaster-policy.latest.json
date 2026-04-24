@@ -5,7 +5,7 @@
   "accountId": "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56",
   "approved": {
     "approvalDigest": "4e6f87401838f21de14798e50a6eee0182c5a0877fd8461a306cb686254c1d49",
-    "attestationHash": "adb10cee5d217fcc64e64c5ad12e03c321ba0a936282ea3c5f0b987c1a485f11",
+    "attestationHash": "af85a38abed039395576ac281979c7de4c33d78059f62a58f06012aaa8d67ff1",
     "targetContract": "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38",
     "method": "executeUserOp"
   },
@@ -36,7 +36,7 @@
     },
     "wrongTargetChain": {
       "approved": false,
-      "reason": "paymaster currently supports neo_n3 only"
+      "reason": "unsupported target_chain: neo_x"
     }
   }
 }

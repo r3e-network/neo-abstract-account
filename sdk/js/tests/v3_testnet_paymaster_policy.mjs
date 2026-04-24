@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 import phalaCliHelpers from "./phala-cli.js";
 
@@ -28,8 +28,38 @@ const REMOTE_WORKER_SERVICE =
 const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
 const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
 const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
+const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPORT_DIR = path.resolve(MODULE_DIR, "..", "..", "docs", "reports");
+const LOCAL_PAYMASTER_SIGNER_ENV_KEYS = [
+  "NEO_TESTNET_WIF",
+  "NEO_N3_WIF",
+  "PHALA_NEO_N3_WIF",
+  "PHALA_NEO_N3_PRIVATE_KEY",
+  "PHALA_NEO_N3_WIF_TESTNET",
+  "PHALA_NEO_N3_PRIVATE_KEY_TESTNET",
+  "MORPHEUS_RELAYER_NEO_N3_WIF",
+  "MORPHEUS_RELAYER_NEO_N3_PRIVATE_KEY",
+  "MORPHEUS_RELAYER_NEO_N3_WIF_TESTNET",
+  "MORPHEUS_RELAYER_NEO_N3_PRIVATE_KEY_TESTNET",
+  "MORPHEUS_UPDATER_NEO_N3_WIF",
+  "MORPHEUS_UPDATER_NEO_N3_PRIVATE_KEY",
+  "MORPHEUS_UPDATER_NEO_N3_WIF_TESTNET",
+  "MORPHEUS_UPDATER_NEO_N3_PRIVATE_KEY_TESTNET",
+  "MORPHEUS_ORACLE_VERIFIER_WIF",
+  "MORPHEUS_ORACLE_VERIFIER_PRIVATE_KEY",
+  "MORPHEUS_ORACLE_VERIFIER_WIF_TESTNET",
+  "MORPHEUS_ORACLE_VERIFIER_PRIVATE_KEY_TESTNET",
+  "PHALA_ORACLE_VERIFIER_WIF",
+  "PHALA_ORACLE_VERIFIER_PRIVATE_KEY",
+  "PHALA_ORACLE_VERIFIER_WIF_TESTNET",
+  "PHALA_ORACLE_VERIFIER_PRIVATE_KEY_TESTNET",
+];
+const LOCAL_PAYMASTER_RUNTIME_ENV_KEYS = [
+  "PHALA_API_TOKEN",
+  "MORPHEUS_RUNTIME_TOKEN",
+  "PHALA_SHARED_SECRET",
+];
 
 if (!PHALA_API_TOKEN) {
   console.error("MORPHEUS_RUNTIME_TOKEN, PHALA_API_TOKEN, or PHALA_SHARED_SECRET is required.");
@@ -55,6 +85,29 @@ function parseLastJsonLine(stdout = "") {
     } catch {}
   }
   return null;
+}
+
+function redactRuntimeSecrets(value = "") {
+  let redacted = String(value || "");
+  const secrets = new Set([
+    PHALA_API_TOKEN,
+    process.env.MORPHEUS_RUNTIME_TOKEN,
+    process.env.PHALA_API_TOKEN,
+    process.env.PHALA_SHARED_SECRET,
+  ].filter(Boolean));
+  for (const secret of secrets) {
+    redacted = redacted.split(secret).join("<redacted>");
+  }
+  return redacted;
+}
+
+function sanitizeCommandError(error) {
+  const sanitized = new Error(redactRuntimeSecrets(error?.message || String(error)));
+  if (error?.code) sanitized.code = error.code;
+  if (error?.signal) sanitized.signal = error.signal;
+  if (error?.stdout) sanitized.stdout = redactRuntimeSecrets(error.stdout);
+  if (error?.stderr) sanitized.stderr = redactRuntimeSecrets(error.stderr);
+  return sanitized;
 }
 
 async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 } = {}) {
@@ -87,7 +140,7 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
       await rm(tempDir, { recursive: true, force: true }).catch(() => {});
       return result;
     } catch (error) {
-      lastError = error;
+      lastError = sanitizeCommandError(error);
       if (attempt >= PHALA_SSH_RETRIES) break;
       await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
     }
@@ -101,15 +154,19 @@ async function callRemotePaymaster(payload) {
   const bodyBase64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
   const normalizedAccount = normalizeHash(PAYMASTER_ACCOUNT_ID);
   const normalizedTarget = normalizeHash(CORE_HASH);
-  const overrideAssignments = [
-    ["MORPHEUS_PAYMASTER_TESTNET_ENABLED", "true"],
-    ["MORPHEUS_PAYMASTER_TESTNET_POLICY_ID", "testnet-aa"],
-    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS", PAYMASTER_DAPP_ID],
-    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS", normalizedAccount],
-    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_TARGETS", normalizedTarget],
-    ["MORPHEUS_PAYMASTER_TESTNET_ALLOW_METHODS", "executeUserOp,executeUnifiedByAddress"],
-    ["MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS", String(PAYMASTER_MAX_GAS_UNITS)],
-  ]
+  const overrides = {
+    MORPHEUS_PAYMASTER_TESTNET_ENABLED: "true",
+    MORPHEUS_PAYMASTER_TESTNET_POLICY_ID: "testnet-aa",
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS: PAYMASTER_DAPP_ID,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS: normalizedAccount,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_TARGETS: normalizedTarget,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_METHODS: "executeUserOp,executeUnifiedByAddress",
+    MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS: String(PAYMASTER_MAX_GAS_UNITS),
+  };
+  if (LOCAL_PAYMASTER_HANDLER_PATH) {
+    return callLocalPaymaster(payload, overrides);
+  }
+  const overrideAssignments = Object.entries(overrides)
     .map(([key, value]) => `process.env.${key} = ${JSON.stringify(value)};`)
     .join("\n");
 const shellScript = `
@@ -142,6 +199,45 @@ JS
   return parsed;
 }
 
+async function callLocalPaymaster(payload, overrides) {
+  const snapshot = new Map();
+  for (const [key, value] of Object.entries(overrides)) {
+    snapshot.set(key, process.env[key]);
+    process.env[key] = value;
+  }
+  for (const key of LOCAL_PAYMASTER_SIGNER_ENV_KEYS) {
+    if (!snapshot.has(key)) {
+      snapshot.set(key, process.env[key]);
+    }
+    delete process.env[key];
+  }
+  for (const key of LOCAL_PAYMASTER_RUNTIME_ENV_KEYS) {
+    if (!snapshot.has(key)) {
+      snapshot.set(key, process.env[key]);
+    }
+  }
+  try {
+    process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
+    const { default: handler } = await import(pathToFileURL(LOCAL_PAYMASTER_HANDLER_PATH).href);
+    const req = new Request("http://local/paymaster/authorize", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${PHALA_API_TOKEN}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const res = await handler(req);
+    const body = await res.json().catch(() => ({}));
+    return { status: res.status, body };
+  } finally {
+    for (const [key, value] of snapshot.entries()) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 async function callDirectPaymaster(payload) {
   const endpoint = PAYMASTER_ENDPOINT.endsWith("/paymaster/authorize")
     ? PAYMASTER_ENDPOINT
@@ -160,11 +256,19 @@ async function callDirectPaymaster(payload) {
 }
 
 async function callPaymaster(payload) {
-  if (!PAYMASTER_ENDPOINT) {
+  if (LOCAL_PAYMASTER_HANDLER_PATH || !PAYMASTER_ENDPOINT) {
     return callRemotePaymaster(payload);
   }
 
-  const direct = await callDirectPaymaster(payload);
+  let direct;
+  try {
+    direct = await callDirectPaymaster(payload);
+  } catch (error) {
+    if (!PHALA_CLI_COMMAND) throw error;
+    console.warn(`[paymaster-policy] direct authorize endpoint failed (${redactRuntimeSecrets(error?.message || String(error))}); retrying via Phala CLI remote worker path`);
+    return callRemotePaymaster(payload);
+  }
+
   if (!isAuthFailureStatus(direct?.status) || !PHALA_CLI_COMMAND) {
     return direct;
   }
@@ -182,9 +286,16 @@ function assertApproved(response, label) {
   }
 }
 
-function assertDenied(response, label, reasonPattern) {
-  if (Number(response?.status) !== 200) {
-    throw new Error(`${label}: expected HTTP 200, got ${response?.status}`);
+function assertDenied(response, label, reasonPattern, { status = 200 } = {}) {
+  if (Number(response?.status) !== Number(status)) {
+    throw new Error(`${label}: expected HTTP ${status}, got ${response?.status}`);
+  }
+  if (Number(status) !== 200) {
+    const reason = response?.body?.reason || response?.body?.error || "";
+    if (!reasonPattern.test(String(reason))) {
+      throw new Error(`${label}: expected reason ${reasonPattern}, got ${reason || "n/a"}`);
+    }
+    return;
   }
   if (response?.body?.approved !== false) {
     throw new Error(`${label}: expected approved=false, got ${JSON.stringify(response?.body || {}, null, 2)}`);
@@ -248,17 +359,18 @@ async function main() {
     {
       id: "wrongTargetChain",
       payload: { ...approvedPayload, target_chain: "neo_x", operation_hash: `0x${"4a".repeat(32)}` },
-      reason: /supports neo_n3 only/i,
+      reason: /supports neo_n3 only|unsupported target_chain/i,
+      status: 400,
     },
   ];
 
   const deniedCases = {};
   for (const item of cases) {
     const response = await callPaymaster(item.payload);
-    assertDenied(response, item.id, item.reason);
+    assertDenied(response, item.id, item.reason, { status: item.status || 200 });
     deniedCases[item.id] = {
-      approved: response.body.approved,
-      reason: response.body.reason,
+      approved: response.body.approved ?? false,
+      reason: response.body.reason || response.body.error,
     };
   }
 
