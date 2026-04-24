@@ -22,6 +22,8 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             sdk/js/package-lock.json
+      - name: Install Neo compiler (nccs)
+        run: dotnet tool install -g neo.compiler.csharp --version 3.9.1
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
