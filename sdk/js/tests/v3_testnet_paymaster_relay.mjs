@@ -8,6 +8,7 @@ import { createRequire } from "node:module";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { pathToFileURL } from "node:url";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 import phalaCliHelpers from "./phala-cli.js";
 
@@ -42,7 +43,11 @@ const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
   process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1"
-  || (process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0" && !EXPLICIT_PAYMASTER_ACCOUNT_ID);
+  || (
+    process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE !== "0"
+    && !EXPLICIT_PAYMASTER_ACCOUNT_ID
+    && !LOCAL_PAYMASTER_HANDLER_PATH
+  );
 const PHALA_SSH_RETRIES = Math.max(1, Number(process.env.PHALA_SSH_RETRIES || 3));
 const REMOTE_WORKER_SERVICE =
   process.env.MORPHEUS_REMOTE_WORKER_SERVICE
@@ -74,6 +79,11 @@ const LOCAL_PAYMASTER_SIGNER_ENV_KEYS = [
   "PHALA_ORACLE_VERIFIER_WIF_TESTNET",
   "PHALA_ORACLE_VERIFIER_PRIVATE_KEY_TESTNET",
 ];
+const LOCAL_PAYMASTER_RUNTIME_ENV_KEYS = [
+  "PHALA_API_TOKEN",
+  "MORPHEUS_RUNTIME_TOKEN",
+  "PHALA_SHARED_SECRET",
+];
 
 if (!TEST_WIF) {
   console.error("TEST_WIF or NEO_TESTNET_WIF is required.");
@@ -104,6 +114,29 @@ function parseLastJsonLine(stdout = "") {
     } catch {}
   }
   return null;
+}
+
+function redactRuntimeSecrets(value = "") {
+  let redacted = String(value || "");
+  const secrets = new Set([
+    PAYMASTER_API_TOKEN,
+    process.env.MORPHEUS_RUNTIME_TOKEN,
+    process.env.PHALA_API_TOKEN,
+    process.env.PHALA_SHARED_SECRET,
+  ].filter(Boolean));
+  for (const secret of secrets) {
+    redacted = redacted.split(secret).join("<redacted>");
+  }
+  return redacted;
+}
+
+function sanitizeCommandError(error) {
+  const sanitized = new Error(redactRuntimeSecrets(error?.message || String(error)));
+  if (error?.code) sanitized.code = error.code;
+  if (error?.signal) sanitized.signal = error.signal;
+  if (error?.stdout) sanitized.stdout = redactRuntimeSecrets(error.stdout);
+  if (error?.stderr) sanitized.stderr = redactRuntimeSecrets(error.stderr);
+  return sanitized;
 }
 
 function isUnauthorizedBootstrapError(error) {
@@ -250,7 +283,7 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
       await rm(tempDir, { recursive: true, force: true }).catch(() => {});
       return result;
     } catch (error) {
-      lastError = error;
+      lastError = sanitizeCommandError(error);
       if (attempt >= PHALA_SSH_RETRIES) break;
       await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
     }
@@ -308,9 +341,14 @@ async function callRemotePaymaster(
       }
       delete process.env[key];
     }
+    for (const key of LOCAL_PAYMASTER_RUNTIME_ENV_KEYS) {
+      if (!snapshot.has(key)) {
+        snapshot.set(key, process.env[key]);
+      }
+    }
     try {
       process.env.PHALA_API_TOKEN = process.env.PHALA_API_TOKEN || process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_SHARED_SECRET || "";
-      const { default: handler } = await import(`file://${LOCAL_PAYMASTER_HANDLER_PATH}`);
+      const { default: handler } = await import(pathToFileURL(LOCAL_PAYMASTER_HANDLER_PATH).href);
       const req = new Request("http://local/paymaster/authorize", {
         method: "POST",
         headers: {
@@ -330,20 +368,25 @@ async function callRemotePaymaster(
     }
   }
   if (!remoteOverrides && PAYMASTER_ENDPOINT) {
-    const response = await fetch(PAYMASTER_ENDPOINT, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${PAYMASTER_API_TOKEN}`,
-        "content-type": "application/json",
-      },
-      body: Buffer.from(bodyBase64, "base64").toString("utf8"),
-    });
-    const body = await response.json().catch(() => ({}));
-    const direct = { status: response.status, body };
-    if (!isAuthFailureStatus(direct.status) || !PHALA_CLI_COMMAND) {
-      return direct;
+    try {
+      const response = await fetch(PAYMASTER_ENDPOINT, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${PAYMASTER_API_TOKEN}`,
+          "content-type": "application/json",
+        },
+        body: Buffer.from(bodyBase64, "base64").toString("utf8"),
+      });
+      const body = await response.json().catch(() => ({}));
+      const direct = { status: response.status, body };
+      if (!isAuthFailureStatus(direct.status) || !PHALA_CLI_COMMAND) {
+        return direct;
+      }
+      console.warn("[paymaster-relay] direct authorize endpoint rejected the provided token; retrying via Phala CLI remote worker path");
+    } catch (error) {
+      if (!PHALA_CLI_COMMAND) throw error;
+      console.warn(`[paymaster-relay] direct authorize endpoint failed (${redactRuntimeSecrets(error?.message || String(error))}); retrying via Phala CLI remote worker path`);
     }
-    console.warn("[paymaster-relay] direct authorize endpoint rejected the provided token; retrying via Phala CLI remote worker path");
   }
   const overrideAssignments = remoteOverrides
     ? Object.entries(remoteOverrides)

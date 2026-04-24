@@ -23,6 +23,13 @@ Refresh note on 2026-03-17:
 - `sdk/js/tests/v3_testnet_paymaster_relay.mjs` replays the fixed allowlisted account only when `PAYMASTER_ACCOUNT_ID` is explicitly provided; otherwise it derives the bootstrap account id from the active test WIF and keeps the remote allowlist mutation path available when needed
 - the paymaster policy and relay validators now both fall back to the public testnet runtime endpoint `https://oracle.meshmini.app/testnet/paymaster/authorize` when no runtime URL override is provided
 
+Refresh note on 2026-04-24:
+
+- the direct public paymaster endpoint may require the hosted anti-abuse boundary and return `401` or `403`; local and CI validation should set `MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH` to the Morpheus worker handler when validating policy logic from the monorepo checkout
+- `sdk/js/tests/v3_testnet_paymaster_policy.mjs` now redacts runtime tokens from Phala/remote-shell failures, retries through the remote worker path after direct transport failures, and accepts the worker's HTTP `400` shape for unsupported `target_chain`
+- `sdk/js/tests/v3_testnet_paymaster_relay.mjs` keeps the allowlist mutation path active when a local handler is supplied, so fresh derived accounts can be validated without requiring an existing `PAYMASTER_ACCOUNT_ID`
+- latest full paymaster-only testnet replay succeeded with relay txid `0xed4976c866d1374de25f9c11accde4f4273faf6d05d5fb2dbcf70b4589ffef8e`, policy `testnet-aa`, VM state `HALT`, and GAS return stack
+
 ## Scope
 
 This report validates the end-to-end `AbstractAccount -> Morpheus paymaster pre-authorization -> AA relay -> Neo N3 execution` flow on testnet.
