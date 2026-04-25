@@ -8,9 +8,12 @@ import os from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 import phalaCliHelpers from "./phala-cli.js";
+import localPaymasterHandlerHelpers from "./local-paymaster-handler.js";
 
 const execFileAsync = promisify(execFile);
 const { resolvePhalaCliCommand } = phalaCliHelpers;
+const { resolveLocalPaymasterHandlerPath } = localPaymasterHandlerHelpers;
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 const PHALA_API_TOKEN = process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
@@ -28,8 +31,7 @@ const REMOTE_WORKER_SERVICE =
 const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
 const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
 const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
-const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
-const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const LOCAL_PAYMASTER_HANDLER_PATH = resolveLocalPaymasterHandlerPath();
 const REPORT_DIR = path.resolve(MODULE_DIR, "..", "..", "docs", "reports");
 const LOCAL_PAYMASTER_SIGNER_ENV_KEYS = [
   "NEO_TESTNET_WIF",

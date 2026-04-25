@@ -170,10 +170,14 @@ test('testnet validation suite includes smoke, plugin matrix, market escrow, and
 test('paymaster policy validator falls back to remote worker on direct transport failures', () => {
   const paymasterPolicySource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_policy.mjs'), 'utf8');
   const paymasterRelaySource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_relay.mjs'), 'utf8');
+  const localPaymasterHandlerSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'local-paymaster-handler.js'), 'utf8');
 
   assert.match(paymasterPolicySource, /try\s*{\s*direct = await callDirectPaymaster\(payload\);/);
   assert.match(paymasterPolicySource, /catch \(error\) {[\s\S]*retrying via Phala CLI remote worker path[\s\S]*return callRemotePaymaster\(payload\);/);
-  assert.match(paymasterPolicySource, /MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH/);
+  assert.match(paymasterPolicySource, /resolveLocalPaymasterHandlerPath/);
+  assert.match(paymasterRelaySource, /resolveLocalPaymasterHandlerPath/);
+  assert.match(localPaymasterHandlerSource, /MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH/);
+  assert.match(localPaymasterHandlerSource, /neo-morpheus-oracle/);
   assert.match(paymasterPolicySource, /redactRuntimeSecrets/);
   assert.match(paymasterPolicySource, /LOCAL_PAYMASTER_RUNTIME_ENV_KEYS/);
   assert.match(paymasterRelaySource, /&& !LOCAL_PAYMASTER_HANDLER_PATH/);
