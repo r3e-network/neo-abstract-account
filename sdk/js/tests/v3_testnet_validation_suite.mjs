@@ -4,6 +4,7 @@ import { spawn, spawnSync } from "node:child_process";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 import phalaCliHelpers from "./phala-cli.js";
 import testnetRpcHelpers from "./testnet-rpc.js";
+import localPaymasterHandlerHelpers from "./local-paymaster-handler.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -18,6 +19,13 @@ const DATE_PREFIX = "2026-03-14";
 const { shouldSkipPaymasterRelayValidation } = paymasterRuntimeConfig;
 const { resolvePhalaCliCommand } = phalaCliHelpers;
 const { DEFAULT_TESTNET_RPC_URLS, resolveTestnetRpcCandidates } = testnetRpcHelpers;
+const { resolveLocalPaymasterHandlerPath } = localPaymasterHandlerHelpers;
+
+const LOCAL_PAYMASTER_HANDLER_PATH = resolveLocalPaymasterHandlerPath();
+if (!process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH && LOCAL_PAYMASTER_HANDLER_PATH) {
+  process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH = LOCAL_PAYMASTER_HANDLER_PATH;
+}
+
 const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
 const PAYMASTER_CAPABILITIES = {
   hasPhalaCli: Boolean(PHALA_CLI_COMMAND),
@@ -90,6 +98,7 @@ function envSnapshot() {
     morpheusPaymasterAppId: process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093",
     paymasterAccountId: process.env.PAYMASTER_ACCOUNT_ID || null,
     skipPaymasterAllowlistUpdate: process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1",
+    localPaymasterHandlerPath: process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || null,
     hasPhalaCli: PAYMASTER_CAPABILITIES.hasPhalaCli,
     phalaCommand: PAYMASTER_CAPABILITIES.phalaCommand,
   };

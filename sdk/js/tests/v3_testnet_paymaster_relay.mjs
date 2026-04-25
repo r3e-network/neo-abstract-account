@@ -11,9 +11,11 @@ import os from "node:os";
 import { pathToFileURL } from "node:url";
 import paymasterRuntimeConfig from "./paymaster-runtime-config.js";
 import phalaCliHelpers from "./phala-cli.js";
+import localPaymasterHandlerHelpers from "./local-paymaster-handler.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
+const { resolveLocalPaymasterHandlerPath } = localPaymasterHandlerHelpers;
 
 const { rpc, sc, wallet, experimental, tx, u, CONST } = require("@cityofzion/neon-js");
 const { ethers } = require("ethers");
@@ -38,7 +40,7 @@ const PAYMASTER_API_TOKEN =
 const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
 const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
 const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
-const LOCAL_PAYMASTER_HANDLER_PATH = (process.env.MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH || "").trim();
+const LOCAL_PAYMASTER_HANDLER_PATH = resolveLocalPaymasterHandlerPath();
 const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
 const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
