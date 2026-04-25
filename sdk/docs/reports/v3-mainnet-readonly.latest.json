@@ -1,0 +1,72 @@
+{
+  "createdAt": "2026-04-25T05:53:40.644Z",
+  "network": "mainnet",
+  "rpcUrl": "https://mainnet1.neo.coz.io:443",
+  "networkMagic": 860833102,
+  "runtime": {
+    "baseUrl": "https://oracle.meshmini.app/mainnet",
+    "envelopeVersion": "2026-04-tee-v1",
+    "workflowCount": 9,
+    "runtimeStatus": "operational",
+    "executionPlane": "tee_runtime",
+    "riskPlane": "independent_observer"
+  },
+  "contracts": [
+    {
+      "key": "aaCore",
+      "hash": "0x9742b4ed62a84a886f404d36149da6147528ee33",
+      "manifestName": "UnifiedSmartWalletV3",
+      "methodCount": 21,
+      "requiredMethods": [
+        "registerAccount",
+        "executeUserOp",
+        "executeUserOps",
+        "getVerifier",
+        "getHook",
+        "getNonce",
+        "verify"
+      ],
+      "missingMethods": []
+    },
+    {
+      "key": "aaWeb3AuthVerifier",
+      "hash": "0xb4107cb2cb4bace0ebe15bc4842890734abe133a",
+      "manifestName": "Web3AuthVerifier",
+      "methodCount": 4,
+      "requiredMethods": [
+        "setPublicKey",
+        "getPublicKey",
+        "validateSignature"
+      ],
+      "missingMethods": []
+    },
+    {
+      "key": "aaSessionKeyVerifier",
+      "hash": "0xe82b9d056c011819ff3652427682224daad0cd1f",
+      "manifestName": "SessionKeyVerifier",
+      "methodCount": 6,
+      "requiredMethods": [
+        "setSessionKey",
+        "clearSessionKey",
+        "getSessionKey",
+        "validateSignature"
+      ],
+      "missingMethods": []
+    },
+    {
+      "key": "aaSocialRecoveryVerifier",
+      "hash": "0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3",
+      "manifestName": "SocialRecoveryVerifier",
+      "methodCount": 32,
+      "requiredMethods": [
+        "setupRecovery",
+        "requestRecoveryTicket",
+        "submitRecoveryTicket",
+        "finalizeRecovery",
+        "verify",
+        "verifyMetaTx"
+      ],
+      "missingMethods": []
+    }
+  ]
+}

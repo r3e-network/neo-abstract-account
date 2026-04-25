@@ -155,12 +155,18 @@ test('testnet validators derive registration-bound account ids with the contract
 
 test('testnet validation suite includes smoke, plugin matrix, market escrow, and on-chain paymaster lanes', () => {
   const suiteSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_validation_suite.mjs'), 'utf8');
+  const mainnetReadonlySource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_mainnet_readonly.mjs'), 'utf8');
+  const sdkPackage = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'package.json'), 'utf8');
   const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
 
   assert.match(suiteSource, /id: "smoke"/);
   assert.match(suiteSource, /id: "plugin_matrix"/);
   assert.match(suiteSource, /id: "market_escrow"/);
   assert.match(suiteSource, /id: "paymaster_onchain"/);
+  assert.match(mainnetReadonlySource, /getContractState/);
+  assert.match(mainnetReadonlySource, /api\/runtime\/catalog/);
+  assert.doesNotMatch(mainnetReadonlySource, /deployContract|executeUserOp\(/);
+  assert.match(sdkPackage, /mainnet:validate:readonly/);
   assert.match(readme, /v3_testnet_market_escrow\.js/);
   assert.match(readme, /v3_testnet_paymaster_onchain\.mjs/);
   assert.match(readme, /testnet:validate:market/);
