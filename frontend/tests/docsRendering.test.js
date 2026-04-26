@@ -1,43 +1,45 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   isBlockedNodeName,
-  shouldStripAttribute
-} from '../src/features/docs/rendering.js';
+  shouldStripAttribute,
+} from "../src/features/docs/rendering.js";
 
-const frontendRoot = fileURLToPath(new URL('..', import.meta.url));
-const read = (relativePath) => fs.readFileSync(path.join(frontendRoot, relativePath), 'utf8');
-const readRepo = (relativePath) => fs.readFileSync(path.join(frontendRoot, '..', relativePath), 'utf8');
-const readFrontendPackage = () => JSON.parse(read('package.json'));
+const frontendRoot = fileURLToPath(new URL("..", import.meta.url));
+const read = (relativePath) =>
+  fs.readFileSync(path.join(frontendRoot, relativePath), "utf8");
+const readRepo = (relativePath) =>
+  fs.readFileSync(path.join(frontendRoot, "..", relativePath), "utf8");
+const readFrontendPackage = () => JSON.parse(read("package.json"));
 
-test('isBlockedNodeName blocks executable embedded tags', () => {
-  assert.equal(isBlockedNodeName('script'), true);
-  assert.equal(isBlockedNodeName('IFRAME'), true);
-  assert.equal(isBlockedNodeName('object'), true);
-  assert.equal(isBlockedNodeName('div'), false);
+test("isBlockedNodeName blocks executable embedded tags", () => {
+  assert.equal(isBlockedNodeName("script"), true);
+  assert.equal(isBlockedNodeName("IFRAME"), true);
+  assert.equal(isBlockedNodeName("object"), true);
+  assert.equal(isBlockedNodeName("div"), false);
 });
 
-test('shouldStripAttribute removes inline handlers and javascript urls', () => {
-  assert.equal(shouldStripAttribute('onclick', 'alert(1)'), true);
-  assert.equal(shouldStripAttribute('href', 'javascript:alert(1)'), true);
-  assert.equal(shouldStripAttribute('src', ' JAVASCRIPT:alert(1)'), true);
-  assert.equal(shouldStripAttribute('href', 'https://example.com'), false);
-  assert.equal(shouldStripAttribute('class', 'safe-class'), false);
+test("shouldStripAttribute removes inline handlers and javascript urls", () => {
+  assert.equal(shouldStripAttribute("onclick", "alert(1)"), true);
+  assert.equal(shouldStripAttribute("href", "javascript:alert(1)"), true);
+  assert.equal(shouldStripAttribute("src", " JAVASCRIPT:alert(1)"), true);
+  assert.equal(shouldStripAttribute("href", "https://example.com"), false);
+  assert.equal(shouldStripAttribute("class", "safe-class"), false);
 });
 
-test('supplemental root docs are preserved and indexable', () => {
-  const docsIndex = readRepo('docs/INDEX.md');
-  const howItWorks = readRepo('docs/HOW_IT_WORKS.md');
-  const userGuide = readRepo('docs/USER_GUIDE.md');
-  const workflows = readRepo('docs/WORKFLOWS.md');
-  const dataFlow = readRepo('docs/DATA_FLOW.md');
-  const quickReference = readRepo('docs/QUICK_REFERENCE.md');
-  const smokeTest = readRepo('docs/POST_DEPLOY_SMOKE_TEST.md');
-  const readmeZh = readRepo('README.zh-CN.md');
+test("supplemental root docs are preserved and indexable", () => {
+  const docsIndex = readRepo("docs/INDEX.md");
+  const howItWorks = readRepo("docs/HOW_IT_WORKS.md");
+  const userGuide = readRepo("docs/USER_GUIDE.md");
+  const workflows = readRepo("docs/WORKFLOWS.md");
+  const dataFlow = readRepo("docs/DATA_FLOW.md");
+  const quickReference = readRepo("docs/QUICK_REFERENCE.md");
+  const smokeTest = readRepo("docs/POST_DEPLOY_SMOKE_TEST.md");
+  const readmeZh = readRepo("README.zh-CN.md");
 
   assert.match(docsIndex, /HOW_IT_WORKS\.md/);
   assert.match(docsIndex, /POST_DEPLOY_SMOKE_TEST\.md/);
@@ -55,24 +57,24 @@ test('supplemental root docs are preserved and indexable', () => {
   assert.match(readmeZh, /README\.md/);
 });
 
-test('docs registry uses the repo README as the overview source of truth', () => {
-  const registrySource = read('src/features/docs/registry.js');
+test("docs registry uses the repo README as the overview source of truth", () => {
+  const registrySource = read("src/features/docs/registry.js");
   assert.match(registrySource, /@repo\/README\.md\?raw/);
 });
 
-test('workflow doc explains the V3 execution path after proxy hardening', () => {
-  const workflowDoc = read('src/assets/docs/workflow.md');
+test("workflow doc explains the V3 execution path after proxy hardening", () => {
+  const workflowDoc = read("src/assets/docs/workflow.md");
   assert.match(workflowDoc, /executeUserOp/);
   assert.match(workflowDoc, /direct proxy-signed external/i);
 });
 
-test('sdk doc references the verified hardened testnet hash', () => {
-  const sdkDoc = read('src/assets/docs/sdk-usage.md');
+test("sdk doc references the verified hardened testnet hash", () => {
+  const sdkDoc = read("src/assets/docs/sdk-usage.md");
   assert.match(sdkDoc, /0x5be915aea3ce85e4752d522632f0a9520e377aaf/i);
 });
 
-test('sdk paymaster docs track the current helper signatures', () => {
-  const sdkDoc = read('src/assets/docs/sdk-usage.md');
+test("sdk paymaster docs track the current helper signatures", () => {
+  const sdkDoc = read("src/assets/docs/sdk-usage.md");
 
   assert.match(sdkDoc, /querySponsorBalance\(paymasterHash, sponsorAddress\)/);
   assert.match(sdkDoc, /createSponsoredUserOpPayload\({/);
@@ -83,9 +85,9 @@ test('sdk paymaster docs track the current helper signatures', () => {
   assert.match(sdkDoc, /validatePaymasterOp\({/);
 });
 
-test('repo docs describe a hardened policy-gated execution surface', () => {
-  const readme = readRepo('README.md');
-  const architectureDoc = readRepo('docs/architecture.md');
+test("repo docs describe a hardened policy-gated execution surface", () => {
+  const readme = readRepo("README.md");
+  const architectureDoc = readRepo("docs/architecture.md");
 
   assert.match(readme, /policy-gated/i);
   assert.match(architectureDoc, /policy-gated/i);
@@ -93,14 +95,17 @@ test('repo docs describe a hardened policy-gated execution surface', () => {
   assert.doesNotMatch(architectureDoc, /fully programmable logic gates/i);
 });
 
-test('production docs describe validation preview, module lifecycle, and relay trust boundaries', () => {
-  const readme = readRepo('README.md');
-  const securityAudit = readRepo('docs/SECURITY_AUDIT.md');
-  const frontendArchitecture = read('src/assets/docs/architecture.md');
+test("production docs describe validation preview, module lifecycle, and relay trust boundaries", () => {
+  const readme = readRepo("README.md");
+  const securityAudit = readRepo("docs/SECURITY_AUDIT.md");
+  const frontendArchitecture = read("src/assets/docs/architecture.md");
 
   assert.match(readme, /validation preview|previewUserOpValidation/i);
   assert.match(readme, /module lifecycle/i);
-  assert.match(readme, /paymaster sponsorship does not replace|relay trust boundary|paymaster does not authorize/i);
+  assert.match(
+    readme,
+    /paymaster sponsorship does not replace|relay trust boundary|paymaster does not authorize/i,
+  );
 
   assert.match(frontendArchitecture, /Module Lifecycle/i);
   assert.match(frontendArchitecture, /Validation Preview|relay preflight/i);
@@ -110,12 +115,18 @@ test('production docs describe validation preview, module lifecycle, and relay t
   assert.match(securityAudit, /property-based|adversarial/i);
 });
 
-test('historical architecture and audit docs stay aligned with the professionalized V3 runtime', () => {
-  const v3Blueprint = readRepo('docs/AA_V3_ARCHITECTURE.en.md');
-  const securityAudit = readRepo('docs/SECURITY_AUDIT.md');
+test("historical architecture and audit docs stay aligned with the professionalized V3 runtime", () => {
+  const v3Blueprint = readRepo("docs/AA_V3_ARCHITECTURE.en.md");
+  const securityAudit = readRepo("docs/SECURITY_AUDIT.md");
 
-  assert.doesNotMatch(v3Blueprint, /Ultimate Abstract Account|Ultimate Security Architecture|Ultimate Answer/i);
-  assert.doesNotMatch(v3Blueprint, /killer plugin|panoramic trusted interaction gateway|frictionless cross-chain/i);
+  assert.doesNotMatch(
+    v3Blueprint,
+    /Ultimate Abstract Account|Ultimate Security Architecture|Ultimate Answer/i,
+  );
+  assert.doesNotMatch(
+    v3Blueprint,
+    /killer plugin|panoramic trusted interaction gateway|frictionless cross-chain/i,
+  );
   assert.match(v3Blueprint, /historical|design note|current runtime/i);
 
   assert.doesNotMatch(securityAudit, /contracts\/AbstractAccount\.cs/);
@@ -123,15 +134,15 @@ test('historical architecture and audit docs stay aligned with the professionali
   assert.match(securityAudit, /UnifiedSmartWalletV3|current V3 runtime/i);
 });
 
-test('repo README keeps a single quickstart heading', () => {
-  const readme = readRepo('README.md');
+test("repo README keeps a single quickstart heading", () => {
+  const readme = readRepo("README.md");
   const matches = readme.match(/^## Quickstart$/gm) || [];
 
   assert.equal(matches.length, 1);
 });
 
-test('repo README includes a quickstart covering install build and test workflows', () => {
-  const readme = readRepo('README.md');
+test("repo README includes a quickstart covering install build and test workflows", () => {
+  const readme = readRepo("README.md");
 
   assert.match(readme, /Quickstart/i);
   assert.match(readme, /dotnet test/i);
@@ -139,19 +150,19 @@ test('repo README includes a quickstart covering install build and test workflow
   assert.match(readme, /npm run build/i);
 });
 
-test('custom verifier docs explain verifier approval does not bypass runtime restrictions', () => {
-  const verifierDoc = read('src/assets/docs/custom-verifiers.md');
+test("custom verifier docs explain verifier approval does not bypass runtime restrictions", () => {
+  const verifierDoc = read("src/assets/docs/custom-verifiers.md");
 
   assert.match(verifierDoc, /does not bypass/i);
   assert.match(verifierDoc, /whitelist|blacklist|max-transfer|method policy/i);
 });
 
-test('core explainer docs provide onboarding architecture workflow and boundary guidance', () => {
-  const guideDoc = read('src/assets/docs/guide.md');
-  const architectureDoc = read('src/assets/docs/architecture.md');
-  const workflowDoc = read('src/assets/docs/workflow.md');
-  const dataFlowDoc = read('src/assets/docs/data-flow.md');
-  const readme = readRepo('README.md');
+test("core explainer docs provide onboarding architecture workflow and boundary guidance", () => {
+  const guideDoc = read("src/assets/docs/guide.md");
+  const architectureDoc = read("src/assets/docs/architecture.md");
+  const workflowDoc = read("src/assets/docs/workflow.md");
+  const dataFlowDoc = read("src/assets/docs/data-flow.md");
+  const readme = readRepo("README.md");
 
   assert.match(guideDoc, /Who This Is For/i);
   assert.match(guideDoc, /Choose the Right Path/i);
@@ -174,11 +185,11 @@ test('core explainer docs provide onboarding architecture workflow and boundary 
   assert.match(readme, /Documentation Map/i);
 });
 
-test('operations docs cover the app workspace, anonymous drafts, both broadcast modes, and bounded draft retention', () => {
-  const workflowDoc = read('src/assets/docs/workflow.md');
-  const mixedMultisigDoc = read('src/assets/docs/mixed-multisig.md');
-  const sdkDoc = read('src/assets/docs/sdk-usage.md');
-  const readme = readRepo('README.md');
+test("operations docs cover the app workspace, anonymous drafts, both broadcast modes, and bounded draft retention", () => {
+  const workflowDoc = read("src/assets/docs/workflow.md");
+  const mixedMultisigDoc = read("src/assets/docs/mixed-multisig.md");
+  const sdkDoc = read("src/assets/docs/sdk-usage.md");
+  const readme = readRepo("README.md");
 
   assert.match(workflowDoc, /app workspace/i);
   assert.match(workflowDoc, /client-side broadcast/i);
@@ -191,7 +202,10 @@ test('operations docs cover the app workspace, anonymous drafts, both broadcast 
   assert.match(readme, /100 activity entries/i);
   assert.match(readme, /12 submission receipts/i);
   assert.match(readme, /Deployment Checklist/i);
-  assert.match(readme, /supabase\/migrations\/20260308_home_operations_workspace\.sql/i);
+  assert.match(
+    readme,
+    /supabase\/migrations\/20260308_home_operations_workspace\.sql/i,
+  );
   assert.match(readme, /20260309_shared_draft_collaboration_capability\.sql/i);
   assert.match(readme, /20260310_shared_draft_collaboration_cleanup\.sql/i);
   assert.match(readme, /20260311_rotate_draft_collaboration_slug\.sql/i);
@@ -216,8 +230,14 @@ test('operations docs cover the app workspace, anonymous drafts, both broadcast 
   assert.match(mixedMultisigDoc, /supabase/i);
   assert.match(mixedMultisigDoc, /100 activity entries/i);
   assert.match(mixedMultisigDoc, /12 submission receipts/i);
-  assert.match(read('src/assets/docs/hook-plugin-guide.md'), /Choose In Layers/i);
-  assert.match(read('src/assets/docs/address-market.md'), /What A Listing Includes/i);
+  assert.match(
+    read("src/assets/docs/hook-plugin-guide.md"),
+    /Choose In Layers/i,
+  );
+  assert.match(
+    read("src/assets/docs/address-market.md"),
+    /What A Listing Includes/i,
+  );
   assert.match(sdkDoc, /VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY|relay/i);
   assert.match(sdkDoc, /Runtime Reference/i);
   assert.match(sdkDoc, /Relay Behavior Matrix/i);
@@ -268,22 +288,34 @@ test('operations docs cover the app workspace, anonymous drafts, both broadcast 
   assert.match(sdkDoc, /12 submission receipts/i);
 });
 
-test('DocsView lazy-loads heavy markdown and diagram dependencies', () => {
-  const docsViewSource = read('src/views/DocsView.vue');
+test("DocsView lazy-loads heavy markdown and diagram dependencies", () => {
+  const docsViewSource = read("src/views/DocsView.vue");
 
-  assert.match(docsViewSource, /await import\('marked'\)/);
-  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/core'\)/);
-  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/languages\/bash'\)/);
-  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/languages\/javascript'\)/);
-  assert.match(docsViewSource, /await import\('highlight\.js\/lib\/languages\/csharp'\)/);
-  assert.match(docsViewSource, /await import\('mermaid'\)/);
-  assert.doesNotMatch(docsViewSource, /await import\('highlight\.js'\)/);
-  assert.doesNotMatch(docsViewSource, /import mermaid from 'mermaid';/);
+  assert.match(docsViewSource, /await import\(["']marked["']\)/);
+  assert.match(
+    docsViewSource,
+    /await import\(["']highlight\.js\/lib\/core["']\)/,
+  );
+  assert.match(
+    docsViewSource,
+    /await import\(["']highlight\.js\/lib\/languages\/bash["']\)/,
+  );
+  assert.match(
+    docsViewSource,
+    /await import\(["']highlight\.js\/lib\/languages\/javascript["']\)/,
+  );
+  assert.match(
+    docsViewSource,
+    /await import\(["']highlight\.js\/lib\/languages\/csharp["']\)/,
+  );
+  assert.match(docsViewSource, /await import\(["']mermaid["']\)/);
+  assert.doesNotMatch(docsViewSource, /await import\(["']highlight\.js["']\)/);
+  assert.doesNotMatch(docsViewSource, /import mermaid from ["']mermaid["'];/);
   assert.doesNotMatch(docsViewSource, /sanitizeRenderedHtml\(svg\)/);
 });
 
-test('DocsView supports deep-linking to a specific doc entry through the query string', () => {
-  const docsViewSource = read('src/views/DocsView.vue');
+test("DocsView supports deep-linking to a specific doc entry through the query string", () => {
+  const docsViewSource = read("src/views/DocsView.vue");
 
   assert.match(docsViewSource, /useRoute, useRouter/);
   assert.match(docsViewSource, /route\.query\.doc/);
@@ -291,8 +323,8 @@ test('DocsView supports deep-linking to a specific doc entry through the query s
   assert.match(docsViewSource, /resolveDocKey/);
 });
 
-test('vite config defines manual chunk groups for heavy frontend dependencies', () => {
-  const viteConfigSource = read('vite.config.js');
+test("vite config defines manual chunk groups for heavy frontend dependencies", () => {
+  const viteConfigSource = read("vite.config.js");
 
   assert.match(viteConfigSource, /manualChunks/);
   assert.match(viteConfigSource, /vue-flow/);
@@ -305,6 +337,8 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
   assert.match(viteConfigSource, /@toruslabs/);
   assert.match(viteConfigSource, /deferredIdentityChunks/);
   assert.match(viteConfigSource, /chunkSizeWarningLimit:\s*3500/);
+  assert.match(viteConfigSource, /INVALID_ANNOTATION/);
+  assert.match(viteConfigSource, /ox\/_esm\/core\/Base64\.js/);
   // ethers, @web3auth, buffer are NOT in manualChunks (circular dep TDZ fix)
   assert.doesNotMatch(viteConfigSource, /return 'ethers'/);
   assert.doesNotMatch(viteConfigSource, /neon-core/);
@@ -312,96 +346,138 @@ test('vite config defines manual chunk groups for heavy frontend dependencies', 
   assert.doesNotMatch(viteConfigSource, /return 'cytoscape'/);
 });
 
-test('vite config polyfills browser crypto dependencies pulled by web3auth wallet connectors', () => {
-  const viteConfigSource = read('vite.config.js');
+test("vite config polyfills browser crypto dependencies pulled by web3auth wallet connectors", () => {
+  const viteConfigSource = read("vite.config.js");
   const frontendPackage = readFrontendPackage();
 
-  assert.ok(frontendPackage.devDependencies?.['vite-plugin-node-polyfills']);
-  assert.match(viteConfigSource, /import { nodePolyfills } from 'vite-plugin-node-polyfills';/);
+  assert.ok(frontendPackage.devDependencies?.["vite-plugin-node-polyfills"]);
+  assert.match(
+    viteConfigSource,
+    /import { nodePolyfills } from ["']vite-plugin-node-polyfills["'];/,
+  );
   assert.match(viteConfigSource, /nodePolyfills\(\{/);
   assert.match(viteConfigSource, /include:\s*\[/);
-  assert.match(viteConfigSource, /'crypto'/);
-  assert.match(viteConfigSource, /'buffer'/);
-  assert.match(viteConfigSource, /'process'/);
+  assert.match(viteConfigSource, /["']crypto["']/);
+  assert.match(viteConfigSource, /["']buffer["']/);
+  assert.match(viteConfigSource, /["']process["']/);
 });
 
-test('frontend pins a non-vulnerable vite release in both manifest and lockfile', () => {
+test("frontend pins a non-vulnerable vite release in both manifest and lockfile", () => {
   const frontendPackage = readFrontendPackage();
-  const packageLock = JSON.parse(read('package-lock.json'));
-  const viteEntry = packageLock.packages?.['node_modules/vite'];
+  const packageLock = JSON.parse(read("package-lock.json"));
+  const viteEntry = packageLock.packages?.["node_modules/vite"];
 
-  assert.equal(frontendPackage.devDependencies?.vite, '^6.4.2');
+  assert.equal(frontendPackage.devDependencies?.vite, "^6.4.2");
   assert.ok(viteEntry);
   assert.match(viteEntry.version, /^6\.4\.[2-9]|^[7-9]\./);
 });
 
-test('vite config aliases vm to a local browser shim instead of bundling vm-browserify', () => {
-  const viteConfigSource = read('vite.config.js');
+test("vite config aliases vm to a local browser shim instead of bundling vm-browserify", () => {
+  const viteConfigSource = read("vite.config.js");
 
-  assert.match(viteConfigSource, /vm:\s*fileURLToPath\(new URL\('\.\/src\/shims\/vm\.js', import\.meta\.url\)\)/);
-  assert.doesNotMatch(viteConfigSource, /include:\s*\[[^\]]*'vm'/);
-  assert.match(read('src/shims/vm.js'), /runInThisContext/);
+  assert.match(
+    viteConfigSource,
+    /vm:\s*fileURLToPath\(new URL\(["']\.\/src\/shims\/vm\.js["'], import\.meta\.url\)\)/,
+  );
+  assert.doesNotMatch(viteConfigSource, /include:\s*\[[^\]]*["']vm["']/);
+  assert.match(read("src/shims/vm.js"), /runInThisContext/);
 });
 
-test('studio controller uses local neo helpers instead of Neon SDK bundles', () => {
-  const controllerSource = read('src/features/studio/useStudioController.js');
+test("studio controller uses local neo helpers instead of Neon SDK bundles", () => {
+  const controllerSource = read("src/features/studio/useStudioController.js");
 
   assert.match(controllerSource, /from '\@\/utils\/neo\.js'/);
-  assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-core'\)/);
-  assert.doesNotMatch(controllerSource, /await import\('@cityofzion\/neon-js'\)/);
+  assert.doesNotMatch(
+    controllerSource,
+    /await import\('@cityofzion\/neon-core'\)/,
+  );
+  assert.doesNotMatch(
+    controllerSource,
+    /await import\('@cityofzion\/neon-js'\)/,
+  );
 });
 
-test('studio account creation derives account id from the registration config', () => {
-  const controllerSource = read('src/features/studio/useStudioController.js');
-  const panelSource = read('src/features/studio/components/CreateAccountPanel.vue');
-  const i18nSource = read('src/i18n/index.js');
-  const zhSource = read('src/i18n/zh-CN.js');
+test("studio account creation derives account id from the registration config", () => {
+  const controllerSource = read("src/features/studio/useStudioController.js");
+  const panelSource = read(
+    "src/features/studio/components/CreateAccountPanel.vue",
+  );
+  const i18nSource = read("src/i18n/index.js");
+  const zhSource = read("src/i18n/zh-CN.js");
 
   assert.match(controllerSource, /deriveRegistrationAccountIdHash/);
-  assert.doesNotMatch(controllerSource, /deriveAccountIdHash\(createForm\.value\.accountId\)/);
+  assert.doesNotMatch(
+    controllerSource,
+    /deriveAccountIdHash\(createForm\.value\.accountId\)/,
+  );
   assert.doesNotMatch(controllerSource, /createForm\.value\.accountId/);
   assert.doesNotMatch(panelSource, /Advanced: Custom Account Seed/);
   assert.doesNotMatch(panelSource, /Account Seed \(UUID\)/);
   assert.doesNotMatch(panelSource, /v-model="createForm\.accountId"/);
   assert.match(panelSource, /min="7"/);
   assert.match(panelSource, /max="90"/);
-  assert.match(i18nSource, /Countdown before escape hatch activates \(7-90 days\)/);
+  assert.match(
+    i18nSource,
+    /Countdown before escape hatch activates \(7-90 days\)/,
+  );
   assert.match(zhSource, /逃生舱激活前的倒计时（7-90 天）/);
 });
 
-test('studio governance and permissions panels expect accountId hashes instead of legacy seeds', () => {
-  const managePanelSource = read('src/features/studio/components/ManageGovernancePanel.vue');
-  const permissionsPanelSource = read('src/features/studio/components/PermissionsLimitsPanel.vue');
-  const helpersSource = read('src/features/studio/helpers.js');
+test("studio governance and permissions panels expect accountId hashes instead of legacy seeds", () => {
+  const managePanelSource = read(
+    "src/features/studio/components/ManageGovernancePanel.vue",
+  );
+  const permissionsPanelSource = read(
+    "src/features/studio/components/PermissionsLimitsPanel.vue",
+  );
+  const helpersSource = read("src/features/studio/helpers.js");
 
-  assert.doesNotMatch(managePanelSource, /Target Account Seed \/ AccountId Hash/);
-  assert.doesNotMatch(permissionsPanelSource, /Target Account Seed \/ AccountId Hash/);
+  assert.doesNotMatch(
+    managePanelSource,
+    /Target Account Seed \/ AccountId Hash/,
+  );
+  assert.doesNotMatch(
+    permissionsPanelSource,
+    /Target Account Seed \/ AccountId Hash/,
+  );
   assert.doesNotMatch(managePanelSource, /20-byte hash160 or raw seed/);
   assert.doesNotMatch(permissionsPanelSource, /20-byte hash160 or raw seed/);
   assert.doesNotMatch(helpersSource, /isEvmWallet/);
-  assert.doesNotMatch(helpersSource, /export function normalizeAccountId\(value, isEvmWallet\)/);
+  assert.doesNotMatch(
+    helpersSource,
+    /export function normalizeAccountId\(value, isEvmWallet\)/,
+  );
 });
 
-test('frontend package does not depend on Neon SDK bundles directly', () => {
+test("frontend package does not depend on Neon SDK bundles directly", () => {
   const packageJson = readFrontendPackage();
 
-  assert.equal(packageJson.dependencies['@cityofzion/neon-core'], undefined);
-  assert.equal(packageJson.dependencies['@cityofzion/neon-js'], undefined);
+  assert.equal(packageJson.dependencies["@cityofzion/neon-core"], undefined);
+  assert.equal(packageJson.dependencies["@cityofzion/neon-js"], undefined);
 });
 
-test('HomeView lazy-loads the architecture diagram component', () => {
-  const homeViewSource = read('src/views/HomeView.vue');
+test("HomeView lazy-loads the architecture diagram component", () => {
+  const homeViewSource = read("src/views/HomeView.vue");
 
   assert.match(homeViewSource, /defineAsyncComponent/);
-  assert.match(homeViewSource, /import\('\@\/components\/ArchitectureDiagram\.vue'\)/);
+  assert.match(
+    homeViewSource,
+    /import\(["']@\/components\/ArchitectureDiagram\.vue["']\)/,
+  );
   assert.doesNotMatch(homeViewSource, /import ArchitectureDiagram from/);
 });
 
-test('AbstractAccountTool lazy-loads heavy studio panels', () => {
-  const studioToolSource = read('src/components/AbstractAccountTool.vue');
+test("AbstractAccountTool lazy-loads heavy studio panels", () => {
+  const studioToolSource = read("src/components/AbstractAccountTool.vue");
 
   assert.match(studioToolSource, /defineAsyncComponent/);
-  assert.match(studioToolSource, /import\('\@\/features\/studio\/components\/CreateAccountPanel\.vue'\)/);
-  assert.match(studioToolSource, /import\('\@\/features\/studio\/components\/ContractSourcePanel\.vue'\)/);
+  assert.match(
+    studioToolSource,
+    /import\(["']@\/features\/studio\/components\/CreateAccountPanel\.vue["']\)/,
+  );
+  assert.match(
+    studioToolSource,
+    /import\(["']@\/features\/studio\/components\/ContractSourcePanel\.vue["']\)/,
+  );
   assert.doesNotMatch(studioToolSource, /import CreateAccountPanel from/);
 });
