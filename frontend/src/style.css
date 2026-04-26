@@ -1,14 +1,14 @@
 :root {
-  --aa-orange: #FF4400;
+  --aa-orange: #ff4400;
   --aa-orange-rgb: 255, 68, 0;
-  --aa-dark-orange: #CC3600;
-  --aa-light-orange: #FF6A33;
-  --aa-blue: #00A3FF;
+  --aa-dark-orange: #cc3600;
+  --aa-light-orange: #ff6a33;
+  --aa-blue: #00a3ff;
   --aa-blue-rgb: 0, 163, 255;
   --aa-dark: #000000;
-  --aa-panel: #0A0A0A;
+  --aa-panel: #0a0a0a;
   --aa-border: #333333;
-  --aa-text: #EDEDED;
+  --aa-text: #ededed;
   --aa-muted: #888888;
   --aa-success: #10b981;
   --aa-success-light: #6ee7b7;
@@ -31,7 +31,7 @@
   body {
     @apply bg-black text-[#EDEDED] antialiased font-sans selection:bg-[#333] selection:text-white;
   }
-  
+
   * {
     scrollbar-width: thin;
     scrollbar-color: #333 transparent;
@@ -50,8 +50,13 @@
     @apply bg-[#666];
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-[#EDEDED] font-medium tracking-tight;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-[#EDEDED] font-medium;
   }
 
   button:focus-visible {
@@ -61,24 +66,32 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-black bg-[#EDEDED] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EDEDED] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 tracking-tight;
+    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-black bg-[#EDEDED] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EDEDED] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
 
   .btn-secondary {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-[#333] text-sm font-medium rounded-md text-[#EDEDED] bg-black hover:bg-[#111] hover:border-[#666] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 tracking-tight;
+    @apply inline-flex justify-center items-center px-4 py-2 border border-[#333] text-sm font-medium rounded-md text-[#EDEDED] bg-black hover:bg-[#111] hover:border-[#666] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
 
-  .btn-warning, .btn-danger, .btn-success {
+  .btn-warning,
+  .btn-danger,
+  .btn-success {
     @apply btn-secondary;
   }
 
   .btn-ghost {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[#888] bg-transparent hover:text-[#EDEDED] hover:bg-[#111] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 tracking-tight;
+    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[#888] bg-transparent hover:text-[#EDEDED] hover:bg-[#111] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
   }
 
-  .btn-lg { @apply px-6 py-2.5 text-sm; }
-  .btn-sm { @apply px-3 py-1.5 text-xs; }
-  .btn-xs { @apply px-2 py-1 text-xs; }
+  .btn-lg {
+    @apply px-6 py-2.5 text-sm;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .btn-xs {
+    @apply px-2 py-1 text-xs;
+  }
 
   .card {
     @apply rounded-lg border border-[#333] bg-black p-6 shadow-sm;
@@ -106,7 +119,9 @@
   .scroll-reveal {
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease;
     animation: scrollRevealFallback 0.4s ease 0.2s forwards;
   }
 
@@ -127,14 +142,22 @@
     @apply bg-black border border-[#333] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl;
   }
 
-  .card-hover-green, .card-hover-blue, .card-hover-amber, .card-hover-orange, .card-glow {
+  .card-hover-green,
+  .card-hover-blue,
+  .card-hover-amber,
+  .card-hover-orange,
+  .card-glow {
     @apply transition-colors duration-200 hover:border-[#666] hover:bg-[#0A0A0A];
   }
 
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
-  .badge-orange, .badge-green, .badge-blue, .badge-red, .badge-amber {
+  .badge-orange,
+  .badge-green,
+  .badge-blue,
+  .badge-red,
+  .badge-amber {
     @apply badge bg-[#111] text-[#EDEDED] border border-[#333];
   }
 
@@ -146,7 +169,12 @@
   }
 
   .shimmer {
-    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%
+    );
     background-size: 200% 100%;
     @apply animate-shimmer;
   }
@@ -155,7 +183,8 @@
     background: none;
   }
 
-  .text-gradient, .text-gradient-white {
+  .text-gradient,
+  .text-gradient-white {
     @apply text-[#EDEDED] bg-none;
   }
 
@@ -176,7 +205,9 @@
 
   .page-slide-up-enter-active,
   .page-slide-up-leave-active {
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
   }
   .page-slide-up-enter-from {
     opacity: 0;
@@ -192,10 +223,18 @@
     transform: translateY(10px);
     animation: staggerFadeIn 0.3s ease forwards;
   }
-  .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-  .stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
-  .stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-  .stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger-children > *:nth-child(1) {
+    animation-delay: 0.05s;
+  }
+  .stagger-children > *:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  .stagger-children > *:nth-child(3) {
+    animation-delay: 0.15s;
+  }
+  .stagger-children > *:nth-child(4) {
+    animation-delay: 0.2s;
+  }
 }
 
 @keyframes scrollRevealFallback {
@@ -214,7 +253,9 @@
 
 .fade-in-up-enter-active,
 .fade-in-up-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .fade-in-up-enter-from,
 .fade-in-up-leave-to {
@@ -235,31 +276,51 @@
   transition: opacity 0.2s ease;
 }
 
-.preview-fade-enter-from, .preview-fade-leave-to,
-.desc-fade-enter-from, .desc-fade-leave-to,
-.fade-slide-enter-from, .fade-slide-leave-to,
-.detail-slide-enter-from, .detail-slide-leave-to,
-.scroll-top-fade-enter-from, .scroll-top-fade-leave-to {
+.preview-fade-enter-from,
+.preview-fade-leave-to,
+.desc-fade-enter-from,
+.desc-fade-leave-to,
+.fade-slide-enter-from,
+.fade-slide-leave-to,
+.detail-slide-enter-from,
+.detail-slide-leave-to,
+.scroll-top-fade-enter-from,
+.scroll-top-fade-leave-to {
   opacity: 0;
 }
 
 .Vue-Toastification__toast {
   font-family: Inter, sans-serif;
   border-radius: 0.5rem;
-  background: #0A0A0A;
+  background: #0a0a0a;
   border: 1px solid #333;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  color: #EDEDED;
+  color: #ededed;
 }
-.Vue-Toastification__toast--success { border-color: #333; color: #EDEDED; }
-.Vue-Toastification__toast--error { border-color: #333; color: #EDEDED; }
-.Vue-Toastification__toast--warning { border-color: #333; color: #EDEDED; }
-.Vue-Toastification__toast--info { border-color: #333; color: #EDEDED; }
+.Vue-Toastification__toast--success {
+  border-color: #333;
+  color: #ededed;
+}
+.Vue-Toastification__toast--error {
+  border-color: #333;
+  color: #ededed;
+}
+.Vue-Toastification__toast--warning {
+  border-color: #333;
+  color: #ededed;
+}
+.Vue-Toastification__toast--info {
+  border-color: #333;
+  color: #ededed;
+}
 
 .Vue-Toastification__progress-bar {
-  background: #EDEDED !important;
+  background: #ededed !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

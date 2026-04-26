@@ -1,14 +1,15 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const frontendRoot = fileURLToPath(new URL('..', import.meta.url));
-const read = (relativePath) => fs.readFileSync(path.join(frontendRoot, relativePath), 'utf8');
+const frontendRoot = fileURLToPath(new URL("..", import.meta.url));
+const read = (relativePath) =>
+  fs.readFileSync(path.join(frontendRoot, relativePath), "utf8");
 
-test('did service integrates Web3Auth as the NeoDID identity root', () => {
-  const source = read('src/services/didService.js');
+test("did service integrates Web3Auth as the NeoDID identity root", () => {
+  const source = read("src/services/didService.js");
 
   assert.match(source, /@web3auth\/modal/);
   assert.match(source, /new modal\.Web3Auth/);
@@ -20,12 +21,10 @@ test('did service integrates Web3Auth as the NeoDID identity root', () => {
   assert.match(source, /identityRoot/);
 });
 
-
-
-test('morpheus did service can bind DIDs and invoke AA verifier requests', () => {
-  const source = read('src/services/morpheusDidService.js');
-  const proxy = read('api/morpheus-neodid.js');
-  const keyProxy = read('api/morpheus-oracle-public-key.js');
+test("morpheus did service can bind DIDs and invoke AA verifier requests", () => {
+  const source = read("src/services/morpheusDidService.js");
+  const proxy = read("api/morpheus-neodid.js");
+  const keyProxy = read("api/morpheus-oracle-public-key.js");
 
   assert.match(source, /bindDid/);
   assert.match(source, /resolveDid/);
@@ -55,9 +54,9 @@ test('morpheus did service can bind DIDs and invoke AA verifier requests', () =>
   assert.match(keyProxy, /oracle\/public-key/);
 });
 
-test('notification service supports email and sms webhook delivery', () => {
-  const source = read('src/services/notificationService.js');
-  const apiSource = read('api/did-notify.js');
+test("notification service supports email and sms webhook delivery", () => {
+  const source = read("src/services/notificationService.js");
+  const apiSource = read("api/did-notify.js");
 
   assert.match(source, /sendRecoveryEmail/);
   assert.match(source, /sendRecoverySms/);
@@ -73,23 +72,28 @@ test('notification service supports email and sms webhook delivery', () => {
   assert.doesNotMatch(apiSource, /DID_NOTIFY_API_KEY/);
 });
 
-test('did verification api validates Web3Auth tokens against JWKS', () => {
-  const source = read('api/did-verify.js');
+test("did verification api validates Web3Auth tokens against JWKS", () => {
+  const source = read("api/did-verify.js");
 
   assert.match(source, /createRemoteJWKSet/);
   assert.match(source, /jwtVerify/);
   assert.match(source, /WEB3AUTH_JWKS_URL/);
-  assert.match(source, /WEB3AUTH_CLIENT_ID \|\| process\.env\.VITE_WEB3AUTH_CLIENT_ID/);
+  assert.match(
+    source,
+    /WEB3AUTH_CLIENT_ID \|\| process\.env\.VITE_WEB3AUTH_CLIENT_ID/,
+  );
   assert.match(source, /provider:\s*'web3auth'/);
 });
 
-test('main layout and home workspace expose a DID connection path', () => {
-  const layout = read('src/components/layout/MainLayout.vue');
-  const controls = read('src/components/layout/ConnectionControls.vue');
-  const workspace = read('src/features/operations/components/HomeOperationsWorkspace.vue');
-  const panel = read('src/features/operations/components/DidIdentityPanel.vue');
-  const identityView = read('src/views/IdentityView.vue');
-  const router = read('src/router/index.js');
+test("main layout and home workspace expose a DID connection path", () => {
+  const layout = read("src/components/layout/MainLayout.vue");
+  const controls = read("src/components/layout/ConnectionControls.vue");
+  const workspace = read(
+    "src/features/operations/components/HomeOperationsWorkspace.vue",
+  );
+  const panel = read("src/features/operations/components/DidIdentityPanel.vue");
+  const identityView = read("src/views/IdentityView.vue");
+  const router = read("src/router/index.js");
 
   assert.match(layout, /defineAsyncComponent/);
   assert.match(layout, /ConnectionControls/);
@@ -97,7 +101,7 @@ test('main layout and home workspace expose a DID connection path', () => {
   assert.match(controls, /Disconnect Web3Auth/);
   assert.match(controls, /connectedDidProfile/);
   assert.match(controls, /hydrateConnectedDidProfileFromStorage/);
-  assert.match(controls, /await import\('\@\/services\/didService'\)/);
+  assert.match(controls, /await import\(["']@\/services\/didService["']\)/);
   assert.match(workspace, /useDidConnection/);
   assert.match(workspace, /didConnection/);
   assert.match(workspace, /connectDid\(/);

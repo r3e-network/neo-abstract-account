@@ -1,11 +1,22 @@
 <template>
   <div v-if="renderError" role="alert" class="app-error-boundary">
     <div class="error-content">
-      <h1 class="error-title">{{ t('errorBoundary.title', 'Something went wrong') }}</h1>
-      <p class="error-message">{{ t('errorBoundary.message', 'An unexpected error occurred. Please try reloading the page.') }}</p>
-      <pre v-if="isDev && renderError" class="error-details">{{ renderError.stack || renderError.message || String(renderError) }}</pre>
+      <h1 class="error-title">
+        {{ t("errorBoundary.title", "Something went wrong") }}
+      </h1>
+      <p class="error-message">
+        {{
+          t(
+            "errorBoundary.message",
+            "An unexpected error occurred. Please try reloading the page.",
+          )
+        }}
+      </p>
+      <pre v-if="isDev && renderError" class="error-details">{{
+        renderError.stack || renderError.message || String(renderError)
+      }}</pre>
       <button class="btn-reload" @click="handleReload">
-        {{ t('errorBoundary.reload', 'Reload Page') }}
+        {{ t("errorBoundary.reload", "Reload Page") }}
       </button>
     </div>
   </div>
@@ -13,8 +24,8 @@
 </template>
 
 <script setup>
-import { ref, onErrorCaptured } from 'vue';
-import { useI18n } from '@/i18n';
+import { ref, onErrorCaptured } from "vue";
+import { useI18n } from "@/i18n";
 
 const { t } = useI18n();
 
@@ -23,7 +34,7 @@ const isDev = import.meta.env.DEV;
 
 onErrorCaptured((err, instance, info) => {
   renderError.value = err;
-  if (import.meta.env.DEV) console.error('[ErrorBoundary]', err, info);
+  if (import.meta.env.DEV) console.error("[ErrorBoundary]", err, info);
   return false;
 });
 

@@ -1,36 +1,49 @@
 <template>
   <section class="glass-panel p-6 shadow-glow-blue overflow-hidden">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+    <div
+      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6"
+    >
       <div>
         <h2 class="text-lg font-bold text-white">
-          {{ t('market.vanityTitle', 'Vanity Address Generator') }}
+          {{ t("market.vanityTitle", "Vanity Address Generator") }}
         </h2>
         <p class="mt-1 text-sm text-aa-muted">
-          {{ t('market.vanitySubtitle', 'Generate AA addresses with custom prefixes, suffixes, or patterns') }}
+          {{
+            t(
+              "market.vanitySubtitle",
+              "Generate AA addresses with custom prefixes, suffixes, or patterns",
+            )
+          }}
         </p>
       </div>
-      <div class="flex gap-2 rounded-lg border border-aa-border bg-aa-dark/50 p-1">
+      <div
+        class="flex gap-2 rounded-lg border border-aa-border bg-aa-dark/50 p-1"
+      >
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-widest transition-colors duration-200"
-          :class="mode === 'diy'
-            ? 'bg-aa-orange/20 text-aa-orange'
-            : 'text-aa-muted hover:text-aa-text'"
+          class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200"
+          :class="
+            mode === 'diy'
+              ? 'bg-aa-orange/20 text-aa-orange'
+              : 'text-aa-muted hover:text-aa-text'
+          "
           :aria-label="t('market.vanityDiyMode', 'DIY (Browser)')"
           @click="mode = 'diy'"
         >
-          {{ t('market.vanityDiyMode', 'DIY (Browser)') }}
+          {{ t("market.vanityDiyMode", "DIY (Browser)") }}
         </button>
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-widest transition-colors duration-200"
-          :class="mode === 'paid'
-            ? 'bg-aa-orange/20 text-aa-orange'
-            : 'text-aa-muted hover:text-aa-text'"
+          class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200"
+          :class="
+            mode === 'paid'
+              ? 'bg-aa-orange/20 text-aa-orange'
+              : 'text-aa-muted hover:text-aa-text'
+          "
           :aria-label="t('market.vanityPaidMode', 'Paid Service')"
           @click="mode = 'paid'"
         >
-          {{ t('market.vanityPaidMode', 'Paid Service') }}
+          {{ t("market.vanityPaidMode", "Paid Service") }}
         </button>
       </div>
     </div>
@@ -59,7 +72,7 @@
             :aria-label="t('market.ariaStartGeneration', 'Start generation')"
             @click="handleStart"
           >
-            {{ t('market.vanityStartGeneration', 'Start Generation') }}
+            {{ t("market.vanityStartGeneration", "Start Generation") }}
           </button>
           <button
             v-else
@@ -68,7 +81,7 @@
             :aria-label="t('market.ariaStopGeneration', 'Stop generation')"
             @click="vanity.stop()"
           >
-            {{ t('market.vanityStopGeneration', 'Stop Generation') }}
+            {{ t("market.vanityStopGeneration", "Stop Generation") }}
           </button>
           <button
             v-if="vanity.found.value || vanity.attempts.value > 0"
@@ -77,7 +90,7 @@
             :aria-label="t('market.ariaReset', 'Reset')"
             @click="handleReset"
           >
-            {{ t('market.vanityReset', 'Reset') }}
+            {{ t("market.vanityReset", "Reset") }}
           </button>
         </div>
 
@@ -110,22 +123,22 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
-import { useI18n } from '@/i18n';
-import { RUNTIME_CONFIG } from '@/config/runtimeConfig.js';
-import { useVanityGenerator } from '@/composables/useVanityGenerator.js';
-import PatternInputSection from './PatternInputSection.vue';
-import DifficultyEstimator from './DifficultyEstimator.vue';
-import GenerationProgress from './GenerationProgress.vue';
-import VanityResultsList from './VanityResultsList.vue';
-import PaidServiceForm from './PaidServiceForm.vue';
+import { computed, ref } from "vue";
+import { useI18n } from "@/i18n";
+import { RUNTIME_CONFIG } from "@/config/runtimeConfig.js";
+import { useVanityGenerator } from "@/composables/useVanityGenerator.js";
+import PatternInputSection from "./PatternInputSection.vue";
+import DifficultyEstimator from "./DifficultyEstimator.vue";
+import GenerationProgress from "./GenerationProgress.vue";
+import VanityResultsList from "./VanityResultsList.vue";
+import PaidServiceForm from "./PaidServiceForm.vue";
 
 const props = defineProps({
   onUseForListing: { type: Function, default: null },
 });
 
 const { t } = useI18n();
-const mode = ref('diy');
+const mode = ref("diy");
 const vanity = useVanityGenerator();
 const foundResults = ref([]);
 
