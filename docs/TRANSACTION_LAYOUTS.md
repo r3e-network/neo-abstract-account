@@ -183,10 +183,10 @@ Hex:
 ```
 Script calls: AAContract.executeUnifiedByAddress(
   accountAddressScriptHash,
-  evmPublicKeys[],      // Contains EVM public key
   targetContract,
   method,
   args[],
+  evmPublicKeys[],      // Contains EVM public key
   argsHashHex,
   nonce,
   deadline,
@@ -195,11 +195,6 @@ Script calls: AAContract.executeUnifiedByAddress(
 
 Hex:
   14 abcd...1234           PUSH accountAddressScriptHash (20 bytes)
-
-  11                       PUSH1 (array with 1 element - EVM key only)
-  0c 41 04aabb...6677      PUSH evmPublicKey (65 bytes)
-  13                       PACK
-
   14 5678...efgh           PUSH targetContract (20 bytes)
   0c 08 7472616e73666572   PUSH "transfer"
 
@@ -208,9 +203,13 @@ Hex:
   02 e803                  PUSH 1000
   13                       PACK
 
+  11                       PUSH1 (array with 1 element - EVM key only)
+  0c 41 04aabb...6677      PUSH evmPublicKey (65 bytes)
+  13                       PACK
+
   0c 20 keccak...hash      PUSH argsHashHex (32 bytes)
   02 2a00                  PUSH 42 (nonce)
-  03 d2029649              PUSH 1678901234 (deadline)
+  03 50c94fe686010000      PUSH 1678901234000 (deadline ms)
 
   11                       PUSH1 (array with 1 element - EVM sig only)
   0c 41 evm...sig          PUSH evmSignature (65 bytes)
@@ -400,12 +399,12 @@ export function buildExecuteUnifiedByAddressInvocation({
     operation: 'executeUnifiedByAddress',
     args: [
       { type: 'Hash160', value: `0x${sanitizeHex(accountAddressScriptHash)}` },
-      { type: 'Array', value: [
-        { type: 'ByteArray', value: `0x${sanitizeHex(evmPublicKeyHex)}` }
-      ]},
       { type: 'Hash160', value: `0x${sanitizeHex(targetContract)}` },
       { type: 'String', value: String(method || '') },
       { type: 'Array', value: methodArgs },
+      { type: 'Array', value: [
+        { type: 'ByteArray', value: `0x${sanitizeHex(evmPublicKeyHex)}` }
+      ]},
       { type: 'ByteArray', value: `0x${sanitizeHex(argsHashHex)}` },
       { type: 'Integer', value: String(nonce) },
       { type: 'Integer', value: String(deadline) },
@@ -429,7 +428,7 @@ const typedData = buildMetaTransactionTypedData({
   method: 'transfer',
   argsHashHex,
   nonce: 42,
-  deadline: Math.floor(Date.now() / 1000) + 3600,
+  deadline: Date.now() + 3600_000,
 });
 
 const signature = await ethereum.request({

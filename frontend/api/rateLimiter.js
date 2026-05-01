@@ -1,5 +1,66 @@
 const WINDOW_MS = 60000;
 const MAX_REQUESTS = 10;
+const TRUSTED_PROXY_HEADER_NAMES = new Set([
+  'x-vercel-forwarded-for',
+  'cf-connecting-ip',
+  'x-real-ip',
+]);
+
+function trimString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function headerValue(headers = {}, name) {
+  const direct = headers?.[name];
+  if (Array.isArray(direct)) return trimString(direct[0] || '');
+  if (direct) return trimString(direct);
+
+  const expected = String(name).toLowerCase();
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (String(key).toLowerCase() !== expected) continue;
+    if (Array.isArray(value)) return trimString(value[0] || '');
+    return trimString(value);
+  }
+  return '';
+}
+
+function trustProxyHeaders() {
+  return /^(1|true|yes|on)$/i.test(trimString(
+    process.env.AA_TRUST_PROXY_HEADERS
+      || process.env.TRUST_PROXY_HEADERS
+      || ''
+  ));
+}
+
+function trustedProxyHeaderName() {
+  const configured = trimString(
+    process.env.AA_TRUST_PROXY_HEADER
+      || process.env.TRUST_PROXY_HEADER
+      || ''
+  ).toLowerCase();
+  return TRUSTED_PROXY_HEADER_NAMES.has(configured) ? configured : '';
+}
+
+function firstForwardedAddress(value) {
+  return trimString(String(value || '').split(',')[0] || '');
+}
+
+export function resolveClientIp(req = {}) {
+  const socketAddress = trimString(
+    req?.socket?.remoteAddress
+      || req?.connection?.remoteAddress
+      || ''
+  );
+
+  if (!trustProxyHeaders()) return socketAddress;
+
+  const configuredHeader = trustedProxyHeaderName();
+  const proxyAddress = configuredHeader
+    ? firstForwardedAddress(headerValue(req.headers, configuredHeader))
+    : '';
+
+  return proxyAddress || socketAddress;
+}
 
 function getRedisClient() {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -84,9 +145,33 @@ function rateLimitInMemory(identifier) {
 }
 
 export async function checkRateLimit(identifier) {
+  if (!trimString(identifier)) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfter: 60,
+      error: 'client_identity_unavailable',
+    };
+  }
   const redisResult = await rateLimitWithRedis(identifier);
   if (redisResult !== null) return redisResult;
   return rateLimitInMemory(identifier);
+}
+
+export function resolveRateLimitFailure(rateLimit = {}) {
+  if (rateLimit?.error === 'client_identity_unavailable') {
+    return {
+      statusCode: 400,
+      error: 'client_identity_unavailable',
+      retryAfter: 0,
+    };
+  }
+
+  return {
+    statusCode: 429,
+    error: 'rate_limit_exceeded',
+    retryAfter: Number(rateLimit?.retryAfter || 60),
+  };
 }
 
 export function sanitizeError(error) {

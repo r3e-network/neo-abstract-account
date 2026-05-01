@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { checkRateLimit } from './rateLimiter.js';
+import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from './rateLimiter.js';
 
 const DEFAULT_MORPHEUS_SERVICE_DID = 'did:morpheus:neo_n3:service:neodid';
 
@@ -60,11 +60,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const clientIp = resolveClientIp(req);
   const rateLimit = await checkRateLimit(clientIp);
   if (!rateLimit.allowed) {
-    res.setHeader('Retry-After', String(rateLimit.retryAfter));
-    return res.status(429).json({ error: 'rate_limit_exceeded', retryAfter: rateLimit.retryAfter });
+    const failure = resolveRateLimitFailure(rateLimit);
+    if (failure.retryAfter) res.setHeader('Retry-After', String(failure.retryAfter));
+    return res.status(failure.statusCode).json({
+      error: failure.error,
+      ...(failure.retryAfter ? { retryAfter: failure.retryAfter } : {}),
+    });
   }
 
   const idToken = trim(req.body?.idToken);

@@ -29,7 +29,7 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_DailyReset = new byte[] { 0x04 };
         private static readonly byte[] Prefix_TotalSpent = new byte[] { 0x05 };
 
-        private static readonly BigInteger OneDaySeconds = 86400;
+        private static readonly BigInteger OneDayMs = 24L * 60 * 60 * 1000;
 
         // ========================================================================
         // Data Structures
@@ -370,7 +370,7 @@ namespace AbstractAccount
             ByteString? lastResetData = Storage.Get(Storage.CurrentContext, resetKey);
             BigInteger lastReset = lastResetData == null ? 0 : (BigInteger)lastResetData;
 
-            if (Runtime.Time >= lastReset + OneDaySeconds) return 0;
+            if (Runtime.Time >= lastReset + OneDayMs) return 0;
 
             byte[] spentKey = BuildDailySpentKey(sponsor, accountId);
             ByteString? spentData = Storage.Get(Storage.CurrentContext, spentKey);
@@ -466,7 +466,7 @@ namespace AbstractAccount
             BigInteger lastReset = lastResetData == null ? 0 : (BigInteger)lastResetData;
 
             BigInteger currentSpent;
-            if (Runtime.Time >= lastReset + OneDaySeconds)
+            if (Runtime.Time >= lastReset + OneDayMs)
             {
                 // New day — reset
                 currentSpent = 0;

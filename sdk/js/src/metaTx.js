@@ -35,7 +35,7 @@ function decodeByteStringStackHex(item) {
  * @param {string} options.method - Method name
  * @param {string} options.argsHashHex - Args hash (32 bytes, 64 hex chars)
  * @param {string|number} options.nonce - Nonce value
- * @param {string|number} options.deadline - Deadline timestamp
+ * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
  * @returns {Object} EIP-712 typed data structure
  * @throws {Error} If nonce/deadline missing or argsHash invalid
  */
@@ -99,7 +99,7 @@ function buildMetaTransactionTypedData({
  * @param {string} options.method - Method name
  * @param {string} options.argsHashHex - Args hash (32 bytes, 64 hex chars)
  * @param {string|number} options.nonce - Nonce value
- * @param {string|number} options.deadline - Deadline timestamp
+ * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
  * @returns {Object} EIP-712 typed data structure
  * @throws {Error} If nonce/deadline missing or argsHash invalid
  */
@@ -319,7 +319,7 @@ function buildContractCompatibleDomainSeparator(network, verifyingContract) {
  * @param {string} options.method - Method name
  * @param {string} options.argsHash - Serialized args hash (32 bytes, 64 hex chars)
  * @param {number|string|bigint} options.nonce - Nonce value
- * @param {number|string|bigint} options.deadline - Deadline timestamp
+ * @param {number|string|bigint} options.deadline - Deadline in Neo Runtime.Time milliseconds
  * @returns {string} 32-byte struct hash (hex string with 0x prefix)
  *
  * @throws {Error} If any parameter is invalid
@@ -332,7 +332,7 @@ function buildContractCompatibleDomainSeparator(network, verifyingContract) {
  *   method: 'transfer',
  *   argsHash: '0xabcd...hash',
  *   nonce: 0,
- *   deadline: Math.floor(Date.now() / 1000) + 3600,
+ *   deadline: Date.now() + 3600_000,
  * });
  *
  * // Create EIP-712 signing payload
@@ -428,7 +428,7 @@ function buildContractCompatibleStructHash({
  * @param {string} options.method - Method name
  * @param {string} options.argsHash - Args hash (32 bytes, 64 hex chars)
  * @param {number|string|bigint} options.nonce - Nonce value
- * @param {number|string|bigint} options.deadline - Deadline timestamp
+ * @param {number|string|bigint} options.deadline - Deadline in Neo Runtime.Time milliseconds
  * @returns {Uint8Array} 66-byte payload (0x1901 + domainSep(32) + structHash(32))
  */
 function buildWeb3AuthSigningPayload({

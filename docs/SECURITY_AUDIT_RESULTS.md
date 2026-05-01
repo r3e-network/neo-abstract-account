@@ -13,7 +13,9 @@ This audit covers the complete Neo Abstract Account smart contract system, inclu
 - Market escrow system (AAAddressMarket)
 - Authority contracts (HookAuthority, VerifierAuthority)
 
-**Overall Assessment**: The codebase demonstrates strong security architecture with proper access controls, storage isolation, and timelock protections. Several issues were identified and 4 critical/high severity fixes have been applied. Remaining issues require attention before production deployment.
+**Overall Assessment**: The codebase demonstrates strong security architecture with proper access controls, storage isolation, and timelock protections. Several issues were identified and 4 high severity fixes have been applied. Remaining issues require attention before production deployment.
+
+**Status Note**: The finding sections below preserve the original audit evidence. Current remediation status is tracked in the "Fixes Applied" section and the later "Updated Summary Table".
 
 ---
 
@@ -94,7 +96,7 @@ ExecutionEngine.Assert(newTotal >= spentToday, "Integer overflow in daily limit 
 ExecutionEngine.Assert(newTotal <= config.MaxAmount, "Daily limit exceeded");
 ```
 
-**Status**: NOT FIXED - Requires immediate attention
+**Status**: FIXED - See Fixes Applied section
 
 ---
 
@@ -198,7 +200,7 @@ private static void EnforceMaxHistorySize(byte[] historyPrefix, BigInteger curre
 }
 ```
 
-**Status**: NOT FIXED - Requires immediate attention
+**Status**: FIXED - See Fixes Applied section
 
 ---
 
@@ -274,7 +276,7 @@ private static void RecordTransaction(UInt160 accountId, UInt160 token, BigInteg
 }
 ```
 
-**Status**: NOT FIXED - Requires immediate attention
+**Status**: FIXED - See Fixes Applied section
 
 ---
 
@@ -341,7 +343,7 @@ public static void UpdateListingPrice(BigInteger listingId, BigInteger newPrice)
 }
 ```
 
-**Status**: NOT FIXED - Requires attention
+**Status**: FIXED - See Fixes Applied section
 
 ---
 
@@ -1086,10 +1088,10 @@ All contracts use single-byte prefixes, which is acceptable but could be more ro
 
 | ID | Severity | Contract | Method | Status |
 |----|-----------|-----------|---------|--------|
-| HIGH-1 | High | DailyLimitHook | GetRollingWindowSpent | NOT FIXED |
-| HIGH-2 | High | DailyLimitHook | RecordTransaction | NOT FIXED |
-| HIGH-3 | High | DailyLimitHook | RecordTransaction | NOT FIXED |
-| HIGH-4 | High | AAAddressMarket | CreateListing, UpdateListingPrice | NOT FIXED |
+| HIGH-1 | High | DailyLimitHook | GetRollingWindowSpent | FIXED |
+| HIGH-2 | High | DailyLimitHook | RecordTransaction | FIXED |
+| HIGH-3 | High | DailyLimitHook | RecordTransaction | FIXED |
+| HIGH-4 | High | AAAddressMarket | CreateListing, UpdateListingPrice | FIXED |
 | MEDIUM-1 | Medium | HookAuthority, VerifierAuthority | Initialize, RotateAdmin | NOT FIXED |
 | MEDIUM-2 | Medium | MultiHook | SetHooks | NOT FIXED |
 | MEDIUM-3 | Medium | SessionKeyVerifier | SetSessionKey | NOT FIXED |
@@ -1107,17 +1109,13 @@ All contracts use single-byte prefixes, which is acceptable but could be more ro
 ## Recommendations Summary
 
 ### Must Fix Before Production
-1. Add integer overflow checks to DailyLimitHook (HIGH-1)
-2. Enforce MaxHistorySize in DailyLimitHook (HIGH-2)
-3. Fix transaction record key collision in DailyLimitHook (HIGH-3)
-4. Add price bounds to AAAddressMarket (HIGH-4)
-5. Fix escape cancellation to only allow backup owner (MEDIUM-4)
+1. Fix escape cancellation to only allow backup owner (MEDIUM-4)
 
 ### Should Fix Before Production
-6. Add timelock to admin rotation in HookAuthority/VerifierAuthority (MEDIUM-1)
-7. Add circular dependency detection to MultiHook (MEDIUM-2)
-8. Don't reset spending limit on session key rotation (MEDIUM-3)
-9. Improve subscription nonce generation (MEDIUM-5)
+2. Add timelock to admin rotation in HookAuthority/VerifierAuthority (MEDIUM-1)
+3. Add circular dependency detection to MultiHook (MEDIUM-2)
+4. Don't reset spending limit on session key rotation (MEDIUM-3)
+5. Improve subscription nonce generation (MEDIUM-5)
 
 ### Nice to Have
 10. Add comprehensive input validation
@@ -1148,7 +1146,7 @@ Total Findings: 14
 - Low: 6
 - Informational: 3
 
-**Risk Level**: MODERATE - Several high-severity issues need fixing before production deployment.
+**Risk Level**: MODERATE - High-severity findings are remediated; remaining medium and low findings should be evaluated before production deployment.
 
 ---
 
@@ -1166,9 +1164,9 @@ The following critical and high severity fixes have been applied:
 - This prevents timestamp collision attacks where multiple transactions with the same timestamp would overwrite records
 
 ### FIXED-3: DailyLimitHook Max History Size Enforcement (HIGH-2)
-- Added `EnforceMaxHistorySize` method to enforce maximum history size
-- Ensures that no more than `MaxHistorySize` (50) records can be stored per account
-- Old records are deleted when the limit is exceeded
+- Prunes expired records before appending new rolling-window history
+- Counts live records in the active 24-hour window and refuses transfers that would exceed `MaxHistorySize` (50)
+- Does not delete unexpired spend records to make room, preserving limit accounting correctness
 
 ### FIXED-4: AAAddressMarket Price Bounds (HIGH-4)
 - Added `MinListingPrice` and `MaxListingPrice` constants

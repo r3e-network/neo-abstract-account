@@ -27,7 +27,7 @@ namespace AbstractAccount
             if (lastInitiated != null)
             {
                 BigInteger lastTime = (BigInteger)lastInitiated;
-                ExecutionEngine.Assert(Runtime.Time >= lastTime + EscapeCooldownSeconds, "Escape cooldown active");
+                ExecutionEngine.Assert(Runtime.Time >= lastTime + EscapeCooldownMs, "Escape cooldown active");
             }
 
             state.EscapeTriggeredAt = Runtime.Time;
@@ -45,7 +45,7 @@ namespace AbstractAccount
             AccountState state = GetAccountState(accountId);
             AssertNoMarketEscrow(accountId);
             ExecutionEngine.Assert(state.EscapeTriggeredAt > 0, "Escape not initiated");
-            ExecutionEngine.Assert(Runtime.Time >= state.EscapeTriggeredAt + state.EscapeTimelock, "Timelock active");
+            ExecutionEngine.Assert(Runtime.Time >= state.EscapeTriggeredAt + ((BigInteger)state.EscapeTimelock * 1000), "Timelock active");
             ExecutionEngine.Assert(Runtime.CheckWitness(state.BackupOwner), "Only backup owner can finalize");
 
             UInt160 previousVerifier = state.Verifier;

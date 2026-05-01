@@ -97,6 +97,7 @@ test('morpheus neodid proxy routes GET requests through the resolved runtime pat
         morpheus_network: 'testnet',
       },
       headers: {},
+      socket: { remoteAddress: `morpheus-neodid-get-${Date.now()}` },
     }, res);
 
     assert.equal(calls.length, 1);
@@ -140,6 +141,7 @@ test('morpheus neodid proxy strips morpheus routing metadata but preserves paylo
       },
       query: {},
       headers: {},
+      socket: { remoteAddress: `morpheus-neodid-post-${Date.now()}` },
     }, res);
 
     assert.equal(calls.length, 1);
@@ -183,6 +185,7 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
         morpheus_network: 'testnet',
       },
       headers: {},
+      socket: { remoteAddress: `morpheus-oracle-key-${Date.now()}` },
     }, res);
 
     assert.equal(calls.length, 1);

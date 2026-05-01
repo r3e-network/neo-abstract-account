@@ -157,7 +157,7 @@ namespace AbstractAccount
             ByteString? data = Storage.Get(Storage.CurrentContext, key);
             if (data == null) return 0;
             PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
-            return pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+            return pending.InitiatedAt + ConfigUpdateTimelockMs;
         }
 
         [Safe]
@@ -167,7 +167,7 @@ namespace AbstractAccount
             ByteString? data = Storage.Get(Storage.CurrentContext, key);
             if (data == null) return 0;
             PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
-            return pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+            return pending.InitiatedAt + ConfigUpdateTimelockMs;
         }
 
         private static PendingModuleCall? GetPendingModuleCallRecord(byte[] prefix, UInt160 accountId)
@@ -222,14 +222,14 @@ namespace AbstractAccount
         public static BigInteger GetPendingVerifierCallTime(UInt160 accountId)
         {
             PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingVerifierCall, accountId);
-            return pending == null ? 0 : pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+            return pending == null ? 0 : pending.InitiatedAt + ConfigUpdateTimelockMs;
         }
 
         [Safe]
         public static BigInteger GetPendingHookCallTime(UInt160 accountId)
         {
             PendingModuleCall? pending = GetPendingModuleCallRecord(Prefix_PendingHookCall, accountId);
-            return pending == null ? 0 : pending.InitiatedAt + ConfigUpdateTimelockSeconds;
+            return pending == null ? 0 : pending.InitiatedAt + ConfigUpdateTimelockMs;
         }
 
         /// <summary>

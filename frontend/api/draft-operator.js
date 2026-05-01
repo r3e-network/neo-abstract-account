@@ -6,7 +6,7 @@ import {
   verifyOperatorMutationSignature,
 } from './operatorMutationHelpers.js';
 import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
-import { checkRateLimit } from './rateLimiter.js';
+import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from './rateLimiter.js';
 
 const OPERATOR_ACTIVITY_TYPES = new Set([
   'signature_added',
@@ -291,15 +291,16 @@ export default async function handler(req, res) {
     return sendJson(res, 405, { error: 'method_not_allowed' }, requestId);
   }
 
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const clientIp = resolveClientIp(req);
   const rateLimit = await checkRateLimit(clientIp);
   
   if (!rateLimit.allowed) {
-    res.setHeader?.('Retry-After', String(rateLimit.retryAfter));
-    await failDurableRequest(durable.context, { statusCode: 429, error: 'rate_limit_exceeded', phase: 'rate_limit' });
-    return sendJson(res, 429, { 
-      error: 'rate_limit_exceeded', 
-      retryAfter: rateLimit.retryAfter 
+    const failure = resolveRateLimitFailure(rateLimit);
+    if (failure.retryAfter) res.setHeader?.('Retry-After', String(failure.retryAfter));
+    await failDurableRequest(durable.context, { statusCode: failure.statusCode, error: failure.error, phase: 'rate_limit' });
+    return sendJson(res, failure.statusCode, {
+      error: failure.error,
+      ...(failure.retryAfter ? { retryAfter: failure.retryAfter } : {}),
     }, requestId);
   }
 

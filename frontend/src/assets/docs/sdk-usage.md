@@ -75,7 +75,7 @@ const typedData = await aaClient.createEIP712Payload({
     { type: 'Boolean', value: true },
   ],
   nonce: 0,
-  deadline: Math.floor(Date.now() / 1000) + 3600,
+  deadline: Date.now() + 3600_000,
 });
 
 const signature = await signer.signTypedData(

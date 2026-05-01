@@ -32,7 +32,7 @@ const { validateHash160, validateAccountId, sanitizeHex } = require('./validatio
  * @param {string} options.method - Method name
  * @param {Array} options.args - Method arguments
  * @param {string|number} options.nonce - Nonce value
- * @param {string|number} options.deadline - Deadline timestamp
+ * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
  * @returns {Promise<SimulationResult>} Simulation results
  *
  * @example
@@ -42,7 +42,7 @@ const { validateHash160, validateAccountId, sanitizeHex } = require('./validatio
  *   method: 'transfer',
  *   args: [],
  *   nonce: 0,
- *   deadline: Math.floor(Date.now() / 1000) + 3600,
+ *   deadline: Date.now() + 3600_000,
  * });
  *
  * if (!result.passed) {
@@ -92,16 +92,16 @@ async function simulateUserOperation(client, options) {
     };
   }
 
-  // Validate deadline is in the future
-  const now = Math.floor(Date.now() / 1000);
+  // Validate deadline against Neo Runtime.Time, which is expressed in milliseconds.
+  const now = BigInt(Date.now());
   const deadlineNum = BigInt(deadline || 0);
-  const isDeadlineValid = deadlineNum > BigInt(now);
+  const isDeadlineValid = deadlineNum > now;
 
   if (!isDeadlineValid) {
     errors.push(`Deadline has passed. Current: ${now}, Deadline: ${deadlineNum}`);
-  } else if (deadlineNum > BigInt(now) + BigInt(86400 * 7)) {
+  } else if (deadlineNum > now + BigInt(7 * 24 * 60 * 60 * 1000)) {
     // Warn if deadline is more than 7 days in the future
-    warnings.push(`Deadline is more than 7 days in the future (${Math.floor((deadlineNum - BigInt(now)) / 3600)} hours)`);
+    warnings.push(`Deadline is more than 7 days in the future (${(deadlineNum - now) / BigInt(60 * 60 * 1000)} hours)`);
   }
 
   try {
@@ -236,8 +236,8 @@ async function checkEscapeStatus(client, accountHashOrAddress) {
       triggeredAt: accountState.escapeTriggeredAt,
       timelock: accountState.escapeTimelock,
       hasTimelockExpired: accountState.escapeActive &&
-                          (Date.now() / 1000 > parseInt(accountState.escapeTriggeredAt, 10) +
-                                                parseInt(accountState.escapeTimelock, 10)),
+                          (Date.now() > parseInt(accountState.escapeTriggeredAt, 10) +
+                                        (parseInt(accountState.escapeTimelock, 10) * 1000)),
     };
   } catch (error) {
     return {

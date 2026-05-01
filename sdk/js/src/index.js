@@ -557,7 +557,7 @@ class AbstractAccountClient {
    * @param {string} options.method - Method name
    * @param {Array} [options.args=[]] - Method arguments
    * @param {string|number} options.nonce - Nonce value
-   * @param {string|number} options.deadline - Deadline timestamp (Unix seconds)
+   * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
    * @returns {Promise<Object>} EIP-712 typed data structure
    * @throws {Error} If required parameters are missing or validation fails
    *
@@ -571,7 +571,7 @@ class AbstractAccountClient {
    *   method: 'transfer',
    *   args: [{ type: 'Address', value: '0xabcd...' }],
    *   nonce: 0,
-   *   deadline: Math.floor(Date.now() / 1000) + 3600,
+   *   deadline: Date.now() + 3600_000,
    * });
    *
    * const signature = await signer.signTypedData(
@@ -817,7 +817,7 @@ class AbstractAccountClient {
    * @param {string} options.method - Method name
    * @param {Array} [options.args=[]] - Method arguments
    * @param {string|number} [options.nonce=0] - Nonce value
-   * @param {string|number} [options.deadline=0] - Deadline timestamp
+   * @param {string|number} [options.deadline=0] - Deadline in Neo Runtime.Time milliseconds
    * @returns {Promise<Object>} Validation preview
    * @returns {boolean} returns.deadlineValid - Deadline is valid
    * @returns {boolean} returns.nonceAcceptable - Nonce is acceptable
@@ -1150,10 +1150,10 @@ class AbstractAccountClient {
   }
 
   /**
-   * Gets the timestamp when a pending verifier update was initiated.
+   * Gets the timestamp when a pending verifier update can be confirmed.
    *
    * @param {string} accountHashOrAddress - Account hash or address
-   * @returns {Promise<number>} Update timestamp (Unix seconds)
+   * @returns {Promise<number>} Update timestamp in Neo Runtime.Time milliseconds
    * @throws {Error} If RPC call fails
    */
   async getPendingVerifierUpdateTime(accountHashOrAddress) {
@@ -1173,10 +1173,10 @@ class AbstractAccountClient {
   }
 
   /**
-   * Gets the timestamp when a pending hook update was initiated.
+   * Gets the timestamp when a pending hook update can be confirmed.
    *
    * @param {string} accountHashOrAddress - Account hash or address
-   * @returns {Promise<number>} Update timestamp (Unix seconds)
+   * @returns {Promise<number>} Update timestamp in Neo Runtime.Time milliseconds
    * @throws {Error} If RPC call fails
    */
   async getPendingHookUpdateTime(accountHashOrAddress) {

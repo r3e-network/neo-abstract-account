@@ -15,3 +15,4 @@ tests/run-mixed-verification.js
 .env.local
 
 .worktrees/
+.omx/

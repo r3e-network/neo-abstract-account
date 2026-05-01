@@ -30,5 +30,8 @@ jobs:
       - name: Install SDK dependencies
         working-directory: sdk/js
         run: npm ci
+      - name: Install Playwright browser for frontend e2e
+        working-directory: frontend
+        run: npm run test:e2e:install
       - name: Verify repository
         run: ./scripts/verify_repo.sh

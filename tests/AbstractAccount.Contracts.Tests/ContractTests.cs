@@ -584,9 +584,21 @@ public class ContractTests
     {
         string source = ReadContractFile("paymaster/PaymasterAuthority.cs");
 
-        StringAssert.Contains(source, "AdminRotationTimelockSeconds = 604800");
+        StringAssert.Contains(source, "AdminRotationTimelockMs = 7L * 24 * 60 * 60 * 1000");
         StringAssert.Contains(source, "Admin rotation timelock not expired");
         StringAssert.Contains(source, "Pending admin mismatch");
+    }
+
+    [TestMethod]
+    public void VerifierAndHookAuthorityUseRuntimeMillisecondsForAdminRotation()
+    {
+        string verifierSource = ReadContractFile("verifiers/VerifierAuthority.cs");
+        string hookSource = ReadContractFile("hooks/HookAuthority.cs");
+
+        StringAssert.Contains(verifierSource, "AdminRotationTimelockMs = 7L * 24 * 60 * 60 * 1000");
+        StringAssert.Contains(hookSource, "AdminRotationTimelockMs = 7L * 24 * 60 * 60 * 1000");
+        Assert.IsFalse(verifierSource.Contains("AdminRotationTimelockSeconds", StringComparison.Ordinal));
+        Assert.IsFalse(hookSource.Contains("AdminRotationTimelockSeconds", StringComparison.Ordinal));
     }
 
     [TestMethod]

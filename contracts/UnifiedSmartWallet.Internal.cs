@@ -28,8 +28,8 @@ namespace AbstractAccount
 
         private static readonly BigInteger MaxMetadataUriLength = 240;
 
-        private static readonly BigInteger EscapeCooldownSeconds = 3600;
-        private static readonly BigInteger ConfigUpdateTimelockSeconds = 86400;
+        private static readonly BigInteger EscapeCooldownMs = 60L * 60 * 1000;
+        private static readonly BigInteger ConfigUpdateTimelockMs = 24L * 60 * 60 * 1000;
 
         private static void SetVerifyContext(UInt160 accountId, UInt160 targetContract)
         {

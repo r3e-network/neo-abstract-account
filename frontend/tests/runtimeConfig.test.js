@@ -192,7 +192,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.mainnet, {
     abstractAccountHash: '9742b4ed62a84a886f404d36149da6147528ee33',
     abstractAccountDomain: 'smartwallet.neo',
-    rpcUrl: 'https://mainnet1.neo.coz.io:443',
+    rpcUrl: 'https://api.n3index.dev/mainnet',
     n3IndexNetwork: 'mainnet',
     neoDidDomain: 'neodid.morpheus.neo',
     morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
@@ -200,7 +200,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.testnet, {
     abstractAccountHash: 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38',
     abstractAccountDomain: '',
-    rpcUrl: 'https://testnet1.neo.coz.io:443',
+    rpcUrl: 'https://api.n3index.dev/testnet',
     n3IndexNetwork: 'testnet',
     neoDidDomain: '',
     morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL_TESTNET,

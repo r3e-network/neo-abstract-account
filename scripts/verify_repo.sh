@@ -13,6 +13,7 @@ dotnet test neo-abstract-account.sln -c Release --nologo
 cd frontend
 npm test
 npm run build
+npm run test:e2e:browser
 node ../scripts/check_frontend_audit_allowlist.mjs
 
 cd ../sdk/js

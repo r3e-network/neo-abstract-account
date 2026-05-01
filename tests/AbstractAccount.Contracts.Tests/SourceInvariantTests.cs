@@ -50,6 +50,9 @@ public class SourceInvariantTests
     private static string ReadPaymaster(string fileName) =>
         File.ReadAllText(Path.Combine(ContractsDir, "paymaster", fileName));
 
+    private static string ReadHook(string fileName) =>
+        File.ReadAllText(Path.Combine(ContractsDir, "hooks", fileName));
+
     private static Random Rng() => new(Seed);
 
     // ========================================================================
@@ -192,7 +195,8 @@ public class SourceInvariantTests
         StringAssert.Contains(escapeSource, "Timelock active", "Timelock active assertion");
         StringAssert.Contains(escapeSource, "Only backup owner can finalize", "Owner check on finalize");
         StringAssert.Contains(escapeSource, "Escape cooldown active", "Cooldown check");
-        StringAssert.Contains(internalSource, "EscapeCooldownSeconds = 3600", "1 hour cooldown");
+        StringAssert.Contains(internalSource, "EscapeCooldownMs = 60L * 60 * 1000", "1 hour cooldown in Runtime.Time milliseconds");
+        StringAssert.Contains(escapeSource, "state.EscapeTriggeredAt + ((BigInteger)state.EscapeTimelock * 1000)", "Escape timelock seconds converted to Runtime.Time milliseconds");
 
         // Randomized invariant check: verify escape timelock range is 7-90 days
         for (int i = 0; i < Iterations; i++)
@@ -200,6 +204,7 @@ public class SourceInvariantTests
             ulong timelock = 604800 + (ulong)(rng.NextDouble() * (7776000 - 604800));
             Assert.IsTrue(timelock >= 604800, "Min 7 days");
             Assert.IsTrue(timelock <= 7776000, "Max 90 days");
+            Assert.IsTrue((BigInteger)timelock * 1000 >= 604800000, "Runtime comparison uses milliseconds");
         }
     }
 
@@ -214,14 +219,14 @@ public class SourceInvariantTests
         var internalSource = Read("UnifiedSmartWallet.Internal.cs");
 
         StringAssert.Contains(accountsSource, "Timelock not elapsed", "Config timelock assertion");
-        StringAssert.Contains(internalSource, "ConfigUpdateTimelockSeconds = 86400", "24 hours config timelock");
+        StringAssert.Contains(internalSource, "ConfigUpdateTimelockMs = 24L * 60 * 60 * 1000", "24 hours config timelock in Runtime.Time milliseconds");
 
         // Verify both verifier and hook use the same timelock constant
-        Assert.AreEqual(3, CountOccurrences(accountsSource, "ConfigUpdateTimelockSeconds"),
-            "ConfigUpdateTimelockSeconds should be used three times in accounts source (verifier + hook + module call replay)");
+        Assert.AreEqual(3, CountOccurrences(accountsSource, "ConfigUpdateTimelockMs"),
+            "ConfigUpdateTimelockMs should be used three times in accounts source (verifier + hook + module call replay)");
 
-        Assert.AreEqual(1, CountOccurrences(internalSource, "ConfigUpdateTimelockSeconds"),
-            "ConfigUpdateTimelockSeconds should be defined once in internal source");
+        Assert.AreEqual(1, CountOccurrences(internalSource, "ConfigUpdateTimelockMs"),
+            "ConfigUpdateTimelockMs should be defined once in internal source");
     }
 
     // ========================================================================
@@ -497,30 +502,44 @@ public class SourceInvariantTests
         var rng = Rng();
         var paymasterSource = ReadPaymaster("Paymaster.cs");
 
-        StringAssert.Contains(paymasterSource, "OneDaySeconds = 86400");
+        StringAssert.Contains(paymasterSource, "OneDayMs = 24L * 60 * 60 * 1000");
 
         // Randomized invariant check: verify daily window arithmetic
         for (int i = 0; i < Iterations; i++)
         {
-            BigInteger currentTime = rng.Next(1_000_000, int.MaxValue);
-            BigInteger lastReset = currentTime - rng.Next(0, 200_000);
-            BigInteger oneDaySeconds = 86400;
+            BigInteger currentTime = rng.Next(100_000_000, int.MaxValue);
+            BigInteger lastReset = currentTime - rng.Next(0, 200_000_000);
+            BigInteger oneDayMs = 24L * 60 * 60 * 1000;
 
-            bool newDay = currentTime >= lastReset + oneDaySeconds;
+            bool newDay = currentTime >= lastReset + oneDayMs;
 
             if (newDay)
             {
                 // Spent should reset to 0
                 BigInteger elapsed = currentTime - lastReset;
-                Assert.IsTrue(elapsed >= oneDaySeconds, "New day: elapsed must be >= 86400");
+                Assert.IsTrue(elapsed >= oneDayMs, "New day: elapsed must be >= 24h in milliseconds");
             }
             else
             {
                 // Spent carries over
-                BigInteger remaining = (lastReset + oneDaySeconds) - currentTime;
+                BigInteger remaining = (lastReset + oneDayMs) - currentTime;
                 Assert.IsTrue(remaining > 0, "Same day: remaining must be > 0");
             }
         }
+    }
+
+    [TestMethod, Timeout(120_000)]
+    public void SourceInvariant_DailyLimitHook_UsesRuntimeMilliseconds()
+    {
+        var hookSource = ReadHook("DailyLimitHook.cs");
+
+        StringAssert.Contains(hookSource, "OneDayMs = 24L * 60 * 60 * 1000", "Daily limit windows use Runtime.Time milliseconds");
+        Assert.IsFalse(hookSource.Contains("OneDaySeconds", StringComparison.Ordinal), "Daily limit hook must not compare second constants directly to Runtime.Time");
+        StringAssert.Contains(hookSource, "GetRollingWindowRecordCount(accountId, targetContract, currentTime) < MaxHistorySize", "PreExecute refuses unrecordable rolling-window transfers");
+        StringAssert.Contains(hookSource, "GetRollingWindowRecordCount(accountId, token, timestamp) < MaxHistorySize", "PostExecute refuses to evict live rolling-window spend records");
+        StringAssert.Contains(hookSource, "Daily limit history full", "Rolling-window storage cap has an explicit failure mode");
+        Assert.IsFalse(hookSource.Contains("EnforceMaxHistorySize", StringComparison.Ordinal), "Rolling-window cap must not delete arbitrary in-window spend records");
+        Assert.IsFalse(hookSource.Contains("count - MaxHistorySize", StringComparison.Ordinal), "Rolling-window cap must not trim live records by count");
     }
 
     // ========================================================================

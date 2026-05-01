@@ -115,6 +115,7 @@ test('buildStagedTransactionBody wraps client calls through executeUnifiedByAddr
 });
 
 test('buildStagedTransactionBody prefers executeUserOp when accountIdHash is present', () => {
+  const before = Date.now();
   const body = buildStagedTransactionBody({
     aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
     account: {
@@ -134,6 +135,9 @@ test('buildStagedTransactionBody prefers executeUserOp when accountIdHash is pre
   assert.equal(body.v3Invocation.operation, 'executeUserOp');
   assert.equal(body.legacyInvocation.operation, 'executeUnifiedByAddress');
   assert.equal(body.accountIdHash, 'f951cd3eb5196dacde99b339c5dcca37ac38cc22');
+  const deadline = Number(body.v3Invocation.args[1].value[4].value);
+  assert.ok(deadline >= before + 3_599_000, 'V3 fallback deadline should use Runtime.Time milliseconds');
+  assert.ok(deadline <= Date.now() + 3_601_000, 'V3 fallback deadline should be one hour from now');
 });
 
 test('buildDraftApprovalTypedData creates an EVM-friendly approval payload from an immutable draft', () => {
