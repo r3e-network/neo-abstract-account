@@ -69,7 +69,7 @@ function buildExecuteUserOpInvocation({ aaContractHash = '', account = {}, opera
     method: operationBody?.method,
     methodArgs: Array.isArray(operationBody?.args) ? operationBody.args : [],
     nonce,
-    deadline: String(deadline || Math.floor(Date.now() / 1000) + 3600),
+    deadline: String(deadline || Date.now() + 3600_000),
     signatureHex: '',
   });
   if (!invocation) return null;

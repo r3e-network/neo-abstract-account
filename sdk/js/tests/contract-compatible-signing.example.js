@@ -26,7 +26,7 @@ async function signUserOperation() {
     method: 'transfer',
     argsHash: '0xCOMPUTED_ARGS_HASH_64_CHARS',
     nonce: 0n,
-    deadline: BigInt(Math.floor(Date.now() / 1000) + 3600), // 1 hour from now
+    deadline: BigInt(Date.now() + 3600_000), // 1 hour from now
   };
 
   // 3. Compute the struct hash (matches contract's BuildMetaTxStructHash)

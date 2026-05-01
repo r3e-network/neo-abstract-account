@@ -8,7 +8,8 @@ const { EC, createError } = require('./errors');
 const { validateHash160, validateEIP712Fields, sanitizeHex } = require('./validation');
 
 /**
- * Default deadline buffer (seconds) from current time
+ * Default deadline buffer (seconds) from current time.
+ * Neo Runtime.Time is expressed in milliseconds, so generated deadlines are ms.
  */
 const DEFAULT_DEADLINE_BUFFER = 3600; // 1 hour
 
@@ -50,7 +51,7 @@ class UserOperationBuilder {
     /** @type {string|number} The nonce value */
     this.nonce = options.nonce ?? DEFAULT_NONCE;
 
-    /** @type {string|number} The deadline timestamp */
+    /** @type {string|number} The deadline in Neo Runtime.Time milliseconds */
     this.deadline = options.deadline || '';
 
     /** @type {string} The verifier contract hash for EIP-712 */
@@ -157,8 +158,8 @@ class UserOperationBuilder {
   }
 
   /**
-   * Sets the deadline timestamp.
-   * @param {string|number} deadline - Unix timestamp in seconds
+   * Sets the deadline.
+   * @param {string|number} deadline - Deadline in Neo Runtime.Time milliseconds
    * @returns {UserOperationBuilder} This builder for chaining
    */
   setDeadline(deadline) {
@@ -172,8 +173,7 @@ class UserOperationBuilder {
    * @returns {UserOperationBuilder} This builder for chaining
    */
   autoDeadline(bufferSeconds = DEFAULT_DEADLINE_BUFFER) {
-    const now = Math.floor(Date.now() / 1000);
-    this.deadline = (now + bufferSeconds).toString();
+    this.deadline = (Date.now() + (Number(bufferSeconds) * 1000)).toString();
     return this;
   }
 

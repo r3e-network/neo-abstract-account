@@ -477,13 +477,9 @@ ERC-4337 typically uses full 256-bit nonce space for random/salt modes.
 **Affected File:** `frontend/api/rateLimiter.js:4-90`
 
 **Issue:**
-The rate limiter uses `clientIp` based on `x-forwarded-for` header:
+The current rate limiter resolves client identity from the socket address by default. Proxy headers are only used when proxy trust is enabled and a single trusted header name is configured.
 
-```javascript
-const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-```
-
-Sophisticated attackers can rotate IPs or spoof headers to bypass limits. Redis backend helps but IP-based limiting is inherently bypassable.
+Sophisticated attackers can still rotate IPs to bypass limits. Redis backend helps but IP-based limiting is inherently bypassable.
 
 **Risk:**
 Attackers with access to botnet or IP rotation services can exceed rate limits. This is a limitation of IP-based rate limiting, not a vulnerability per se.

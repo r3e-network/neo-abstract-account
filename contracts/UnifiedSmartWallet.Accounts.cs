@@ -158,7 +158,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(data != null, "No pending hook update");
 
             PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
-            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
+            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockMs, "Timelock not elapsed");
 
             AccountState state = GetAccountState(accountId);
             UInt160 previousHook = state.HookId;
@@ -256,7 +256,7 @@ namespace AbstractAccount
             ExecutionEngine.Assert(data != null, "No pending verifier update");
 
             PendingConfigUpdate pending = (PendingConfigUpdate)StdLib.Deserialize(data!);
-            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
+            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockMs, "Timelock not elapsed");
 
             AccountState state = GetAccountState(accountId);
             UInt160 previousVerifier = state.Verifier;
@@ -367,7 +367,7 @@ namespace AbstractAccount
                 return false;
             }
 
-            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockSeconds, "Timelock not elapsed");
+            ExecutionEngine.Assert(Runtime.Time >= pending.InitiatedAt + ConfigUpdateTimelockMs, "Timelock not elapsed");
             Storage.Delete(Storage.CurrentContext, pendingKey);
             return true;
         }

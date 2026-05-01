@@ -3,7 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { buildV3UserOp, buildEIP712PayloadForWeb3AuthVerifier } = require('../src/v3/UserOp');
-const { AbstractAccountClient, buildV3UserOperationTypedData } = require('../src/index');
+const {
+  AbstractAccountClient,
+  buildV3UserOperationTypedData,
+  createUserOpBuilder,
+  simulateUserOperation,
+} = require('../src/index');
+const { checkEscapeStatus } = require('../src/simulation');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
@@ -56,6 +62,56 @@ test('buildV3UserOperationTypedData constructs correct domain and message', () =
   assert.equal(payload.domain.name, 'Neo N3 Abstract Account');
   assert.equal(payload.domain.chainId, 894710606);
   assert.equal(payload.message.method, 'transfer');
+});
+
+test('UserOperation helpers use Runtime.Time millisecond deadlines', async () => {
+  const before = Date.now();
+  const op = createUserOpBuilder()
+    .setTarget('0x1234567890123456789012345678901234567890')
+    .setMethod('transfer')
+    .setArgs([])
+    .setNonce(0)
+    .autoDeadline(3600)
+    .build();
+  const deadline = Number(op.Deadline);
+  assert.ok(deadline >= before + 3_599_000, 'autoDeadline should add seconds as milliseconds');
+  assert.ok(deadline <= Date.now() + 3_601_000, 'autoDeadline should stay close to one hour from now');
+
+  const secondsDeadline = Math.floor(Date.now() / 1000) + 3600;
+  const result = await simulateUserOperation({
+    async getUserOpValidationPreview() {
+      return {
+        deadlineValid: true,
+        nonceAcceptable: true,
+        hasVerifier: true,
+        verifier: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+        hook: '',
+      };
+    },
+  }, {
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    targetContract: '49c095ce04d38642e39155f5481615c58227a498',
+    method: 'transfer',
+    args: [],
+    nonce: 0,
+    deadline: secondsDeadline,
+  });
+  assert.equal(result.checks.deadlineValid, false);
+  assert.match(result.errors.join('\n'), /Deadline has passed/);
+});
+
+test('escape status compares millisecond trigger time with second timelock', async () => {
+  const result = await checkEscapeStatus({
+    async getAccountState() {
+      return {
+        escapeActive: true,
+        escapeTriggeredAt: String(Date.now() - 3600_000),
+        escapeTimelock: '1800',
+      };
+    },
+  }, 'account');
+
+  assert.equal(result.hasTimelockExpired, true);
 });
 
 test('deriveRegistrationAccountIdHash matches the frontend V3 registration vector', () => {

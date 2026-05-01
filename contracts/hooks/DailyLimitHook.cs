@@ -27,7 +27,7 @@ namespace AbstractAccount.Hooks
         private static readonly byte[] Prefix_LastReset = new byte[] { 0x03 };
         private static readonly byte[] Prefix_TransactionHistory = new byte[] { 0x04 };
         private static readonly byte[] Prefix_TransactionCounter = new byte[] { 0x05 };
-        private const int OneDaySeconds = 24 * 60 * 60;
+        private static readonly BigInteger OneDayMs = 24L * 60 * 60 * 1000;
         private const int MaxHistorySize = 50; // Maximum historical transactions to track for rolling window
 
         public static void _deploy(object data, bool update) => HookAuthority.Initialize(data, update);
@@ -128,6 +128,10 @@ namespace AbstractAccount.Hooks
             // Add overflow check to prevent integer overflow attacks
             ExecutionEngine.Assert(newTotal >= spentToday, "Integer overflow in daily limit check");
             ExecutionEngine.Assert(newTotal <= config.MaxAmount, "Daily limit exceeded");
+            if (config.UseRollingWindow)
+            {
+                ExecutionEngine.Assert(GetRollingWindowRecordCount(accountId, targetContract, currentTime) < MaxHistorySize, "Daily limit history full");
+            }
         }
 
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
@@ -216,7 +220,7 @@ namespace AbstractAccount.Hooks
 
             ByteString? lastResetData = Storage.Get(Storage.CurrentContext, resetKey);
             BigInteger lastReset = lastResetData == null ? 0 : (BigInteger)lastResetData;
-            if (currentTime >= lastReset + OneDaySeconds) return 0;
+            if (currentTime >= lastReset + OneDayMs) return 0;
 
             ByteString? spentData = Storage.Get(Storage.CurrentContext, spentKey);
             return spentData == null ? 0 : (BigInteger)spentData;
@@ -235,7 +239,7 @@ namespace AbstractAccount.Hooks
         {
             byte[] historyPrefix = Helper.Concat(Helper.Concat(Prefix_TransactionHistory, (byte[])accountId), (byte[])token);
             BigInteger total = 0;
-            BigInteger cutoffTime = currentTime - OneDaySeconds;
+            BigInteger cutoffTime = currentTime - OneDayMs;
 
             Iterator iterator = Storage.Find(Storage.CurrentContext, historyPrefix, FindOptions.ValuesOnly);
             while (iterator.Next())
@@ -253,9 +257,32 @@ namespace AbstractAccount.Hooks
             return total;
         }
 
+        private static int GetRollingWindowRecordCount(UInt160 accountId, UInt160 token, BigInteger currentTime)
+        {
+            byte[] historyPrefix = Helper.Concat(Helper.Concat(Prefix_TransactionHistory, (byte[])accountId), (byte[])token);
+            BigInteger cutoffTime = currentTime - OneDayMs;
+            int count = 0;
+
+            Iterator iterator = Storage.Find(Storage.CurrentContext, historyPrefix, FindOptions.ValuesOnly);
+            while (iterator.Next())
+            {
+                ByteString recordData = (ByteString)iterator.Value;
+                TransactionRecord record = (TransactionRecord)StdLib.Deserialize(recordData);
+                if (record.Timestamp >= cutoffTime)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
         private static void RecordTransaction(UInt160 accountId, UInt160 token, BigInteger timestamp, BigInteger amount)
         {
             byte[] historyPrefix = Helper.Concat(Helper.Concat(Prefix_TransactionHistory, (byte[])accountId), (byte[])token);
+
+            // Remove expired records first, then refuse to discard live spend records.
+            PruneOldRecords(historyPrefix, timestamp - OneDayMs);
+            ExecutionEngine.Assert(GetRollingWindowRecordCount(accountId, token, timestamp) < MaxHistorySize, "Daily limit history full");
 
             // Get and increment sub-counter to handle multiple transactions in the same block
             byte[] counterKey = Helper.Concat(Prefix_TransactionCounter, (byte[])accountId);
@@ -269,35 +296,6 @@ namespace AbstractAccount.Hooks
 
             TransactionRecord record = new TransactionRecord { Timestamp = timestamp, Amount = amount };
             Storage.Put(Storage.CurrentContext, txKey, StdLib.Serialize(record));
-
-            // Enforce maximum history size before pruning
-            EnforceMaxHistorySize(historyPrefix, timestamp);
-
-            // Prune old records to prevent unbounded storage growth
-            PruneOldRecords(historyPrefix, timestamp - OneDaySeconds);
-        }
-
-        private static void EnforceMaxHistorySize(byte[] historyPrefix, BigInteger currentTimestamp)
-        {
-            int count = 0;
-            Iterator iterator = Storage.Find(Storage.CurrentContext, historyPrefix, FindOptions.KeysOnly);
-            while (iterator.Next())
-            {
-                count++;
-            }
-
-            // If we exceed max size, delete oldest records first
-            if (count > MaxHistorySize)
-            {
-                iterator = Storage.Find(Storage.CurrentContext, historyPrefix, FindOptions.KeysOnly);
-                int toDelete = count - MaxHistorySize;
-                int deleted = 0;
-                while (iterator.Next() && deleted < toDelete)
-                {
-                    Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
-                    deleted++;
-                }
-            }
         }
 
         private static void PruneOldRecords(byte[] historyPrefix, BigInteger cutoffTime)

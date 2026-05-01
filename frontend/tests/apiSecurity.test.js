@@ -2,9 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
-import relayHandler, { resolveRelayExecutionConfig } from '../api/relay-transaction.js';
+import relayHandler, * as relayModule from '../api/relay-transaction.js';
 import draftOperatorHandler from '../api/draft-operator.js';
+import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from '../api/rateLimiter.js';
+
+const { resolveRelayExecutionConfig } = relayModule;
 
 function createResponse() {
   return {
@@ -64,6 +68,38 @@ test('relay API does not rate limit the first request for a fresh client IP', as
   assert.notEqual(response.payload?.error, 'rate_limit_exceeded');
 });
 
+test('relay API reports missing client identity distinctly', async () => {
+  const snapshot = {
+    AA_TRUST_PROXY_HEADERS: process.env.AA_TRUST_PROXY_HEADERS,
+    TRUST_PROXY_HEADERS: process.env.TRUST_PROXY_HEADERS,
+    AA_TRUST_PROXY_HEADER: process.env.AA_TRUST_PROXY_HEADER,
+    TRUST_PROXY_HEADER: process.env.TRUST_PROXY_HEADER,
+  };
+
+  delete process.env.AA_TRUST_PROXY_HEADERS;
+  delete process.env.TRUST_PROXY_HEADERS;
+  delete process.env.AA_TRUST_PROXY_HEADER;
+  delete process.env.TRUST_PROXY_HEADER;
+
+  try {
+    const response = createResponse();
+    await relayHandler({
+      method: 'POST',
+      headers: {},
+      body: { request_id: `missing-client-${Date.now()}` },
+    }, response);
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.payload?.error, 'client_identity_unavailable');
+    assert.equal(response.headers['retry-after'], undefined);
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test('draft operator API returns Retry-After header when rate limited', async () => {
   const ip = `operator-test-${Date.now()}`;
   for (let i = 0; i < 10; i += 1) {
@@ -103,6 +139,52 @@ test('draft operator API does not rate limit the first request for a fresh clien
   assert.notEqual(response.payload?.error, 'rate_limit_exceeded');
 });
 
+test('relay API rate limit ignores spoofed forwarded-for by default', async () => {
+  const socketIp = `relay-socket-${Date.now()}`;
+  for (let i = 0; i < 10; i += 1) {
+    await relayHandler({
+      method: 'POST',
+      headers: { 'x-forwarded-for': `spoofed-relay-${i}` },
+      socket: { remoteAddress: socketIp },
+      body: {},
+    }, createResponse());
+  }
+
+  const response = createResponse();
+  await relayHandler({
+    method: 'POST',
+    headers: { 'x-forwarded-for': 'spoofed-relay-final' },
+    socket: { remoteAddress: socketIp },
+    body: {},
+  }, response);
+
+  assert.equal(response.statusCode, 429);
+  assert.equal(response.payload?.error, 'rate_limit_exceeded');
+});
+
+test('draft operator API rate limit ignores spoofed forwarded-for by default', async () => {
+  const socketIp = `operator-socket-${Date.now()}`;
+  for (let i = 0; i < 10; i += 1) {
+    await draftOperatorHandler({
+      method: 'POST',
+      headers: { 'x-forwarded-for': `spoofed-operator-${i}` },
+      socket: { remoteAddress: socketIp },
+      body: {},
+    }, createResponse());
+  }
+
+  const response = createResponse();
+  await draftOperatorHandler({
+    method: 'POST',
+    headers: { 'x-forwarded-for': 'spoofed-operator-final' },
+    socket: { remoteAddress: socketIp },
+    body: {},
+  }, response);
+
+  assert.equal(response.statusCode, 429);
+  assert.equal(response.payload?.error, 'rate_limit_exceeded');
+});
+
 
 test('draft operator claim validates the public key and uses compare-and-set semantics', () => {
   const source = fs.readFileSync(path.resolve('api/draft-operator.js'), 'utf8');
@@ -139,6 +221,261 @@ test('relay API binds paymaster requests to dapp and operation hashes', () => {
   assert.match(source, /callRemotePaymasterAuthorize/);
   assert.match(source, /x-phala-token/);
   assert.match(source, /resolveMorpheusOracleCvmId/);
+});
+
+test('paymaster authorization derives account and operation hash from the sanitized invocation', () => {
+  assert.equal(typeof relayModule.buildPaymasterRequest, 'function');
+
+  const accountId = `0x${'aa'.repeat(20)}`;
+  const targetContract = `0x${'bb'.repeat(20)}`;
+  const metaInvocation = {
+    scriptHash: '11'.repeat(20),
+    operation: 'executeUserOp',
+    args: [
+      { type: 'Hash160', value: accountId },
+      {
+        type: 'Struct',
+        value: [
+          { type: 'Hash160', value: targetContract },
+          { type: 'String', value: 'transfer' },
+        ],
+      },
+    ],
+  };
+
+  const request = relayModule.buildPaymasterRequest({
+    metaInvocation,
+    network: 'testnet',
+    paymaster: {
+      account_id: `0x${'cc'.repeat(20)}`,
+      operation_hash: `0x${'dd'.repeat(32)}`,
+      dapp_id: 'client-dapp',
+    },
+  });
+
+  assert.equal(request.account_id, accountId);
+  assert.equal(request.userop_target_contract, targetContract);
+  assert.equal(request.operation_hash, `0x${createHash('sha256').update(JSON.stringify(metaInvocation)).digest('hex')}`);
+  assert.notEqual(request.account_id, `0x${'cc'.repeat(20)}`);
+  assert.notEqual(request.operation_hash, `0x${'dd'.repeat(32)}`);
+});
+
+test('paymaster authorization derives downstream fields for legacy wrapper invocations', () => {
+  const accountId = `0x${'aa'.repeat(20)}`;
+  const targetContract = `0x${'bb'.repeat(20)}`;
+  const metaInvocation = {
+    scriptHash: '11'.repeat(20),
+    operation: 'executeUnifiedByAddress',
+    args: [
+      { type: 'Hash160', value: accountId },
+      { type: 'Hash160', value: targetContract },
+      { type: 'String', value: 'transfer' },
+      { type: 'Array', value: [] },
+      { type: 'Array', value: [{ type: 'ByteArray', value: `0x04${'11'.repeat(64)}` }] },
+      { type: 'ByteArray', value: `0x${'ab'.repeat(32)}` },
+      { type: 'Integer', value: '7' },
+      { type: 'Integer', value: String(Date.now() + 3600_000) },
+      { type: 'Array', value: [{ type: 'ByteArray', value: `0x${'12'.repeat(64)}` }] },
+    ],
+  };
+
+  const request = relayModule.buildPaymasterRequest({
+    metaInvocation,
+    network: 'testnet',
+    paymaster: {
+      account_id: `0x${'cc'.repeat(20)}`,
+      dapp_id: 'client-dapp',
+    },
+  });
+
+  assert.equal(request.account_id, accountId);
+  assert.equal(request.userop_target_contract, targetContract);
+  assert.equal(request.userop_method, 'transfer');
+});
+
+test('paymaster authorization derives downstream fields for homogeneous batch user operations', () => {
+  const accountId = `0x${'aa'.repeat(20)}`;
+  const targetContract = `0x${'bb'.repeat(20)}`;
+  const userOp = {
+    type: 'Struct',
+    value: [
+      { type: 'Hash160', value: targetContract },
+      { type: 'String', value: 'transfer' },
+      { type: 'Array', value: [] },
+      { type: 'Integer', value: '1' },
+      { type: 'Integer', value: String(Date.now() + 3600_000) },
+      { type: 'ByteArray', value: '0x' },
+    ],
+  };
+  const metaInvocation = {
+    scriptHash: '11'.repeat(20),
+    operation: 'executeUserOps',
+    args: [
+      { type: 'Hash160', value: accountId },
+      { type: 'Array', value: [userOp, JSON.parse(JSON.stringify(userOp))] },
+    ],
+  };
+
+  const request = relayModule.buildPaymasterRequest({
+    metaInvocation,
+    network: 'testnet',
+    paymaster: { dapp_id: 'client-dapp' },
+  });
+
+  assert.equal(request.account_id, accountId);
+  assert.equal(request.userop_target_contract, targetContract);
+  assert.equal(request.userop_method, 'transfer');
+  assert.equal(request.userop_batch_size, 2);
+});
+
+test('paymaster authorization rejects malformed account or target hashes', () => {
+  assert.throws(() => relayModule.buildPaymasterRequest({
+    metaInvocation: {
+      scriptHash: '11'.repeat(20),
+      operation: 'executeUserOp',
+      args: [
+        { type: 'Hash160', value: 'not-a-hash' },
+        {
+          type: 'Struct',
+          value: [
+            { type: 'Hash160', value: `0x${'bb'.repeat(20)}` },
+            { type: 'String', value: 'transfer' },
+          ],
+        },
+      ],
+    },
+    network: 'testnet',
+    paymaster: {},
+  }), /requires a supported account-bound operation/);
+
+  assert.throws(() => relayModule.buildPaymasterRequest({
+    metaInvocation: {
+      scriptHash: '11'.repeat(20),
+      operation: 'executeUserOp',
+      args: [
+        { type: 'Hash160', value: `0x${'aa'.repeat(20)}` },
+        {
+          type: 'Struct',
+          value: [
+            { type: 'Hash160', value: '1234' },
+            { type: 'String', value: 'transfer' },
+          ],
+        },
+      ],
+    },
+    network: 'testnet',
+    paymaster: {},
+  }), /requires a supported account-bound operation/);
+});
+
+test('rate limiter trusts only the configured proxy header', () => {
+  const snapshot = {
+    AA_TRUST_PROXY_HEADERS: process.env.AA_TRUST_PROXY_HEADERS,
+    TRUST_PROXY_HEADERS: process.env.TRUST_PROXY_HEADERS,
+    AA_TRUST_PROXY_HEADER: process.env.AA_TRUST_PROXY_HEADER,
+    TRUST_PROXY_HEADER: process.env.TRUST_PROXY_HEADER,
+  };
+
+  process.env.AA_TRUST_PROXY_HEADERS = 'true';
+  process.env.AA_TRUST_PROXY_HEADER = 'cf-connecting-ip';
+  delete process.env.TRUST_PROXY_HEADERS;
+  delete process.env.TRUST_PROXY_HEADER;
+
+  try {
+    assert.equal(
+      resolveClientIp({
+        headers: {
+          'x-vercel-forwarded-for': 'spoofed-vercel',
+          'x-forwarded-for': 'spoofed-client',
+          'x-real-ip': 'spoofed-real-ip',
+          'cf-connecting-ip': 'trusted-client',
+        },
+        socket: { remoteAddress: 'edge-proxy' },
+      }),
+      'trusted-client',
+    );
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('rate limiter refuses generic forwarded-for as a trusted proxy header', () => {
+  const snapshot = {
+    AA_TRUST_PROXY_HEADERS: process.env.AA_TRUST_PROXY_HEADERS,
+    TRUST_PROXY_HEADERS: process.env.TRUST_PROXY_HEADERS,
+    AA_TRUST_PROXY_HEADER: process.env.AA_TRUST_PROXY_HEADER,
+    TRUST_PROXY_HEADER: process.env.TRUST_PROXY_HEADER,
+  };
+
+  process.env.AA_TRUST_PROXY_HEADERS = 'true';
+  process.env.AA_TRUST_PROXY_HEADER = 'x-forwarded-for';
+  delete process.env.TRUST_PROXY_HEADERS;
+  delete process.env.TRUST_PROXY_HEADER;
+
+  try {
+    assert.equal(
+      resolveClientIp({
+        headers: { 'x-forwarded-for': 'spoofed-client' },
+        socket: { remoteAddress: 'edge-proxy' },
+      }),
+      'edge-proxy',
+    );
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('rate limiter requires a socket or explicitly configured trusted proxy header', () => {
+  const snapshot = {
+    AA_TRUST_PROXY_HEADERS: process.env.AA_TRUST_PROXY_HEADERS,
+    TRUST_PROXY_HEADERS: process.env.TRUST_PROXY_HEADERS,
+    AA_TRUST_PROXY_HEADER: process.env.AA_TRUST_PROXY_HEADER,
+    TRUST_PROXY_HEADER: process.env.TRUST_PROXY_HEADER,
+  };
+
+  delete process.env.AA_TRUST_PROXY_HEADERS;
+  delete process.env.TRUST_PROXY_HEADERS;
+  delete process.env.AA_TRUST_PROXY_HEADER;
+  delete process.env.TRUST_PROXY_HEADER;
+
+  try {
+    assert.equal(
+      resolveClientIp({
+        headers: { 'x-forwarded-for': 'spoofed-client' },
+      }),
+      '',
+    );
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('rate limiter rejects missing client identity instead of using a shared bucket', async () => {
+  const rate = await checkRateLimit('');
+
+  assert.equal(rate.allowed, false);
+  assert.equal(rate.error, 'client_identity_unavailable');
+});
+
+test('rate limiter formats missing client identity without retry-after', () => {
+  const failure = resolveRateLimitFailure({
+    allowed: false,
+    error: 'client_identity_unavailable',
+    retryAfter: 60,
+  });
+
+  assert.equal(failure.statusCode, 400);
+  assert.equal(failure.error, 'client_identity_unavailable');
+  assert.equal(failure.retryAfter, 0);
 });
 
 test('relay execution config prefers network-scoped server settings when request network is testnet', () => {

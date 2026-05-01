@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { checkRateLimit, sanitizeError } from './rateLimiter.js';
+import { checkRateLimit, resolveClientIp, resolveRateLimitFailure, sanitizeError } from './rateLimiter.js';
 
 function getServiceSupabaseClient() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
@@ -46,11 +46,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  const clientIp = resolveClientIp(req);
   const rate = await checkRateLimit(clientIp);
   if (!rate.allowed) {
-    res.setHeader('Retry-After', String(rate.retryAfter || 60));
-    return res.status(429).json({ error: 'Rate limit exceeded' });
+    const failure = resolveRateLimitFailure(rate);
+    if (failure.retryAfter) res.setHeader('Retry-After', String(failure.retryAfter));
+    return res.status(failure.statusCode).json({
+      error: failure.error === 'client_identity_unavailable' ? failure.error : 'Rate limit exceeded',
+    });
   }
 
   const supabase = getServiceSupabaseClient();

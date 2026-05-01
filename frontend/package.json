@@ -17,7 +17,7 @@
     "build": "vite build",
     "test": "node --test tests/*.test.js",
     "preview": "vite preview",
-    "test:e2e:install": "playwright install chromium",
+    "test:e2e:install": "playwright install --with-deps chromium",
     "test:e2e:browser": "npm run build && node tests/browserSmoke.e2e.mjs"
   },
   "dependencies": {

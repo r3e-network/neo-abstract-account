@@ -4,7 +4,7 @@ import { DEFAULT_ABSTRACT_ACCOUNT_HASH, DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, r
 import { sanitizeHex } from '../src/utils/hex.js';
 import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvocationForRelay } from './relayHelpers.js';
 import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
-import { checkRateLimit, sanitizeError } from './rateLimiter.js';
+import { checkRateLimit, resolveClientIp, resolveRateLimitFailure, sanitizeError } from './rateLimiter.js';
 import { resolveMorpheusOracleCvmId, resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeToken, resolveNetwork } from './morpheus-base.js';
 import { callRemotePaymasterAuthorize, resolvePhalaCliCommand } from './phala-remote.js';
 
@@ -44,7 +44,7 @@ function isAuthFailureStatus(status) {
 
 function normalizeHash(value) {
   const hex = sanitizeHex(value || '');
-  return hex ? `0x${hex}` : '';
+  return /^[0-9a-f]{40}$/.test(hex) ? `0x${hex}` : '';
 }
 
 function shouldIncludeRawRelayErrors() {
@@ -56,7 +56,7 @@ function shouldIncludeRawRelayErrors() {
 }
 
 function sha256Hex(value) {
-  return createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
+  return createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value ?? null)).digest('hex');
 }
 
 function relayFingerprint({ payload = {}, normalized = {}, simulate = false, paymaster = null } = {}) {
@@ -170,34 +170,81 @@ function resolvePaymasterConfig(network) {
   };
 }
 
-function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimatedGasUnits = 0, network }) {
-  const firstArg = Array.isArray(metaInvocation?.args) ? metaInvocation.args[0] : null;
-  const secondArg = Array.isArray(metaInvocation?.args) ? metaInvocation.args[1] : null;
-  const accountId = trimString(
-    paymaster.account_id
-      || paymaster.accountId
-      || firstArg?.value
-      || ''
-  );
-  const downstreamTarget = secondArg?.type === 'Struct'
-    ? trimString(secondArg?.value?.[0]?.value || '')
-    : '';
-  const downstreamMethod = secondArg?.type === 'Struct'
-    ? trimString(secondArg?.value?.[1]?.value || '')
-    : '';
+function paramValue(param) {
+  return trimString(param?.value || '');
+}
 
+function deriveUserOpFields(userOpParam) {
+  const fields = userOpParam?.type === 'Struct' && Array.isArray(userOpParam?.value)
+    ? userOpParam.value
+    : [];
   return {
+    downstreamTarget: fields[0]?.value ? normalizeHash(fields[0].value) : '',
+    downstreamMethod: paramValue(fields[1]),
+  };
+}
+
+function derivePaymasterInvocationFields(metaInvocation) {
+  const args = Array.isArray(metaInvocation?.args) ? metaInvocation.args : [];
+  const operation = trimString(metaInvocation?.operation || '');
+  if (operation === 'executeUserOp') {
+    const userOp = deriveUserOpFields(args[1]);
+    return {
+      accountId: args[0]?.value ? normalizeHash(args[0].value) : '',
+      downstreamTarget: userOp.downstreamTarget,
+      downstreamMethod: userOp.downstreamMethod,
+    };
+  }
+  if (operation === 'executeUserOps') {
+    const userOps = args[1]?.type === 'Array' && Array.isArray(args[1]?.value)
+      ? args[1].value.map(deriveUserOpFields)
+      : [];
+    const first = userOps[0] || {};
+    const isHomogeneous = userOps.length > 0
+      && first.downstreamTarget
+      && first.downstreamMethod
+      && userOps.every((item) => item.downstreamTarget === first.downstreamTarget && item.downstreamMethod === first.downstreamMethod);
+    return {
+      accountId: args[0]?.value ? normalizeHash(args[0].value) : '',
+      downstreamTarget: isHomogeneous ? first.downstreamTarget : '',
+      downstreamMethod: isHomogeneous ? first.downstreamMethod : '',
+      batchSize: userOps.length,
+    };
+  }
+  if (operation === 'executeUnified' || operation === 'executeUnifiedByAddress') {
+    return {
+      accountId: args[0]?.value ? normalizeHash(args[0].value) : '',
+      downstreamTarget: args[1]?.value ? normalizeHash(args[1].value) : '',
+      downstreamMethod: paramValue(args[2]),
+    };
+  }
+  return {
+    accountId: '',
+    downstreamTarget: '',
+    downstreamMethod: '',
+  };
+}
+
+export function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimatedGasUnits = 0, network }) {
+  const { accountId, downstreamTarget, downstreamMethod, batchSize = 0 } = derivePaymasterInvocationFields(metaInvocation);
+  if (!accountId || !downstreamTarget || !downstreamMethod) {
+    throw new Error('Paymaster authorization requires a supported account-bound operation with downstream target and method.');
+  }
+
+  const request = {
     network,
     target_chain: 'neo_n3',
     account_id: accountId,
     dapp_id: trimString(paymaster.dapp_id || paymaster.dappId || ''),
     target_contract: `0x${sanitizeHex(metaInvocation?.scriptHash || '')}`,
     method: trimString(metaInvocation?.operation || ''),
-    userop_target_contract: downstreamTarget ? normalizeHash(downstreamTarget) : '',
+    userop_target_contract: downstreamTarget,
     userop_method: downstreamMethod,
     estimated_gas_units: Number(paymaster.estimated_gas_units || paymaster.estimatedGasUnits || estimatedGasUnits || 0),
-    operation_hash: trimString(paymaster.operation_hash || paymaster.operationHash || `0x${sha256Hex(metaInvocation)}`),
+    operation_hash: `0x${sha256Hex(metaInvocation)}`,
   };
+  if (batchSize > 0) request.userop_batch_size = batchSize;
+  return request;
 }
 
 async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estimatedGasUnits = 0, network = 'mainnet' }) {
@@ -395,15 +442,16 @@ export default async function handler(req, res) {
     return sendJson(res, 405, { error: 'method_not_allowed' }, requestId);
   }
 
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const clientIp = resolveClientIp(req);
   const rateLimit = await checkRateLimit(clientIp);
   
   if (!rateLimit.allowed) {
-    res.setHeader?.('Retry-After', String(rateLimit.retryAfter));
-    await failDurableRequest(durable.context, { statusCode: 429, error: 'rate_limit_exceeded', phase: 'rate_limit' });
-    return sendJson(res, 429, { 
-      error: 'rate_limit_exceeded', 
-      retryAfter: rateLimit.retryAfter 
+    const failure = resolveRateLimitFailure(rateLimit);
+    if (failure.retryAfter) res.setHeader?.('Retry-After', String(failure.retryAfter));
+    await failDurableRequest(durable.context, { statusCode: failure.statusCode, error: failure.error, phase: 'rate_limit' });
+    return sendJson(res, failure.statusCode, {
+      error: failure.error,
+      ...(failure.retryAfter ? { retryAfter: failure.retryAfter } : {}),
     }, requestId);
   }
 

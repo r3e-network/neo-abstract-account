@@ -46,7 +46,7 @@ function buildEIP712PayloadForWeb3AuthVerifier({ chainId, verifierHash, accountI
  * @param {string} options.method - Method name
  * @param {Array} options.args - Method arguments
  * @param {string|number} options.nonce - Nonce value
- * @param {string|number} options.deadline - Deadline timestamp
+ * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
  * @returns {Object} UserOperation object
  */
 function buildV3UserOp({ targetContract, method, args, nonce, deadline }) {
