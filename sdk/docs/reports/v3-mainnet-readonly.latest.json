@@ -1,7 +1,7 @@
 {
-  "createdAt": "2026-04-25T11:18:04.340Z",
+  "createdAt": "2026-05-03T23:59:25.355Z",
   "network": "mainnet",
-  "rpcUrl": "https://mainnet1.neo.coz.io:443",
+  "rpcUrl": "https://api.n3index.dev/mainnet",
   "networkMagic": 860833102,
   "runtime": {
     "baseUrl": "https://oracle.meshmini.app/mainnet",

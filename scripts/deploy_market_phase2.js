@@ -20,6 +20,7 @@ const { sanitizeHex } = require('../sdk/js/src/metaTx');
 
 const WIF = process.env.MARKET_DEPLOY_WIF || process.env.NEO_TESTNET_WIF || '';
 const RPC_URL = 'http://seed1t5.neo.org:20332';
+const NEON_DB_URL = process.env.NEON_DB_URL || '';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 
 // Already-deployed contracts from phase 1
@@ -39,6 +40,27 @@ const PRICE_COMPOUND = 25_00000000n;
 const RESULTS_FILE = path.resolve(__dirname, '..', 'market-deployment-results.json');
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+
+function decodeDbUrlPart(value) {
+  return decodeURIComponent(value || '');
+}
+
+function buildPsqlEnv(connectionString) {
+  const url = new URL(connectionString);
+  if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+    throw new Error('NEON_DB_URL must be a postgres connection string');
+  }
+
+  const env = { ...process.env };
+  delete env.NEON_DB_URL;
+  env.PGHOST = url.hostname;
+  env.PGPORT = url.port || '5432';
+  env.PGDATABASE = decodeDbUrlPart(url.pathname.replace(/^\/+/, ''));
+  env.PGUSER = decodeDbUrlPart(url.username);
+  env.PGPASSWORD = decodeDbUrlPart(url.password);
+  env.PGSSLMODE = url.searchParams.get('sslmode') || process.env.PGSSLMODE || 'require';
+  return env;
+}
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
@@ -147,12 +169,15 @@ function classifyPrice(pattern) {
 // ── DB Access ───────────────────────────────────────────────────────────────
 
 function loadAccountsFromDB() {
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   const query = "SELECT id, pattern, address, account_id_hash, script_hash, verify_script FROM aa_accounts ORDER BY id";
-  const env = { ...process.env, PGPASSWORD: 'npg_jUF8Jf0YdKbw' };
-  const result = execSync(
-    `psql -h ep-noisy-bar-annbarx2-pooler.c-6.us-east-1.aws.neon.tech -U neondb_owner -d neondb -t -A -F '|' -c "${query}"`,
-    { env, encoding: 'utf8', timeout: 30000 }
+  if (!NEON_DB_URL) {
+    throw new Error('NEON_DB_URL is required');
+  }
+  const result = execFileSync(
+    'psql',
+    ['-t', '-A', '-F', '|', '-c', query],
+    { env: buildPsqlEnv(NEON_DB_URL), encoding: 'utf8', timeout: 30000 }
   );
   return result.trim().split('\n').filter(Boolean).map((line) => {
     const [id, pattern, address, account_id_hash, script_hash, verify_script] = line.split('|');
@@ -165,6 +190,9 @@ function loadAccountsFromDB() {
 async function main() {
   if (!WIF) {
     throw new Error('MARKET_DEPLOY_WIF or NEO_TESTNET_WIF is required');
+  }
+  if (!NEON_DB_URL) {
+    throw new Error('NEON_DB_URL is required');
   }
 
   const account = new wallet.Account(WIF);
