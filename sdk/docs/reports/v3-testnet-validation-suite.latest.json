@@ -1,9 +1,9 @@
 {
-  "createdAt": "2026-04-25T11:39:28.754Z",
+  "createdAt": "2026-05-03T16:39:01.270Z",
   "environment": {
-    "TESTNET_RPC_URL": "https://testnet1.neo.coz.io:443",
+    "TESTNET_RPC_URL": "https://api.n3index.dev/testnet",
     "TESTNET_RPC_URLS": null,
-    "rpcCandidateCount": 6,
+    "rpcCandidateCount": 7,
     "defaultRpcCandidates": [
       "http://seed1.neo.org:20332",
       "http://seed2.neo.org:20332",
@@ -17,7 +17,7 @@
     "morpheusPaymasterAppId": "ddff154546fe22d15b65667156dd4b7c611e6093",
     "paymasterAccountId": null,
     "skipPaymasterAllowlistUpdate": false,
-    "localPaymasterHandlerPath": "/home/neo/git/neo-morpheus-oracle/workers/phala-worker/src/worker.js",
+    "localPaymasterHandlerPath": "/Users/jinghuiliao/git/neo-morpheus-oracle/workers/phala-worker/src/worker.js",
     "hasPhalaCli": true,
     "phalaCommand": "phala"
   },
@@ -25,35 +25,35 @@
     {
       "id": "smoke",
       "title": "V3 Smoke",
-      "startedAt": "2026-04-25T11:39:28.755Z",
-      "finishedAt": "2026-04-25T11:42:35.129Z",
+      "startedAt": "2026-05-03T16:39:01.272Z",
+      "finishedAt": "2026-05-03T16:40:39.082Z",
       "command": "node tests/v3_testnet_smoke.js",
       "summary": {
         "address": "NR3E4D8NUXh3zhbf5ZkAp3rTxWbQqNih32",
-        "coreHash": "0x5eb821438820b3851ecf21d52c90dccc1645b933",
-        "web3AuthHash": "0xa98c560db194754861561fd394c86d73bb7d0ef5",
-        "whitelistHash": "0x42318bf614a8a66aaa183e04c17fcc14c8bc26d8",
+        "coreHash": "0xb23c81d20ce8fba031eb84ffb11b6a0cd4d7ecdf",
+        "web3AuthHash": "0x4c3430665c27ed7aa40d067dfec48d39210279f3",
+        "whitelistHash": "0x835c5b6f48a1d077282c4cab3b1e9ba7833ba82a",
         "accountId": null,
         "virtualAddress": null,
         "txids": {
-          "registerAccount": "0xe80d91a0d248842a8c62696278bc01f9fcaf827920bd44a7e75ae65bdfd013d6",
-          "nativeExecute": "0xc5ef7c080316931b6c27504eaaf0a0e5a05730547406b99eb0c56581efb2dd0b",
-          "hookConfigRequest": "0x2c6e2a783d43cbc17d5890cbccfeed609c4e731b0980cf62526cb2aa49cc8825",
-          "verifierConfigRequest": "0x2fa55192af5ebf31f34c9e71103efddc9f27c199da0ad7959a2a14ea5e6f301f",
-          "evmExecute": "0x2833e1ca7b8e903b11bb8623071e31fdf49adb90e13ba1f7bdb462302621936b"
+          "registerAccount": "0x1ceb20f99d0797ccfd9305c222a791355ba84efc9b48d93539c19dc58f93e5e9",
+          "nativeExecute": "0x04441ed6d2f37c3a400adc407fc84f7f4e13f5a4899bcea8a0af271a2c4b5662",
+          "hookConfigRequest": "0xd5db8d9a79bbd666c0a685fa8859d04a4f230a64e65c8a31d817f3bd398eb1c0",
+          "verifierConfigRequest": "0xb82bec4aece35aa08d91d0e16018c8279d4a6062a81264360cafbbc02147b308",
+          "evmExecute": "0x68a73f3925a865830a98656e8ecf68c3c0a912611a2f06cbd3802c46b34650ea"
         }
       }
     },
     {
       "id": "plugin_matrix",
       "title": "V3 Plugin Matrix",
-      "startedAt": "2026-04-25T11:42:35.130Z",
-      "finishedAt": "2026-04-25T11:59:27.975Z",
+      "startedAt": "2026-05-03T16:40:39.083Z",
+      "finishedAt": "2026-05-03T16:49:13.360Z",
       "command": "node tests/v3_testnet_plugin_matrix.js",
       "summary": {
         "reportPath": "sdk/docs/reports/v3-testnet-plugin-matrix.latest.json",
-        "core": "0xf39c2ae666d96269c40e1cadfb3fb2835ef7880b",
-        "mockTarget": "0x13c0d8c37049cf15a6d2a77355098106353c57d5",
+        "core": "0xda79db758ec25a1248b985fb319b2aa769851b43",
+        "mockTarget": "0x276242e301fb175f60c294be9b5f219ff46b141a",
         "scenarios": [
           "directConfigGuards",
           "web3Auth",
@@ -74,33 +74,33 @@
     {
       "id": "market_escrow",
       "title": "V3 Market Escrow",
-      "startedAt": "2026-04-25T11:59:27.977Z",
-      "finishedAt": "2026-04-25T12:02:20.074Z",
+      "startedAt": "2026-05-03T16:49:13.362Z",
+      "finishedAt": "2026-05-03T16:50:44.099Z",
       "command": "node tests/v3_testnet_market_escrow.js",
       "summary": {
-        "core": "0x51684e2fbd89d92de10a95574607150dea6a3182",
-        "market": "0x608350065fc71eb12f5e576aeb0c733fd4ed81d4",
-        "verifier": "0x87ec0f240714105450c2334a19728d8ef2726f0f",
-        "hook": "0x389872dc98de92e29e248f2669ab1fa493f2a672",
+        "core": "0x35ca288c6c3785f44bf432fbf4969787a81586b5",
+        "market": "0xb8b9ea9783795376a8e9a92385de5b6b72a73c84",
+        "verifier": "0xacdc3d87b1e38bd0d63c81fcbab5d3be8fcf2052",
+        "hook": "0x8bc94d124ba252d58460db3320bb766c252ef49f",
         "listingId": 1,
-        "accountId": "0x518bb49baf21cab379d0649641583168ba0e0413",
-        "buyerRecorded": "0x89314d980e464400df4317744b0f8126edd05cf5",
-        "backupOwner": "0x89314d980e464400df4317744b0f8126edd05cf5",
+        "accountId": "0x7916a29286be82c49197f05a03eb6293eb36678f",
+        "buyerRecorded": "0x689838dcd0e89d6679d786860a59f583e12c5abd",
+        "backupOwner": "0x689838dcd0e89d6679d786860a59f583e12c5abd",
         "status": "2"
       }
     },
     {
       "id": "paymaster_onchain",
       "title": "V3 Paymaster On-Chain",
-      "startedAt": "2026-04-25T12:02:20.074Z",
-      "finishedAt": "2026-04-25T12:05:28.866Z",
+      "startedAt": "2026-05-03T16:50:44.100Z",
+      "finishedAt": "2026-05-03T16:52:14.837Z",
       "command": "node tests/v3_testnet_paymaster_onchain.mjs",
       "summary": {
-        "core": "0x983ef8a3d6ee92ec8cb5b4d43477d8eb1d6dbf0b",
-        "verifier": "0x53614d570bb34c8c0667df8ff0c9064f175d13d6",
-        "paymaster": "0xf9cba355635bd8cc3d5abe9ad30be686c1102687",
-        "accountId": "0x1965c6dd066a0fb077fdd3d0c28b0e990f62a7bb",
-        "sponsoredTxid": "0x004951b38e3c36fa9193aeac63655a665a0b53a863a648cc8437fdb4e0fed307",
+        "core": "0x8ad10eb7bdabfba345f77ec793c29f887a9e02a6",
+        "verifier": "0x9c141cf65093a20bc91bc90f60086523d4265607",
+        "paymaster": "0xcf5dc5d1e2734f161e3e814cb83a608740df37ca",
+        "accountId": "0x9be49639b4172f4441e0c2c06209bf08d9112ae2",
+        "sponsoredTxid": "0x9e85a1b6d34883f98d59f473191ce11ce80cacf6d911736f3d79edf1a7c67331",
         "sponsoredResult": "GAS",
         "depositBefore": "200000000",
         "depositAfter": "190000000",
@@ -113,15 +113,15 @@
     {
       "id": "paymaster_policy",
       "title": "V3 Paymaster Policy",
-      "startedAt": "2026-04-25T12:05:28.866Z",
-      "finishedAt": "2026-04-25T12:05:42.694Z",
+      "startedAt": "2026-05-03T16:52:14.837Z",
+      "finishedAt": "2026-05-03T16:52:19.730Z",
       "command": "node tests/v3_testnet_paymaster_policy.mjs",
       "summary": {
         "reportPath": "sdk/docs/reports/v3-testnet-paymaster-policy.latest.json",
         "policyId": "testnet-aa",
         "accountId": "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56",
         "approvalDigest": "4e6f87401838f21de14798e50a6eee0182c5a0877fd8461a306cb686254c1d49",
-        "attestationHash": "70c9e8aaaadad899bd98fa213ce9fef934e82a259c1a9dd00ae33ec449905f95",
+        "attestationHash": "b0b8a230c6d8a75da3460e6738cb621a04404677c848150089ca85f298d4155d",
         "deniedCases": [
           "missingOperationHash",
           "wrongDappId",
@@ -136,15 +136,15 @@
     {
       "id": "paymaster",
       "title": "V3 Paymaster Relay",
-      "startedAt": "2026-04-25T12:05:42.694Z",
-      "finishedAt": "2026-04-25T12:06:27.247Z",
+      "startedAt": "2026-05-03T16:52:19.731Z",
+      "finishedAt": "2026-05-03T16:52:45.547Z",
       "command": "node tests/v3_testnet_paymaster_relay.mjs",
       "summary": {
-        "txid": "0x38e69a238084664d06ffc2da739d7cfeef10e4ec10c60e0df90d0df79d82ff7f",
+        "txid": "0x15adb53a33dfbc90923e0d2a22454cb6b5e1caad8abe00e00c3252766ec59b16",
         "accountId": "0x15ffdf7dc4b716216e28bd1e3a86d731ce65974e",
         "policyId": "testnet-aa",
-        "approvalDigest": "ecce6eddd0fe10ff4c1e3fa9399979444cde1e06e93a63505e7f39ec1629f5d4",
-        "attestationHash": "a63b8c813dbac84ebbc7e23c3c017e15ece77552fc14bf6764a6f42ade9404de",
+        "approvalDigest": "7ede1a99b3d49ff9ba2fe536441e3e440a79a55708225e2c64b0173639e66db8",
+        "attestationHash": "50b0ff07b7be9ea24e58f023967837ae9b0ec3c76d0eb7429d97dbd403b9cc8c",
         "appId": null,
         "vmstate": "HALT",
         "stack": [

@@ -54,6 +54,27 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function decodeDbUrlPart(value) {
+  return decodeURIComponent(value || '');
+}
+
+function buildPsqlEnv(connectionString) {
+  const url = new URL(connectionString);
+  if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+    throw new Error('NEON_DB_URL must be a postgres connection string');
+  }
+
+  const env = { ...process.env };
+  delete env.NEON_DB_URL;
+  env.PGHOST = url.hostname;
+  env.PGPORT = url.port || '5432';
+  env.PGDATABASE = decodeDbUrlPart(url.pathname.replace(/^\/+/, ''));
+  env.PGUSER = decodeDbUrlPart(url.username);
+  env.PGPASSWORD = decodeDbUrlPart(url.password);
+  env.PGSSLMODE = url.searchParams.get('sslmode') || process.env.PGSSLMODE || 'require';
+  return env;
+}
+
 function isRetryableRpcError(error) {
   const msg = error instanceof Error ? error.message : String(error || '');
   return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(msg);
@@ -236,12 +257,15 @@ function classifyPrice(pattern) {
 
 async function loadAccountsFromDB() {
   // Use psql via child_process since pg module may not be installed in this project
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   const query = "SELECT id, pattern, address, account_id_hash, script_hash, verify_script FROM aa_accounts ORDER BY id";
-  const env = { ...process.env, PGPASSWORD: 'npg_jUF8Jf0YdKbw' };
-  const result = execSync(
-    `psql -h ep-noisy-bar-annbarx2-pooler.c-6.us-east-1.aws.neon.tech -U neondb_owner -d neondb -t -A -F '|' -c "${query}"`,
-    { env, encoding: 'utf8', timeout: 30000 }
+  if (!NEON_DB_URL) {
+    throw new Error('NEON_DB_URL is required');
+  }
+  const result = execFileSync(
+    'psql',
+    ['-t', '-A', '-F', '|', '-c', query],
+    { env: buildPsqlEnv(NEON_DB_URL), encoding: 'utf8', timeout: 30000 }
   );
   const rows = result.trim().split('\n').filter(Boolean).map((line) => {
     const [id, pattern, address, account_id_hash, script_hash, verify_script] = line.split('|');
