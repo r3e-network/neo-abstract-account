@@ -6,6 +6,7 @@ obj/
 .vscode/
 .claude/
 dist/
+.next/
 .serena/
 tests/.env.testnet
 tests/VALIDATION_SUMMARY.md
@@ -13,6 +14,7 @@ tests/MIXED_VERIFICATION_PLAN.md
 tests/mixed-verification-test.js
 tests/run-mixed-verification.js
 .env.local
+mainnet-aa-*-results.json
 
 .worktrees/
 .omx/

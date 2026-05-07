@@ -31,7 +31,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 const { resolveTestnetRpcUrl } = testnetRpcHelpers;
 
-let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || '';
+let RPC_URL = process.env.TESTNET_RPC_URL || '';
 const TEST_WIF = process.env.TEST_WIF || '';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const ESCAPE_TIMELOCK = 604800; // 7 days minimum

@@ -41,24 +41,8 @@
       >
         {{ validationError }}
       </p>
-      <p
-        v-else-if="selectedType === 'prefix'"
-        class="mt-1 text-xs text-aa-muted"
-      >
-        {{
-          t(
-            "market.vanityPrefixHint",
-            'Addresses always start with N. Your pattern will match N + your input (e.g. "AA" matches "NAA...")',
-          )
-        }}
-      </p>
       <p v-else class="mt-1 text-xs text-aa-muted">
-        {{
-          t(
-            "market.vanityPatternHint",
-            "Only Base58 characters: 1-9, A-Z (no O/I), a-k (no l), m-z",
-          )
-        }}
+        {{ hintText }}
       </p>
     </label>
   </div>
@@ -117,5 +101,33 @@ const placeholder = computed(() => {
   if (props.selectedType === "suffix")
     return t("market.vanityPatternPlaceholderSuffix", "e.g. 99");
   return t("market.vanityPatternPlaceholderContains", "e.g. ABC");
+});
+
+const hintText = computed(() => {
+  if (props.selectedType === "prefix") {
+    return t(
+      "market.vanityPrefixHint",
+      'Addresses always start with N. Your pattern will match N + your input (e.g. "AA" matches "NAA...")',
+    );
+  }
+
+  if (props.selectedType === "suffix") {
+    return t(
+      "market.vanitySuffixHint",
+      'Your pattern will match the end of the address (e.g. "99" matches "...99").',
+    );
+  }
+
+  if (props.selectedType === "contains") {
+    return t(
+      "market.vanityContainsHint",
+      'Your pattern can appear anywhere after N (e.g. "ABC" matches "N...ABC...").',
+    );
+  }
+
+  return t(
+    "market.vanityPatternHint",
+    "Only Base58 characters: 1-9, A-Z (no O/I), a-k (no l), m-z",
+  );
 });
 </script>

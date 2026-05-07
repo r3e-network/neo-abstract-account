@@ -29,7 +29,7 @@
 
 @layer base {
   body {
-    @apply bg-black text-[#EDEDED] antialiased font-sans selection:bg-[#333] selection:text-white;
+    @apply bg-[#f5f7fb] text-slate-950 antialiased font-sans selection:bg-slate-950 selection:text-white;
   }
 
   * {
@@ -60,17 +60,17 @@
   }
 
   button:focus-visible {
-    @apply outline-none ring-2 ring-[#666] ring-offset-2 ring-offset-black;
+    @apply outline-none ring-2 ring-emerald-500 ring-offset-2 ring-offset-white;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-black bg-[#EDEDED] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EDEDED] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
+    @apply inline-flex justify-center items-center gap-2 rounded-md border border-slate-950 bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
 
   .btn-secondary {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-[#333] text-sm font-medium rounded-md text-[#EDEDED] bg-black hover:bg-[#111] hover:border-[#666] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
+    @apply inline-flex justify-center items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
 
   .btn-warning,
@@ -80,7 +80,7 @@
   }
 
   .btn-ghost {
-    @apply inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-[#888] bg-transparent hover:text-[#EDEDED] hover:bg-[#111] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
+    @apply inline-flex justify-center items-center gap-2 rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-lg {
@@ -94,7 +94,7 @@
   }
 
   .card {
-    @apply rounded-lg border border-[#333] bg-black p-6 shadow-sm;
+    @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
   }
 
   .input-field {

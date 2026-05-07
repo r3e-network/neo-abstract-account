@@ -6,6 +6,9 @@ import path from 'node:path';
 const marketViewPath = path.resolve('src/views/AddressMarketView.vue');
 const marketServicePath = path.resolve('src/services/addressMarketService.js');
 const marketDocPath = path.resolve('src/assets/docs/address-market.md');
+const patternInputPath = path.resolve('src/features/market/components/PatternInputSection.vue');
+const i18nEnPath = path.resolve('src/i18n/index.js');
+const i18nZhPath = path.resolve('src/i18n/zh-CN.js');
 const marketContractPath = path.resolve('..', 'contracts', 'market', 'AAAddressMarket.cs');
 
 function readUnifiedSmartWalletSource() {
@@ -46,4 +49,24 @@ test('AA core and market contract expose escrow transfer primitives', () => {
   assert.match(market, /SettleListing/);
   assert.match(market, /RefundPendingPayment/);
   assert.match(market, /Only GAS accepted/);
+});
+
+test('vanity generator explains prefix, suffix, and contains matching modes', () => {
+  const patternInput = fs.readFileSync(patternInputPath, 'utf8');
+  const i18nEn = fs.readFileSync(i18nEnPath, 'utf8');
+  const i18nZh = fs.readFileSync(i18nZhPath, 'utf8');
+
+  assert.match(patternInput, /selectedType === "prefix"/);
+  assert.match(patternInput, /selectedType === "suffix"/);
+  assert.match(patternInput, /selectedType === "contains"/);
+  assert.match(patternInput, /market\.vanityPrefixHint/);
+  assert.match(patternInput, /market\.vanitySuffixHint/);
+  assert.match(patternInput, /market\.vanityContainsHint/);
+
+  assert.match(i18nEn, /vanityPrefixHint/);
+  assert.match(i18nEn, /vanitySuffixHint/);
+  assert.match(i18nEn, /vanityContainsHint/);
+  assert.match(i18nZh, /vanityPrefixHint/);
+  assert.match(i18nZh, /vanitySuffixHint/);
+  assert.match(i18nZh, /vanityContainsHint/);
 });

@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-03T23:59:25.355Z",
+  "createdAt": "2026-05-07T10:50:41.803Z",
   "network": "mainnet",
   "rpcUrl": "https://api.n3index.dev/mainnet",
   "networkMagic": 860833102,
@@ -14,13 +14,21 @@
   "contracts": [
     {
       "key": "aaCore",
-      "hash": "0x9742b4ed62a84a886f404d36149da6147528ee33",
+      "hash": "0x0268a387913b250166ddec032b03332690a1ef78",
       "manifestName": "UnifiedSmartWalletV3",
-      "methodCount": 21,
+      "methodCount": 60,
       "requiredMethods": [
         "registerAccount",
+        "computeRegistrationAccountId",
         "executeUserOp",
         "executeUserOps",
+        "previewUserOpValidation",
+        "executeSponsoredUserOp",
+        "executeSponsoredUserOps",
+        "getContractAdmin",
+        "update",
+        "enterMarketEscrow",
+        "settleMarketEscrow",
         "getVerifier",
         "getHook",
         "getNonce",
@@ -30,25 +38,33 @@
     },
     {
       "key": "aaWeb3AuthVerifier",
-      "hash": "0xb4107cb2cb4bace0ebe15bc4842890734abe133a",
+      "hash": "0x8e3a6388e02c0335912a77b7ff06d29a721c9112",
       "manifestName": "Web3AuthVerifier",
-      "methodCount": 4,
+      "methodCount": 9,
       "requiredMethods": [
+        "authorizedCore",
+        "setAuthorizedCore",
         "setPublicKey",
         "getPublicKey",
+        "postExecute",
+        "clearAccount",
         "validateSignature"
       ],
       "missingMethods": []
     },
     {
       "key": "aaSessionKeyVerifier",
-      "hash": "0xe82b9d056c011819ff3652427682224daad0cd1f",
+      "hash": "0x74ca950d403143b2d40c15ce6d780225a728f5ec",
       "manifestName": "SessionKeyVerifier",
-      "methodCount": 6,
+      "methodCount": 13,
       "requiredMethods": [
+        "authorizedCore",
+        "setAuthorizedCore",
         "setSessionKey",
         "clearSessionKey",
         "getSessionKey",
+        "postExecute",
+        "clearAccount",
         "validateSignature"
       ],
       "missingMethods": []
@@ -67,6 +83,79 @@
         "verifyMetaTx"
       ],
       "missingMethods": []
+    },
+    {
+      "key": "aaAddressMarket",
+      "hash": "0x011006627a683df8af98ee12e13161317d57df5e",
+      "manifestName": "AAAddressMarket",
+      "methodCount": 10,
+      "requiredMethods": [
+        "createListing",
+        "updateListingPrice",
+        "settleListing",
+        "getListingCount",
+        "getListing"
+      ],
+      "missingMethods": []
+    },
+    {
+      "key": "aaPaymaster",
+      "hash": "0xa0defa2bc6d7a71ba1e237149287c8ca4ff46caf",
+      "manifestName": "AAPaymaster",
+      "methodCount": 19,
+      "requiredMethods": [
+        "authorizedCore",
+        "setAuthorizedCore",
+        "setPolicy",
+        "validatePaymasterOp",
+        "settleReimbursement",
+        "getSponsorDeposit"
+      ],
+      "missingMethods": []
+    }
+  ],
+  "domains": [
+    {
+      "key": "aa",
+      "domain": "smartwallet.neo",
+      "resolvedAddress": "NWwRLdtBuvsr845Vi2RcRetATyDqwduxnX",
+      "expectedAddress": "NWwRLdtBuvsr845Vi2RcRetATyDqwduxnX"
+    },
+    {
+      "key": "aaAlias",
+      "domain": "aa.morpheus.neo",
+      "resolvedAddress": "NWwRLdtBuvsr845Vi2RcRetATyDqwduxnX",
+      "expectedAddress": "NWwRLdtBuvsr845Vi2RcRetATyDqwduxnX"
+    },
+    {
+      "key": "aaCore",
+      "domain": "core.smartwallet.neo",
+      "resolvedAddress": "NWwRLdtBuvsr845Vi2RcRetATyDqwduxnX",
+      "expectedAddress": "NWwRLdtBuvsr845Vi2RcRetATyDqwduxnX"
+    },
+    {
+      "key": "aaWeb3AuthVerifier",
+      "domain": "web3auth.smartwallet.neo",
+      "resolvedAddress": "NMc9Bhw2f8qZ8MCYsqKHnNnkLcmmKiKbsq",
+      "expectedAddress": "NMc9Bhw2f8qZ8MCYsqKHnNnkLcmmKiKbsq"
+    },
+    {
+      "key": "aaSessionKeyVerifier",
+      "domain": "sessionkey.smartwallet.neo",
+      "resolvedAddress": "NhWtLxdiftz8nmrAWEGTbhekBSb3g7ncEG",
+      "expectedAddress": "NhWtLxdiftz8nmrAWEGTbhekBSb3g7ncEG"
+    },
+    {
+      "key": "aaAddressMarket",
+      "domain": "market.smartwallet.neo",
+      "resolvedAddress": "NUZcFqyGjigaYp2RZQbHV5HGfmVv9Xvcdk",
+      "expectedAddress": "NUZcFqyGjigaYp2RZQbHV5HGfmVv9Xvcdk"
+    },
+    {
+      "key": "aaPaymaster",
+      "domain": "paymaster.smartwallet.neo",
+      "resolvedAddress": "NbuXxc9DoxhvR1u3CmCp9EF346thEQ5NKn",
+      "expectedAddress": "NbuXxc9DoxhvR1u3CmCp9EF346thEQ5NKn"
     }
   ]
 }

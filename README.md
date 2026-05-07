@@ -6,7 +6,7 @@ Current status note:
 
 - The current `main` branch runs `UnifiedSmartWalletV3`.
 - V3 removes the old role-heavy / dome-heavy core wallet model and replaces it with a minimalist account core plus verifier and hook plugins.
-- The canonical mainnet AA anchor now points to the clean deploy `0x9742b4ed62a84a886f404d36149da6147528ee33` and resolves from `smartwallet.neo`.
+- The canonical mainnet AA anchor now points to the clean deploy `0x0268a387913b250166ddec032b03332690a1ef78` and resolves from `smartwallet.neo` plus `aa.morpheus.neo`.
 - The canonical shared testnet AA anchor now points to the clean deployment `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38`, with shared `Web3AuthVerifier` `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`.
 
 ## Features
@@ -79,13 +79,13 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 
 | Item | Mainnet | Testnet |
 | --- | --- | --- |
-| AA core | `0x9742b4ed62a84a886f404d36149da6147528ee33` | `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38` |
+| AA core | `0x0268a387913b250166ddec032b03332690a1ef78` | `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38` |
 | AA runtime label | `UnifiedSmartWalletV3` | `UnifiedSmartWalletV3` |
-| Morpheus Oracle | `0x017520f068fd602082fe5572596185e62a4ad991` | `0x4b882e94ed766807c4fd728768f972e13008ad52` |
+| Morpheus Oracle | `0x5b492098fc094c760402e01f7e0b631b939d2bea` | `0x4b882e94ed766807c4fd728768f972e13008ad52` |
 | Morpheus DataFeed | `0x03013f49c42a14546c8bbe58f9d434c3517fccab` | `0x9bea75cf702f6afc09125aa6d22f082bfd2ee064` |
 | Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x6af95dac2c55d4af01f657c86b83583b6dd2fabe` |
 | NeoDIDRegistry | `0xb81f31ea81e279793b30411b82c2e82078b63105` | unpublished in the shared registry |
-| AA Web3AuthVerifier | `0xb4107cb2cb4bace0ebe15bc4842890734abe133a` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
+| AA Web3AuthVerifier | `0x8e3a6388e02c0335912a77b7ff06d29a721c9112` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
 | SocialRecoveryVerifier | `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3` | deployment-specific in current test flows |
 
 Domain rules:

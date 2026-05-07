@@ -7,6 +7,8 @@ const DEFAULT_TESTNET_RPC_URLS = Object.freeze([
   'https://testnet1.neo.coz.io:443',
 ]);
 
+const TESTNET_NETWORK_MAGIC = 894710606;
+
 function splitRpcList(value) {
   return String(value || '')
     .split(/[,\s]+/)
@@ -27,13 +29,15 @@ function resolveTestnetRpcCandidates(env = process.env) {
 
   for (const entry of splitRpcList(env.TESTNET_RPC_URLS)) push(entry);
   for (const entry of splitRpcList(env.TESTNET_RPC_URL)) push(entry);
-  for (const entry of splitRpcList(env.NEO_RPC_URL)) push(entry);
   for (const entry of DEFAULT_TESTNET_RPC_URLS) push(entry);
 
   return candidates;
 }
 
-async function probeTestnetRpcUrl(rpcUrl, { fetchImpl = globalThis.fetch, timeoutMs = 8000 } = {}) {
+async function probeTestnetRpcUrl(
+  rpcUrl,
+  { expectedNetworkMagic = TESTNET_NETWORK_MAGIC, fetchImpl = globalThis.fetch, timeoutMs = 8000 } = {},
+) {
   if (typeof fetchImpl !== 'function') {
     throw new Error('fetch is required to probe testnet RPC endpoints');
   }
@@ -63,19 +67,30 @@ async function probeTestnetRpcUrl(rpcUrl, { fetchImpl = globalThis.fetch, timeou
       throw new Error(payload.error.message || 'RPC getversion failed');
     }
 
-    return payload?.result || null;
+    const result = payload?.result || null;
+    const networkMagic = Number(result?.protocol?.network);
+    if (networkMagic !== Number(expectedNetworkMagic)) {
+      throw new Error(`RPC endpoint is not Neo N3 testnet: network ${networkMagic || 'unknown'}`);
+    }
+
+    return result;
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function resolveTestnetRpcUrl({ env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 8000 } = {}) {
+async function resolveTestnetRpcUrl({
+  env = process.env,
+  expectedNetworkMagic = TESTNET_NETWORK_MAGIC,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = 8000,
+} = {}) {
   const candidates = resolveTestnetRpcCandidates(env);
   let lastError = null;
 
   for (const rpcUrl of candidates) {
     try {
-      await probeTestnetRpcUrl(rpcUrl, { fetchImpl, timeoutMs });
+      await probeTestnetRpcUrl(rpcUrl, { expectedNetworkMagic, fetchImpl, timeoutMs });
       return rpcUrl;
     } catch (error) {
       lastError = error;
@@ -88,6 +103,7 @@ async function resolveTestnetRpcUrl({ env = process.env, fetchImpl = globalThis.
 
 module.exports = {
   DEFAULT_TESTNET_RPC_URLS,
+  TESTNET_NETWORK_MAGIC,
   probeTestnetRpcUrl,
   resolveTestnetRpcCandidates,
   resolveTestnetRpcUrl,

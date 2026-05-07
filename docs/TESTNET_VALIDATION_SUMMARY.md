@@ -1,10 +1,10 @@
 # V3 Testnet Validation Suite Report
 
-Date: 2026-05-03T16:39:01.270Z
+Date: 2026-05-07T10:10:47.666Z
 
 ## Environment
 
-- RPC: `https://api.n3index.dev/testnet`
+- RPC: `https://testnet1.neo.coz.io:443`
 - Has TEST_WIF: `true`
 - Has Morpheus runtime token: `true`
 - Paymaster app id: `ddff154546fe22d15b65667156dd4b7c611e6093`
@@ -24,25 +24,25 @@ Date: 2026-05-03T16:39:01.270Z
 ## Smoke Summary
 
 - Address: `NR3E4D8NUXh3zhbf5ZkAp3rTxWbQqNih32`
-- Core hash: `0xb23c81d20ce8fba031eb84ffb11b6a0cd4d7ecdf`
-- Web3Auth verifier: `0x4c3430665c27ed7aa40d067dfec48d39210279f3`
-- Whitelist hook: `0x835c5b6f48a1d077282c4cab3b1e9ba7833ba82a`
+- Core hash: `0xb567391f711f8b7f363cc6625b6f100d303fc95f`
+- Web3Auth verifier: `0x9eb2940e93fceb98c104eabe4e6b03b0ae0a40c6`
+- Whitelist hook: `0xd2e5fc7cc2936d20d8b9f20960e8a77381a9fbb1`
 - Account ID: `n/a`
 - Virtual address: `n/a`
 
 Transactions:
 
-- registerAccount: `0x1ceb20f99d0797ccfd9305c222a791355ba84efc9b48d93539c19dc58f93e5e9`
-- nativeExecute: `0x04441ed6d2f37c3a400adc407fc84f7f4e13f5a4899bcea8a0af271a2c4b5662`
-- hookConfigRequest: `0xd5db8d9a79bbd666c0a685fa8859d04a4f230a64e65c8a31d817f3bd398eb1c0`
-- verifierConfigRequest: `0xb82bec4aece35aa08d91d0e16018c8279d4a6062a81264360cafbbc02147b308`
-- evmExecute: `0x68a73f3925a865830a98656e8ecf68c3c0a912611a2f06cbd3802c46b34650ea`
+- registerAccount: `0x5125450b223d0b3b637d3f01842394297f8ea39eed57e4312b401712fc3ee65e`
+- nativeExecute: `0xf443d8c35a0ef0b65b5851c4cfdae6541ba5486bc3048e619486e89e223ebb87`
+- hookConfigRequest: `0x3b579a29f3c8e05a0bd9d169bf43725987b3f9810a767bd1fe340892f40f55e3`
+- verifierConfigRequest: `0x3140f548ca388b7780e8857b56289dd20347fd7bada021545d98df22b543dc9e`
+- evmExecute: `0x9d641c5e224361e63513d0ec9fe7adf21b8ba723f0122cd25e8bff8d1ab3a605`
 
 ## Plugin Matrix Summary
 
 - Report path: `sdk/docs/reports/v3-testnet-plugin-matrix.latest.json`
-- Core hash: `0xda79db758ec25a1248b985fb319b2aa769851b43`
-- Mock target: `0x276242e301fb175f60c294be9b5f219ff46b141a`
+- Core hash: `0xe5236013196d38752d9a761eec508b4efbd0081a`
+- Mock target: `0xfa9ddeca4383d7ea8d3008aab141eb2d32c85b6f`
 
 Scenarios:
 
@@ -62,23 +62,23 @@ Scenarios:
 
 ## Market Escrow Summary
 
-- Core hash: `0x35ca288c6c3785f44bf432fbf4969787a81586b5`
-- Market hash: `0xb8b9ea9783795376a8e9a92385de5b6b72a73c84`
-- TEE verifier: `0xacdc3d87b1e38bd0d63c81fcbab5d3be8fcf2052`
-- Whitelist hook: `0x8bc94d124ba252d58460db3320bb766c252ef49f`
+- Core hash: `0xc1108e9bd756dd07b6ee604139609cd3dacd67d1`
+- Market hash: `0x562c06c56fa21e11ef2625485bd6c67e3e99cb87`
+- TEE verifier: `0x7790371c92047b32e596eda0f49fd399f3630b60`
+- Whitelist hook: `0xfc9d0388c81837359b7db636c0dd7e67365d80aa`
 - Listing ID: `1`
-- Account ID: `0x7916a29286be82c49197f05a03eb6293eb36678f`
-- Buyer recorded: `0x689838dcd0e89d6679d786860a59f583e12c5abd`
-- Backup owner after sale: `0x689838dcd0e89d6679d786860a59f583e12c5abd`
+- Account ID: `0x9efc40c3379c9c9aeaa331bc962329d67b5e18a1`
+- Buyer recorded: `0x8ddb288f3ff8692c0348f9b71037141e13e61f81`
+- Backup owner after sale: `0x8ddb288f3ff8692c0348f9b71037141e13e61f81`
 - Listing status: `2`
 
 ## Paymaster On-Chain Summary
 
-- Core hash: `0x8ad10eb7bdabfba345f77ec793c29f887a9e02a6`
-- Verifier hash: `0x9c141cf65093a20bc91bc90f60086523d4265607`
-- Paymaster hash: `0xcf5dc5d1e2734f161e3e814cb83a608740df37ca`
-- Account ID: `0x9be49639b4172f4441e0c2c06209bf08d9112ae2`
-- Sponsored txid: `0x9e85a1b6d34883f98d59f473191ce11ce80cacf6d911736f3d79edf1a7c67331`
+- Core hash: `0x106a58a17df6cad8d85908237dc53a5eceed5402`
+- Verifier hash: `0x5753807c35c78b03ab9bf9c553bdb91b7d467946`
+- Paymaster hash: `0x4bfca4aa88fc73876434e99b02f21e65899b4a65`
+- Account ID: `0x9a62ce9353a438b44abe1989195e136e2f63bda6`
+- Sponsored txid: `0x13de5b0d8a1cbfa855a11061fd058bc2a1f7f89ed6655705b6dd3f832750206c`
 - Sponsored result: `GAS`
 - Deposit before: `200000000`
 - Deposit after: `190000000`
@@ -93,7 +93,7 @@ Scenarios:
 - Policy ID: `testnet-aa`
 - Account ID: `0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56`
 - Approval digest: `4e6f87401838f21de14798e50a6eee0182c5a0877fd8461a306cb686254c1d49`
-- Attestation hash: `b0b8a230c6d8a75da3460e6738cb621a04404677c848150089ca85f298d4155d`
+- Attestation hash: `e9a1a4581ed3f01a853f124c915b2304ec2bbe3d45f676259688ba355fe3f7b6`
 
 Denied cases:
 
@@ -107,11 +107,11 @@ Denied cases:
 
 ## Paymaster Relay Summary
 
-- Relay txid: `0x15adb53a33dfbc90923e0d2a22454cb6b5e1caad8abe00e00c3252766ec59b16`
+- Relay txid: `0xfb8b957060e94c3383bb261721df71f0d52c6e5da7e1c826114ee48fba18979d`
 - Account ID: `0x15ffdf7dc4b716216e28bd1e3a86d731ce65974e`
 - Policy ID: `testnet-aa`
-- Approval digest: `7ede1a99b3d49ff9ba2fe536441e3e440a79a55708225e2c64b0173639e66db8`
-- Attestation hash: `50b0ff07b7be9ea24e58f023967837ae9b0ec3c76d0eb7429d97dbd403b9cc8c`
+- Approval digest: `6798597a22d575f8269efffc3746bd051b80cb3e5f32eeaec8aa91d27cff4ced`
+- Attestation hash: `5f7771b10a3ce9c27b72a690cc1785c731961fb3d13ad066233de1e3756ae336`
 - CVM app id: `n/a`
 - VM state: `HALT`
 

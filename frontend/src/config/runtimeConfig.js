@@ -27,6 +27,10 @@ export const DEFAULT_MORPHEUS_AUTOMATION_TRIGGER_KINDS = [...MORPHEUS_AUTOMATION
 
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaCore);
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = stripHexPrefix(TESTNET_REGISTRY.contracts.aaCore);
+export const DEFAULT_AA_ADDRESS_MARKET_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaAddressMarket);
+export const DEFAULT_AA_ADDRESS_MARKET_HASH_TESTNET = stripHexPrefix(TESTNET_REGISTRY.contracts.aaAddressMarket);
+export const DEFAULT_AA_PAYMASTER_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaPaymaster);
+export const DEFAULT_AA_PAYMASTER_HASH_TESTNET = stripHexPrefix(TESTNET_REGISTRY.contracts.aaPaymaster);
 export const DEFAULT_RPC_URL = MAINNET_REGISTRY.rpcUrl;
 export const DEFAULT_RPC_URL_TESTNET = TESTNET_REGISTRY.rpcUrl;
 export const DEFAULT_RELAY_ENDPOINT = '/api/relay-transaction';
@@ -61,6 +65,8 @@ export const MORPHEUS_NETWORK_DEFAULTS = {
   mainnet: {
     abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH,
     abstractAccountDomain: MAINNET_REGISTRY.domains.aa,
+    addressMarketHash: DEFAULT_AA_ADDRESS_MARKET_HASH,
+    paymasterHash: DEFAULT_AA_PAYMASTER_HASH,
     rpcUrl: MAINNET_REGISTRY.rpcUrl,
     n3IndexNetwork: 'mainnet',
     neoDidDomain: MAINNET_REGISTRY.domains.neodid,
@@ -69,6 +75,8 @@ export const MORPHEUS_NETWORK_DEFAULTS = {
   testnet: {
     abstractAccountHash: DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET,
     abstractAccountDomain: TESTNET_REGISTRY.domains.aa,
+    addressMarketHash: DEFAULT_AA_ADDRESS_MARKET_HASH_TESTNET,
+    paymasterHash: DEFAULT_AA_PAYMASTER_HASH_TESTNET,
     rpcUrl: TESTNET_REGISTRY.rpcUrl,
     n3IndexNetwork: 'testnet',
     neoDidDomain: TESTNET_REGISTRY.domains.neodid,
@@ -176,7 +184,12 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
       DEFAULT_MATRIX_CONTRACT_HASH
     ),
     addressMarketHash: resolveOptionalHash(
-      env.VITE_AA_MARKET_HASH || env.VITE_AA_ADDRESS_MARKET_HASH
+      env.VITE_AA_MARKET_HASH || env.VITE_AA_ADDRESS_MARKET_HASH,
+      networkDefaults.addressMarketHash
+    ),
+    paymasterHash: resolveOptionalHash(
+      env.VITE_AA_PAYMASTER_HASH || env.VITE_AA_PAYMASTER_CONTRACT_HASH,
+      networkDefaults.paymasterHash
     ),
     n3IndexApiBaseUrl: resolveOptionalUrl(
       env.VITE_AA_N3INDEX_API_BASE_URL || env.VITE_N3INDEX_API_BASE_URL,

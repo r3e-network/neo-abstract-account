@@ -57,7 +57,7 @@ test('resolveAbstractAccountHash falls back for invalid values', () => {
 });
 
 test('default abstract account hash tracks the hardened verified deployment', () => {
-  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '9742b4ed62a84a886f404d36149da6147528ee33');
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH, '0268a387913b250166ddec032b03332690a1ef78');
 });
 
 test('testnet abstract account hash tracks the published V3 testnet deployment', () => {
@@ -86,6 +86,7 @@ test('frontend ships a runtime env example for browser and server routes', () =>
   assert.match(example, /VITE_AA_RELAY_META_ENABLED=/);
   assert.match(example, /VITE_AA_MATRIX_CONTRACT_HASH=/);
   assert.match(example, /VITE_AA_MARKET_HASH=/);
+  assert.match(example, /VITE_AA_PAYMASTER_HASH=/);
   assert.match(example, /VITE_WEB3AUTH_CLIENT_ID=/);
   assert.match(example, /VITE_WEB3AUTH_PROJECT_NAME=/);
   assert.match(example, /VITE_WEB3AUTH_NETWORK=/);
@@ -126,7 +127,8 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     relayRawEnabled: false,
     explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
     matrixContractHash: DEFAULT_MATRIX_CONTRACT_HASH,
-    addressMarketHash: '',
+    addressMarketHash: '011006627a683df8af98ee12e13161317d57df5e',
+    paymasterHash: 'a0defa2bc6d7a71ba1e237149287c8ca4ff46caf',
     n3IndexApiBaseUrl: DEFAULT_N3INDEX_API_BASE_URL,
     n3IndexNetwork: 'mainnet',
     neoNnsContractHash: '50ac1c37690cc2cfc594472833cf57505d5f46de',
@@ -190,8 +192,10 @@ test('getRuntimeConfig uses testnet defaults when the selected runtime network i
 
 test('network defaults keep mainnet and testnet anchors explicit', () => {
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.mainnet, {
-    abstractAccountHash: '9742b4ed62a84a886f404d36149da6147528ee33',
+    abstractAccountHash: '0268a387913b250166ddec032b03332690a1ef78',
     abstractAccountDomain: 'smartwallet.neo',
+    addressMarketHash: '011006627a683df8af98ee12e13161317d57df5e',
+    paymasterHash: 'a0defa2bc6d7a71ba1e237149287c8ca4ff46caf',
     rpcUrl: 'https://api.n3index.dev/mainnet',
     n3IndexNetwork: 'mainnet',
     neoDidDomain: 'neodid.morpheus.neo',
@@ -200,6 +204,8 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.testnet, {
     abstractAccountHash: 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38',
     abstractAccountDomain: '',
+    addressMarketHash: '',
+    paymasterHash: '',
     rpcUrl: 'https://api.n3index.dev/testnet',
     n3IndexNetwork: 'testnet',
     neoDidDomain: '',
