@@ -8,7 +8,7 @@ This runbook executes the current V3 SDK testnet validation scripts in the safes
 
 ## Optional environment
 
-- `TESTNET_RPC_URL` or `NEO_RPC_URL` to force one Neo N3 testnet RPC
+- `TESTNET_RPC_URL` to force one Neo N3 testnet RPC
 - `TESTNET_RPC_URLS` as a comma- or whitespace-separated Neo N3 testnet RPC candidate list; when unset, the validators auto-probe the official public seeds `seed1` through `seed5.neo.org:20332` and then fall back to `https://testnet1.neo.coz.io:443`
 - `MORPHEUS_RUNTIME_TOKEN` preferred, or `PHALA_API_TOKEN` / `PHALA_SHARED_SECRET`, to enable the live Morpheus paymaster relay validator
 - `MORPHEUS_TESTNET_RUNTIME_URL` or `MORPHEUS_RUNTIME_URL` to override the default Morpheus testnet runtime URL; otherwise the validators use `https://oracle.meshmini.app/testnet/paymaster/authorize`
@@ -64,6 +64,7 @@ npm run testnet:validate:report
 
 - The runner stops on the first failure.
 - Several scripts deploy contracts or broadcast real testnet transactions and mutate live state.
+- Testnet validators intentionally ignore generic `NEO_RPC_URL`; use only `TESTNET_RPC_URL` / `TESTNET_RPC_URLS`. Every live script verifies Neo N3 testnet network magic before it can broadcast.
 - The plugin matrix deploys fresh verifier and hook artifacts and records a JSON report under `sdk/docs/reports/`.
 - The paymaster policy validator exercises explicit deny paths such as wrong `dapp_id`, wrong `account_id`, wrong `target_contract`, wrong `method`, missing `operation_hash`, and over-limit gas.
 - The paymaster validator can reuse a fixed allowlisted account or register a fresh account and update the worker allowlist live.

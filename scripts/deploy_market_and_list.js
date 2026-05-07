@@ -36,6 +36,7 @@ const RPC_URLS = [
 ];
 const NEON_DB_URL = process.env.NEON_DB_URL || '';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
+const TESTNET_NETWORK_MAGIC = 894710606;
 const DEPLOY_TAG = `market-${Date.now().toString(36)}`;
 const ZERO_HASH160 = '0000000000000000000000000000000000000000';
 
@@ -288,6 +289,9 @@ async function main() {
   const client = new rpc.RPCClient(RPC_URLS[0]);
   const version = await withRpcRetry('getVersion', () => client.getVersion());
   const networkMagic = Number(version.protocol.network);
+  if (networkMagic !== TESTNET_NETWORK_MAGIC) {
+    throw new Error(`RPC network magic mismatch: expected ${TESTNET_NETWORK_MAGIC}, got ${networkMagic || 'unknown'}`);
+  }
 
   console.log('=== AA Address Market Deployment ===');
   console.log(`Deployer: ${account.address} (${normalizeHash(account.scriptHash)})`);

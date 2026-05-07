@@ -22,6 +22,7 @@ const WIF = process.env.MARKET_DEPLOY_WIF || process.env.NEO_TESTNET_WIF || '';
 const RPC_URL = 'http://seed1t5.neo.org:20332';
 const NEON_DB_URL = process.env.NEON_DB_URL || '';
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
+const TESTNET_NETWORK_MAGIC = 894710606;
 
 // Already-deployed contracts from phase 1
 const CORE_HASH = '0x2818ce328d6a7a92ff2c0200fe7cb2c76bee8870';
@@ -199,6 +200,9 @@ async function main() {
   const client = new rpc.RPCClient(RPC_URL);
   const version = await withRpcRetry('getVersion', () => client.getVersion());
   const networkMagic = Number(version.protocol.network);
+  if (networkMagic !== TESTNET_NETWORK_MAGIC) {
+    throw new Error(`RPC network magic mismatch: expected ${TESTNET_NETWORK_MAGIC}, got ${networkMagic || 'unknown'}`);
+  }
 
   console.log('=== Phase 2: TEEVerifier + Register + List ===');
   console.log(`Deployer: ${account.address}`);
