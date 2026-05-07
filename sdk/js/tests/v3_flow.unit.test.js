@@ -270,8 +270,21 @@ test('live testnet deploy scripts use entropy-backed deployment tags for reruns'
   assert.match(paymasterOnchainSource, /resolveTestnetRpcUrl/);
   assert.match(runbook, /TESTNET_RPC_URLS/);
   assert.match(runbook, /seed1/);
+  assert.doesNotMatch(runbook, /NEO_RPC_URL` to force/);
+  assert.match(runbook, /ignore generic `NEO_RPC_URL`/);
   assert.match(runbook, /v3_testnet_market_escrow\.js/);
   assert.match(runbook, /v3_testnet_paymaster_onchain\.mjs/);
+});
+
+test('legacy market deploy scripts refuse non-testnet RPC magic before writing', () => {
+  const deployAndListSource = fs.readFileSync(path.join(repoRoot, 'scripts', 'deploy_market_and_list.js'), 'utf8');
+  const phase2Source = fs.readFileSync(path.join(repoRoot, 'scripts', 'deploy_market_phase2.js'), 'utf8');
+
+  for (const source of [deployAndListSource, phase2Source]) {
+    assert.match(source, /const TESTNET_NETWORK_MAGIC = 894710606;/);
+    assert.match(source, /networkMagic !== TESTNET_NETWORK_MAGIC/);
+    assert.match(source, /RPC network magic mismatch/);
+  }
 });
 
 test('createEIP712Payload builds the V3 UserOperation schema when accountIdHash is provided', async () => {
