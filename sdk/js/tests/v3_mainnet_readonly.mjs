@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { rpc } from "@cityofzion/neon-js";
+import { rpc, sc, wallet } from "@cityofzion/neon-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -9,14 +9,24 @@ const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(MODULE_DIR, "..", "..", "..");
 const REPORT_DIR = path.resolve(REPO_ROOT, "sdk", "docs", "reports");
 const REGISTRY_PATH = path.resolve(REPO_ROOT, "frontend", "src", "config", "generatedMorpheusRegistry.js");
+const NEO_NNS_CONTRACT_HASH = "50ac1c37690cc2cfc594472833cf57505d5f46de";
+const NEO_NNS_ADDRESS_RECORD_TYPE = 16;
 
 const EXPECTED_CONTRACTS = {
   aaCore: {
     manifestName: "UnifiedSmartWalletV3",
     methods: [
       "registerAccount",
+      "computeRegistrationAccountId",
       "executeUserOp",
       "executeUserOps",
+      "previewUserOpValidation",
+      "executeSponsoredUserOp",
+      "executeSponsoredUserOps",
+      "getContractAdmin",
+      "update",
+      "enterMarketEscrow",
+      "settleMarketEscrow",
       "getVerifier",
       "getHook",
       "getNonce",
@@ -25,11 +35,28 @@ const EXPECTED_CONTRACTS = {
   },
   aaWeb3AuthVerifier: {
     manifestName: "Web3AuthVerifier",
-    methods: ["setPublicKey", "getPublicKey", "validateSignature"],
+    methods: [
+      "authorizedCore",
+      "setAuthorizedCore",
+      "setPublicKey",
+      "getPublicKey",
+      "postExecute",
+      "clearAccount",
+      "validateSignature",
+    ],
   },
   aaSessionKeyVerifier: {
     manifestName: "SessionKeyVerifier",
-    methods: ["setSessionKey", "clearSessionKey", "getSessionKey", "validateSignature"],
+    methods: [
+      "authorizedCore",
+      "setAuthorizedCore",
+      "setSessionKey",
+      "clearSessionKey",
+      "getSessionKey",
+      "postExecute",
+      "clearAccount",
+      "validateSignature",
+    ],
   },
   aaSocialRecoveryVerifier: {
     manifestName: "SocialRecoveryVerifier",
@@ -40,6 +67,21 @@ const EXPECTED_CONTRACTS = {
       "finalizeRecovery",
       "verify",
       "verifyMetaTx",
+    ],
+  },
+  aaAddressMarket: {
+    manifestName: "AAAddressMarket",
+    methods: ["createListing", "updateListingPrice", "settleListing", "getListingCount", "getListing"],
+  },
+  aaPaymaster: {
+    manifestName: "AAPaymaster",
+    methods: [
+      "authorizedCore",
+      "setAuthorizedCore",
+      "setPolicy",
+      "validatePaymasterOp",
+      "settleReimbursement",
+      "getSponsorDeposit",
     ],
   },
 };
@@ -111,6 +153,38 @@ async function validateContract(client, key, hash, expected) {
   };
 }
 
+function contractAddressFromHash(hash) {
+  return wallet.getAddressFromScriptHash(normalizeHash(hash));
+}
+
+function readStackString(item) {
+  const value = item?.value;
+  if (typeof value !== "string") return "";
+  try {
+    return Buffer.from(value, "base64").toString("utf8");
+  } catch {
+    return value;
+  }
+}
+
+async function validateDomain(client, key, domain, contractHash) {
+  if (!domain || !contractHash) return null;
+  const resolved = await client.invokeFunction(
+    NEO_NNS_CONTRACT_HASH,
+    "resolve",
+    [sc.ContractParam.string(domain), sc.ContractParam.integer(NEO_NNS_ADDRESS_RECORD_TYPE)],
+  );
+  const resolvedAddress = readStackString(resolved?.stack?.[0]);
+  const expectedAddress = contractAddressFromHash(contractHash);
+
+  assert(
+    resolvedAddress === expectedAddress,
+    `${key} domain ${domain} resolves to ${resolvedAddress || "<empty>"}, expected ${expectedAddress}`,
+  );
+
+  return { key, domain, resolvedAddress, expectedAddress };
+}
+
 async function main() {
   const { MORPHEUS_PUBLIC_REGISTRY } = await import(pathToFileURL(REGISTRY_PATH).href);
   const mainnet = MORPHEUS_PUBLIC_REGISTRY?.mainnet;
@@ -130,6 +204,18 @@ async function main() {
       ),
     ),
   ]);
+  const domainChecks = [
+    ["aa", mainnet.domains.aa, "aaCore"],
+    ["aaAlias", mainnet.domains.aaAlias, "aaCore"],
+    ["aaCore", mainnet.domains.aaCore, "aaCore"],
+    ["aaWeb3AuthVerifier", mainnet.domains.aaWeb3AuthVerifier, "aaWeb3AuthVerifier"],
+    ["aaSessionKeyVerifier", mainnet.domains.aaSessionKeyVerifier, "aaSessionKeyVerifier"],
+    ["aaAddressMarket", mainnet.domains.aaAddressMarket, "aaAddressMarket"],
+    ["aaPaymaster", mainnet.domains.aaPaymaster, "aaPaymaster"],
+  ].filter(([, domain]) => domain);
+  const domains = (await Promise.all(
+    domainChecks.map(([key, domain, contractKey]) => validateDomain(client, key, domain, mainnet.contracts[contractKey])),
+  )).filter(Boolean);
 
   const report = {
     createdAt: new Date().toISOString(),
@@ -138,6 +224,7 @@ async function main() {
     networkMagic,
     runtime,
     contracts,
+    domains,
   };
 
   await mkdir(REPORT_DIR, { recursive: true });
@@ -149,6 +236,7 @@ async function main() {
     network: report.network,
     runtimeStatus: runtime.runtimeStatus,
     contractCount: contracts.length,
+    domainCount: domains.length,
     contracts: contracts.map((item) => `${item.key}:${item.hash}`),
   }, null, 2)}\n`);
 }

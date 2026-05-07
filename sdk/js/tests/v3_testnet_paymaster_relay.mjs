@@ -28,7 +28,7 @@ const relayModule = await import("../../../frontend/api/relay-transaction.js");
 const relayHandler = relayModule.default;
 
 const TEST_WIF = process.env.TEST_WIF || process.env.NEO_TESTNET_WIF || "";
-let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "";
+let RPC_URL = process.env.TESTNET_RPC_URL || "";
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
 const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";

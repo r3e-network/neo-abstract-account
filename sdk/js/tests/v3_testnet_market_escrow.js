@@ -11,7 +11,7 @@ const { AbstractAccountClient } = require('../src/index');
 const { sanitizeHex } = require('../src/metaTx');
 const { resolveTestnetRpcUrl } = require('./testnet-rpc');
 
-let RPC_URL = process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || '';
+let RPC_URL = process.env.TESTNET_RPC_URL || '';
 const TEST_WIF = process.env.TEST_WIF || '';
 
 if (!TEST_WIF) {

@@ -1,12 +1,12 @@
 <template>
   <section
-    class="mb-6 rounded-xl border border-aa-success/25 bg-aa-success/8 p-6 shadow-glow-emerald backdrop-blur-md"
+    class="mb-6 rounded-xl border border-emerald-200 bg-white p-6 shadow-sm"
   >
     <div
       class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
     >
       <div>
-        <p class="text-xs font-extrabold uppercase text-aa-success-light">
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationLabel`,
@@ -14,7 +14,7 @@
             )
           }}
         </p>
-        <p class="mt-2 text-lg font-bold text-aa-text">
+        <p class="mt-2 text-lg font-semibold text-slate-950">
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationTitle`,
@@ -22,7 +22,7 @@
             )
           }}
         </p>
-        <p class="mt-2 max-w-3xl text-sm leading-7 text-aa-text">
+        <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationBody`,
@@ -31,7 +31,7 @@
           }}
         </p>
         <code
-          class="mt-3 block break-all rounded-xl border border-aa-border bg-aa-dark/80 px-4 py-3 text-xs font-medium text-aa-success-light shadow-inner"
+          class="mt-3 block break-all rounded-lg border border-slate-200 bg-slate-950 px-4 py-3 text-xs font-medium text-emerald-200"
         >
           {{
             t(
@@ -43,7 +43,7 @@
       </div>
       <div class="flex shrink-0 flex-wrap items-center gap-3">
         <router-link
-          class="inline-flex items-center rounded-xl border border-aa-success/30 bg-aa-success/10 px-4 py-2 text-sm font-semibold text-aa-success-light transition-colors duration-200 hover:border-aa-success-light/60 hover:bg-aa-success/15"
+          class="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors duration-200 hover:border-emerald-300 hover:bg-emerald-100"
           :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
         >
           {{
@@ -55,7 +55,7 @@
         </router-link>
         <a
           v-if="explorerUrl"
-          class="inline-flex items-center rounded-xl border border-aa-border bg-aa-dark/70 px-4 py-2 text-sm font-semibold text-aa-text transition-colors duration-200 hover:border-aa-muted hover:text-aa-text"
+          class="inline-flex items-center rounded-md border border-slate-300 bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
           :href="explorerUrl"
           target="_blank"
           rel="noopener noreferrer"

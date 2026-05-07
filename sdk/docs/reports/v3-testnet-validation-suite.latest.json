@@ -1,9 +1,9 @@
 {
-  "createdAt": "2026-05-03T16:39:01.270Z",
+  "createdAt": "2026-05-07T10:10:47.666Z",
   "environment": {
-    "TESTNET_RPC_URL": "https://api.n3index.dev/testnet",
-    "TESTNET_RPC_URLS": null,
-    "rpcCandidateCount": 7,
+    "TESTNET_RPC_URL": "https://testnet1.neo.coz.io:443",
+    "TESTNET_RPC_URLS": "https://testnet1.neo.coz.io:443 http://seed1.neo.org:20332 http://seed2.neo.org:20332 http://seed3.neo.org:20332 http://seed4.neo.org:20332 http://seed5.neo.org:20332",
+    "rpcCandidateCount": 6,
     "defaultRpcCandidates": [
       "http://seed1.neo.org:20332",
       "http://seed2.neo.org:20332",
@@ -25,35 +25,35 @@
     {
       "id": "smoke",
       "title": "V3 Smoke",
-      "startedAt": "2026-05-03T16:39:01.272Z",
-      "finishedAt": "2026-05-03T16:40:39.082Z",
+      "startedAt": "2026-05-07T10:10:47.670Z",
+      "finishedAt": "2026-05-07T10:13:55.964Z",
       "command": "node tests/v3_testnet_smoke.js",
       "summary": {
         "address": "NR3E4D8NUXh3zhbf5ZkAp3rTxWbQqNih32",
-        "coreHash": "0xb23c81d20ce8fba031eb84ffb11b6a0cd4d7ecdf",
-        "web3AuthHash": "0x4c3430665c27ed7aa40d067dfec48d39210279f3",
-        "whitelistHash": "0x835c5b6f48a1d077282c4cab3b1e9ba7833ba82a",
+        "coreHash": "0xb567391f711f8b7f363cc6625b6f100d303fc95f",
+        "web3AuthHash": "0x9eb2940e93fceb98c104eabe4e6b03b0ae0a40c6",
+        "whitelistHash": "0xd2e5fc7cc2936d20d8b9f20960e8a77381a9fbb1",
         "accountId": null,
         "virtualAddress": null,
         "txids": {
-          "registerAccount": "0x1ceb20f99d0797ccfd9305c222a791355ba84efc9b48d93539c19dc58f93e5e9",
-          "nativeExecute": "0x04441ed6d2f37c3a400adc407fc84f7f4e13f5a4899bcea8a0af271a2c4b5662",
-          "hookConfigRequest": "0xd5db8d9a79bbd666c0a685fa8859d04a4f230a64e65c8a31d817f3bd398eb1c0",
-          "verifierConfigRequest": "0xb82bec4aece35aa08d91d0e16018c8279d4a6062a81264360cafbbc02147b308",
-          "evmExecute": "0x68a73f3925a865830a98656e8ecf68c3c0a912611a2f06cbd3802c46b34650ea"
+          "registerAccount": "0x5125450b223d0b3b637d3f01842394297f8ea39eed57e4312b401712fc3ee65e",
+          "nativeExecute": "0xf443d8c35a0ef0b65b5851c4cfdae6541ba5486bc3048e619486e89e223ebb87",
+          "hookConfigRequest": "0x3b579a29f3c8e05a0bd9d169bf43725987b3f9810a767bd1fe340892f40f55e3",
+          "verifierConfigRequest": "0x3140f548ca388b7780e8857b56289dd20347fd7bada021545d98df22b543dc9e",
+          "evmExecute": "0x9d641c5e224361e63513d0ec9fe7adf21b8ba723f0122cd25e8bff8d1ab3a605"
         }
       }
     },
     {
       "id": "plugin_matrix",
       "title": "V3 Plugin Matrix",
-      "startedAt": "2026-05-03T16:40:39.083Z",
-      "finishedAt": "2026-05-03T16:49:13.360Z",
+      "startedAt": "2026-05-07T10:13:55.966Z",
+      "finishedAt": "2026-05-07T10:31:12.235Z",
       "command": "node tests/v3_testnet_plugin_matrix.js",
       "summary": {
         "reportPath": "sdk/docs/reports/v3-testnet-plugin-matrix.latest.json",
-        "core": "0xda79db758ec25a1248b985fb319b2aa769851b43",
-        "mockTarget": "0x276242e301fb175f60c294be9b5f219ff46b141a",
+        "core": "0xe5236013196d38752d9a761eec508b4efbd0081a",
+        "mockTarget": "0xfa9ddeca4383d7ea8d3008aab141eb2d32c85b6f",
         "scenarios": [
           "directConfigGuards",
           "web3Auth",
@@ -74,33 +74,33 @@
     {
       "id": "market_escrow",
       "title": "V3 Market Escrow",
-      "startedAt": "2026-05-03T16:49:13.362Z",
-      "finishedAt": "2026-05-03T16:50:44.099Z",
+      "startedAt": "2026-05-07T10:31:12.245Z",
+      "finishedAt": "2026-05-07T10:34:09.257Z",
       "command": "node tests/v3_testnet_market_escrow.js",
       "summary": {
-        "core": "0x35ca288c6c3785f44bf432fbf4969787a81586b5",
-        "market": "0xb8b9ea9783795376a8e9a92385de5b6b72a73c84",
-        "verifier": "0xacdc3d87b1e38bd0d63c81fcbab5d3be8fcf2052",
-        "hook": "0x8bc94d124ba252d58460db3320bb766c252ef49f",
+        "core": "0xc1108e9bd756dd07b6ee604139609cd3dacd67d1",
+        "market": "0x562c06c56fa21e11ef2625485bd6c67e3e99cb87",
+        "verifier": "0x7790371c92047b32e596eda0f49fd399f3630b60",
+        "hook": "0xfc9d0388c81837359b7db636c0dd7e67365d80aa",
         "listingId": 1,
-        "accountId": "0x7916a29286be82c49197f05a03eb6293eb36678f",
-        "buyerRecorded": "0x689838dcd0e89d6679d786860a59f583e12c5abd",
-        "backupOwner": "0x689838dcd0e89d6679d786860a59f583e12c5abd",
+        "accountId": "0x9efc40c3379c9c9aeaa331bc962329d67b5e18a1",
+        "buyerRecorded": "0x8ddb288f3ff8692c0348f9b71037141e13e61f81",
+        "backupOwner": "0x8ddb288f3ff8692c0348f9b71037141e13e61f81",
         "status": "2"
       }
     },
     {
       "id": "paymaster_onchain",
       "title": "V3 Paymaster On-Chain",
-      "startedAt": "2026-05-03T16:50:44.100Z",
-      "finishedAt": "2026-05-03T16:52:14.837Z",
+      "startedAt": "2026-05-07T10:34:09.259Z",
+      "finishedAt": "2026-05-07T10:37:06.110Z",
       "command": "node tests/v3_testnet_paymaster_onchain.mjs",
       "summary": {
-        "core": "0x8ad10eb7bdabfba345f77ec793c29f887a9e02a6",
-        "verifier": "0x9c141cf65093a20bc91bc90f60086523d4265607",
-        "paymaster": "0xcf5dc5d1e2734f161e3e814cb83a608740df37ca",
-        "accountId": "0x9be49639b4172f4441e0c2c06209bf08d9112ae2",
-        "sponsoredTxid": "0x9e85a1b6d34883f98d59f473191ce11ce80cacf6d911736f3d79edf1a7c67331",
+        "core": "0x106a58a17df6cad8d85908237dc53a5eceed5402",
+        "verifier": "0x5753807c35c78b03ab9bf9c553bdb91b7d467946",
+        "paymaster": "0x4bfca4aa88fc73876434e99b02f21e65899b4a65",
+        "accountId": "0x9a62ce9353a438b44abe1989195e136e2f63bda6",
+        "sponsoredTxid": "0x13de5b0d8a1cbfa855a11061fd058bc2a1f7f89ed6655705b6dd3f832750206c",
         "sponsoredResult": "GAS",
         "depositBefore": "200000000",
         "depositAfter": "190000000",
@@ -113,15 +113,15 @@
     {
       "id": "paymaster_policy",
       "title": "V3 Paymaster Policy",
-      "startedAt": "2026-05-03T16:52:14.837Z",
-      "finishedAt": "2026-05-03T16:52:19.730Z",
+      "startedAt": "2026-05-07T10:37:06.111Z",
+      "finishedAt": "2026-05-07T10:37:15.381Z",
       "command": "node tests/v3_testnet_paymaster_policy.mjs",
       "summary": {
         "reportPath": "sdk/docs/reports/v3-testnet-paymaster-policy.latest.json",
         "policyId": "testnet-aa",
         "accountId": "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56",
         "approvalDigest": "4e6f87401838f21de14798e50a6eee0182c5a0877fd8461a306cb686254c1d49",
-        "attestationHash": "b0b8a230c6d8a75da3460e6738cb621a04404677c848150089ca85f298d4155d",
+        "attestationHash": "e9a1a4581ed3f01a853f124c915b2304ec2bbe3d45f676259688ba355fe3f7b6",
         "deniedCases": [
           "missingOperationHash",
           "wrongDappId",
@@ -136,15 +136,15 @@
     {
       "id": "paymaster",
       "title": "V3 Paymaster Relay",
-      "startedAt": "2026-05-03T16:52:19.731Z",
-      "finishedAt": "2026-05-03T16:52:45.547Z",
+      "startedAt": "2026-05-07T10:37:15.391Z",
+      "finishedAt": "2026-05-07T10:37:56.822Z",
       "command": "node tests/v3_testnet_paymaster_relay.mjs",
       "summary": {
-        "txid": "0x15adb53a33dfbc90923e0d2a22454cb6b5e1caad8abe00e00c3252766ec59b16",
+        "txid": "0xfb8b957060e94c3383bb261721df71f0d52c6e5da7e1c826114ee48fba18979d",
         "accountId": "0x15ffdf7dc4b716216e28bd1e3a86d731ce65974e",
         "policyId": "testnet-aa",
-        "approvalDigest": "7ede1a99b3d49ff9ba2fe536441e3e440a79a55708225e2c64b0173639e66db8",
-        "attestationHash": "50b0ff07b7be9ea24e58f023967837ae9b0ec3c76d0eb7429d97dbd403b9cc8c",
+        "approvalDigest": "6798597a22d575f8269efffc3746bd051b80cb3e5f32eeaec8aa91d27cff4ced",
+        "attestationHash": "5f7771b10a3ce9c27b72a690cc1785c731961fb3d13ad066233de1e3756ae336",
         "appId": null,
         "vmstate": "HALT",
         "stack": [

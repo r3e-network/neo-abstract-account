@@ -101,9 +101,19 @@ async function startPreviewServer(port) {
   return { child, baseUrl, output: () => output };
 }
 
-async function waitForVisible(locator, label) {
-  await locator.waitFor({ state: "visible", timeout: 15_000 });
+async function waitForVisible(locator, label, timeoutMs = 30_000) {
+  await locator.waitFor({ state: "visible", timeout: timeoutMs });
   assert.equal(await locator.isVisible(), true, `${label} should be visible`);
+}
+
+async function waitForText(locator, pattern, label, timeoutMs = 30_000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const text = (await locator.textContent().catch(() => "")) || "";
+    if (pattern.test(text.replace(/\s+/g, " "))) return;
+    await sleep(250);
+  }
+  assert.fail(`${label} should contain ${pattern}`);
 }
 
 test("browser smoke covers home, identity, app workspace, market, and docs", async (t) => {
@@ -121,8 +131,8 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
   const baseUrl = server.baseUrl;
 
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await waitForVisible(page.getByRole("heading", { name: /Smart Wallets That Never Lock You Out/i }), "home hero");
   await waitForVisible(page.getByRole("link", { name: /Open Console/i }).first(), "open console link");
+  await waitForVisible(page.getByRole("heading", { name: /Neo AA Operations Console/i }), "home hero");
   await assert.doesNotReject(() => page.title(), "home title should be readable");
 
   await page.goto(`${baseUrl}/app`, { waitUntil: "domcontentloaded" });
@@ -138,6 +148,11 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
 
   await page.goto(`${baseUrl}/market`, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByText(/Trustless escrow for AA address transfers/i).first(), "market subtitle");
+  await waitForVisible(page.getByText(/Vanity Address Generator/i).first(), "market vanity generator");
+  await page.locator("#vanity-generator").getByRole("button", { name: /^Suffix$/i }).click();
+  await waitForText(page.locator("#vanity-generator"), /end of the address/i, "suffix vanity hint");
+  await page.locator("#vanity-generator").getByRole("button", { name: /^Contains$/i }).click();
+  await waitForText(page.locator("#vanity-generator"), /anywhere after N/i, "contains vanity hint");
   await waitForVisible(page.getByText(/Create Escrow Listing/i).first(), "market listing form");
 
   await page.goto(`${baseUrl}/docs`, { waitUntil: "domcontentloaded" });

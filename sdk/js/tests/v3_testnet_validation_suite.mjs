@@ -89,7 +89,7 @@ function nowIso() {
 
 function envSnapshot() {
   return {
-    TESTNET_RPC_URL: process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || null,
+    TESTNET_RPC_URL: process.env.TESTNET_RPC_URL || null,
     TESTNET_RPC_URLS: process.env.TESTNET_RPC_URLS || null,
     rpcCandidateCount: resolveTestnetRpcCandidates(process.env).length,
     defaultRpcCandidates: DEFAULT_TESTNET_RPC_URLS,

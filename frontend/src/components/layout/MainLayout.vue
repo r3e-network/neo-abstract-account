@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen bg-black flex flex-col font-sans text-[#EDEDED] selection:bg-[#333] selection:text-white transition-colors duration-200 relative overflow-hidden"
+    class="relative flex min-h-screen flex-col overflow-hidden bg-[#f5f7fb] font-sans text-slate-950 selection:bg-slate-950 selection:text-white"
   >
     <a
       href="#main-content"
@@ -8,7 +8,7 @@
       >{{ t("nav.skipToContent", "Skip to content") }}</a
     >
     <nav
-      class="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-[#333]"
+      class="sticky top-0 z-50 border-b border-slate-200 bg-white/90 shadow-sm backdrop-blur-xl"
       :aria-label="t('nav.mainNavigation', 'Main navigation')"
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,11 +19,11 @@
             <div class="flex-shrink-0 flex items-center group">
               <router-link to="/" class="flex items-center gap-3">
                 <div
-                  class="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg font-mono"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 font-mono text-lg font-bold text-white"
                 >
                   N
                 </div>
-                <span class="font-medium text-sm text-white hidden sm:inline">{{
+                <span class="hidden text-sm font-semibold text-slate-950 sm:inline">{{
                   t("brand.name", "Abstract Account")
                 }}</span>
               </router-link>
@@ -35,8 +35,8 @@
                 <router-link
                   v-if="link.isConsole"
                   :to="link.to"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-white text-black hover:bg-[#EAEAEA] transition-colors duration-200"
-                  active-class="bg-[#EAEAEA]"
+                  class="inline-flex items-center gap-1.5 rounded-md bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
+                  active-class="bg-slate-800"
                   :aria-current="route.path === link.to ? 'page' : undefined"
                 >
                   <svg
@@ -58,8 +58,8 @@
                 <router-link
                   v-else
                   :to="link.to"
-                  class="text-[#888] hover:text-[#EDEDED] px-3 py-2 text-sm font-medium transition-colors rounded-md"
-                  active-class="text-[#EDEDED] bg-[#111]"
+                  class="rounded-md px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950"
+                  active-class="text-slate-950 bg-slate-100"
                   :aria-current="route.path === link.to ? 'page' : undefined"
                 >
                   {{ t(link.label, link.fallback) }}
@@ -69,7 +69,7 @@
           </div>
           <div class="flex items-center gap-4">
             <div
-              class="hidden sm:flex items-center gap-1 bg-[#111] border border-[#333] rounded-md p-1 text-xs font-medium text-[#888]"
+              class="hidden items-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1 text-xs font-semibold text-slate-500 sm:flex"
               role="group"
               :aria-label="t('nav.languageSwitcher', 'Language selector')"
             >
@@ -85,8 +85,8 @@
                 "
                 :class="
                   locale === item.code
-                    ? 'bg-[#333] text-white shadow-sm rounded-sm'
-                    : 'text-[#888] hover:text-white'
+                    ? 'bg-white text-slate-950 shadow-sm rounded-sm'
+                    : 'text-slate-500 hover:text-slate-950'
                 "
                 class="px-2 py-1 transition-colors duration-200 font-mono"
               >
@@ -102,8 +102,8 @@
               <router-link
                 v-if="link.isConsole"
                 :to="link.to"
-                class="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-black transition-colors duration-200 hover:bg-[#EAEAEA]"
-                active-class="bg-[#EAEAEA]"
+                class="rounded-md bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
+                active-class="bg-slate-800"
                 :aria-current="route.path === link.to ? 'page' : undefined"
               >
                 {{ t(link.label, link.fallback) }}
@@ -111,15 +111,15 @@
               <router-link
                 v-else
                 :to="link.to"
-                class="rounded-md border border-transparent px-3 py-1.5 text-xs font-medium text-[#888] transition-colors duration-200 hover:text-white"
-                active-class="text-white bg-[#111]"
+                class="rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-950"
+                active-class="text-slate-950 bg-slate-100"
                 :aria-current="route.path === link.to ? 'page' : undefined"
               >
                 {{ t(link.label, link.fallback) }}
               </router-link>
             </template>
             <div
-              class="ml-auto flex items-center gap-1 bg-[#111] border border-[#333] rounded-md p-1 text-xs font-medium text-[#888] shrink-0"
+              class="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1 text-xs font-semibold text-slate-500"
               role="group"
             >
               <button
@@ -128,8 +128,8 @@
                 @click="setLocale(item.code)"
                 :class="
                   locale === item.code
-                    ? 'bg-[#333] text-white shadow-sm rounded-sm'
-                    : 'text-[#888] hover:text-white'
+                    ? 'bg-white text-slate-950 shadow-sm rounded-sm'
+                    : 'text-slate-500 hover:text-slate-950'
                 "
                 class="px-2 py-1 transition-colors duration-200 font-mono"
               >
@@ -156,26 +156,26 @@
       </router-view>
     </main>
 
-    <footer class="bg-black mt-auto relative border-t border-[#333]">
+    <footer class="relative mt-auto border-t border-slate-200 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div class="col-span-2 md:col-span-1">
             <div class="flex items-center gap-3 mb-4">
               <div
-                class="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg font-mono"
+                class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 font-mono text-lg font-bold text-white"
               >
                 N
               </div>
-              <span class="font-medium text-sm text-white">{{
+              <span class="text-sm font-semibold text-slate-950">{{
                 t("brand.name", "Abstract Account")
               }}</span>
             </div>
-            <p class="text-sm text-[#888] leading-relaxed">
+            <p class="text-sm leading-relaxed text-slate-500">
               {{ t("footer.tagline", "Programmable accounts for Neo N3.") }}
             </p>
           </div>
           <div v-for="column in footerColumns" :key="column.titleKey">
-            <p class="text-xs font-medium text-white mb-4">
+            <p class="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               {{ t(column.titleKey, column.titleFallback) }}
             </p>
             <ul class="space-y-2.5">
@@ -183,7 +183,7 @@
                 <router-link
                   v-if="link.to"
                   :to="link.to"
-                  class="text-sm text-[#888] hover:text-white transition-colors duration-200 flex items-center gap-2"
+                  class="flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors duration-200 hover:text-slate-950"
                 >
                   <svg
                     aria-hidden="true"
@@ -201,7 +201,7 @@
                   :href="link.href"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-sm text-[#888] hover:text-white transition-colors duration-200 flex items-center gap-2"
+                  class="flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors duration-200 hover:text-slate-950"
                 >
                   <svg
                     aria-hidden="true"
@@ -219,7 +219,7 @@
           </div>
         </div>
         <div
-          class="border-t border-[#333] pt-6 flex flex-col md:flex-row justify-between items-center gap-4"
+          class="flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-6 md:flex-row"
         >
           <div class="flex items-center gap-2 text-sm">
             <span class="relative flex h-2 w-2">
@@ -230,11 +230,11 @@
                 class="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]"
               ></span>
             </span>
-            <span class="text-[#888] font-medium">{{
+            <span class="font-medium text-slate-500">{{
               t(networkLabelKey, networkLabelFallback)
             }}</span>
           </div>
-          <div class="flex items-center gap-4 text-xs text-[#888]">
+          <div class="flex items-center gap-4 text-xs text-slate-500">
             <span
               >&copy; {{ new Date().getFullYear() }}
               {{ t("footer.copyright", "NEO ABSTRACT ACCOUNT") }}</span
@@ -249,7 +249,7 @@
         v-show="showScrollTop"
         @click="scrollToTop"
         :aria-label="t('nav.scrollToTop', 'Scroll to top')"
-        class="fixed bottom-8 right-8 z-50 w-10 h-10 rounded-md bg-[#111] border border-[#333] flex items-center justify-center text-[#888] hover:text-white hover:bg-[#222] transition-colors duration-200"
+        class="fixed bottom-8 right-8 z-50 flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors duration-200 hover:bg-slate-50 hover:text-slate-950"
       >
         <svg
           aria-hidden="true"

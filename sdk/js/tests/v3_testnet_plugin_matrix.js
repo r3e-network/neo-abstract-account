@@ -20,7 +20,7 @@ const { buildV3UserOperationTypedData, sanitizeHex } = require("../src/metaTx");
 const { resolveTestnetRpcUrl } = require("./testnet-rpc");
 
 let RPC_URL =
-  process.env.TESTNET_RPC_URL || process.env.NEO_RPC_URL || "";
+  process.env.TESTNET_RPC_URL || "";
 const TEST_WIF = process.env.TEST_WIF || "";
 const REPORT_DIR = path.resolve(__dirname, "..", "..", "docs", "reports");
 const SELECTED_SCENARIOS = new Set(

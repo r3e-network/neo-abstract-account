@@ -38,7 +38,7 @@ Use `deriveRegistrationAccountIdHash` when you want the SDK, frontend, and contr
 ```javascript
 const verifierParamsHex = evmPubKey.slice(2);
 const backupOwnerAddress = 'NQh...ownerAddress';
-const web3AuthVerifierHash = '0xb4107cb2cb4bace0ebe15bc4842890734abe133a';
+const web3AuthVerifierHash = '0x8e3a6388e02c0335912a77b7ff06d29a721c9112';
 
 const accountIdHash = aaClient.deriveRegistrationAccountIdHash({
   verifierContractHash: web3AuthVerifierHash,
