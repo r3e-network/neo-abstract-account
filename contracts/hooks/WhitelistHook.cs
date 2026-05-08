@@ -29,6 +29,8 @@ namespace AbstractAccount.Hooks
 
         public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => HookAuthority.Update(nef, manifest);
+
         /// <summary>
         /// Adds or removes a target contract from the account's allowlist.
         /// </summary>

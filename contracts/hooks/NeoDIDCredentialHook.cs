@@ -35,6 +35,8 @@ namespace AbstractAccount.Hooks
 
         public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => HookAuthority.Update(nef, manifest);
+
         [Safe]
         public static UInt160 GetRegistry()
         {

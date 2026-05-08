@@ -31,6 +31,8 @@ namespace AbstractAccount.Verifiers
 
         public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);
+
         /// <summary>
         /// Stores the passkey public key for an AA account.
         /// </summary>

@@ -2,6 +2,7 @@ using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Attributes;
+using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using System.ComponentModel;
 
@@ -35,6 +36,12 @@ namespace TestAllowanceToken
             StorageMap balances = new StorageMap(Storage.CurrentContext, BalancePrefix);
             balances.Put(owner, InitialSupply);
             OnTransfer(null, owner, InitialSupply);
+        }
+
+        public static void Update(ByteString nef, string manifest)
+        {
+            ValidateOwner();
+            ContractManagement.Update(nef, manifest);
         }
 
         [Safe]
@@ -123,6 +130,13 @@ namespace TestAllowanceToken
         private static byte[] AllowanceKey(UInt160 owner, UInt160 spender)
         {
             return Helper.Concat((byte[])owner, (byte[])spender);
+        }
+
+        private static void ValidateOwner()
+        {
+            UInt160 owner = GetOwner();
+            ExecutionEngine.Assert(owner != UInt160.Zero && owner.IsValid, "Owner not set");
+            ExecutionEngine.Assert(Runtime.CheckWitness(owner), "No authorization");
         }
     }
 }

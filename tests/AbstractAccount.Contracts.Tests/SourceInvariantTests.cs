@@ -53,6 +53,9 @@ public class SourceInvariantTests
     private static string ReadHook(string fileName) =>
         File.ReadAllText(Path.Combine(ContractsDir, "hooks", fileName));
 
+    private static string ReadRepo(params string[] relativeSegments) =>
+        File.ReadAllText(Path.Combine(new[] { RepoRoot }.Concat(relativeSegments).ToArray()));
+
     private static Random Rng() => new(Seed);
 
     // ========================================================================
@@ -619,7 +622,55 @@ public class SourceInvariantTests
     }
 
     // ========================================================================
-    // 19. Cross-file consistency (updated)
+    // 19. Contract update coverage
+    // ========================================================================
+
+    [TestMethod, Timeout(120_000)]
+    public void SourceInvariant_AllDeployableContractsExposeAdminGatedUpdate()
+    {
+        var directUpdateSources = new[]
+        {
+            ("contracts/UnifiedSmartWallet.Admin.cs", "Runtime.CheckWitness(adminHash)"),
+            ("contracts/paymaster/Paymaster.cs", "Runtime.CheckWitness(admin)"),
+            ("contracts/market/AAAddressMarket.cs", "ValidateAdmin();"),
+            ("contracts/mocks/MockTransferTarget.cs", "ValidateAdmin();"),
+            ("tokens/TestAllowanceToken/TestAllowanceToken.cs", "ValidateOwner();"),
+            ("verifiers/AllowAllVerifier/AllowAllVerifier.cs", "ValidateAdmin();"),
+        };
+
+        foreach (var (path, guard) in directUpdateSources)
+        {
+            string code = ReadRepo(path.Split('/'));
+            StringAssert.Contains(code, "public static void Update(ByteString nef, string manifest)", $"{path} exposes update");
+            StringAssert.Contains(code, guard, $"{path} gates update with admin/owner witness");
+            StringAssert.Contains(code, "ContractManagement.Update(nef, manifest)", $"{path} calls ContractManagement.Update");
+        }
+
+        string hookAuthority = ReadHook("HookAuthority.cs");
+        StringAssert.Contains(hookAuthority, "internal static void Update(ByteString nef, string manifest)");
+        StringAssert.Contains(hookAuthority, "ValidateAdmin();");
+        StringAssert.Contains(hookAuthority, "ContractManagement.Update(nef, manifest)");
+
+        foreach (string hook in new[] { "DailyLimitHook.cs", "MultiHook.cs", "NeoDIDCredentialHook.cs", "TokenRestrictedHook.cs", "WhitelistHook.cs" })
+        {
+            string code = ReadHook(hook);
+            StringAssert.Contains(code, "public static void Update(ByteString nef, string manifest) => HookAuthority.Update(nef, manifest);", $"{hook} delegates update");
+        }
+
+        string verifierAuthority = ReadRepo("contracts", "verifiers", "VerifierAuthority.cs");
+        StringAssert.Contains(verifierAuthority, "internal static void Update(ByteString nef, string manifest)");
+        StringAssert.Contains(verifierAuthority, "ValidateAdmin();");
+        StringAssert.Contains(verifierAuthority, "ContractManagement.Update(nef, manifest)");
+
+        foreach (string verifier in new[] { "MultiSigVerifier.cs", "NeoNativeVerifier.cs", "SessionKeyVerifier.cs", "SubscriptionVerifier.cs", "TEEVerifier.cs", "Web3AuthVerifier.cs", "WebAuthnVerifier.cs", "ZKEmailVerifier.cs", "ZkLoginVerifier.cs" })
+        {
+            string code = ReadRepo("contracts", "verifiers", verifier);
+            StringAssert.Contains(code, "public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);", $"{verifier} delegates update");
+        }
+    }
+
+    // ========================================================================
+    // 20. Cross-file consistency (updated)
 
     [TestMethod, Timeout(120_000)]
     public void SourceInvariant_CrossFileConsistency()

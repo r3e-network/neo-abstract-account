@@ -1,6 +1,7 @@
 using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
@@ -48,6 +49,12 @@ namespace AbstractAccount
             ValidateAdmin();
             ExecutionEngine.Assert(coreContract != UInt160.Zero && coreContract.IsValid, "Invalid core contract");
             Storage.Put(Storage.CurrentContext, Prefix_AuthorizedCore, (byte[])coreContract);
+        }
+
+        internal static void Update(ByteString nef, string manifest)
+        {
+            ValidateAdmin();
+            ContractManagement.Update(nef, manifest);
         }
 
         internal static void ValidateConfigCaller(UInt160 accountId, UInt160 verifierContract)

@@ -33,6 +33,8 @@ namespace AbstractAccount.Verifiers
 
         public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);
+
         /// <summary>
         /// Stores the enclave public key used to authorize future user operations.
         /// </summary>
