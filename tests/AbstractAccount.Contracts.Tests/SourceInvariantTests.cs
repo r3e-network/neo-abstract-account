@@ -73,6 +73,9 @@ public class SourceInvariantTests
         StringAssert.Contains(accountsSource, "Backup owner witness required", "Witness required assertion");
         StringAssert.Contains(accountsSource, "Account already exists", "Duplicate check assertion");
         StringAssert.Contains(accountsSource, "ComputeRegistrationAccountId", "Registration binding helper exists");
+        StringAssert.Contains(accountsSource, "public static void RegisterAccounts", "Batch registration entrypoint exists");
+        StringAssert.Contains(accountsSource, "Account batch size must be 1-64", "Batch registration boundary exists");
+        StringAssert.Contains(accountsSource, "ids.Length == paramList.Length", "Batch registration keeps account IDs bound to params");
         StringAssert.Contains(accountsSource, "Account id does not match registration parameters", "Registration binding assertion");
 
         // Randomized invariant check: verify no escaped timelock boundary exists in the source
