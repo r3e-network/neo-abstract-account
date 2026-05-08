@@ -43,4 +43,9 @@ pushd market >/dev/null
 ~/.dotnet/tools/nccs ./AAAddressMarket.csproj -o ../bin/v3
 popd >/dev/null
 
+echo "Compiling Recovery Contracts..."
+pushd recovery >/dev/null
+~/.dotnet/tools/nccs ./MorpheusSocialRecoveryVerifier.csproj -o ../bin/v3
+popd >/dev/null
+
 echo "Compilation completed successfully."

@@ -127,7 +127,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     relayRawEnabled: false,
     explorerBaseUrl: DEFAULT_EXPLORER_BASE_URL,
     matrixContractHash: DEFAULT_MATRIX_CONTRACT_HASH,
-    addressMarketHash: '011006627a683df8af98ee12e13161317d57df5e',
+    addressMarketHash: 'ae7afe3a85ab08bfd1d4907b35ae8b80c75b3a69',
     paymasterHash: 'a0defa2bc6d7a71ba1e237149287c8ca4ff46caf',
     n3IndexApiBaseUrl: DEFAULT_N3INDEX_API_BASE_URL,
     n3IndexNetwork: 'mainnet',
@@ -194,7 +194,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.mainnet, {
     abstractAccountHash: '0268a387913b250166ddec032b03332690a1ef78',
     abstractAccountDomain: 'smartwallet.neo',
-    addressMarketHash: '011006627a683df8af98ee12e13161317d57df5e',
+    addressMarketHash: 'ae7afe3a85ab08bfd1d4907b35ae8b80c75b3a69',
     paymasterHash: 'a0defa2bc6d7a71ba1e237149287c8ca4ff46caf',
     rpcUrl: 'https://api.n3index.dev/mainnet',
     n3IndexNetwork: 'mainnet',
