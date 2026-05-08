@@ -43,6 +43,7 @@ const EXPECTED_CONTRACTS = {
       "postExecute",
       "clearAccount",
       "validateSignature",
+      "update",
     ],
   },
   aaSessionKeyVerifier: {
@@ -56,12 +57,16 @@ const EXPECTED_CONTRACTS = {
       "postExecute",
       "clearAccount",
       "validateSignature",
+      "update",
     ],
   },
   aaSocialRecoveryVerifier: {
     manifestName: "SocialRecoveryVerifier",
     methods: [
       "setupRecovery",
+      "getContractAdmin",
+      "transferAdmin",
+      "update",
       "requestRecoveryTicket",
       "submitRecoveryTicket",
       "finalizeRecovery",
@@ -71,7 +76,7 @@ const EXPECTED_CONTRACTS = {
   },
   aaAddressMarket: {
     manifestName: "AAAddressMarket",
-    methods: ["createListing", "updateListingPrice", "settleListing", "getListingCount", "getListing"],
+    methods: ["createListing", "updateListingPrice", "settleListing", "getListingCount", "getListing", "update"],
   },
   aaPaymaster: {
     manifestName: "AAPaymaster",
@@ -82,6 +87,7 @@ const EXPECTED_CONTRACTS = {
       "validatePaymasterOp",
       "settleReimbursement",
       "getSponsorDeposit",
+      "update",
     ],
   },
 };
@@ -210,6 +216,7 @@ async function main() {
     ["aaCore", mainnet.domains.aaCore, "aaCore"],
     ["aaWeb3AuthVerifier", mainnet.domains.aaWeb3AuthVerifier, "aaWeb3AuthVerifier"],
     ["aaSessionKeyVerifier", mainnet.domains.aaSessionKeyVerifier, "aaSessionKeyVerifier"],
+    ["aaSocialRecoveryVerifier", mainnet.domains.aaSocialRecoveryVerifier, "aaSocialRecoveryVerifier"],
     ["aaAddressMarket", mainnet.domains.aaAddressMarket, "aaAddressMarket"],
     ["aaPaymaster", mainnet.domains.aaPaymaster, "aaPaymaster"],
   ].filter(([, domain]) => domain);

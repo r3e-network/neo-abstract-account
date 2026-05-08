@@ -85,8 +85,8 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 | Morpheus DataFeed | `0x03013f49c42a14546c8bbe58f9d434c3517fccab` | `0x9bea75cf702f6afc09125aa6d22f082bfd2ee064` |
 | Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x6af95dac2c55d4af01f657c86b83583b6dd2fabe` |
 | NeoDIDRegistry | `0xb81f31ea81e279793b30411b82c2e82078b63105` | unpublished in the shared registry |
-| AA Web3AuthVerifier | `0x8e3a6388e02c0335912a77b7ff06d29a721c9112` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
-| SocialRecoveryVerifier | `0x51ef9639deb29284cc8577a7fa3fdfbc92ada7c3` | deployment-specific in current test flows |
+| AA Web3AuthVerifier | `0xf5c452cd4ba29dcdc47026383568c0d8b38d9272` | `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d` |
+| SocialRecoveryVerifier | `0x198b3a9cec9bccc2110d19bd929b10374a9d034d` | `recovery.smartwallet.neo` |
 
 Domain rules:
 
