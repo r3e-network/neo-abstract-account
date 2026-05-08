@@ -106,6 +106,25 @@ namespace AbstractAccount
             }
         }
 
+        /// <summary>
+        /// Registers multiple deterministic AA accounts atomically with shared owner, verifier, hook, and timelock.
+        /// Each account remains bound to its own verifier params, so anchors can derive 21 agent accounts from
+        /// anchor/app/agent/nonce material without exposing a front-running registration path.
+        /// </summary>
+        public static void RegisterAccounts(UInt160[] accountIds, UInt160 verifier, ByteString[] verifierParamsList, UInt160 hookId, UInt160 backupOwner, uint escapeTimelock)
+        {
+            ExecutionEngine.Assert(accountIds != null && verifierParamsList != null, "Account batch required");
+            UInt160[] ids = accountIds!;
+            ByteString[] paramList = verifierParamsList!;
+            ExecutionEngine.Assert(ids.Length > 0 && ids.Length <= 64, "Account batch size must be 1-64");
+            ExecutionEngine.Assert(ids.Length == paramList.Length, "Account batch params mismatch");
+
+            for (int i = 0; i < ids.Length; i++)
+            {
+                RegisterAccount(ids[i]!, verifier, paramList[i], hookId, backupOwner!, escapeTimelock);
+            }
+        }
+
 
         /// <summary>
         /// Initiates a hook plugin replacement with a timelock delay for security.

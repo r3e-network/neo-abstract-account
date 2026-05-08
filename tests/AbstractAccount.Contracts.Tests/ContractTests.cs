@@ -120,6 +120,7 @@ public class ContractTests
         string[] requiredMethods =
         {
             "RegisterAccount",
+            "RegisterAccounts",
             "UpdateHook",
             "ConfirmHookUpdate",
             "UpdateVerifier",
@@ -183,6 +184,9 @@ public class ContractTests
         StringAssert.Contains(accountsSource, "Account id required");
         StringAssert.Contains(accountsSource, "Account already exists");
         StringAssert.Contains(accountsSource, "public static UInt160 ComputeRegistrationAccountId(");
+        StringAssert.Contains(accountsSource, "public static void RegisterAccounts(");
+        StringAssert.Contains(accountsSource, "Account batch size must be 1-64");
+        StringAssert.Contains(accountsSource, "RegisterAccount(ids[i]!, verifier, paramList[i], hookId, backupOwner!, escapeTimelock)");
         StringAssert.Contains(accountsSource, "Account id does not match registration parameters");
         StringAssert.Contains(
             accountsSource,

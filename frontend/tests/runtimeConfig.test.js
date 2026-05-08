@@ -221,3 +221,11 @@ test('default matrix contract hash tracks the validated testnet deployment', () 
 test('default n3index api base url tracks the documented public edge', () => {
   assert.equal(DEFAULT_N3INDEX_API_BASE_URL, 'https://api.n3index.dev');
 });
+
+test('production CSP allows the documented n3index browser API base', () => {
+  const vercelConfigPath = fileURLToPath(new URL('../vercel.json', import.meta.url));
+  const vercelConfig = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf8'));
+  const headers = vercelConfig.headers?.flatMap((entry) => entry.headers || []) || [];
+  const csp = headers.find((header) => header.key === 'Content-Security-Policy')?.value || '';
+  assert.match(csp, /connect-src[^;]*https:\/\/api\.n3index\.dev/);
+});
