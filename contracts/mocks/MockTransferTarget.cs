@@ -2,6 +2,8 @@ using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Attributes;
+using Neo.SmartContract.Framework.Native;
+using Neo.SmartContract.Framework.Services;
 using System.ComponentModel;
 
 namespace AbstractAccount.Mocks
@@ -19,6 +21,27 @@ namespace AbstractAccount.Mocks
     [ManifestExtra("Description", "Minimal transfer-capable test target for AA V3 validation")]
     public class MockTransferTarget : SmartContract
     {
+        private static readonly byte[] Prefix_Admin = new byte[] { 0xF0 };
+
+        public static void _deploy(object data, bool update)
+        {
+            if (update) return;
+            Storage.Put(Storage.CurrentContext, Prefix_Admin, Runtime.Transaction.Sender);
+        }
+
+        [Safe]
+        public static UInt160 Admin()
+        {
+            ByteString? data = Storage.Get(Storage.CurrentContext, Prefix_Admin);
+            return data == null ? UInt160.Zero : (UInt160)data;
+        }
+
+        public static void Update(ByteString nef, string manifest)
+        {
+            ValidateAdmin();
+            ContractManagement.Update(nef, manifest);
+        }
+
         [Safe]
         public static string Symbol()
         {
@@ -37,6 +60,13 @@ namespace AbstractAccount.Mocks
             ExecutionEngine.Assert(to != null && to != UInt160.Zero, "to required");
             ExecutionEngine.Assert(amount >= 0, "amount must be non-negative");
             return true;
+        }
+
+        private static void ValidateAdmin()
+        {
+            UInt160 admin = Admin();
+            ExecutionEngine.Assert(admin != UInt160.Zero && admin.IsValid, "Admin not set");
+            ExecutionEngine.Assert(Runtime.CheckWitness(admin), "Unauthorized admin");
         }
     }
 }

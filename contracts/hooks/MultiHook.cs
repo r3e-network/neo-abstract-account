@@ -47,6 +47,8 @@ namespace AbstractAccount.Hooks
 
         public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => HookAuthority.Update(nef, manifest);
+
         /// <summary>
         /// Sets the ordered hook list for an account or clears it when the array is empty.
         /// </summary>

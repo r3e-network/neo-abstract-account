@@ -44,6 +44,8 @@ namespace AbstractAccount.Verifiers
 
         public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);
+
         public class SessionKeyData
         {
             public ByteString PubKey = (ByteString)new byte[0];          // secp256r1 uncompressed

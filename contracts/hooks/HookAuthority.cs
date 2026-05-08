@@ -1,6 +1,7 @@
 using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount.Hooks
@@ -53,6 +54,12 @@ namespace AbstractAccount.Hooks
         internal static void ValidateAdminCaller()
         {
             ValidateAdmin();
+        }
+
+        internal static void Update(ByteString nef, string manifest)
+        {
+            ValidateAdmin();
+            ContractManagement.Update(nef, manifest);
         }
 
         internal static void ValidateConfigCaller(UInt160 accountId, UInt160 hookContract)

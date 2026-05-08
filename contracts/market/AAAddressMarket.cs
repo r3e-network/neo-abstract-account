@@ -26,6 +26,7 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_NextListingId = new byte[] { 0x01 };
         private static readonly byte[] Prefix_Listing = new byte[] { 0x02 };
         private static readonly byte[] Prefix_PendingPayment = new byte[] { 0x03 };
+        private static readonly byte[] Prefix_Admin = new byte[] { 0xF0 };
 
         private const byte StatusActive = 1;
         private const byte StatusSold = 2;
@@ -50,6 +51,32 @@ namespace AbstractAccount
             public UInt160 Buyer = UInt160.Zero;
             public BigInteger CreatedAt;
             public BigInteger UpdatedAt;
+        }
+
+        public static void _deploy(object data, bool update)
+        {
+            if (update) return;
+            Storage.Put(Storage.CurrentContext, Prefix_Admin, Runtime.Transaction.Sender);
+        }
+
+        [Safe]
+        public static UInt160 Admin()
+        {
+            ByteString? data = Storage.Get(Storage.CurrentContext, Prefix_Admin);
+            return data == null ? UInt160.Zero : (UInt160)data;
+        }
+
+        public static void SetAdmin(UInt160 newAdmin)
+        {
+            ValidateAdmin();
+            ExecutionEngine.Assert(newAdmin != null && newAdmin.IsValid, "Invalid admin");
+            Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin!);
+        }
+
+        public static void Update(ByteString nef, string manifest)
+        {
+            ValidateAdmin();
+            ContractManagement.Update(nef, manifest);
         }
 
         public static void CreateListing(UInt160 aaContract, UInt160 accountId, BigInteger price, string title, string metadataUri)
@@ -292,6 +319,13 @@ namespace AbstractAccount
 
             ExecutionEngine.Assert(false, "Listing id required");
             return 0;
+        }
+
+        private static void ValidateAdmin()
+        {
+            UInt160 admin = Admin();
+            ExecutionEngine.Assert(admin != UInt160.Zero && admin.IsValid, "Admin not set");
+            ExecutionEngine.Assert(Runtime.CheckWitness(admin), "Unauthorized admin");
         }
     }
 }

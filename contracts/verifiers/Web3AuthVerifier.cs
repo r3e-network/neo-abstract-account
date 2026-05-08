@@ -70,6 +70,8 @@ namespace AbstractAccount.Verifiers
 
         public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);
+
         /// <summary>
         /// Stores the 65-byte uncompressed secp256k1 public key for an account.
         /// </summary>

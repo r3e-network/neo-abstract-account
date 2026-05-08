@@ -30,6 +30,8 @@ namespace AbstractAccount.Hooks
 
         public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
 
+        public static void Update(ByteString nef, string manifest) => HookAuthority.Update(nef, manifest);
+
         /// <summary>
         /// Marks a token contract as restricted or clears the restriction.
         /// </summary>
