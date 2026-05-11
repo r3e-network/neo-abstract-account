@@ -94,7 +94,7 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
     VITE_SUPABASE_ANON_KEY: 'public-anon-key',
   });
 
-  assert.equal(config.abstractAccountHash, 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38');
+  assert.equal(config.abstractAccountHash, 'dbf38e7b2117186bf7a5e17ead702322c0c5b6f2');
   assert.equal(config.abstractAccountDomain, '');
   assert.equal(config.rpcUrl, 'https://api.n3index.dev/testnet');
   assert.equal(config.relayRpcUrl, 'https://api.n3index.dev/testnet');

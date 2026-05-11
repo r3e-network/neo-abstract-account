@@ -6,8 +6,8 @@ Executor address: `NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX`
 
 Refresh note on 2026-03-15:
 
-- the current shared testnet AA core is now `0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38`
-- the current shared testnet `Web3AuthVerifier` anchor is now `0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`
+- the current shared testnet AA core is now `0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2`
+- the current shared testnet `Web3AuthVerifier` anchor is now `0x7147f9a508594a7656a25f45d0a7a7dede7c227f`
 - the deployment set below is preserved as the historical matrix run environment
 
 This report records the V3 verifier/hook matrix that was executed on testnet after hardening the current branch.

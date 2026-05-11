@@ -7,8 +7,8 @@
 已验证组件：
 
 - Morpheus Paymaster policy：`testnet-aa`
-- AA Core：`0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38`
-- Web3Auth Verifier：`0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d`
+- AA Core：`0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2`
+- Web3Auth Verifier：`0x7147f9a508594a7656a25f45d0a7a7dede7c227f`
 - Morpheus Test CVM App ID：`ddff154546fe22d15b65667156dd4b7c611e6093`
 
 ## 已修复问题

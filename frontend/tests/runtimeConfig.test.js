@@ -61,7 +61,7 @@ test('default abstract account hash tracks the hardened verified deployment', ()
 });
 
 test('testnet abstract account hash tracks the published V3 testnet deployment', () => {
-  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38');
+  assert.equal(DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET, 'dbf38e7b2117186bf7a5e17ead702322c0c5b6f2');
 });
 
 test('resolveRpcUrl preserves explicit values and defaults otherwise', () => {
@@ -202,7 +202,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
     morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
   });
   assert.deepEqual(MORPHEUS_NETWORK_DEFAULTS.testnet, {
-    abstractAccountHash: 'e24d2980d17d2580ff4ee8dc5dddaa20e3caec38',
+    abstractAccountHash: 'dbf38e7b2117186bf7a5e17ead702322c0c5b6f2',
     abstractAccountDomain: '',
     addressMarketHash: '',
     paymasterHash: '',

@@ -188,13 +188,18 @@ test('testnet validators derive registration-bound account ids with the contract
   assert.match(marketEscrowSource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
 
   assert.match(paymasterRelaySource, /deriveRegistrationAccountIdHash\(\{/);
+  assert.match(paymasterRelaySource, /verifierContractHash: WEB3AUTH_VERIFIER_HASH/);
+  assert.match(paymasterRelaySource, /verifierParamsHex: verifierPubKey/);
   assert.match(paymasterRelaySource, /backupOwnerAddress: account\.scriptHash/);
   assert.match(paymasterRelaySource, /escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK/);
   assert.doesNotMatch(paymasterRelaySource, /\ballowlistAccountId = PAYMASTER_ACCOUNT_ID\b/);
   assert.doesNotMatch(paymasterRelaySource, /\bDEFAULT_PAYMASTER_ACCOUNT_ID\b/);
-  assert.match(paymasterRelaySource, /const defaultBootstrapAccountId = sanitizeHex\(EXPLICIT_PAYMASTER_ACCOUNT_ID \|\| deriveBootstrapAccountId\(\)\);/);
+  assert.match(paymasterRelaySource, /const defaultBootstrapAccountId = sanitizeHex\(/);
+  assert.match(paymasterRelaySource, /EXPLICIT_PAYMASTER_ACCOUNT_ID/);
+  assert.match(paymasterRelaySource, /deriveBootstrapAccountId\(\{\s+verifierContractHash: WEB3AUTH_VERIFIER_HASH,\s+verifierParamsHex: verifierPubKey,/);
   assert.match(paymasterRelaySource, /const usingReusableBootstrapAccount = skipAllowlistUpdate && normalizeHash\(accountId\) === normalizeHash\(defaultBootstrapAccountId\);/);
   assert.doesNotMatch(paymasterRelaySource, /const usingDerivedDefaultAccount = !EXPLICIT_PAYMASTER_ACCOUNT_ID && skipAllowlistUpdate;/);
+  assert.doesNotMatch(paymasterRelaySource, /"updateVerifier",/);
   assert.match(paymasterRelaySource, /resolveTestnetRpcUrl/);
   assert.match(paymasterRelaySource, /const localOverrides = \(!skipAllowlistUpdate && normalizedAllowlistAccountId\)/);
 
