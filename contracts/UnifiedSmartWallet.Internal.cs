@@ -25,6 +25,7 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_VerifierExecutionContext = new byte[] { 0x0E };
         private static readonly byte[] Prefix_PendingVerifierCall = new byte[] { 0x0F };
         private static readonly byte[] Prefix_PendingHookCall = new byte[] { 0x10 };
+        private static readonly byte[] Prefix_VerifyScopeTarget = new byte[] { 0x12 };
 
         private static readonly BigInteger MaxMetadataUriLength = 240;
 

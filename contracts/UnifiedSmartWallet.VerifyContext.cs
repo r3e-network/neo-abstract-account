@@ -1,6 +1,7 @@
 using Neo;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Attributes;
+using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 
 namespace AbstractAccount
@@ -58,14 +59,107 @@ namespace AbstractAccount
         [Safe]
         public static bool Verify(UInt160 accountId)
         {
+            if (Runtime.Trigger == TriggerType.Verification)
+            {
+                return VerifyScopedTransactionSigner(accountId);
+            }
+
             if (Runtime.Trigger == TriggerType.Application)
             {
                 byte[] key = Helper.Concat(Prefix_VerifyContext, (byte[])accountId);
                 ByteString? expectedTarget = Storage.Get(Storage.CurrentContext, key);
-                return expectedTarget != null && (UInt160)expectedTarget == Runtime.CallingScriptHash;
+                if (expectedTarget == null) return VerifyScopedTransactionSigner(accountId);
+                if ((UInt160)expectedTarget == Runtime.CallingScriptHash) return true;
+
+                // Target contracts often complete an authorized user operation by
+                // calling native NEO/GAS transfer or vote. During that nested native
+                // call the witness check is performed by the native asset contract,
+                // but it is still scoped to the active ExecuteUserOp target above.
+                return Runtime.CallingScriptHash == NEO.Hash || Runtime.CallingScriptHash == GAS.Hash;
             }
 
             return false;
+        }
+
+        [Safe]
+        public static UInt160 GetVerifyScopeTarget(UInt160 accountId)
+        {
+            byte[] key = Helper.Concat(Prefix_VerifyScopeTarget, (byte[])accountId);
+            ByteString? value = Storage.Get(Storage.CurrentContext, key);
+            return value == null ? UInt160.Zero : (UInt160)value;
+        }
+
+        public static void SetVerifyScopeTarget(UInt160 accountId, UInt160 targetContract)
+        {
+            AssertContractAdmin();
+            SetVerifyScopeTargetCore(accountId, targetContract);
+        }
+
+        public static void SetVerifyScopeTargets(UInt160[] accountIds, UInt160 targetContract)
+        {
+            AssertContractAdmin();
+            ExecutionEngine.Assert(accountIds != null && accountIds.Length > 0 && accountIds.Length <= 128, "invalid account batch");
+            for (int i = 0; i < accountIds.Length; i++)
+            {
+                SetVerifyScopeTargetCore(accountIds[i], targetContract);
+            }
+        }
+
+        private static void SetVerifyScopeTargetCore(UInt160 accountId, UInt160 targetContract)
+        {
+            ExecutionEngine.Assert(accountId != null && accountId != UInt160.Zero, "account id required");
+            ExecutionEngine.Assert(targetContract != null && targetContract != UInt160.Zero, "target required");
+            byte[] key = Helper.Concat(Prefix_VerifyScopeTarget, (byte[])accountId);
+            Storage.Put(Storage.CurrentContext, key, (byte[])targetContract);
+        }
+
+        private static void AssertContractAdmin()
+        {
+            ByteString? admin = Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin);
+            ExecutionEngine.Assert(admin != null, "No admin set");
+            UInt160 adminHash = (UInt160)admin!;
+            ExecutionEngine.Assert(Runtime.CheckWitness(adminHash), "Not admin");
+        }
+
+        private static bool VerifyScopedTransactionSigner(UInt160 accountId)
+        {
+            UInt160 targetContract = GetVerifyScopeTarget(accountId);
+            if (targetContract == UInt160.Zero) return false;
+
+            Signer[] signers = Runtime.CurrentSigners();
+            for (int i = 0; i < signers.Length; i++)
+            {
+                if (HasExactAaWitnessRules(signers[i], Runtime.ExecutingScriptHash, targetContract))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool HasExactAaWitnessRules(Signer signer, UInt160 proxyContract, UInt160 targetContract)
+        {
+            if (signer.Scopes != WitnessScope.WitnessRules) return false;
+            if (signer.Rules == null || signer.Rules.Length != 1) return false;
+            WitnessRule rule = signer.Rules[0];
+            if (rule.Action != WitnessRuleAction.Allow) return false;
+            if (rule.Condition == null || rule.Condition.Type != WitnessConditionType.Or) return false;
+
+            OrCondition condition = (OrCondition)rule.Condition;
+            if (condition.Expressions == null || condition.Expressions.Length != 2) return false;
+
+            bool hasProxy = false;
+            bool hasTarget = false;
+            for (int i = 0; i < condition.Expressions.Length; i++)
+            {
+                WitnessCondition expression = condition.Expressions[i];
+                if (expression == null || expression.Type != WitnessConditionType.CalledByContract) return false;
+                CalledByContractCondition calledBy = (CalledByContractCondition)expression;
+                if (calledBy.Hash == proxyContract) hasProxy = true;
+                else if (calledBy.Hash == targetContract) hasTarget = true;
+                else return false;
+            }
+            return hasProxy && hasTarget;
         }
 
         /// <summary>

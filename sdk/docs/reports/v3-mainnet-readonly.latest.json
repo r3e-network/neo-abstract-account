@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-10T04:03:38.513Z",
+  "createdAt": "2026-05-10T23:37:41.939Z",
   "network": "mainnet",
   "rpcUrl": "https://api.n3index.dev/mainnet",
   "networkMagic": 860833102,
@@ -16,7 +16,7 @@
       "key": "aaCore",
       "hash": "0x0268a387913b250166ddec032b03332690a1ef78",
       "manifestName": "UnifiedSmartWalletV3",
-      "methodCount": 60,
+      "methodCount": 64,
       "requiredMethods": [
         "registerAccount",
         "computeRegistrationAccountId",
