@@ -29,8 +29,8 @@ const relayHandler = relayModule.default;
 
 const TEST_WIF = process.env.TEST_WIF || process.env.NEO_TESTNET_WIF || "";
 let RPC_URL = process.env.TESTNET_RPC_URL || "";
-const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xe24d2980d17d2580ff4ee8dc5dddaa20e3caec38";
-const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0xf2560a0db44bbb32d0a6919cf90a3d0643ad8e3d";
+const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2";
+const WEB3AUTH_VERIFIER_HASH = process.env.AA_WEB3AUTH_VERIFIER_HASH_TESTNET || "0x7147f9a508594a7656a25f45d0a7a7dede7c227f";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
 const PAYMASTER_API_TOKEN =
   process.env.MORPHEUS_RUNTIME_TOKEN
@@ -478,17 +478,24 @@ async function main() {
   const version = await rpcClient.getVersion();
   const networkMagic = Number(version.protocol.network);
   const aaClient = new AbstractAccountClient(RPC_URL, CORE_HASH);
-  const deriveBootstrapAccountId = (verifierParamsHex = "") => aaClient.deriveRegistrationAccountIdHash({
+  const deriveBootstrapAccountId = ({ verifierContractHash = "", verifierParamsHex = "" } = {}) => aaClient.deriveRegistrationAccountIdHash({
+    verifierContractHash,
     verifierParamsHex,
     backupOwnerAddress: account.scriptHash,
     escapeTimelock: REGISTRATION_ESCAPE_TIMELOCK,
   });
 
-  const defaultBootstrapAccountId = sanitizeHex(EXPLICIT_PAYMASTER_ACCOUNT_ID || deriveBootstrapAccountId());
-  let accountId = defaultBootstrapAccountId;
-  let skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE;
   const evmSigner = ethers.Wallet.createRandom();
   const verifierPubKey = sanitizeHex(evmSigner.signingKey.publicKey);
+  const defaultBootstrapAccountId = sanitizeHex(
+    EXPLICIT_PAYMASTER_ACCOUNT_ID
+    || deriveBootstrapAccountId({
+      verifierContractHash: WEB3AUTH_VERIFIER_HASH,
+      verifierParamsHex: verifierPubKey,
+    })
+  );
+  let accountId = defaultBootstrapAccountId;
+  let skipAllowlistUpdate = SKIP_PAYMASTER_ALLOWLIST_UPDATE;
 
   console.log(JSON.stringify({
     rpc: RPC_URL,
@@ -511,8 +518,8 @@ async function main() {
         "registerAccount",
         [
           hash160Param(targetAccountId),
-          hash160Param("0".repeat(40)),
-          emptyByteArrayParam(),
+          hash160Param(WEB3AUTH_VERIFIER_HASH),
+          byteArrayParam(verifierPubKey),
           hash160Param("0".repeat(40)),
           hash160Param(account.scriptHash),
           integerParam(REGISTRATION_ESCAPE_TIMELOCK),
@@ -524,21 +531,9 @@ async function main() {
       console.log(`registerAccount skipped for existing account ${normalizeHash(targetAccountId)}`);
     }
 
-    const updateVerifier = await invokePersisted(
-      rpcClient,
-      CORE_HASH,
-      account,
-      networkMagic,
-      "updateVerifier",
-      [
-        hash160Param(targetAccountId),
-        hash160Param(WEB3AUTH_VERIFIER_HASH),
-        byteArrayParam(verifierPubKey),
-      ],
-    );
     return {
       register,
-      updateVerifier,
+      updateVerifier: null,
     };
   }
 
@@ -551,7 +546,10 @@ async function main() {
     if (!usingReusableBootstrapAccount || !isUnauthorizedBootstrapError(error)) {
       throw error;
     }
-    accountId = deriveBootstrapAccountId(Buffer.from(randomBytes(8)).toString("hex"));
+    accountId = deriveBootstrapAccountId({
+      verifierContractHash: WEB3AUTH_VERIFIER_HASH,
+      verifierParamsHex: verifierPubKey,
+    });
     skipAllowlistUpdate = false;
     console.warn(
       `Reusable paymaster bootstrap account was rejected; falling back to disposable account ${normalizeHash(accountId)}`
@@ -561,7 +559,7 @@ async function main() {
 
   console.log(JSON.stringify({
     registerTxid: register?.txid || null,
-    updateVerifierTxid: updateVerifier.txid,
+    updateVerifierTxid: updateVerifier?.txid || null,
   }, null, 2));
 
   if (!skipAllowlistUpdate) {

@@ -1,7 +1,9 @@
 const { spawnSync } = require('node:child_process');
 
 function hasCommand(command) {
-  return spawnSync('bash', ['-lc', `command -v ${command} >/dev/null 2>&1`]).status === 0;
+  return spawnSync('bash', ['-lc', `command -v ${command} >/dev/null 2>&1`], {
+    timeout: 5000,
+  }).status === 0;
 }
 
 function splitCommand(value) {
