@@ -99,9 +99,10 @@ namespace AbstractAccount
         {
             AssertContractAdmin();
             ExecutionEngine.Assert(accountIds != null && accountIds.Length > 0 && accountIds.Length <= 128, "invalid account batch");
-            for (int i = 0; i < accountIds.Length; i++)
+            UInt160[] accounts = accountIds!;
+            for (int i = 0; i < accounts.Length; i++)
             {
-                SetVerifyScopeTargetCore(accountIds[i], targetContract);
+                SetVerifyScopeTargetCore(accounts[i], targetContract);
             }
         }
 
@@ -109,8 +110,8 @@ namespace AbstractAccount
         {
             ExecutionEngine.Assert(accountId != null && accountId != UInt160.Zero, "account id required");
             ExecutionEngine.Assert(targetContract != null && targetContract != UInt160.Zero, "target required");
-            byte[] key = Helper.Concat(Prefix_VerifyScopeTarget, (byte[])accountId);
-            Storage.Put(Storage.CurrentContext, key, (byte[])targetContract);
+            byte[] key = Helper.Concat(Prefix_VerifyScopeTarget, (byte[])accountId!);
+            Storage.Put(Storage.CurrentContext, key, (byte[])targetContract!);
         }
 
         private static void AssertContractAdmin()

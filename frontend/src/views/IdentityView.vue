@@ -1,16 +1,10 @@
 <template>
   <div
-    class="relative min-h-screen bg-aa-dark overflow-hidden font-sans text-aa-text"
+    class="relative min-h-screen overflow-hidden bg-[#f5f7fb] font-sans text-aa-text"
   >
-    <div class="absolute inset-0 z-0">
-      <div
-        class="absolute top-12 right-[12%] h-72 w-72 rounded-full bg-aa-info/10 blur-3xl"
-      ></div>
-      <div
-        class="absolute bottom-16 left-[10%] h-80 w-80 rounded-full bg-aa-orange/10 blur-3xl"
-      ></div>
-      <div class="absolute inset-0 bg-mesh opacity-60"></div>
-    </div>
+    <div
+      class="absolute inset-x-0 top-0 z-0 h-72 border-b border-slate-200 bg-white"
+    ></div>
 
     <div class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div
@@ -20,9 +14,7 @@
           <p class="mb-2 text-xs font-bold uppercase text-aa-info">
             {{ t("identity.pageEyebrow", "Identity Control Plane") }}
           </p>
-          <h1
-            class="text-3xl font-extrabold text-white font-outfit md:text-4xl"
-          >
+          <h1 class="text-3xl font-extrabold text-slate-950 font-outfit md:text-4xl">
             {{ t("identity.pageTitle", "Web3Auth / NeoDID Workspace") }}
           </h1>
           <p
@@ -48,7 +40,7 @@
 
       <div class="mb-6 grid gap-4 md:grid-cols-3">
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel/50 p-5 backdrop-blur-md"
+          class="rounded-2xl border border-aa-border bg-aa-panel p-5 shadow-sm"
         >
           <p class="text-xs font-bold uppercase text-aa-muted">
             {{ t("identity.connectedWallet", "Connected Neo Wallet") }}
@@ -58,7 +50,7 @@
           </p>
         </div>
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel/50 p-5 backdrop-blur-md"
+          class="rounded-2xl border border-aa-border bg-aa-panel p-5 shadow-sm"
         >
           <p class="text-xs font-bold uppercase text-aa-muted">
             {{ t("identity.boundAccount", "Bound Account Context") }}
@@ -68,7 +60,7 @@
           </p>
         </div>
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel/50 p-5 backdrop-blur-md"
+          class="rounded-2xl border border-aa-border bg-aa-panel p-5 shadow-sm"
         >
           <p class="text-xs font-bold uppercase text-aa-muted">
             {{ t("identity.aaContract", "AA Contract") }}

@@ -14,7 +14,7 @@
         >
           D
         </div>
-        <h2 class="text-lg font-bold text-white font-outfit">
+        <h2 class="text-lg font-bold text-aa-text font-outfit">
           {{ t("didPanel.title", "NeoDID / Web3Auth") }}
         </h2>
       </div>

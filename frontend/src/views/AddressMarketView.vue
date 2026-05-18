@@ -21,14 +21,14 @@
         ></div>
         <div class="relative">
           <div
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-aa-info/15 text-aa-info-light text-sm font-semibold border border-aa-info/30 shadow-sm mb-4"
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-900 text-sm font-semibold border border-sky-300 shadow-sm mb-4"
           >
             <span class="relative flex h-2 w-2">
               <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-info opacity-75"
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-600 opacity-75"
               ></span>
               <span
-                class="relative inline-flex rounded-full h-2 w-2 bg-aa-info"
+                class="relative inline-flex rounded-full h-2 w-2 bg-sky-700"
               ></span>
             </span>
             {{ t("market.badge", "Trustless Escrow") }}
@@ -42,7 +42,7 @@
           <h1
             class="text-4xl font-extrabold font-outfit md:text-5xl leading-tight"
           >
-            <span class="text-gradient-white">{{
+            <span class="text-gradient-white mr-2">{{
               t("market.subtitlePart1", "AA Address")
             }}</span>
             <span class="text-gradient">
@@ -124,9 +124,9 @@
 
       <section
         v-if="!marketConfigured"
-        class="mb-8 rounded-2xl border border-aa-warning/20 bg-aa-warning/5 p-6 text-aa-warning"
+        class="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-6 text-slate-800"
       >
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-slate-950">
           {{ t("market.notConfiguredTitle", "Market Contract Not Configured") }}
         </h2>
         <p class="mt-3 text-sm leading-7">
@@ -152,7 +152,7 @@
         <div
           class="rounded-2xl border border-aa-border bg-aa-panel/60 p-6 backdrop-blur-xl"
         >
-          <h2 class="text-lg font-bold text-white">
+          <h2 class="text-lg font-bold text-aa-text">
             {{ t("market.createEscrowListing", "Create Escrow Listing") }}
           </h2>
           <p class="mt-2 text-sm leading-7 text-aa-muted">
@@ -378,7 +378,7 @@
             class="flex flex-col gap-3 rounded-2xl border border-aa-border bg-aa-panel/60 p-5 backdrop-blur-xl md:flex-row md:items-center md:justify-between"
           >
             <div>
-              <h2 class="text-lg font-bold text-white">
+              <h2 class="text-lg font-bold text-aa-text">
                 {{ t("market.onChainListings", "On-Chain Listings") }}
               </h2>
               <p class="mt-1 text-sm text-aa-muted">
@@ -518,7 +518,7 @@
                       :alt="t('market.listingLogo', 'Listing logo')"
                       class="w-6 h-6 rounded border border-aa-border object-cover"
                     />
-                    <h3 class="text-lg font-bold text-white">
+                    <h3 class="text-lg font-bold text-aa-text">
                       {{
                         listing.title ||
                         `${t("market.listingPrefix", "Listing #")}${listing.id}`

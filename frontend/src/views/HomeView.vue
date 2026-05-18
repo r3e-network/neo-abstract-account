@@ -44,17 +44,17 @@
           </dl>
         </div>
 
-        <aside class="rounded-xl border border-slate-200 bg-slate-950 p-4 text-white shadow-sm">
-          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <aside class="rounded-xl border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
             <div>
-              <p class="text-xs font-medium text-slate-400">AA Operations</p>
-              <p class="text-sm font-semibold text-white">Main workflow</p>
+              <p class="text-xs font-medium text-slate-500">AA Operations</p>
+              <p class="text-sm font-semibold text-slate-950">Main workflow</p>
             </div>
             <span
               class="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium"
-              :class="networkOnline ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-amber-400/30 bg-amber-400/10 text-amber-200'"
+              :class="networkOnline ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'"
             >
-              <span class="h-1.5 w-1.5 rounded-full" :class="networkOnline ? 'bg-emerald-300' : 'bg-amber-300'"></span>
+              <span class="h-1.5 w-1.5 rounded-full" :class="networkOnline ? 'bg-emerald-600' : 'bg-amber-600'"></span>
               {{ networkOnline ? t("home.networkOnline", "Online") : loadingStatus || t("home.networkOffline", "Offline") }}
             </span>
           </div>
@@ -64,16 +64,16 @@
               v-for="step in primarySteps"
               :key="step.title"
               :to="step.to"
-              class="group flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 transition hover:border-emerald-300/40 hover:bg-white/[0.06]"
+              class="group flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 transition hover:border-emerald-300 hover:bg-emerald-50"
             >
-              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-xs font-semibold text-slate-950">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-950 text-xs font-semibold text-white">
                 {{ step.index }}
               </span>
               <span class="min-w-0">
-                <span class="block text-sm font-semibold text-white">{{ step.title }}</span>
-                <span class="mt-0.5 block text-xs leading-5 text-slate-400">{{ step.body }}</span>
+                <span class="block text-sm font-semibold text-slate-950">{{ step.title }}</span>
+                <span class="mt-0.5 block text-xs leading-5 text-slate-600">{{ step.body }}</span>
               </span>
-              <span class="ml-auto text-slate-500 transition group-hover:text-emerald-200">→</span>
+              <span class="ml-auto text-slate-500 transition group-hover:text-emerald-700">→</span>
             </router-link>
           </div>
         </aside>

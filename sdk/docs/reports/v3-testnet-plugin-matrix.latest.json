@@ -2,90 +2,90 @@
   "env": {
     "rpc": "http://seed1.neo.org:20332",
     "networkMagic": 894710606,
-    "address": "NR3E4D8NUXh3zhbf5ZkAp3rTxWbQqNih32",
-    "scriptHash": "0x6d0656f6dd91469db1c90cc1e574380613f43738",
+    "address": "NTmHjwiadq4g3VHpJ5FQigQcD4fF5m8TyX",
+    "scriptHash": "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56",
     "selectedScenarios": []
   },
   "deployments": {
     "core": {
-      "txid": "0x5f5f6d41a55681fa7374ea31031d03162d844c7153e4e7c71a4284b00a741a28",
-      "hash": "0xa091fb951658de5fe945cb9588583ebe01844de5",
-      "manifestName": "UnifiedSmartWalletV3-validation-plugin-matrix-mp0vp37f-s6l-805952-core"
+      "txid": "0x133bc999efe68be168e504760985556a36fdc10ac325843a4b26f18f3d3135ba",
+      "hash": "0x106376030596fbf3db8dc00f367ab3c3a729841a",
+      "manifestName": "UnifiedSmartWalletV3-validation-plugin-matrix-mpambl8a-ecd-f11c53-core"
     },
     "web3AuthA": {
-      "txid": "0xbc7a2dad405180d4e8689639f27320d6884b6872fb5068ca71732cafebbebfff",
-      "hash": "0xe8aa4158e5f0fb96c30a111c83b8a0394ceebf78",
-      "manifestName": "Web3AuthVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-web3auth-a"
+      "txid": "0x23d94c166599c173b88c7fab0d00b56c29f7959c8396a7af5050a16297cbfe4d",
+      "hash": "0xe15eac341cb1626eb839797330f98720bdff22ce",
+      "manifestName": "Web3AuthVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-web3auth-a"
     },
     "web3AuthB": {
-      "txid": "0xa9874f454c84a635644e9871b3268b72b6ce5e09cbb11e2a9de9806061093f6f",
-      "hash": "0x4356d1c767c21bc79f30d60bdaaae77a72dc7e26",
-      "manifestName": "Web3AuthVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-web3auth-b"
+      "txid": "0xe01ab3efa767e518fe726816048b27caddde507081ba430b185a8739be3e97ff",
+      "hash": "0xe7233bf9b352ed89d52f7df2b87681e4c46b3897",
+      "manifestName": "Web3AuthVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-web3auth-b"
     },
     "teeVerifier": {
-      "txid": "0xbd544f76be7901597f4cf7818aa1c375df496e45e97c2f663d2909634af2c78e",
-      "hash": "0xcccc1df058741d5b4118ca466017a3feeb93fe03",
-      "manifestName": "TEEVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-tee"
+      "txid": "0x5def47488c85e58f2a70e5ffe586ba31ccdc76affdcb4cd7f8c197202507a576",
+      "hash": "0x08e7fe63e38ec965389da8ff7d5dcbe4c8717196",
+      "manifestName": "TEEVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-tee"
     },
     "webAuthnVerifier": {
-      "txid": "0x6625ba934fc9436c82f6b38a82fe8597eba1071b8cc961d382effafb614f0853",
-      "hash": "0xd6973e2fd8a0c41238a6d477ca370376f4782b6b",
-      "manifestName": "WebAuthnVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-webauthn"
+      "txid": "0xb9412c1aeea8b8ae492bba6b0150ea2bc93c4d79c28bcf8c098e33b1733639dc",
+      "hash": "0x3ec40d93b23d0682dfe017e3804ad1497ff2d083",
+      "manifestName": "WebAuthnVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-webauthn"
     },
     "sessionKeyVerifier": {
-      "txid": "0x25c9ac9b11eb1a9d6a77e84ad7bd75b363eda2f7f2c775d351f510a74554d91d",
-      "hash": "0x24472f144b114edbcc3a39fec8d614c84377eda5",
-      "manifestName": "SessionKeyVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-session-key"
+      "txid": "0xfee5b6308ab368c405eaa98100cf43286c7835ec400ae9bc4bdffd87aa83ddf7",
+      "hash": "0x9f4013b48f4a17a78519ceafce54ba4a879a2b57",
+      "manifestName": "SessionKeyVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-session-key"
     },
     "multiSigVerifier": {
-      "txid": "0xfe44a4b0d09f5528e0e3354e861d094e31b23299c6c5efc8382b6aefae5dbbd8",
-      "hash": "0xf98bef151515a26ae740659f2bfca23deb65fb11",
-      "manifestName": "MultiSigVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-multisig"
+      "txid": "0xd37e1d8373038e95972f3111ca89f7577437da2bea610778540834d6e29bb235",
+      "hash": "0x34eb7b5ed7b5f0d1fa0e31e60fd92e2b111da7e2",
+      "manifestName": "MultiSigVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-multisig"
     },
     "subscriptionVerifier": {
-      "txid": "0xb3b9e22599c30e8aa81e28f900720fe1d99ba0f18f9e763f23509af397a13baf",
-      "hash": "0x8447fc6ffd86f974afdb299e479b0f98e31b5a98",
-      "manifestName": "SubscriptionVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-subscription"
+      "txid": "0xfc547699eabbadf82a995f5393f6e18d3c9f4aef9af94f5ff4fcbf35963fc95a",
+      "hash": "0xba5fd5280757d267134dcfaa820fcf62a561801f",
+      "manifestName": "SubscriptionVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-subscription"
     },
     "zkEmailVerifier": {
-      "txid": "0xc2f6be75ab767eb367f16cf651e63082ad420190ac98551ac4b78dc913be3ce6",
-      "hash": "0x028aa670cf0bdb104c16ddb78c407f4e8f5fd2a9",
-      "manifestName": "ZKEmailVerifier-validation-plugin-matrix-mp0vp37f-s6l-805952-zkemail"
+      "txid": "0x351f23fc3f07152bbca630ad2de8e2fc6cca1a313de0da8aa4c7eaa5d3d6b5d5",
+      "hash": "0x2837ff7ce5e8234b872c975a7b7bb9fd759b8560",
+      "manifestName": "ZKEmailVerifier-validation-plugin-matrix-mpambl8a-ecd-f11c53-zkemail"
     },
     "whitelistHook": {
-      "txid": "0x48ce0f171e09bccb3a2a07227585255dc870f0dfda770858bfc35de1482d8c36",
-      "hash": "0x0b6fd9b53eb0a6066f58cd636eaff0f58ee7ce00",
-      "manifestName": "WhitelistHook-validation-plugin-matrix-mp0vp37f-s6l-805952-whitelist"
+      "txid": "0xe1f98c1656a52a8cecfdb77327559fc1b1f7b8c46f79cc19d15b21055a5a81cb",
+      "hash": "0x88d9330253fad22c06ad1ff3907524df7bc64c6b",
+      "manifestName": "WhitelistHook-validation-plugin-matrix-mpambl8a-ecd-f11c53-whitelist"
     },
     "dailyLimitHook": {
-      "txid": "0x647e5b55477d773b3816e503f6743ee43c952d78faaf51c5ebe8e4af2d044cd0",
-      "hash": "0x9bfd11c554269f8d5128d223d971e48e1096a622",
-      "manifestName": "DailyLimitHook-validation-plugin-matrix-mp0vp37f-s6l-805952-daily-limit"
+      "txid": "0x7638c01d839ef5521ca72a8b428c7e60e85da6376f1b66f9f28f7905b9a66d9a",
+      "hash": "0xfeb2087d4157a07b6726249d333390c0dc9ab8cd",
+      "manifestName": "DailyLimitHook-validation-plugin-matrix-mpambl8a-ecd-f11c53-daily-limit"
     },
     "tokenRestrictedHook": {
-      "txid": "0x69541e78b892936c57c8fb82fb24e4e87203af1486c545cedc048da93ea3b5cb",
-      "hash": "0x467afdc6c4d2273bba7e9b20db87df5f8d7cde83",
-      "manifestName": "TokenRestrictedHook-validation-plugin-matrix-mp0vp37f-s6l-805952-token-restricted"
+      "txid": "0xa38330d7e306e043c13b45bed80c3fdcc564dcc363102ba8ebb0e1d7b49e1576",
+      "hash": "0x566c836ea87e9d65f36eaaa4ea9e5e411af6cbc3",
+      "manifestName": "TokenRestrictedHook-validation-plugin-matrix-mpambl8a-ecd-f11c53-token-restricted"
     },
     "multiHook": {
-      "txid": "0xa7e314e82db686abc0e377a0ee3c1281004583c24a46b83b2c77d98f9cc583a6",
-      "hash": "0x19b619d879d439119ddd598f4b75dd3d9b3e7d3a",
-      "manifestName": "MultiHook-validation-plugin-matrix-mp0vp37f-s6l-805952-multi-hook"
+      "txid": "0xd586a9fcc6fde3fa1e0d76cea65d10e6e514fa6cf1ae2afc546eb04883b2dc97",
+      "hash": "0x4a79cac97223f5e5abaecfd53a21129cdecf3f64",
+      "manifestName": "MultiHook-validation-plugin-matrix-mpambl8a-ecd-f11c53-multi-hook"
     },
     "neoDidHook": {
-      "txid": "0xe8f32c9bef341c38ec88f76b53feabb96d083af3ec7ddfd313daa69ecebb50f3",
-      "hash": "0xe0de9921e27d72c984b58798382e9863f0c16f8e",
-      "manifestName": "NeoDIDCredentialHook-validation-plugin-matrix-mp0vp37f-s6l-805952-neodid-hook"
+      "txid": "0xc03b98ad461176af88636b3ed2c9e7788e2e8b2a0d34ba4fb9e8db871ac55486",
+      "hash": "0x3613932bf67a8e2568612c43acdb9c90b01c50a2",
+      "manifestName": "NeoDIDCredentialHook-validation-plugin-matrix-mpambl8a-ecd-f11c53-neodid-hook"
     },
     "neoDidRegistry": {
-      "txid": "0x744077309ac2c82df5bc0576e3258cb20bee34b7b3d1285fdc75b4c0d0737c36",
-      "hash": "0x5d7902649d8df4d0313694b85953ad61bf286459",
-      "manifestName": "NeoDIDRegistry-validation-plugin-matrix-mp0vp37f-s6l-805952-neodid-registry"
+      "txid": "0x2f4b94ddc0836b456692cbf15a676a3617e0831e069d0ff03e041e436d6d2587",
+      "hash": "0x8560741ca73e3d3f41eb12a70c7a05abba83dc6a",
+      "manifestName": "NeoDIDRegistry-validation-plugin-matrix-mpambl8a-ecd-f11c53-neodid-registry"
     },
     "mockTarget": {
-      "txid": "0x64d005938f61eb9619692e1c85210c4aab45245bb42c51885667e3f0f946606e",
-      "hash": "0x605dab94f3bd5e1b716b9cb01cfc85861d252793",
-      "manifestName": "MockTransferTarget-validation-plugin-matrix-mp0vp37f-s6l-805952-mock-target"
+      "txid": "0x83ace597369dce6cf980539d9d7bd7e3c2dce7779d813fa24bbdfdb3bb0ba74f",
+      "hash": "0xf56d3e684f3c5afd55d0e90f95f32d67945dcf46",
+      "manifestName": "MockTransferTarget-validation-plugin-matrix-mpambl8a-ecd-f11c53-mock-target"
     }
   },
   "matrix": {
@@ -100,8 +100,8 @@
       }
     },
     "web3Auth": {
-      "accountId": "0xa3f5072549df8935c81abeacbf4cb719ee5f088b",
-      "txid": "0x4d2ab4ecb8b67cfd2986941ac7e0346923de041b88135e9ccce0eeeb1ca7158e",
+      "accountId": "0x8d1c54a8685fc194c8a9822ac2c4fd84d7f74e8a",
+      "txid": "0x1c85f85dad25653568458e19de8b40e44504cdeaf8cf017efa3d72b09b909990",
       "result": "MOCK",
       "tampered": {
         "state": "FAULT",
@@ -113,8 +113,8 @@
       }
     },
     "teeVerifier": {
-      "accountId": "0x89b55d188b7b9c01ccaeb7847d32319d5090d9ad",
-      "txid": "0x117d84083e98cc1130e70053bef5d17175754bc6a0e2aff7a5357d30e5bb743f",
+      "accountId": "0x8f7b3340de0a21b6c16878e7dcd507dc2788c3ff",
+      "txid": "0xa137f349ae32dc3cf6514a5721493f5fb8cf101b7fa58d186c33ff08f5511e44",
       "result": "MOCK",
       "tampered": {
         "state": "FAULT",
@@ -122,8 +122,8 @@
       }
     },
     "webAuthnVerifier": {
-      "accountId": "0xa7f45c80e2b04c23d2e1ad8d45f9b7b88cc27011",
-      "txid": "0x3859d1a7007ce5a68baf41cc73b11497051d50d24e37a1ac99ab0d20413b34d3",
+      "accountId": "0xfcee16e51c039a9c6ac67b443bc4cd9cca2153bb",
+      "txid": "0x844600d762d544fd40ef9b6f0fde85e98f8343430d9b9c55b77ae35e61c1863b",
       "result": "MOCK",
       "tampered": {
         "state": "FAULT",
@@ -131,9 +131,9 @@
       }
     },
     "sessionKeyVerifier": {
-      "accountId": "0x28d69cf1ccce2231c5ce11c65d3e777f5088e58a",
+      "accountId": "0xaa9074436d34079ac4185fda48fa372570ac35de",
       "maintenance": {
-        "requestTxid": "0x3005b51371dc863dfdd268ff800c145e1185b137d26a8bf868dff65a5e5c852c",
+        "requestTxid": "0x71aa26c87243db5540dd0ae18d6908d0d618822c312f8fbb44427ba2da019477",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
@@ -147,9 +147,9 @@
       "note": "Session key activation is timelocked and cannot become active in the same live session."
     },
     "multiSigVerifier": {
-      "accountId": "0x83095706d51652395386e67236181528877a77b0",
+      "accountId": "0x18c7990353b87fe379caa2cae5a9e54c2d3efc49",
       "maintenance": {
-        "requestTxid": "0x4e54b6de21d48cb13174d0c2dee865666120c90ff32f2de780a7523c09b0469e",
+        "requestTxid": "0xba9fda60d9752adc4756c11602d2aa2d8ae2998eeb2cdb7011cfff4887132f86",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
@@ -163,9 +163,9 @@
       "note": "MultiSig child verifier configuration is timelocked and cannot become active in the same live session."
     },
     "subscriptionVerifier": {
-      "accountId": "0x88f0a131751bab8444f596cc41bb70b5489a18c3",
+      "accountId": "0x8a41b0fc29a6b727e344ee58d31b9988e99ad72b",
       "maintenance": {
-        "requestTxid": "0x4330fa6fa7ae3c1d65d35cc3bc4b1c736e70dd365ed723a789ec52e1413f9398",
+        "requestTxid": "0x49fb65d445b24f2b924ccf1ae01b902b765237cc036dce105eaa50c47eab0334",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
@@ -179,9 +179,9 @@
       "note": "Subscription creation is timelocked and cannot become active in the same live session."
     },
     "zkEmailVerifier": {
-      "accountId": "0x63ecc70679b5b07c4ebf96b0b3bd6cb1c24642d9",
+      "accountId": "0x85835548f3ce687323655c973e2fc9e0e42465dd",
       "maintenance": {
-        "requestTxid": "0x5fcaee006f0eb748462a493882f9d93a85cddf5ea91bc51ccc0313df27c19adc",
+        "requestTxid": "0x4ec881970b6e25918b1b1617878f4c0c46963b23a304e17ab458ef97e2ae92a1",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
@@ -195,9 +195,9 @@
       "note": "DKIM registry configuration is timelocked; same-session live runs cannot reach the disabled-proof branch."
     },
     "whitelistHook": {
-      "accountId": "0x745d4d6778e648a4eefac80eabf704d8b6c9d67c",
+      "accountId": "0xd32c5a66455ab3d5165cbee21420535a65170612",
       "maintenance": {
-        "requestTxid": "0x7df8641ed22ee7c25cc71795fba76d9ba0191b83d795253cc22e3dd218b0d34c",
+        "requestTxid": "0xde11c1e0ec5aa1a99bf635e58347377eaeab7b5a60882ff425cbf1d87dd4a496",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
@@ -215,30 +215,30 @@
       "note": "Whitelist activation is timelocked; same-session execution remains blocked."
     },
     "dailyLimitHook": {
-      "accountId": "0xaa584ffce48a1b3a204cc408f23140c7a719c45d",
+      "accountId": "0xdf81ebc63b1cbf74291680488d3932da2ce6bd88",
       "maintenance": {
-        "requestTxid": "0x803e146b078711f08c981ba92b4582bb8023f59fa86881d6b3806b7d4f77ef08",
+        "requestTxid": "0x796d31134e82fa4bbb56b16eba253086e48be8fbb8147453edd1cb55a6a59562",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
           "exception": "ABORTMSG is executed. Reason: Timelock not elapsed"
         }
       },
-      "txid": "0xb1271d28cba4337d67eef96717e17b706e6a70d055d9a078dd2133c88e69082b",
+      "txid": "0x75170cd32b098b10e46de3c866382280baab61b678fe81870d5a415b96a205d2",
       "result": "true",
       "note": "The hook installs immediately, but the configured ceiling is deferred behind the maintenance timelock; same-session transfers still use the unconfigured default path."
     },
     "tokenRestrictedHook": {
-      "accountId": "0x92947b76b4c54d309f3f9f28264955b089bb9947",
+      "accountId": "0xe26173255f442d421a1d4f93b299aa9b94953e7c",
       "maintenance": {
-        "requestTxid": "0x8558a3b83ae1669f91f271b57541cd54d2919b37c25d774156f59878a0cd906a",
+        "requestTxid": "0x2c6fa3ca0d6443f5c34347fc427cd10b34c9eda092c68db7f1352ba26247eeb9",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
           "exception": "ABORTMSG is executed. Reason: Timelock not elapsed"
         }
       },
-      "txid": "0xc60d8519f289698289441aad7fe4dcc70f8f5cc8c4162c503eb3b7a9312c8425",
+      "txid": "0x95d08ca6385a15e3def6420b9f6b74f6cc6ef0e928fb5cdf4cd6016d22a82995",
       "result": "MOCK",
       "restricted": {
         "state": "HALT",
@@ -247,9 +247,9 @@
       "note": "Restricted-token activation is deferred behind the maintenance timelock; same-session unrestricted calls still succeed."
     },
     "multiHook": {
-      "accountId": "0xca8410b9c8f27466e155e0ad30f96176d22db1ee",
+      "accountId": "0xc1200573a24101350a99244a8a3653481ec547ce",
       "maintenance": {
-        "requestTxid": "0x3f0b74b2fecafc485283340876caedf7c08df4e22061bc4182c2c11999c25157",
+        "requestTxid": "0x2285ac614072dda77db4a794130751e4fe7e61f5980c8db6bed789d60bc5ba3c",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
@@ -273,17 +273,17 @@
       "note": "MultiHook composition is deferred behind the maintenance timelock; stored hook sets remain unchanged in the same live session."
     },
     "neoDidCredentialHook": {
-      "accountId": "0x2954889c1d3053e4f5a768aed8dcf01d3cae3527",
-      "registry": "0x5d7902649d8df4d0313694b85953ad61bf286459",
+      "accountId": "0x2cd52f3fbb9828838aaa526996719be5f9e64907",
+      "registry": "0x8560741ca73e3d3f41eb12a70c7a05abba83dc6a",
       "maintenance": {
-        "requestTxid": "0x2e7120846a51e092d31ca50f77e38a9e77c5841e448929895a69d41da2ed3683",
+        "requestTxid": "0x54e5bfe5231179f52043ae5e8f2ebd4dd0ce9f9c857750a9d43c8bd3233c3a0a",
         "requestResult": "false",
         "pending": {
           "state": "FAULT",
           "exception": "ABORTMSG is executed. Reason: Timelock not elapsed"
         }
       },
-      "txid": "0xdce0ad165a25f7879eb4c0e58ab8bf32132b03cb84e0bc6822f6cece0487b11f",
+      "txid": "0x0a3fcf5e0b5e741077801bc0518cfc18b28463107b6a653670c867761905f1a5",
       "result": "MOCK",
       "missing": {
         "state": "HALT",

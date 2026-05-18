@@ -4,8 +4,8 @@
   "policyId": "testnet-aa",
   "accountId": "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56",
   "approved": {
-    "approvalDigest": "bd1641ed140d67d05b3c9b9a543542b85c9c343eb99e7a3f9c52e0de537fc1a0",
-    "attestationHash": "e3fe465b76321b2fd740d46b7550641173426320b6829bc93d244acb78eac9ac",
+    "approvalDigest": "a5cc686eae87893e38391983f5dd871103d7b2eacb83a86a2d2bcb7ea7e92d3a",
+    "attestationHash": "268ea2fa9a52aee398b5cb48fadbc62d0a3fd9d22ef435ec94fc683e784c0f32",
     "targetContract": "0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2",
     "method": "executeUserOp"
   },
