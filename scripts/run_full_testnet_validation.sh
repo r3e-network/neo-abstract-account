@@ -7,6 +7,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 run_local=1
 run_live=1
 live_args=()
+live_args=()
 
 usage() {
   cat <<'EOF'
@@ -51,7 +52,11 @@ if [[ $run_local -eq 1 ]]; then
 fi
 
 if [[ $run_live -eq 1 ]]; then
-  bash "$SCRIPT_DIR/run_live_testnet_validation.sh" "${live_args[@]}"
+  if [[ ${#live_args[@]} -gt 0 ]]; then
+    bash "$SCRIPT_DIR/run_live_testnet_validation.sh" "${live_args[@]}"
+  else
+    bash "$SCRIPT_DIR/run_live_testnet_validation.sh"
+  fi
 fi
 
 echo ""

@@ -8,8 +8,8 @@
         class="rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200"
         :class="
           selectedType === typeOption.value
-            ? 'border-aa-orange/50 bg-aa-orange/10 text-aa-orange'
-            : 'border-aa-border bg-aa-dark/50 text-aa-muted hover:border-aa-muted'
+            ? 'border-orange-400 bg-orange-100 text-orange-900'
+            : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900'
         "
         :aria-label="typeOption.label"
         @click="$emit('update:selectedType', typeOption.value)"
@@ -41,7 +41,7 @@
       >
         {{ validationError }}
       </p>
-      <p v-else class="mt-1 text-xs text-aa-muted">
+      <p v-else class="mt-1 text-xs text-aa-text/80">
         {{ hintText }}
       </p>
     </label>

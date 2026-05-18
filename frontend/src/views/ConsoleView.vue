@@ -197,22 +197,22 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
-          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+        <div class="rounded-xl border border-slate-200 bg-white p-5 text-slate-950 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Runtime configuration
           </p>
           <dl class="mt-4 space-y-3 text-sm">
             <div>
-              <dt class="text-xs text-slate-400">{{ t("console.statMasterContract", "Master contract") }}</dt>
-              <dd class="mt-1 break-all font-mono text-xs text-slate-100">{{ RUNTIME_CONFIG.abstractAccountHash || "--" }}</dd>
+              <dt class="text-xs text-slate-500">{{ t("console.statMasterContract", "Master contract") }}</dt>
+              <dd class="mt-1 break-all font-mono text-xs text-slate-950">{{ RUNTIME_CONFIG.abstractAccountHash || "--" }}</dd>
             </div>
             <div>
-              <dt class="text-xs text-slate-400">Paymaster</dt>
-              <dd class="mt-1 break-all font-mono text-xs text-slate-100">{{ RUNTIME_CONFIG.paymasterHash || "--" }}</dd>
+              <dt class="text-xs text-slate-500">Paymaster</dt>
+              <dd class="mt-1 break-all font-mono text-xs text-slate-950">{{ RUNTIME_CONFIG.paymasterHash || "--" }}</dd>
             </div>
             <div>
-              <dt class="text-xs text-slate-400">Domain</dt>
-              <dd class="mt-1 break-all text-xs text-slate-100">{{ RUNTIME_CONFIG.abstractAccountDomain || "--" }}</dd>
+              <dt class="text-xs text-slate-500">Domain</dt>
+              <dd class="mt-1 break-all text-xs text-slate-950">{{ RUNTIME_CONFIG.abstractAccountDomain || "--" }}</dd>
             </div>
           </dl>
         </div>

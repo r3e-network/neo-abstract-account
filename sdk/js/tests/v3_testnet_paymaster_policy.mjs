@@ -17,9 +17,10 @@ const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 const PHALA_API_TOKEN = process.env.MORPHEUS_RUNTIME_TOKEN || process.env.PHALA_API_TOKEN || process.env.PHALA_SHARED_SECRET || "";
 const PAYMASTER_APP_ID = process.env.MORPHEUS_PAYMASTER_APP_ID || "ddff154546fe22d15b65667156dd4b7c611e6093";
-const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
+const PAYMASTER_DAPP_ID = String(process.env.MORPHEUS_PAYMASTER_DAPP_ID || PAYMASTER_APP_ID).trim();
 const PAYMASTER_ACCOUNT_ID = process.env.PAYMASTER_ACCOUNT_ID || "0x0c3146e78efc42bfb7d4cc2e06e3efd063c01c56";
 const CORE_HASH = process.env.AA_CORE_HASH_TESTNET || "0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2";
+const DISALLOWED_TARGET_CONTRACT = `0x${"f0".repeat(20)}`;
 const PAYMASTER_METHOD = process.env.MORPHEUS_PAYMASTER_METHOD || "executeUserOp";
 const PAYMASTER_MAX_GAS_UNITS = Number(process.env.MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS || 5_000_000);
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE = process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1";
@@ -345,7 +346,7 @@ async function main() {
     },
     {
       id: "wrongTargetContract",
-      payload: { ...approvedPayload, target_contract: "0x1111111111111111111111111111111111111111", operation_hash: `0x${"47".repeat(32)}` },
+      payload: { ...approvedPayload, target_contract: DISALLOWED_TARGET_CONTRACT, operation_hash: `0x${"47".repeat(32)}` },
       reason: /target_contract is not allowlisted/i,
     },
     {

@@ -41,7 +41,7 @@ const { resolvePaymasterAuthorizeEndpoint } = paymasterRuntimeConfig;
 const PAYMASTER_ENDPOINT = resolvePaymasterAuthorizeEndpoint(process.env);
 const PHALA_CLI_COMMAND = resolvePhalaCliCommand(process.env);
 const LOCAL_PAYMASTER_HANDLER_PATH = resolveLocalPaymasterHandlerPath();
-const PAYMASTER_DAPP_ID = process.env.MORPHEUS_PAYMASTER_DAPP_ID || "demo-dapp";
+const PAYMASTER_DAPP_ID = String(process.env.MORPHEUS_PAYMASTER_DAPP_ID || PAYMASTER_APP_ID).trim();
 const EXPLICIT_PAYMASTER_ACCOUNT_ID = (process.env.PAYMASTER_ACCOUNT_ID || "").trim();
 const SKIP_PAYMASTER_ALLOWLIST_UPDATE =
   process.env.SKIP_PAYMASTER_ALLOWLIST_UPDATE === "1"
@@ -296,21 +296,29 @@ async function runPhalaRemoteShell(shellScript, { maxBuffer = 10 * 1024 * 1024 }
 
 function buildRemotePaymasterOverrides(accountId) {
   const normalized = normalizeHash(accountId).toLowerCase();
+  const normalizedTarget = normalizeHash(CORE_HASH).toLowerCase();
   return {
     MORPHEUS_PAYMASTER_TESTNET_ENABLED: "true",
     MORPHEUS_PAYMASTER_TESTNET_POLICY_ID: "testnet-aa",
     MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS: PAYMASTER_DAPP_ID,
     MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS: normalized,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_TARGETS: normalizedTarget,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_METHODS: "executeUserOp,executeUnifiedByAddress",
+    MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS: String(process.env.MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS || 5_000_000),
   };
 }
 
 function buildLocalPaymasterOverrides(accountId) {
   const normalized = normalizeHash(accountId).toLowerCase();
+  const normalizedTarget = normalizeHash(CORE_HASH).toLowerCase();
   return {
     MORPHEUS_PAYMASTER_TESTNET_ENABLED: "true",
     MORPHEUS_PAYMASTER_TESTNET_POLICY_ID: "testnet-aa",
     MORPHEUS_PAYMASTER_TESTNET_ALLOW_DAPPS: PAYMASTER_DAPP_ID,
     MORPHEUS_PAYMASTER_TESTNET_ALLOW_ACCOUNTS: normalized,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_TARGETS: normalizedTarget,
+    MORPHEUS_PAYMASTER_TESTNET_ALLOW_METHODS: "executeUserOp,executeUnifiedByAddress",
+    MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS: String(process.env.MORPHEUS_PAYMASTER_TESTNET_MAX_GAS_UNITS || 5_000_000),
   };
 }
 

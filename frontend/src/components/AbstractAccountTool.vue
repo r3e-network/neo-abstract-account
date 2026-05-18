@@ -1,22 +1,22 @@
 <template>
-  <div class="min-h-screen bg-black text-[#EDEDED]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-8 border-b border-[#333]">
+  <div class="min-h-screen bg-[#f5f7fb] text-slate-950">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+    <div class="mb-6 border-b border-slate-200">
       <div
         class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
       >
         <div>
           <div
-            class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#111] text-[#888] border border-[#333] text-xs font-medium mb-4"
+            class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold mb-4"
           >
             {{ t("studio.powered", "Neo N3 Powered") }}
           </div>
           <h1
-            class="text-2xl md:text-3xl font-medium text-white leading-tight mb-2"
+            class="text-2xl md:text-3xl font-semibold text-slate-950 leading-tight mb-2"
           >
             {{ t("studio.title", "Abstract Account Workspace") }}
           </h1>
-          <p class="text-sm md:text-base text-[#888] max-w-3xl leading-relaxed">
+          <p class="text-sm md:text-base text-slate-600 max-w-3xl leading-relaxed">
             {{
               t(
                 "studio.subtitle",
@@ -50,8 +50,8 @@
           class="relative pb-3 text-sm font-medium transition-colors whitespace-nowrap"
           :class="[
             studio.activePanel.value === tab.key
-              ? 'text-white border-b-2 border-white'
-              : 'text-[#888] hover:text-[#EDEDED] border-b-2 border-transparent',
+              ? 'text-slate-950 border-b-2 border-emerald-500'
+              : 'text-slate-500 hover:text-slate-950 border-b-2 border-transparent',
             !studio.walletConnected.value
               ? 'opacity-50 cursor-not-allowed pointer-events-none'
               : '',
@@ -67,21 +67,21 @@
 
     <!-- Tab description line -->
     <transition name="desc-fade" mode="out-in">
-      <p :key="studio.activePanel.value" class="text-sm text-[#888] mb-6">
+      <p :key="studio.activePanel.value" class="text-sm text-slate-600 mb-6">
         {{ activeTabDescription }}
       </p>
     </transition>
 
     <!-- Guided onboarding state when wallet not connected -->
     <div v-if="!studio.walletConnected.value">
-      <div class="max-w-2xl py-12">
+      <div class="max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div class="mb-8">
           <div
-            class="w-12 h-12 rounded-md border border-[#333] bg-[#111] flex items-center justify-center mb-6"
+            class="w-12 h-12 rounded-md border border-emerald-200 bg-emerald-50 flex items-center justify-center mb-6"
           >
             <svg
               aria-hidden="true"
-              class="w-6 h-6 text-white"
+              class="w-6 h-6 text-emerald-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -94,12 +94,12 @@
               ></path>
             </svg>
           </div>
-          <h2 class="text-xl font-medium text-white mb-2">
+          <h2 class="text-xl font-semibold text-slate-950 mb-2">
             {{
               t("studio.onboardingTitle", "Connect your wallet to get started")
             }}
           </h2>
-          <p class="text-[#888] text-sm leading-relaxed mb-8">
+          <p class="text-slate-600 text-sm leading-relaxed mb-8">
             {{
               t(
                 "studio.onboardingBody",
@@ -111,19 +111,19 @@
 
         <!-- AA Pipeline Steps -->
         <div
-          class="flex items-center gap-2 mb-8 stagger-children overflow-x-auto pb-2"
+          class="flex flex-wrap items-center gap-2 mb-8 stagger-children"
         >
           <template v-for="(step, i) in pipelineSteps" :key="i">
             <div
-              class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#333] bg-[#0A0A0A] text-[#EDEDED] text-sm shrink-0"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 bg-slate-50 text-slate-800 text-sm shrink-0"
             >
-              <div class="text-[#888] font-mono text-xs">{{ i + 1 }}</div>
+              <div class="text-slate-500 font-mono text-xs">{{ i + 1 }}</div>
               <span>{{ step }}</span>
             </div>
             <svg
               v-if="i < pipelineSteps.length - 1"
               aria-hidden="true"
-              class="w-4 h-4 text-[#333] shrink-0"
+              class="w-4 h-4 text-slate-300 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -156,20 +156,20 @@
 
         <!-- What happens expandable -->
         <div
-          class="rounded-md border border-[#333] bg-[#0A0A0A] overflow-hidden"
+          class="rounded-md border border-slate-200 bg-white overflow-hidden"
         >
           <button
             @click="showWhatHappens = !showWhatHappens"
             :aria-expanded="showWhatHappens"
             aria-controls="what-happens-content"
-            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#111] transition-colors duration-200"
+            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-200"
           >
-            <span class="text-sm font-medium text-[#EDEDED]">{{
+            <span class="text-sm font-semibold text-slate-900">{{
               t("studio.whatHappens", "What happens when I connect?")
             }}</span>
             <svg
               aria-hidden="true"
-              class="w-4 h-4 text-[#888] transition-transform duration-200"
+              class="w-4 h-4 text-slate-500 transition-transform duration-200"
               :class="showWhatHappens ? 'rotate-180' : ''"
               fill="none"
               stroke="currentColor"
@@ -186,28 +186,28 @@
           <div
             id="what-happens-content"
             v-show="showWhatHappens"
-            class="px-4 pb-4 border-t border-[#333]"
+            class="px-4 pb-4 border-t border-slate-200"
           >
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
               <div
                 v-for="(hint, i) in onboardingHints"
                 :key="i"
-                class="p-3 rounded-md border border-[#333] bg-[#000]"
+                class="p-3 rounded-md border border-slate-200 bg-slate-50"
               >
                 <div class="mb-2">
                   <svg
                     aria-hidden="true"
-                    class="w-4 h-4 text-[#EDEDED]"
+                    class="w-4 h-4 text-emerald-700"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                     v-html="hint.icon"
                   ></svg>
                 </div>
-                <p class="text-sm font-medium text-[#EDEDED]">
+                <p class="text-sm font-semibold text-slate-950">
                   {{ hint.label }}
                 </p>
-                <p class="text-xs text-[#888] mt-1">{{ hint.desc }}</p>
+                <p class="text-xs text-slate-500 mt-1">{{ hint.desc }}</p>
               </div>
             </div>
           </div>

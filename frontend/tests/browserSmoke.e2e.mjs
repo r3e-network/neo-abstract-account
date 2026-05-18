@@ -7,13 +7,19 @@ import net from "node:net";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const FRONTEND_DIR = path.resolve(MODULE_DIR, "..");
+const REPO_ROOT = path.resolve(FRONTEND_DIR, "..");
 const HOST = "127.0.0.1";
 const DEFAULT_PORT = Number(process.env.AA_FRONTEND_E2E_PORT || 4173);
 const VITE_BIN = path.resolve(FRONTEND_DIR, "node_modules", "vite", "bin", "vite.js");
+const E2E_RUN_ID = String(process.env.AA_FRONTEND_E2E_RUN_ID || new Date().toISOString().replace(/[:.]/g, "-"));
+const SCREENSHOT_DIR = path.resolve(
+  process.env.AA_FRONTEND_E2E_SCREENSHOT_DIR || path.join(REPO_ROOT, ".automation-logs", "frontend-e2e", E2E_RUN_ID),
+);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -116,6 +122,27 @@ async function waitForText(locator, pattern, label, timeoutMs = 30_000) {
   assert.fail(`${label} should contain ${pattern}`);
 }
 
+async function ensureScreenshotDir() {
+  await mkdir(SCREENSHOT_DIR, { recursive: true });
+}
+
+function safeScreenshotName(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "shot";
+}
+
+async function captureScreenshot(page, name) {
+  await ensureScreenshotDir();
+  const filename = `${safeScreenshotName(name)}.png`;
+  const filePath = path.join(SCREENSHOT_DIR, filename);
+  await page.screenshot({ path: filePath, fullPage: true });
+  return filePath;
+}
+
 test("browser smoke covers home, identity, app workspace, market, and docs", async (t) => {
   const server = await startPreviewServer(await findAvailablePort(DEFAULT_PORT));
   t.after(async () => {
@@ -134,6 +161,7 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
   await waitForVisible(page.getByRole("link", { name: /Open Console/i }).first(), "open console link");
   await waitForVisible(page.getByRole("heading", { name: /Neo AA Operations Console/i }), "home hero");
   await assert.doesNotReject(() => page.title(), "home title should be readable");
+  await captureScreenshot(page, "desktop-home");
 
   await page.goto(`${baseUrl}/app`, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByRole("heading", { name: /Abstract Account Workspace/i }), "workspace heading");
@@ -141,10 +169,12 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
     page.locator("#main-content").getByRole("button", { name: /Connect Wallet/i }),
     "connect wallet button"
   );
+  await captureScreenshot(page, "desktop-app");
 
   await page.goto(`${baseUrl}/identity`, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByRole("heading", { name: /Web3Auth \/ NeoDID Workspace/i }), "identity heading");
   await waitForVisible(page.getByText(/Identity Control Plane/i).first(), "identity eyebrow");
+  await captureScreenshot(page, "desktop-identity");
 
   await page.goto(`${baseUrl}/market`, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByText(/Trustless escrow for AA address transfers/i).first(), "market subtitle");
@@ -154,8 +184,32 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
   await page.locator("#vanity-generator").getByRole("button", { name: /^Contains$/i }).click();
   await waitForText(page.locator("#vanity-generator"), /anywhere after N/i, "contains vanity hint");
   await waitForVisible(page.getByText(/Create Escrow Listing/i).first(), "market listing form");
+  await captureScreenshot(page, "desktop-market");
 
   await page.goto(`${baseUrl}/docs`, { waitUntil: "domcontentloaded" });
   await waitForVisible(page.getByText(/^Documentation$/).first(), "docs heading");
   await waitForVisible(page.getByLabel(/Search documentation/i), "docs search");
+  await captureScreenshot(page, "desktop-docs");
+
+  // Mobile sanity snapshots for readability / density checks.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+  await waitForVisible(page.getByRole("heading", { name: /Neo AA Operations Console/i }), "home hero (mobile)");
+  await captureScreenshot(page, "mobile-home");
+
+  await page.goto(`${baseUrl}/app`, { waitUntil: "domcontentloaded" });
+  await waitForVisible(page.getByRole("heading", { name: /Abstract Account Workspace/i }), "workspace heading (mobile)");
+  await captureScreenshot(page, "mobile-app");
+
+  await page.goto(`${baseUrl}/identity`, { waitUntil: "domcontentloaded" });
+  await waitForVisible(page.getByRole("heading", { name: /Web3Auth \/ NeoDID Workspace/i }), "identity heading (mobile)");
+  await captureScreenshot(page, "mobile-identity");
+
+  await page.goto(`${baseUrl}/market`, { waitUntil: "domcontentloaded" });
+  await waitForVisible(page.getByText(/Vanity Address Generator/i).first(), "market vanity generator (mobile)");
+  await captureScreenshot(page, "mobile-market");
+
+  await page.goto(`${baseUrl}/docs`, { waitUntil: "domcontentloaded" });
+  await waitForVisible(page.getByText(/^Documentation$/).first(), "docs heading (mobile)");
+  await captureScreenshot(page, "mobile-docs");
 });

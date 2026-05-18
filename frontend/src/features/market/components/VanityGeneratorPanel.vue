@@ -4,7 +4,7 @@
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6"
     >
       <div>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-aa-text">
           {{ t("market.vanityTitle", "Vanity Address Generator") }}
         </h2>
         <p class="mt-1 text-sm text-aa-muted">
@@ -15,36 +15,6 @@
             )
           }}
         </p>
-      </div>
-      <div
-        class="flex gap-2 rounded-lg border border-aa-border bg-aa-dark/50 p-1"
-      >
-        <button
-          type="button"
-          class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200"
-          :class="
-            mode === 'diy'
-              ? 'bg-aa-orange/20 text-aa-orange'
-              : 'text-aa-muted hover:text-aa-text'
-          "
-          :aria-label="t('market.vanityDiyMode', 'DIY (Browser)')"
-          @click="mode = 'diy'"
-        >
-          {{ t("market.vanityDiyMode", "DIY (Browser)") }}
-        </button>
-        <button
-          type="button"
-          class="rounded-md px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200"
-          :class="
-            mode === 'paid'
-              ? 'bg-aa-orange/20 text-aa-orange'
-              : 'text-aa-muted hover:text-aa-text'
-          "
-          :aria-label="t('market.vanityPaidMode', 'Paid Service')"
-          @click="mode = 'paid'"
-        >
-          {{ t("market.vanityPaidMode", "Paid Service") }}
-        </button>
       </div>
     </div>
 
@@ -59,65 +29,53 @@
       <DifficultyEstimator
         :difficulty="vanity.difficulty.value"
         :pattern="vanity.pattern.value"
-        :show-cost="mode === 'paid'"
+        :show-cost="false"
       />
 
-      <template v-if="mode === 'diy'">
-        <div class="flex gap-2">
-          <button
-            v-if="!vanity.running.value"
-            type="button"
-            class="btn-primary flex-1"
-            :disabled="!vanity.pattern.value.trim() || vanity.error.value"
-            :aria-label="t('market.ariaStartGeneration', 'Start generation')"
-            @click="handleStart"
-          >
-            {{ t("market.vanityStartGeneration", "Start Generation") }}
-          </button>
-          <button
-            v-else
-            type="button"
-            class="btn-danger flex-1"
-            :aria-label="t('market.ariaStopGeneration', 'Stop generation')"
-            @click="vanity.stop()"
-          >
-            {{ t("market.vanityStopGeneration", "Stop Generation") }}
-          </button>
-          <button
-            v-if="vanity.found.value || vanity.attempts.value > 0"
-            type="button"
-            class="btn-secondary"
-            :aria-label="t('market.ariaReset', 'Reset')"
-            @click="handleReset"
-          >
-            {{ t("market.vanityReset", "Reset") }}
-          </button>
-        </div>
+      <div class="flex gap-2">
+        <button
+          v-if="!vanity.running.value"
+          type="button"
+          class="btn-primary flex-1"
+          :disabled="!vanity.pattern.value.trim() || vanity.error.value"
+          :aria-label="t('market.ariaStartGeneration', 'Start generation')"
+          @click="handleStart"
+        >
+          {{ t("market.vanityStartGeneration", "Start Generation") }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="btn-danger flex-1"
+          :aria-label="t('market.ariaStopGeneration', 'Stop generation')"
+          @click="vanity.stop()"
+        >
+          {{ t("market.vanityStopGeneration", "Stop Generation") }}
+        </button>
+        <button
+          v-if="vanity.found.value || vanity.attempts.value > 0"
+          type="button"
+          class="btn-secondary"
+          :aria-label="t('market.ariaReset', 'Reset')"
+          @click="handleReset"
+        >
+          {{ t("market.vanityReset", "Reset") }}
+        </button>
+      </div>
 
-        <GenerationProgress
-          :running="vanity.running.value"
-          :found="vanity.found.value"
-          :attempts="vanity.attempts.value"
-          :elapsed="vanity.elapsed.value"
-          :address="vanity.address.value"
-          @stop="vanity.stop()"
-        />
+      <GenerationProgress
+        :running="vanity.running.value"
+        :found="vanity.found.value"
+        :attempts="vanity.attempts.value"
+        :elapsed="vanity.elapsed.value"
+        :address="vanity.address.value"
+        @stop="vanity.stop()"
+      />
 
-        <VanityResultsList
-          :results="results"
-          @use-for-listing="handleUseForListing"
-        />
-      </template>
-
-      <template v-else>
-        <PaidServiceForm
-          :pattern="vanity.pattern.value"
-          :pattern-type="vanity.patternType.value"
-          :difficulty-seconds="vanity.difficulty.value.seconds"
-          :submitting="false"
-          @submit="handlePaidSubmit"
-        />
-      </template>
+      <VanityResultsList
+        :results="results"
+        @use-for-listing="handleUseForListing"
+      />
     </div>
   </section>
 </template>
@@ -131,14 +89,12 @@ import PatternInputSection from "./PatternInputSection.vue";
 import DifficultyEstimator from "./DifficultyEstimator.vue";
 import GenerationProgress from "./GenerationProgress.vue";
 import VanityResultsList from "./VanityResultsList.vue";
-import PaidServiceForm from "./PaidServiceForm.vue";
 
 const props = defineProps({
   onUseForListing: { type: Function, default: null },
 });
 
 const { t } = useI18n();
-const mode = ref("diy");
 const vanity = useVanityGenerator();
 const foundResults = ref([]);
 
@@ -182,7 +138,4 @@ function handleUseForListing(seed) {
   }
 }
 
-function handlePaidSubmit() {
-  // Backend integration placeholder
-}
 </script>

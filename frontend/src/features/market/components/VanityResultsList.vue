@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-lg border border-aa-border bg-aa-dark/50 p-4">
-    <p class="text-xs font-semibold uppercase text-aa-success mb-3">
+    <p class="text-xs font-semibold uppercase text-aa-text mb-3">
       {{ t("market.vanityResultsTitle", "Generated Addresses") }}
     </p>
 
@@ -9,7 +9,7 @@
         class="mx-auto w-12 h-12 rounded-full bg-aa-panel/30 flex items-center justify-center mb-3"
       >
         <svg
-          class="w-6 h-6 text-aa-muted"
+          class="w-6 h-6 text-aa-text/70"
           aria-hidden="true"
           fill="none"
           stroke="currentColor"
@@ -23,10 +23,10 @@
           ></path>
         </svg>
       </div>
-      <p class="text-sm text-aa-muted font-medium mb-1">
+      <p class="text-sm text-aa-text/80 font-medium mb-1">
         {{ t("market.vanityNoResultsYet", "No results yet") }}
       </p>
-      <p class="text-xs text-aa-muted">
+      <p class="text-xs text-aa-text/75">
         {{
           t(
             "market.vanityNoResultsHint",

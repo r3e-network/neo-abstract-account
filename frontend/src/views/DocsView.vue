@@ -86,8 +86,8 @@
                 :aria-current="activeDoc === key ? 'page' : undefined"
                 :class="[
                   activeDoc === key
-                    ? 'bg-aa-orange/20 text-aa-orange font-bold border-l-4 border-aa-orange shadow-glow-orange-inset'
-                    : 'text-aa-muted hover:bg-aa-dark hover:text-aa-text border-l-4 border-transparent font-medium',
+                    ? 'bg-orange-50 text-orange-900 font-bold border-l-4 border-orange-700 shadow-glow-orange-inset'
+                    : 'text-aa-text/75 hover:bg-aa-dark hover:text-aa-text border-l-4 border-transparent font-medium',
                   'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left',
                 ]"
               >
@@ -162,7 +162,7 @@
 
         <div class="flex-1 min-w-0">
           <div
-            class="prose prose-invert max-w-none bg-aa-panel/60 p-8 sm:p-12 rounded-lg shadow-glow-blue border border-aa-border backdrop-blur-xl min-h-[600px]"
+            class="prose prose-slate max-w-none bg-aa-panel/90 p-8 sm:p-12 rounded-lg shadow-glow-blue border border-aa-border backdrop-blur-xl min-h-[600px]"
           >
             <div v-if="isLoading" class="space-y-4">
               <div class="skeleton h-8 w-3/4"></div>
@@ -397,7 +397,7 @@ watch(activeDoc, (value) => {
 });
 </script>
 
-<style scoped>
+<style>
 /* ── Typography ── */
 .markdown-body h1 {
   color: theme("colors.aa.text");

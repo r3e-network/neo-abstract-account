@@ -17,7 +17,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3">
         <div>
-          <p class="text-[10px] uppercase text-aa-muted">
+        <p class="text-[10px] uppercase text-aa-text/75">
             {{ t("market.vanityAttempts", "Attempts") }}
           </p>
           <p class="mt-0.5 font-mono text-sm text-aa-text">
@@ -25,7 +25,7 @@
           </p>
         </div>
         <div>
-          <p class="text-[10px] uppercase text-aa-muted">
+        <p class="text-[10px] uppercase text-aa-text/75">
             {{ t("market.vanityElapsed", "Elapsed") }}
           </p>
           <p class="mt-0.5 font-mono text-sm text-aa-text">
@@ -33,7 +33,7 @@
           </p>
         </div>
         <div>
-          <p class="text-[10px] uppercase text-aa-muted">
+        <p class="text-[10px] uppercase text-aa-text/75">
             {{ t("market.vanityHashrate", "Hashrate") }}
           </p>
           <p class="mt-0.5 font-mono text-sm text-aa-text">
@@ -71,7 +71,7 @@
     </template>
 
     <template v-else>
-      <p class="text-sm text-aa-muted text-center py-2">
+      <p class="text-sm text-aa-text/80 text-center py-2">
         {{
           t(
             "market.vanityReady",

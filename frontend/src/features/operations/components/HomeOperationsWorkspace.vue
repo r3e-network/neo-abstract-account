@@ -13,7 +13,7 @@
           <p class="mb-2 text-xs font-bold uppercase text-neo-400">
             {{ t("operations.workspaceTitle", "Abstract Account Workspace") }}
           </p>
-          <h2 class="text-3xl font-extrabold text-white font-outfit">
+          <h2 class="text-3xl font-extrabold text-aa-text font-outfit">
             {{
               t(
                 "operations.workspaceHero",
@@ -530,7 +530,7 @@
                   <span v-else>1</span>
                 </div>
                 <div>
-                  <h2 class="text-lg font-bold text-white font-outfit">
+                  <h2 class="text-lg font-bold text-aa-text font-outfit">
                     {{ t("operations.stepLoadTitle", "Load Account") }}
                   </h2>
                   <p
@@ -614,7 +614,7 @@
                   <span v-else>2</span>
                 </div>
                 <div>
-                  <h2 class="text-lg font-bold text-white font-outfit">
+                  <h2 class="text-lg font-bold text-aa-text font-outfit">
                     {{ t("operations.stepComposeTitle", "Compose Operation") }}
                   </h2>
                   <p
@@ -731,7 +731,7 @@
                   <span v-else>3</span>
                 </div>
                 <div>
-                  <h2 class="text-lg font-bold text-white font-outfit">
+                  <h2 class="text-lg font-bold text-aa-text font-outfit">
                     {{ t("operations.stepSignTitle", "Collect Signatures") }}
                   </h2>
                   <p
@@ -844,7 +844,7 @@
                 >
                   4
                 </div>
-                <h2 class="text-lg font-bold text-white font-outfit">
+                <h2 class="text-lg font-bold text-aa-text font-outfit">
                   {{ t("operations.stepBroadcastTitle", "Broadcast") }}
                 </h2>
               </div>
@@ -1300,7 +1300,7 @@
           <div class="modal-panel">
             <h3
               id="confirmation-dialog-title"
-              class="text-lg font-bold text-white font-outfit"
+              class="text-lg font-bold text-aa-text font-outfit"
             >
               {{ confirmationMeta?.title }}
             </h3>
@@ -1340,7 +1340,7 @@
             <div class="flex items-center justify-between mb-4">
               <h3
                 id="shortcuts-title"
-                class="text-lg font-bold font-outfit text-white"
+                class="text-lg font-bold font-outfit text-aa-text"
               >
                 {{ t("shortcuts.title", "Keyboard Shortcuts") }}
               </h3>
@@ -1583,7 +1583,8 @@ const notes = ref("");
 const signerId = ref("");
 const relayPayloadMode = ref(preferences.getRelayPayloadMode("home-workspace"));
 const paymasterEnabled = ref(false);
-const paymasterDappId = ref("demo-dapp");
+const defaultPaymasterDappId = String(import.meta.env.VITE_DEFAULT_PAYMASTER_DAPP_ID || "").trim();
+const paymasterDappId = ref(defaultPaymasterDappId);
 const signerKind = ref("neo");
 const signatureHex = ref("");
 const evmAddress = ref("");
@@ -2354,7 +2355,7 @@ function applyPaymasterConfig(transactionBody = null) {
 function syncPaymasterStateFromRecord(record = null) {
   paymasterEnabled.value = Boolean(record?.transaction_body?.paymaster);
   paymasterDappId.value =
-    record?.transaction_body?.paymaster?.dapp_id || "demo-dapp";
+    record?.transaction_body?.paymaster?.dapp_id || defaultPaymasterDappId;
 }
 
 async function persistSubmissionReceipt(entry) {
