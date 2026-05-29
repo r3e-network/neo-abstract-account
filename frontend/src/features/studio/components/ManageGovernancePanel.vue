@@ -1,6 +1,6 @@
 <template>
   <section class="card">
-    <h2 class="text-lg font-bold text-white mb-2">
+    <h2 class="text-lg font-bold text-aa-text mb-2">
       {{ t("studioPanels.manageTitle", "Manage Governance") }}
     </h2>
     <p class="text-sm text-aa-muted mb-8">
@@ -96,7 +96,7 @@
 
       <div v-if="manageSnapshot.loadedAt">
         <div class="card hover:border-aa-muted transition-colors duration-200">
-          <h3 class="text-sm font-bold text-white mb-5">
+          <h3 class="text-sm font-bold text-aa-text mb-5">
             {{ t("studioPanels.escapeHatch", "Escape Hatch") }}
           </h3>
           <div class="space-y-4">

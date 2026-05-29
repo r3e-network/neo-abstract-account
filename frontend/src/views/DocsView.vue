@@ -14,7 +14,7 @@
           class="md:w-64 flex-shrink-0"
         >
           <div
-            class="sticky top-24 bg-aa-panel/60 p-5 rounded-lg shadow-glow-blue border border-aa-border backdrop-blur-xl"
+            class="sticky top-24 bg-aa-panel/60 p-5 rounded-[20px] shadow-glow-blue border border-aa-border backdrop-blur-xl"
           >
             <h1
               class="text-sm font-extrabold text-aa-muted uppercase text mb-4 px-2 font-outfit"
@@ -29,7 +29,7 @@
                   :aria-label="
                     t('docs.searchDocumentation', 'Search documentation')
                   "
-                  class="w-full rounded-lg border border-aa-border bg-aa-dark px-3 py-2 text-sm text-aa-text placeholder:text-aa-muted focus:border-aa-orange focus:outline-none focus:ring-1 focus:ring-aa-orange"
+                  class="w-full rounded-[14px] border border-aa-border bg-aa-dark px-3 py-2 text-sm text-aa-text placeholder:text-aa-muted transition-all duration-200 focus:border-aa-orange focus:outline-none focus:ring-2 focus:ring-aa-orange/40"
                   :placeholder="
                     t('docs.searchDocsPlaceholder', 'Search docs...')
                   "
@@ -86,9 +86,9 @@
                 :aria-current="activeDoc === key ? 'page' : undefined"
                 :class="[
                   activeDoc === key
-                    ? 'bg-orange-50 text-orange-900 font-bold border-l-4 border-orange-700 shadow-glow-orange-inset'
+                    ? 'bg-aa-orange/10 text-aa-orange font-bold border-l-4 border-aa-orange shadow-glow-orange-inset'
                     : 'text-aa-text/75 hover:bg-aa-dark hover:text-aa-text border-l-4 border-transparent font-medium',
-                  'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left',
+                  'w-full flex items-center px-3 py-2.5 text-sm rounded-r-lg transition-all duration-200 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-aa-orange/40',
                 ]"
               >
                 {{ docs[key]?.title || key }}
@@ -162,7 +162,7 @@
 
         <div class="flex-1 min-w-0">
           <div
-            class="prose prose-slate max-w-none bg-aa-panel/90 p-8 sm:p-12 rounded-lg shadow-glow-blue border border-aa-border backdrop-blur-xl min-h-[600px]"
+            class="prose prose-slate max-w-none bg-aa-panel/90 p-8 sm:p-12 rounded-[20px] shadow-glow-blue border border-aa-border backdrop-blur-xl min-h-[600px]"
           >
             <div v-if="isLoading" class="space-y-4">
               <div class="skeleton h-8 w-3/4"></div>

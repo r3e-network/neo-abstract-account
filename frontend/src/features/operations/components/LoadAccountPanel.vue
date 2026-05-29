@@ -2,7 +2,7 @@
   <section class="glass-panel p-6">
     <div class="mb-4 flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-aa-text">
           {{ t("operations.loadAccountTitle", "Load V3 Account") }}
         </h2>
         <p class="text-sm text-aa-muted">

@@ -6,7 +6,7 @@
       class="px-6 py-5 border-b border-aa-border bg-aa-panel/40 flex items-center justify-between"
     >
       <div>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-aa-text">
           {{ t("studioPanels.contractExplorer", "Contract Explorer") }}
         </h2>
         <p class="text-xs text-aa-muted font-medium font-mono mt-1">

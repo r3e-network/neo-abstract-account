@@ -1,7 +1,7 @@
 <template>
   <section class="glass-panel p-5">
     <div class="mb-4">
-      <h2 class="text-base font-bold font-outfit text-white">
+      <h2 class="text-base font-bold font-outfit text-aa-text">
         {{ t("sharedDraft.signerChecklist", "Signer Checklist") }}
       </h2>
       <p class="text-sm text-aa-muted">{{ progressText }}.</p>

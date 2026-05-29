@@ -1,6 +1,6 @@
 <template>
   <section class="glass-panel p-5">
-    <h2 class="text-base font-bold font-outfit text-white mb-3">
+    <h2 class="text-base font-bold font-outfit text-aa-text mb-3">
       {{ t("sharedDraft.collectedSignaturesTitle", "Collected Signatures") }}
     </h2>
     <div v-if="signatures.length === 0" class="text-sm text-aa-muted">

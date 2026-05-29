@@ -36,7 +36,7 @@
         data-vanity-anchor
       >
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel/60 p-6 backdrop-blur-xl"
+          class="rounded-[20px] border border-aa-border bg-aa-panel/60 p-6 backdrop-blur-xl shadow-sm"
         >
           <h2 class="text-lg font-bold text-aa-text">
             {{ t("market.createEscrowListing", "Create Escrow Listing") }}

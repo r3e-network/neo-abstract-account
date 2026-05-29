@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative min-h-screen overflow-hidden bg-[#f5f7fb] font-sans text-aa-text"
+    class="relative min-h-screen overflow-hidden bg-aa-dark font-sans text-aa-text"
   >
     <div
       class="absolute inset-x-0 top-0 z-0 h-72 border-b border-slate-200 bg-white"
@@ -38,9 +38,9 @@
         </div>
       </div>
 
-      <div class="mb-6 grid gap-4 md:grid-cols-3">
+      <div class="mb-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel p-5 shadow-sm"
+          class="rounded-[20px] border border-aa-border bg-aa-panel p-5 shadow-sm"
         >
           <p class="text-xs font-bold uppercase text-aa-muted">
             {{ t("identity.connectedWallet", "Connected Neo Wallet") }}
@@ -50,7 +50,7 @@
           </p>
         </div>
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel p-5 shadow-sm"
+          class="rounded-[20px] border border-aa-border bg-aa-panel p-5 shadow-sm"
         >
           <p class="text-xs font-bold uppercase text-aa-muted">
             {{ t("identity.boundAccount", "Bound Account Context") }}
@@ -60,7 +60,7 @@
           </p>
         </div>
         <div
-          class="rounded-2xl border border-aa-border bg-aa-panel p-5 shadow-sm"
+          class="rounded-[20px] border border-aa-border bg-aa-panel p-5 shadow-sm"
         >
           <p class="text-xs font-bold uppercase text-aa-muted">
             {{ t("identity.aaContract", "AA Contract") }}

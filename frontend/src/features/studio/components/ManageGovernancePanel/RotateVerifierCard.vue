@@ -1,6 +1,6 @@
 <template>
   <div class="card hover:border-aa-muted transition-colors duration-200">
-    <h3 class="text-sm font-bold text-white mb-5">
+    <h3 class="text-sm font-bold text-aa-text mb-5">
       {{ t("studioPanels.rotateVerifier", "Rotate Verifier Plugin") }}
     </h3>
     <div class="space-y-4">

@@ -85,7 +85,7 @@
     </label>
 
     <div class="border-t border-aa-border pt-4">
-      <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+      <h3 class="text-sm font-semibold text-aa-text mb-3 flex items-center gap-2">
         <svg
           aria-hidden="true"
           class="w-4 h-4 text-aa-muted"

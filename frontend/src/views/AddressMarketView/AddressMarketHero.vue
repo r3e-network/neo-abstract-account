@@ -8,14 +8,14 @@
     ></div>
     <div class="relative">
       <div
-        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-900 text-sm font-semibold border border-sky-300 shadow-sm mb-4"
+        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-aa-info/10 text-aa-info text-sm font-semibold border border-aa-info/25 shadow-sm mb-4"
       >
         <span class="relative flex h-2 w-2">
           <span
-            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-600 opacity-75"
+            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-aa-info opacity-75"
           ></span>
           <span
-            class="relative inline-flex rounded-full h-2 w-2 bg-sky-700"
+            class="relative inline-flex rounded-full h-2 w-2 bg-aa-info"
           ></span>
         </span>
         {{ t("market.badge", "Trustless Escrow") }}

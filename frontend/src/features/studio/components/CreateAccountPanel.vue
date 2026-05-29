@@ -2,7 +2,7 @@
   <section class="card">
     <div class="flex items-start justify-between mb-2">
       <div>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-aa-text">
           {{ t("studioPanels.createTitle", "Create Abstract Account") }}
         </h2>
         <p class="text-sm text-aa-muted mt-1">

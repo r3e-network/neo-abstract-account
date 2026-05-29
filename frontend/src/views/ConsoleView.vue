@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f5f7fb] text-slate-950">
+  <div class="min-h-screen bg-aa-dark text-slate-950">
     <section class="border-b border-slate-200 bg-white">
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -54,7 +54,7 @@
 
     <main class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[260px_1fr_320px] lg:px-8">
       <aside class="space-y-3">
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             {{ t("console.gettingStartedTitle", "Getting Started") }}
           </p>
@@ -75,7 +75,7 @@
           </ol>
         </div>
 
-        <nav class="rounded-xl border border-slate-200 bg-white p-2 shadow-sm" aria-label="Console workflows">
+        <nav class="rounded-[20px] border border-slate-200 bg-white p-2 shadow-sm" aria-label="Console workflows">
           <router-link
             v-for="item in workflowNav"
             :key="item.label"
@@ -93,7 +93,7 @@
           <div
             v-for="stat in stats"
             :key="stat.label"
-            class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
           >
             <p class="text-xs font-medium text-slate-500">{{ stat.label }}</p>
             <p class="mt-2 truncate text-lg font-semibold text-slate-950" :title="stat.title">
@@ -103,7 +103,7 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -154,7 +154,7 @@
               v-for="service in services"
               :key="service.title"
               v-bind="serviceBind(service)"
-              class="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              class="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md"
             >
               <div class="flex items-start justify-between gap-4">
                 <div>
@@ -169,7 +169,7 @@
       </section>
 
       <aside class="space-y-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-950">
               {{ t("console.recentActivityHeading", "Recent Activity") }}

@@ -2,7 +2,7 @@
   <section class="glass-panel p-6 shadow-glow-blue">
     <div class="mb-4 flex items-center justify-between gap-3">
       <div>
-        <h2 class="text-lg font-bold text-white">{{ displayTitle }}</h2>
+        <h2 class="text-lg font-bold text-aa-text">{{ displayTitle }}</h2>
         <p class="text-xs text-aa-muted mt-1">
           {{
             t(

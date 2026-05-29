@@ -8,9 +8,9 @@
     <div
       class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up"
     >
-      <div class="glass-panel p-6 sm:p-10 rounded-2xl relative">
+      <div class="glass-panel p-6 sm:p-10 relative">
         <template v-if="draftId">
-          <h1 class="text-2xl font-bold text-white mb-2">
+          <h1 class="text-2xl font-bold text-aa-text mb-2">
             {{ t("sharedDraft.title", "Shared Transaction Draft") }}
           </h1>
           <p class="text-sm text-aa-muted mb-8 max-w-2xl">
@@ -165,7 +165,7 @@
             <div class="grid gap-6 lg:grid-cols-2">
               <section class="glass-panel p-5">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold font-outfit text-white">
+                  <h2 class="text-base font-bold font-outfit text-aa-text">
                     {{ t("sharedDraft.signatureActions", "Signature Actions") }}
                   </h2>
                   <p class="text-sm text-aa-muted">
@@ -330,7 +330,7 @@
 
               <section class="glass-panel p-5">
                 <div class="mb-4">
-                  <h2 class="text-base font-bold font-outfit text-white">
+                  <h2 class="text-base font-bold font-outfit text-aa-text">
                     {{ t("sharedDraft.broadcastRelay", "Broadcast & Relay") }}
                   </h2>
                   <p class="text-sm text-aa-muted">
@@ -530,7 +530,7 @@
             />
 
             <section class="glass-panel p-5">
-              <h2 class="text-base font-bold font-outfit text-white mb-3">
+              <h2 class="text-base font-bold font-outfit text-aa-text mb-3">
                 {{ t("sharedDraft.recentActivityTitle", "Recent Activity") }}
               </h2>
               <ActivityTimeline
