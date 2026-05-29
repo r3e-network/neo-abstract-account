@@ -12,132 +12,18 @@
     </div>
 
     <div class="relative z-10 mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <section class="mb-10 relative">
-        <div
-          class="absolute -top-20 -right-20 w-72 h-72 bg-aa-info/5 rounded-full blur-3xl pointer-events-none"
-        ></div>
-        <div
-          class="absolute -bottom-16 -left-16 w-56 h-56 bg-aa-success/5 rounded-full blur-3xl pointer-events-none"
-        ></div>
-        <div class="relative">
-          <div
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-900 text-sm font-semibold border border-sky-300 shadow-sm mb-4"
-          >
-            <span class="relative flex h-2 w-2">
-              <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-600 opacity-75"
-              ></span>
-              <span
-                class="relative inline-flex rounded-full h-2 w-2 bg-sky-700"
-              ></span>
-            </span>
-            {{ t("market.badge", "Trustless Escrow") }}
-          </div>
-          <span class="sr-only">{{
-            t(
-              "market.srDescription",
-              "Trustless escrow for AA address transfers",
-            )
-          }}</span>
-          <h1
-            class="text-4xl font-extrabold font-outfit md:text-5xl leading-tight"
-          >
-            <span class="text-gradient-white mr-2">{{
-              t("market.subtitlePart1", "AA Address")
-            }}</span>
-            <span class="text-gradient">
-              {{ t("market.subtitlePart2", "Marketplace") }}</span
-            >
-          </h1>
-          <p class="mt-4 max-w-3xl text-base leading-8 text-aa-text">
-            {{
-              t(
-                "market.description",
-                "Sellers list an AA account and atomically lock it into escrow. Buyers settle in one chain transaction: transfer GAS to the market contract, rotate control to the new owner, and release seller payment only if the transfer succeeds.",
-              )
-            }}
-          </p>
-          <div class="mt-6 flex flex-wrap gap-3">
-            <router-link to="/app" class="btn-primary">{{
-              t("market.openAppWorkspace", "Open App Workspace")
-            }}</router-link>
-            <a href="#vanity-generator" class="btn-secondary">{{
-              t("market.vanityTitle", "Vanity Address Generator")
-            }}</a>
-            <router-link
-              :to="{ path: '/docs', query: { doc: 'addressMarket' } }"
-              class="btn-secondary"
-              >{{
-                t("market.readMarketGuide", "Read Market Guide")
-              }}</router-link
-            >
-          </div>
-        </div>
-      </section>
+      <AddressMarketHero />
 
       <!-- Stats summary -->
-      <section class="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <template v-if="loading && !hasLoaded">
-          <div
-            v-for="i in 3"
-            :key="'stat-skel-' + i"
-            class="gradient-border-card bg-aa-panel/60 backdrop-blur-xl p-5"
-          >
-            <div class="skeleton h-3 w-24 mb-3"></div>
-            <div class="skeleton h-8 w-16"></div>
-          </div>
-        </template>
-        <template v-else>
-          <div
-            class="gradient-border-card bg-aa-panel/60 backdrop-blur-xl p-5 group hover:bg-aa-panel/60 transition-all duration-200"
-          >
-            <p class="text-xs font-semibold uppercase text-aa-muted">
-              {{ t("market.statsTotal", "Total Listings") }}
-            </p>
-            <p class="mt-2 text-3xl font-extrabold text-aa-text font-outfit">
-              {{ listings.length }}
-            </p>
-          </div>
-          <div
-            class="gradient-border-card bg-aa-panel/60 backdrop-blur-xl p-5 group hover:bg-aa-panel/60 transition-all duration-200"
-          >
-            <p class="text-xs font-semibold uppercase text-aa-muted">
-              {{ t("market.statsActive", "Active Escrows") }}
-            </p>
-            <p class="mt-2 text-3xl font-extrabold text-aa-success font-outfit">
-              {{ activeListingsCount }}
-            </p>
-          </div>
-          <div
-            class="gradient-border-card bg-aa-panel/60 backdrop-blur-xl p-5 group hover:bg-aa-panel/60 transition-all duration-200"
-          >
-            <p class="text-xs font-semibold uppercase text-aa-muted">
-              {{ t("market.statsAvgPrice", "Avg Price") }}
-            </p>
-            <p class="mt-2 text-3xl font-extrabold text-aa-text font-outfit">
-              {{ averagePrice }}
-              <span class="text-sm font-semibold text-aa-muted">GAS</span>
-            </p>
-          </div>
-        </template>
-      </section>
+      <MarketStatsStrip
+        :loading="loading"
+        :has-loaded="hasLoaded"
+        :total-listings="listings.length"
+        :active-count="activeListingsCount"
+        :avg-price="averagePrice"
+      />
 
-      <section
-        v-if="!marketConfigured"
-        class="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-6 text-slate-800"
-      >
-        <h2 class="text-lg font-bold text-slate-950">
-          {{ t("market.notConfiguredTitle", "Market Contract Not Configured") }}
-        </h2>
-        <p class="mt-3 text-sm leading-7">
-          {{
-            t(
-              "market.notConfiguredBody",
-              "Set VITE_AA_MARKET_HASH for the current deployment before using the trustless escrow market. The UI will not fall back to local listings anymore.",
-            )
-          }}
-        </p>
-      </section>
+      <MarketNotConfiguredBanner v-if="!marketConfigured" />
 
       <VanityGeneratorPanel
         id="vanity-generator"
@@ -374,590 +260,52 @@
         </div>
 
         <div class="space-y-4">
-          <div
-            class="flex flex-col gap-3 rounded-2xl border border-aa-border bg-aa-panel/60 p-5 backdrop-blur-xl md:flex-row md:items-center md:justify-between"
-          >
-            <div>
-              <h2 class="text-lg font-bold text-aa-text">
-                {{ t("market.onChainListings", "On-Chain Listings") }}
-              </h2>
-              <p class="mt-1 text-sm text-aa-muted">
-                {{
-                  t(
-                    "market.onChainListingsHint",
-                    "Listings, escrow status, and settlement are read directly from the market contract and AA core contract.",
-                  )
-                }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="btn-secondary"
-              :class="{ 'btn-loading': loading }"
-              :disabled="loading || !marketConfigured"
-              :aria-label="
-                loading
-                  ? t('market.refreshing', 'Refreshing...')
-                  : t('market.refreshListings', 'Refresh Listings')
-              "
-              @click="refreshListings"
-            >
-              {{
-                loading
-                  ? t("market.refreshing", "Refreshing...")
-                  : t("market.refreshListings", "Refresh Listings")
-              }}
-            </button>
-          </div>
+          <ListingsHeaderBar
+            :loading="loading"
+            :market-configured="marketConfigured"
+            @refresh="refreshListings"
+          />
 
-          <div
+          <ListingsSkeletonList
             v-if="loading && !hasLoaded && marketConfigured"
-            class="space-y-4"
-          >
-            <div
-              v-for="i in 2"
-              :key="'listing-skel-' + i"
-              class="gradient-border-card bg-aa-panel/60 backdrop-blur-xl overflow-hidden"
-            >
-              <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                  <div class="skeleton h-5 w-40"></div>
-                  <div class="skeleton h-5 w-20 rounded-full"></div>
-                </div>
-                <div
-                  class="rounded-xl border border-aa-border bg-aa-dark/50 p-4 space-y-3"
-                >
-                  <div class="skeleton h-3 w-20"></div>
-                  <div class="skeleton h-4 w-full"></div>
-                  <div class="flex gap-4">
-                    <div class="skeleton h-3 w-32"></div>
-                    <div class="skeleton h-3 w-32"></div>
-                  </div>
-                </div>
-                <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                  <div
-                    v-for="j in 4"
-                    :key="'skel-detail-' + j"
-                    class="space-y-1.5"
-                  >
-                    <div class="skeleton h-3 w-16"></div>
-                    <div class="skeleton h-4 w-24"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="border-t border-aa-border bg-aa-panel/40 p-4">
-                <div class="flex items-center justify-between">
-                  <div class="skeleton h-10 w-64 rounded-xl"></div>
-                  <div class="skeleton h-9 w-28 rounded-lg"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+          />
 
-          <div
+          <ListingsEmptyState
             v-else-if="marketConfigured && listings.length === 0"
-            class="empty-state"
-          >
-            <div
-              class="mx-auto w-16 h-16 rounded-full bg-aa-dark/50 flex items-center justify-center mb-4"
-            >
-              <svg
-                aria-hidden="true"
-                class="w-8 h-8 text-aa-muted"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                ></path>
-              </svg>
-            </div>
-            <p class="text-aa-text font-medium mb-2">
-              {{
-                t("market.noListingsFound", "No listings found on-chain yet")
-              }}
-            </p>
-            <p class="text-sm text-aa-muted max-w-md mx-auto mb-6">
-              {{
-                t(
-                  "market.noListingsHint",
-                  "Be the first to list your Abstract Account address for sale. Listings are secured by trustless on-chain escrow.",
-                )
-              }}
-            </p>
-            <router-link
-              to="/app"
-              class="inline-flex items-center gap-2 text-sm font-semibold text-aa-info hover:text-aa-info-light transition-colors duration-200"
-            >
-              {{
-                t("market.createAaAccountFirst", "Create an AA account first")
-              }}
-              <span>&rarr;</span>
-            </router-link>
-          </div>
+          />
 
           <div v-else class="space-y-4">
-            <article
+            <AddressMarketListingCard
               v-for="listing in listings"
               :key="listing.id"
-              class="gradient-border-card bg-aa-panel/60 backdrop-blur-xl overflow-hidden"
-            >
-              <div class="p-6">
-                <!-- Header row: title, status, price -->
-                <div
-                  class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-5"
-                >
-                  <div class="flex flex-wrap items-center gap-2">
-                    <img
-                      v-if="listingMetadata[listing.accountIdHash]?.logo_url"
-                      :src="listingMetadata[listing.accountIdHash].logo_url"
-                      :alt="t('market.listingLogo', 'Listing logo')"
-                      class="w-6 h-6 rounded border border-aa-border object-cover"
-                    />
-                    <h3 class="text-lg font-bold text-aa-text">
-                      {{
-                        listing.title ||
-                        `${t("market.listingPrefix", "Listing #")}${listing.id}`
-                      }}
-                    </h3>
-                    <span
-                      class="badge text-xs font-semibold uppercase text inline-flex items-center gap-1"
-                      :class="statusBadgeClass(listing.status)"
-                    >
-                      <span
-                        v-if="listing.status === 'active'"
-                        class="w-1.5 h-1.5 rounded-full bg-aa-success"
-                      ></span>
-                      {{ translatedStatus(listing.status) }}
-                    </span>
-                    <span
-                      v-if="listing.escrow_active"
-                      class="rounded-full border border-aa-success/30 px-2.5 py-0.5 text-[11px] font-semibold uppercase text-aa-success-light bg-aa-success/10"
-                    >
-                      {{ t("market.escrowLocked", "escrow locked") }}
-                    </span>
-                  </div>
-                  <div class="flex items-baseline gap-1.5 shrink-0">
-                    <span
-                      class="text-3xl font-extrabold text-aa-text font-outfit"
-                      >{{ listing.price_gas }}</span
-                    >
-                    <span class="text-sm font-semibold text-aa-muted">GAS</span>
-                  </div>
-                </div>
-
-                <p
-                  v-if="listingMetadata[listing.accountIdHash]?.description"
-                  class="text-sm text-aa-muted mb-4"
-                >
-                  {{ listingMetadata[listing.accountIdHash].description }}
-                </p>
-
-                <!-- Account info row -->
-                <div
-                  class="rounded-xl border border-aa-border bg-aa-dark/50 p-4 mb-4"
-                >
-                  <p class="text-xs font-semibold uppercase text-aa-muted mb-2">
-                    {{ t("market.aaAddress", "AA Address") }}
-                  </p>
-                  <div class="flex items-start gap-2">
-                    <p class="break-all font-mono text-sm text-aa-text flex-1">
-                      {{ listing.account_address }}
-                    </p>
-                    <button
-                      type="button"
-                      :aria-label="t('market.copyAddress', 'Copy address')"
-                      class="shrink-0 text-xs text-aa-muted hover:text-aa-text transition-colors duration-200"
-                      @click="
-                        copyText(listing.account_address);
-                        markCopied('listing-addr-' + listing.id);
-                      "
-                    >
-                      <svg
-                        aria-hidden="true"
-                        class="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        ></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <div
-                    class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-aa-muted"
-                  >
-                    <span class="flex items-center"
-                      >{{ t("market.accountIdLabel", "Account ID") }}:
-                      <span class="font-mono text-aa-muted"
-                        >0x{{ listing.accountIdHash?.slice(0, 8) }}...{{
-                          listing.accountIdHash?.slice(-4)
-                        }}</span
-                      >
-                      <button
-                        v-if="listing.accountIdHash"
-                        :aria-label="
-                          t('market.copyAccountId', 'Copy account ID')
-                        "
-                        @click="
-                          copyText('0x' + listing.accountIdHash);
-                          markCopied('listing-accid-' + listing.id);
-                        "
-                        class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          v-if="copiedKey !== 'listing-accid-' + listing.id"
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                          />
-                          <path
-                            d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                          />
-                        </svg>
-                        <svg
-                          aria-hidden="true"
-                          v-else
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5 text-aa-success"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </span>
-                    <span class="flex items-center"
-                      >{{ t("market.seller", "Seller") }}:
-                      <span class="font-mono text-aa-muted">{{
-                        listing.seller_address
-                          ? listing.seller_address.slice(0, 8) +
-                            "..." +
-                            listing.seller_address.slice(-4)
-                          : t("market.unknown", "unknown")
-                      }}</span>
-                      <button
-                        v-if="listing.seller_address"
-                        :aria-label="
-                          t('market.copySeller', 'Copy seller address')
-                        "
-                        @click="
-                          copyText(listing.seller_address);
-                          markCopied('listing-seller-' + listing.id);
-                        "
-                        class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          v-if="copiedKey !== 'listing-seller-' + listing.id"
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                          />
-                          <path
-                            d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                          />
-                        </svg>
-                        <svg
-                          aria-hidden="true"
-                          v-else
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5 text-aa-success"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Details grid -->
-                <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <p class="text-xs font-semibold uppercase text-aa-muted">
-                      {{ t("market.verifier", "Verifier") }}
-                    </p>
-                    <p class="mt-1 text-sm text-aa-text">
-                      {{ listing.verifier_profile || t("market.none", "None") }}
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-xs font-semibold uppercase text-aa-muted">
-                      {{ t("market.hook", "Hook") }}
-                    </p>
-                    <p class="mt-1 text-sm text-aa-text">
-                      {{ listing.hook_profile || t("market.none", "None") }}
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-xs font-semibold uppercase text-aa-muted">
-                      {{ t("market.backupOwner", "Backup Owner") }}
-                    </p>
-                    <div class="mt-1 flex items-center">
-                      <span class="font-mono text-sm text-aa-text flex-1">{{
-                        listing.backup_owner
-                          ? listing.backup_owner.slice(0, 8) +
-                            "..." +
-                            listing.backup_owner.slice(-4)
-                          : t("market.unset", "unset")
-                      }}</span>
-                      <button
-                        v-if="listing.backup_owner"
-                        :aria-label="
-                          t('market.copyBackupOwner', 'Copy backup owner')
-                        "
-                        @click="
-                          copyText(listing.backup_owner);
-                          markCopied('listing-backup-' + listing.id);
-                        "
-                        class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          v-if="copiedKey !== 'listing-backup-' + listing.id"
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                          />
-                          <path
-                            d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                          />
-                        </svg>
-                        <svg
-                          aria-hidden="true"
-                          v-else
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5 text-aa-success"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <p class="text-xs font-semibold uppercase text-aa-muted">
-                      {{ t("market.metadata", "Metadata") }}
-                    </p>
-                    <a
-                      v-if="listing.metadataUri"
-                      :href="listing.metadataUri"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="mt-1 text-sm text-aa-info-light hover:text-aa-info transition-colors duration-200"
-                    >
-                      {{ t("market.viewMetadata", "View") }} &rarr;
-                    </a>
-                    <p v-else class="mt-1 text-sm text-aa-muted">
-                      {{ t("market.noMetadataUrl", "No metadata URL") }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Actions footer -->
-              <div class="border-t border-aa-border bg-aa-panel/40 p-4">
-                <div
-                  class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"
-                >
-                  <div
-                    class="rounded-xl border border-aa-border bg-aa-dark/50 p-3 flex-1 max-w-xl"
-                  >
-                    <p
-                      class="text-xs font-semibold uppercase text-aa-muted mb-2"
-                    >
-                      {{ t("market.buyerTransferPlan", "Buyer Transfer Plan") }}
-                    </p>
-                    <p class="text-xs leading-6 text-aa-muted">
-                      {{
-                        t(
-                          "market.buyerTransferPlanHint",
-                          "Settlement transfers only the AA shell. Existing verifier and hook bindings are cleared during settlement. Reconfigure fresh plugins afterward.",
-                        )
-                      }}
-                    </p>
-                    <label
-                      class="block mt-2"
-                      :for="'market-backup-owner-' + listing.id"
-                    >
-                      <span
-                        class="mb-1 block text-xs font-semibold uppercase text-aa-muted"
-                        >{{
-                          t("market.newBackupOwner", "New Backup Owner")
-                        }}</span
-                      >
-                      <input
-                        :id="'market-backup-owner-' + listing.id"
-                        v-model="purchaseForm(listing.id).newBackupOwner"
-                        type="text"
-                        class="input-field w-full bg-aa-dark font-mono text-sm"
-                        :placeholder="
-                          connectedAccount ||
-                          t('market.addressPlaceholder', 'N...')
-                        "
-                      />
-                    </label>
-                  </div>
-
-                  <div class="flex flex-wrap gap-2 shrink-0">
-                    <button
-                      type="button"
-                      class="btn-primary"
-                      :class="{ 'btn-loading': buyingId === listing.id }"
-                      :disabled="
-                        buyingId === listing.id ||
-                        listing.status !== 'active' ||
-                        !marketConfigured ||
-                        !connectedAccount
-                      "
-                      :aria-label="
-                        buyingId === listing.id
-                          ? t('market.settling', 'Settling...')
-                          : t('market.buyWithEscrow', 'Buy With Escrow')
-                      "
-                      @click="buyListingAction(listing)"
-                    >
-                      {{
-                        buyingId === listing.id
-                          ? t("market.settling", "Settling...")
-                          : t("market.buyWithEscrow", "Buy With Escrow")
-                      }}
-                    </button>
-                    <button
-                      v-if="isSeller(listing)"
-                      type="button"
-                      class="btn-danger"
-                      :class="{ 'btn-loading': cancellingId === listing.id }"
-                      :disabled="
-                        cancellingId === listing.id ||
-                        listing.status !== 'active'
-                      "
-                      :aria-label="
-                        cancellingId === listing.id
-                          ? t('market.cancelling', 'Cancelling...')
-                          : t('market.cancelListing', 'Cancel Listing')
-                      "
-                      @click="cancelListingAction(listing)"
-                    >
-                      {{
-                        cancellingId === listing.id
-                          ? t("market.cancelling", "Cancelling...")
-                          : t("market.cancelListing", "Cancel Listing")
-                      }}
-                    </button>
-                    <button
-                      v-if="isRefundBuyer(listing)"
-                      type="button"
-                      class="btn-ghost"
-                      :class="{ 'btn-loading': refundId === listing.id }"
-                      :disabled="refundId === listing.id || !connectedAccount"
-                      :aria-label="
-                        refundId === listing.id
-                          ? t('market.refunding', 'Refunding...')
-                          : t(
-                              'market.refundPendingPayment',
-                              'Refund Pending Payment',
-                            )
-                      "
-                      :title="
-                        t(
-                          'market.refundHint',
-                          'Refund your pending payment if settlement did not complete',
-                        )
-                      "
-                      @click="refundAction(listing)"
-                    >
-                      {{
-                        refundId === listing.id
-                          ? t("market.refunding", "Refunding...")
-                          : t(
-                              "market.refundPendingPayment",
-                              "Refund Pending Payment",
-                            )
-                      }}
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  v-if="isSeller(listing) && listing.status === 'active'"
-                  class="mt-3 flex gap-2 items-end max-w-xs"
-                >
-                  <label
-                    class="block flex-1"
-                    :for="'market-update-price-' + listing.id"
-                  >
-                    <span
-                      class="mb-1 block text-xs font-semibold uppercase text-aa-muted"
-                      >{{ t("market.updatePrice", "Update Price") }}</span
-                    >
-                    <input
-                      :id="'market-update-price-' + listing.id"
-                      v-model="priceDrafts[listing.id]"
-                      type="text"
-                      inputmode="decimal"
-                      class="input-field w-full bg-aa-dark font-mono text-sm"
-                      :placeholder="listing.price_gas"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    class="btn-secondary"
-                    :class="{ 'btn-loading': priceUpdatingId === listing.id }"
-                    :disabled="priceUpdatingId === listing.id"
-                    :aria-label="
-                      priceUpdatingId === listing.id
-                        ? t('market.updating', 'Updating...')
-                        : t('market.update', 'Update')
-                    "
-                    @click="updatePriceAction(listing)"
-                  >
-                    {{
-                      priceUpdatingId === listing.id
-                        ? t("market.updating", "Updating...")
-                        : t("market.update", "Update")
-                    }}
-                  </button>
-                </div>
-              </div>
-            </article>
+              :listing="listing"
+              :metadata="listingMetadata[listing.accountIdHash]"
+              :copied-key="copiedKey"
+              :buying-id="buyingId"
+              :cancelling-id="cancellingId"
+              :refund-id="refundId"
+              :price-updating-id="priceUpdatingId"
+              :market-configured="marketConfigured"
+              :connected-account="connectedAccount || ''"
+              :new-backup-owner="purchaseForm(listing.id).newBackupOwner"
+              :price-draft="priceDrafts[listing.id]"
+              :is-seller="isSeller(listing)"
+              :is-refund-buyer="isRefundBuyer(listing)"
+              :status-badge-class="statusBadgeClass(listing.status)"
+              :translated-status="translatedStatus(listing.status)"
+              @buy="buyListingAction(listing)"
+              @cancel="cancelListingAction(listing)"
+              @refund="refundAction(listing)"
+              @update-price="updatePriceAction(listing)"
+              @copy="
+                copyText($event.value);
+                markCopied($event.markKey);
+              "
+              @update:new-backup-owner="
+                purchaseForm(listing.id).newBackupOwner = $event
+              "
+              @update:price-draft="priceDrafts[listing.id] = $event"
+            />
           </div>
         </div>
       </section>
@@ -987,6 +335,13 @@ import {
 } from "@/services/addressMarketService.js";
 import { fetchAccountMetadataBatch } from "@/services/accountMetadataService.js";
 import VanityGeneratorPanel from "@/features/market/components/VanityGeneratorPanel.vue";
+import AddressMarketHero from "@/views/AddressMarketView/AddressMarketHero.vue";
+import MarketStatsStrip from "@/views/AddressMarketView/MarketStatsStrip.vue";
+import MarketNotConfiguredBanner from "@/views/AddressMarketView/MarketNotConfiguredBanner.vue";
+import ListingsHeaderBar from "@/views/AddressMarketView/ListingsHeaderBar.vue";
+import ListingsSkeletonList from "@/views/AddressMarketView/ListingsSkeletonList.vue";
+import ListingsEmptyState from "@/views/AddressMarketView/ListingsEmptyState.vue";
+import AddressMarketListingCard from "@/views/AddressMarketView/AddressMarketListingCard.vue";
 import { translateError } from "@/config/errorCodes.js";
 
 const { t } = useI18n();

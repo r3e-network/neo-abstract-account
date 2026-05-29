@@ -17,49 +17,7 @@
     </div>
 
     <!-- Step indicator -->
-    <div class="mb-6">
-      <div class="flex items-center justify-between">
-        <div
-          v-for="(step, idx) in steps"
-          :key="step.id"
-          class="flex-1 flex items-center"
-        >
-          <div class="flex flex-col items-center w-full">
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-              :class="getStepClass(idx)"
-            >
-              <span v-if="idx < currentStep" class="text-aa-dark">
-                <svg
-                  aria-hidden="true"
-                  class="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </span>
-              <span v-else class="text-sm font-bold">{{ idx + 1 }}</span>
-            </div>
-            <p
-              class="mt-2 text-xs font-medium text-center"
-              :class="getStepLabelClass(idx)"
-            >
-              {{ step.label }}
-            </p>
-          </div>
-          <div
-            v-if="idx < steps.length - 1"
-            class="flex-1 h-1 transition-all duration-200"
-            :class="getConnectorClass(idx)"
-          ></div>
-        </div>
-      </div>
-    </div>
+    <RecoveryStepIndicator :steps="steps" :current-step="currentStep" />
 
     <!-- Step 1: Verify Backup Owner -->
     <div v-if="currentStep === 0" class="max-w-2xl mx-auto">
@@ -416,25 +374,10 @@
           </div>
         </div>
 
-        <!-- Countdown display -->
-        <div
-          class="mb-5 rounded-lg border border-aa-border bg-aa-dark/60 p-6 text-center"
-        >
-          <p class="text-xs font-bold uppercase text-aa-muted mb-3">
-            {{ t("recovery.timeRemaining", "Time Remaining") }}
-          </p>
-          <div class="flex items-center justify-center gap-2 mb-4">
-            <span class="text-5xl font-bold font-mono text-aa-warning">{{
-              formattedTimeRemaining
-            }}</span>
-          </div>
-          <div class="relative h-2 rounded-full bg-aa-border max-w-md mx-auto">
-            <div
-              class="absolute left-0 top-0 h-2 rounded-full bg-aa-warning transition-all duration-1000"
-              :style="{ width: timelockProgress + '%' }"
-            ></div>
-          </div>
-        </div>
+        <RecoveryCountdownDisplay
+          :formatted-time-remaining="formattedTimeRemaining"
+          :timelock-progress="timelockProgress"
+        />
 
         <div class="rounded-lg border border-aa-border bg-aa-panel/50 p-4 mb-5">
           <div class="flex items-start gap-3">
@@ -751,6 +694,8 @@
 import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useI18n } from "@/i18n";
 import { sanitizeHex } from "@/utils/hex.js";
+import RecoveryStepIndicator from "./RecoveryFlowPanel/RecoveryStepIndicator.vue";
+import RecoveryCountdownDisplay from "./RecoveryFlowPanel/RecoveryCountdownDisplay.vue";
 
 const { t } = useI18n();
 
@@ -908,32 +853,6 @@ function finalizeRecovery() {
     finalizing.value = false;
     currentStep.value = 4; // Success state
   }, 2000);
-}
-
-function getStepClass(idx) {
-  if (idx < currentStep.value) {
-    return "bg-aa-success text-aa-success";
-  }
-  if (idx === currentStep.value) {
-    return "bg-aa-orange text-aa-orange ring-2 ring-aa-orange ring-offset-2 ring-offset-aa-dark";
-  }
-  return "bg-aa-panel text-aa-muted";
-}
-
-function getStepLabelClass(idx) {
-  if (idx < currentStep.value) return "text-aa-success";
-  if (idx === currentStep.value) return "text-aa-orange";
-  return "text-aa-muted";
-}
-
-function getConnectorClass(idx) {
-  if (idx < currentStep.value - 1) {
-    return "bg-aa-success";
-  }
-  if (idx === currentStep.value - 1) {
-    return "bg-aa-orange";
-  }
-  return "bg-aa-border";
 }
 
 function formatHash(hash) {

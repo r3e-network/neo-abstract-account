@@ -28,498 +28,43 @@
     </div>
 
     <!-- Empty state when no account is loaded -->
-    <div v-if="!accountLoaded" class="empty-state">
-      <div
-        class="mx-auto w-12 h-12 rounded-full bg-aa-panel/30 flex items-center justify-center mb-3"
-      >
-        <svg
-          aria-hidden="true"
-          class="w-6 h-6 text-aa-muted"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-          ></path>
-        </svg>
-      </div>
-      <p class="text-sm text-aa-text font-medium mb-1">
-        {{ t("security.noAccountLoaded", "No account loaded") }}
-      </p>
-      <p class="text-xs text-aa-muted">
-        {{
-          t(
-            "security.loadAccountForSecurity",
-            "Load an account to view its security dashboard.",
-          )
-        }}
-      </p>
-    </div>
+    <SecurityEmptyState v-if="!accountLoaded" />
 
     <!-- Security overview when account is loaded -->
     <template v-else>
       <!-- Overall Security Score -->
-      <div
-        class="mb-6 rounded-lg border border-aa-border bg-gradient-to-br from-aa-panel/80 to-aa-dark/60 p-5"
-      >
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1">
-            <p class="text-xs font-bold uppercase text-aa-muted mb-2">
-              {{ t("security.overallScore", "Overall Security Score") }}
-            </p>
-            <div class="flex items-center gap-4">
-              <div class="relative w-20 h-20">
-                <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    class="text-aa-border"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    :stroke-dasharray="`${securityScorePercentage} 100`"
-                    :class="overallSecurityLevel.circleClass"
-                  />
-                </svg>
-                <span
-                  class="absolute inset-0 flex items-center justify-center text-lg font-bold"
-                  :class="overallSecurityLevel.scoreTextClass"
-                >
-                  {{ securityScore }}/3
-                </span>
-              </div>
-              <div class="flex-1">
-                <p class="text-sm font-semibold text-aa-text">
-                  {{ overallSecurityLevel.description }}
-                </p>
-                <p class="mt-1 text-xs text-aa-muted">
-                  {{ overallSecurityLevel.hint }}
-                </p>
-              </div>
-            </div>
-          </div>
-          <router-link
-            :to="{ path: '/docs', query: { doc: 'securityGuide' } }"
-            class="btn-secondary btn-xs whitespace-nowrap"
-          >
-            {{ t("security.viewSecurityGuide", "View Guide") }}
-          </router-link>
-        </div>
-      </div>
+      <SecurityScoreCard
+        :security-score="securityScore"
+        :security-score-percentage="securityScorePercentage"
+        :overall-security-level="overallSecurityLevel"
+      />
 
       <!-- Security Status Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <!-- Verifier Status -->
-        <div
-          class="rounded-lg border bg-aa-panel/50 p-4"
-          :class="verifierStatus.borderClass"
-        >
-          <div class="flex items-center gap-2 mb-2">
-            <svg
-              aria-hidden="true"
-              class="w-5 h-5"
-              :class="verifierStatus.iconClass"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              ></path>
-            </svg>
-            <span
-              class="text-xs font-bold uppercase"
-              :class="verifierStatus.labelClass"
-              >{{ t("security.verifierStatus", "Verifier") }}</span
-            >
-          </div>
-          <p
-            class="font-semibold text-sm text-aa-text truncate"
-            :title="accountState.verifier"
-          >
-            {{ verifierStatus.displayValue }}
-          </p>
-          <p class="mt-1 text-xs" :class="verifierStatus.descriptionClass">
-            {{ verifierStatus.description }}
-          </p>
-        </div>
-
-        <!-- Hook Status -->
-        <div
-          class="rounded-lg border bg-aa-panel/50 p-4"
-          :class="hookStatus.borderClass"
-        >
-          <div class="flex items-center gap-2 mb-2">
-            <svg
-              aria-hidden="true"
-              class="w-5 h-5"
-              :class="hookStatus.iconClass"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-              ></path>
-            </svg>
-            <span
-              class="text-xs font-bold uppercase"
-              :class="hookStatus.labelClass"
-              >{{ t("security.hookStatus", "Hook") }}</span
-            >
-          </div>
-          <p
-            class="font-semibold text-sm text-aa-text truncate"
-            :title="accountState.hook"
-          >
-            {{ hookStatus.displayValue }}
-          </p>
-          <p class="mt-1 text-xs" :class="hookStatus.descriptionClass">
-            {{ hookStatus.description }}
-          </p>
-        </div>
-
-        <!-- Backup Owner Status -->
-        <div
-          class="rounded-lg border bg-aa-panel/50 p-4"
-          :class="backupStatus.borderClass"
-        >
-          <div class="flex items-center gap-2 mb-2">
-            <svg
-              aria-hidden="true"
-              class="w-5 h-5"
-              :class="backupStatus.iconClass"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              ></path>
-            </svg>
-            <span
-              class="text-xs font-bold uppercase"
-              :class="backupStatus.labelClass"
-              >{{ t("security.backupOwner", "Backup Owner") }}</span
-            >
-          </div>
-          <p
-            class="font-semibold text-sm text-aa-text truncate"
-            :title="accountState.backupOwner"
-          >
-            {{ backupStatus.displayValue }}
-          </p>
-          <p class="mt-1 text-xs" :class="backupStatus.descriptionClass">
-            {{ backupStatus.description }}
-          </p>
-        </div>
-
-        <!-- Escape Hatch Status -->
-        <div
-          class="rounded-lg border bg-aa-panel/50 p-4"
-          :class="escapeStatus.borderClass"
-        >
-          <div class="flex items-center gap-2 mb-2">
-            <svg
-              aria-hidden="true"
-              class="w-5 h-5"
-              :class="escapeStatus.iconClass"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-            <span
-              class="text-xs font-bold uppercase"
-              :class="escapeStatus.labelClass"
-              >{{ t("security.escapeHatch", "Escape Hatch") }}</span
-            >
-          </div>
-          <p class="font-semibold text-sm text-aa-text">
-            {{ escapeStatus.displayValue }}
-          </p>
-          <p class="mt-1 text-xs" :class="escapeStatus.descriptionClass">
-            {{ escapeStatus.description }}
-          </p>
-        </div>
-      </div>
+      <SecurityStatusGrid
+        :verifier-status="verifierStatus"
+        :hook-status="hookStatus"
+        :backup-status="backupStatus"
+        :escape-status="escapeStatus"
+        :account-state="accountState"
+      />
 
       <!-- Active Policies Section -->
-      <div
-        v-if="activePolicies.length > 0"
-        class="mb-6 rounded-lg border border-aa-border bg-aa-panel/60 p-5"
-      >
-        <p class="text-xs font-bold uppercase text-aa-muted mb-3">
-          {{ t("security.activePolicies", "Active Policies") }}
-        </p>
-        <div class="space-y-3">
-          <div
-            v-for="policy in activePolicies"
-            :key="policy.id"
-            class="flex items-start gap-3 rounded-lg bg-aa-dark/40 p-3"
-          >
-            <span class="badge shrink-0" :class="policy.badgeClass">
-              {{ policy.badgeText }}
-            </span>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-aa-text truncate">
-                {{ policy.title }}
-              </p>
-              <p class="text-xs text-aa-muted mt-0.5">
-                {{ policy.description }}
-              </p>
-            </div>
-            <span class="text-xs font-mono text-aa-muted shrink-0">{{
-              policy.value || ""
-            }}</span>
-          </div>
-        </div>
-      </div>
+      <SecurityActivePoliciesList :active-policies="activePolicies" />
 
       <!-- Pending Updates Section -->
-      <div
-        v-if="pendingUpdates.length > 0"
-        class="mb-6 rounded-lg border border-aa-warning/30 bg-aa-warning/5 p-5"
-      >
-        <div class="flex items-center gap-2 mb-3">
-          <svg
-            aria-hidden="true"
-            class="w-5 h-5 text-aa-warning"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
-          </svg>
-          <p class="text-xs font-bold uppercase text-aa-warning">
-            {{ t("security.pendingUpdates", "Pending Updates") }}
-          </p>
-        </div>
-        <div class="space-y-3">
-          <div
-            v-for="update in pendingUpdates"
-            :key="update.id"
-            class="flex items-start gap-3 rounded-lg bg-aa-dark/40 p-3"
-          >
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-aa-text">{{ update.title }}</p>
-              <p class="text-xs text-aa-muted mt-0.5">
-                {{ update.description }}
-              </p>
-            </div>
-            <div class="text-right shrink-0">
-              <p class="text-sm font-mono" :class="update.timeRemainingClass">
-                {{ update.timeRemaining }}
-              </p>
-              <button
-                v-if="update.canCancel"
-                class="mt-1 text-xs text-aa-warning hover:text-aa-warning-light transition-colors duration-200"
-                @click="$emit('cancel-pending-update', update.id)"
-              >
-                {{ t("security.cancelUpdate", "Cancel") }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SecurityPendingUpdatesList
+        :pending-updates="pendingUpdates"
+        @cancel-pending-update="$emit('cancel-pending-update', $event)"
+      />
 
       <!-- Session Keys Section (for SessionKeyVerifier) -->
-      <div
-        v-if="sessionKeys.length > 0"
-        class="rounded-lg border border-aa-border bg-aa-panel/60 p-5"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <svg
-              aria-hidden="true"
-              class="w-5 h-5 text-aa-info-light"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-              ></path>
-            </svg>
-            <p class="text-xs font-bold uppercase text-aa-muted">
-              {{ t("security.sessionKeys", "Session Keys") }}
-            </p>
-          </div>
-          <span class="text-xs text-aa-muted"
-            >{{ sessionKeys.length }} {{ t("security.active", "active") }}</span
-          >
-        </div>
-        <div class="space-y-2">
-          <div
-            v-for="key in sessionKeys"
-            :key="key.id"
-            class="flex items-center gap-3 rounded-lg bg-aa-dark/40 px-3 py-2.5"
-          >
-            <div
-              class="w-8 h-8 rounded-full bg-aa-panel/50 flex items-center justify-center"
-            >
-              <svg
-                aria-hidden="true"
-                class="w-4 h-4 text-aa-info-light"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                ></path>
-              </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-aa-text truncate">
-                {{ key.label }}
-              </p>
-              <p class="text-xs text-aa-muted">{{ key.target }}</p>
-            </div>
-            <div class="text-right shrink-0">
-              <p class="text-xs font-mono text-aa-muted">{{ key.expiresAt }}</p>
-              <button
-                v-if="key.canRevoke"
-                class="mt-0.5 text-xs text-aa-error hover:text-aa-error-light transition-colors duration-200"
-                @click="$emit('revoke-session-key', key.id)"
-              >
-                {{ t("security.revoke", "Revoke") }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SecuritySessionKeysList
+        :session-keys="sessionKeys"
+        @revoke-session-key="$emit('revoke-session-key', $event)"
+      />
 
       <!-- Security Recommendations -->
-      <div
-        v-if="recommendations.length > 0"
-        class="mt-6 rounded-lg border border-aa-border bg-aa-panel/60 p-5"
-      >
-        <div class="flex items-center gap-2 mb-3">
-          <svg
-            aria-hidden="true"
-            class="w-5 h-5 text-aa-info-light"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
-          </svg>
-          <p class="text-xs font-bold uppercase text-aa-muted">
-            {{ t("security.recommendations", "Recommendations") }}
-          </p>
-        </div>
-        <div class="space-y-2">
-          <div
-            v-for="rec in recommendations"
-            :key="rec.id"
-            class="flex items-start gap-3 rounded-lg bg-aa-dark/30 px-4 py-3"
-          >
-            <span class="mt-0.5" :class="rec.iconClass">
-              <svg
-                v-if="rec.type === 'warning'"
-                aria-hidden="true"
-                class="w-4 h-4 text-aa-warning"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                ></path>
-              </svg>
-              <svg
-                v-else-if="rec.type === 'info'"
-                aria-hidden="true"
-                class="w-4 h-4 text-aa-info-light"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              <svg
-                v-else
-                aria-hidden="true"
-                class="w-4 h-4 text-aa-success"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-            </span>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-aa-text">{{ rec.title }}</p>
-              <p class="text-xs text-aa-muted mt-0.5">{{ rec.description }}</p>
-            </div>
-            <router-link
-              v-if="rec.docLink"
-              :to="{ path: '/docs', query: { doc: rec.docLink } }"
-              class="btn-ghost btn-xs shrink-0"
-            >
-              {{ t("security.learnMore", "Learn More") }}
-            </router-link>
-          </div>
-        </div>
-      </div>
+      <SecurityRecommendationsList :recommendations="recommendations" />
     </template>
   </section>
 </template>
@@ -527,6 +72,13 @@
 <script setup>
 import { computed } from "vue";
 import { useI18n } from "@/i18n";
+import SecurityEmptyState from "./SecurityDashboardPanel/SecurityEmptyState.vue";
+import SecurityScoreCard from "./SecurityDashboardPanel/SecurityScoreCard.vue";
+import SecurityStatusGrid from "./SecurityDashboardPanel/SecurityStatusGrid.vue";
+import SecurityActivePoliciesList from "./SecurityDashboardPanel/SecurityActivePoliciesList.vue";
+import SecurityPendingUpdatesList from "./SecurityDashboardPanel/SecurityPendingUpdatesList.vue";
+import SecuritySessionKeysList from "./SecurityDashboardPanel/SecuritySessionKeysList.vue";
+import SecurityRecommendationsList from "./SecurityDashboardPanel/SecurityRecommendationsList.vue";
 
 const { t } = useI18n();
 
