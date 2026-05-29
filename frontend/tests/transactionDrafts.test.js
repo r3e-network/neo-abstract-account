@@ -11,6 +11,25 @@ import {
   buildDraftShareUrl,
 } from '../src/features/operations/shareLinks.js';
 
+// Markup from a parent SFC was extracted into colocated child components living
+// in a sibling folder named after the parent (e.g. `TransactionInfoView.vue` ->
+// `TransactionInfoView/*.vue`). This helper reads the parent file plus every
+// colocated child so source-text contract assertions still check the real
+// current location of the asserted markup.
+function readComponentTree(parentVuePath) {
+  const sources = [fs.readFileSync(parentVuePath, 'utf8')];
+  const childDir = parentVuePath.replace(/\.vue$/, '');
+  if (fs.existsSync(childDir) && fs.statSync(childDir).isDirectory()) {
+    for (const entry of fs.readdirSync(childDir).sort()) {
+      const childPath = path.join(childDir, entry);
+      if (fs.statSync(childPath).isFile()) {
+        sources.push(fs.readFileSync(childPath, 'utf8'));
+      }
+    }
+  }
+  return sources.join('\n\n');
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -468,7 +487,10 @@ test('transaction info view reuses the draft status banner', () => {
 });
 
 test('transaction info view exposes the polished shared draft workspace sections', () => {
-  const txViewSource = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+  // Several shared-draft sections (operation snapshot, signer checklist, latest
+  // submission / receipt history, access-scope notice) were extracted into
+  // colocated TransactionInfoView/*.vue child components, so scan the tree.
+  const txViewSource = readComponentTree(path.resolve('src/views/TransactionInfoView.vue'));
 
   assert.match(txViewSource, /Shared Draft Overview/);
   assert.match(txViewSource, /Live-Validated Paymaster Path/);
@@ -503,6 +525,8 @@ test('router and transaction info view support shared draft loading', () => {
 });
 
 test('receipt history uses formatted labels instead of raw createdAt fields', () => {
-  const source = fs.readFileSync(path.resolve('src/views/TransactionInfoView.vue'), 'utf8');
+  // Receipt rendering (including the formatted createdLabel) lives in the
+  // colocated TransactionInfoView/*.vue child components.
+  const source = readComponentTree(path.resolve('src/views/TransactionInfoView.vue'));
   assert.match(source, /createdLabel/);
 });

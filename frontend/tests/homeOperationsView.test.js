@@ -3,6 +3,25 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 
+// Some markup/logic from a parent SFC was extracted into colocated child
+// components living in a sibling folder named after the parent (e.g.
+// `HomeOperationsWorkspace.vue` -> `HomeOperationsWorkspace/*.vue`). This helper
+// reads the parent file plus every colocated child so source-text contract
+// assertions still check the real current location of the asserted feature.
+function readComponentTree(parentVuePath) {
+  const sources = [fs.readFileSync(parentVuePath, "utf8")];
+  const childDir = parentVuePath.replace(/\.vue$/, "");
+  if (fs.existsSync(childDir) && fs.statSync(childDir).isDirectory()) {
+    for (const entry of fs.readdirSync(childDir).sort()) {
+      const childPath = path.join(childDir, entry);
+      if (fs.statSync(childPath).isFile()) {
+        sources.push(fs.readFileSync(childPath, "utf8"));
+      }
+    }
+  }
+  return sources.join("\n\n");
+}
+
 const homePath = path.resolve("src/views/HomeView.vue");
 const workspacePath = path.resolve(
   "src/features/operations/components/HomeOperationsWorkspace.vue",
@@ -93,6 +112,9 @@ test("home workspace avoids accountId-first state outside creation flow", () => 
 });
 
 test("operations workspace exposes load, compose, signature, and broadcast sections", () => {
+  // Read the DID panel together with its colocated child components; pending
+  // state / maintenance markup was extracted into DidIdentityPanel/*.vue.
+  const didPanelSource = readComponentTree(didPanelPath);
   assert.match(
     fs.readFileSync(workspacePath, "utf8"),
     /Abstract Account Workspace/,
@@ -112,28 +134,16 @@ test("operations workspace exposes load, compose, signature, and broadcast secti
     /Web3Auth \/ NeoDID Workspace/,
   );
   assert.match(fs.readFileSync(routerPath, "utf8"), /path: 'identity'/);
-  assert.match(fs.readFileSync(didPanelPath, "utf8"), /NeoDID \/ Web3Auth/);
-  assert.match(
-    fs.readFileSync(didPanelPath, "utf8"),
-    /fetchVerifierContractByAddress/,
-  );
-  assert.match(
-    fs.readFileSync(didPanelPath, "utf8"),
-    /fetchUnifiedVerifierState/,
-  );
-  assert.match(
-    fs.readFileSync(didPanelPath, "utf8"),
-    /fetchAccountMaintenanceState/,
-  );
-  assert.match(fs.readFileSync(didPanelPath, "utf8"), /Refresh Chain State/);
-  assert.match(fs.readFileSync(didPanelPath, "utf8"), /Pending Recovery/);
-  assert.match(fs.readFileSync(didPanelPath, "utf8"), /Active Private Session/);
-  assert.match(
-    fs.readFileSync(didPanelPath, "utf8"),
-    /Pending Account Maintenance/,
-  );
-  assert.match(fs.readFileSync(didPanelPath, "utf8"), /emit\(["']status["']/);
-  assert.match(fs.readFileSync(didPanelPath, "utf8"), /emit\(["']activity["']/);
+  assert.match(didPanelSource, /NeoDID \/ Web3Auth/);
+  assert.match(didPanelSource, /fetchVerifierContractByAddress/);
+  assert.match(didPanelSource, /fetchUnifiedVerifierState/);
+  assert.match(didPanelSource, /fetchAccountMaintenanceState/);
+  assert.match(didPanelSource, /Refresh Chain State/);
+  assert.match(didPanelSource, /Pending Recovery/);
+  assert.match(didPanelSource, /Active Private Session/);
+  assert.match(didPanelSource, /Pending Account Maintenance/);
+  assert.match(didPanelSource, /emit\(["']status["']/);
+  assert.match(didPanelSource, /emit\(["']activity["']/);
   assert.match(fs.readFileSync(loadPanelPath, "utf8"), /Load V3 Account/);
   assert.match(fs.readFileSync(composerPath, "utf8"), /Compose Operation/);
   assert.match(fs.readFileSync(presetsPath, "utf8"), /Generic Invoke/);
@@ -328,7 +338,9 @@ test("home workspace uses the latest draft state banner", () => {
 });
 
 test("home workspace surfaces wallet connect, export, broadcast actions, and submission feedback", () => {
-  const workspaceSource = fs.readFileSync(workspacePath, "utf8");
+  // Submission receipt / history markup was extracted into the colocated
+  // HomeOperationsWorkspace/SubmissionReceiptCard.vue child component.
+  const workspaceSource = readComponentTree(workspacePath);
 
   assert.match(workspaceSource, /Connect Neo Wallet/);
   assert.match(workspaceSource, /Connect EVM Wallet/);
@@ -344,11 +356,12 @@ test("home workspace surfaces wallet connect, export, broadcast actions, and sub
 });
 
 test("receipt history uses formatted labels instead of raw createdAt fields", () => {
-  const source = fs.readFileSync(
+  // Receipt rendering (including the formatted createdLabel) lives in the
+  // colocated HomeOperationsWorkspace/SubmissionReceiptCard.vue child component.
+  const source = readComponentTree(
     path.resolve(
       "src/features/operations/components/HomeOperationsWorkspace.vue",
     ),
-    "utf8",
   );
   assert.match(source, /createdLabel/);
 });

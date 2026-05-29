@@ -11,6 +11,25 @@ const i18nEnPath = path.resolve('src/i18n/index.js');
 const i18nZhPath = path.resolve('src/i18n/zh-CN.js');
 const marketContractPath = path.resolve('..', 'contracts', 'market', 'AAAddressMarket.cs');
 
+// Markup from a parent SFC was extracted into colocated child components living
+// in a sibling folder named after the parent (e.g. `AddressMarketView.vue` ->
+// `AddressMarketView/*.vue`). This helper reads the parent file plus every
+// colocated child so source-text contract assertions still check the real
+// current location of the asserted markup.
+function readComponentTree(parentVuePath) {
+  const sources = [fs.readFileSync(parentVuePath, 'utf8')];
+  const childDir = parentVuePath.replace(/\.vue$/, '');
+  if (fs.existsSync(childDir) && fs.statSync(childDir).isDirectory()) {
+    for (const entry of fs.readdirSync(childDir).sort()) {
+      const childPath = path.join(childDir, entry);
+      if (fs.statSync(childPath).isFile()) {
+        sources.push(fs.readFileSync(childPath, 'utf8'));
+      }
+    }
+  }
+  return sources.join('\n\n');
+}
+
 function readUnifiedSmartWalletSource() {
   const contractsDir = path.resolve('..', 'contracts');
   const files = fs.readdirSync(contractsDir)
@@ -20,7 +39,9 @@ function readUnifiedSmartWalletSource() {
 }
 
 test('address market UI and docs describe trustless escrow semantics', () => {
-  const view = fs.readFileSync(marketViewPath, 'utf8');
+  // Hero copy and per-listing escrow actions were extracted into colocated
+  // AddressMarketView/*.vue child components, so scan the full component tree.
+  const view = readComponentTree(marketViewPath);
   const service = fs.readFileSync(marketServicePath, 'utf8');
   const doc = fs.readFileSync(marketDocPath, 'utf8');
 
