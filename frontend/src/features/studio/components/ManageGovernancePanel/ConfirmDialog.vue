@@ -14,7 +14,7 @@
       <div class="modal-panel">
         <h3
           id="governance-dialog-title"
-          class="text-lg font-bold font-outfit text-white mb-2"
+          class="text-lg font-bold font-outfit text-aa-text mb-2"
         >
           {{ modal.title }}
         </h3>

@@ -1,6 +1,6 @@
 <template>
   <div class="card hover:border-aa-muted transition-colors duration-200">
-    <h3 class="text-sm font-bold text-white mb-2">
+    <h3 class="text-sm font-bold text-aa-text mb-2">
       {{ t("studioPanels.metadataTitle", "Account Metadata") }}
     </h3>
     <p class="text-xs text-aa-muted mb-5">

@@ -1,6 +1,6 @@
 <template>
   <section
-    class="mb-6 rounded-xl border border-emerald-200 bg-white p-6 shadow-sm"
+    class="mb-6 rounded-[20px] border border-emerald-200 bg-white p-6 shadow-sm"
   >
     <div
       class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"

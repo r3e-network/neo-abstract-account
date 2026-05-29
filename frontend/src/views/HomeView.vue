@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f5f7fb] text-slate-950">
+  <div class="min-h-screen bg-aa-dark text-slate-950">
     <section class="border-b border-slate-200 bg-white">
       <div class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_420px] lg:px-8 lg:py-14">
         <div class="flex min-w-0 flex-col justify-center">
@@ -44,7 +44,7 @@
           </dl>
         </div>
 
-        <aside class="rounded-xl border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">
+        <aside class="rounded-[20px] border border-slate-200 bg-white p-5 text-slate-950 shadow-sm">
           <div class="flex items-center justify-between border-b border-slate-200 pb-3">
             <div>
               <p class="text-xs font-medium text-slate-500">AA Operations</p>
@@ -82,7 +82,7 @@
 
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <section class="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -117,7 +117,7 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             {{ t("home.feature3Title", "Transferable AA addresses") }}
           </p>
@@ -146,7 +146,7 @@
       />
 
       <section class="mt-6 grid gap-4 lg:grid-cols-[0.75fr_1.25fr]">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             {{ t("home.entryDocsLabel", "Docs") }}
           </p>
@@ -171,7 +171,7 @@
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-4 flex items-center justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">

@@ -109,7 +109,7 @@
                 {{ selectedNode.step }}
               </div>
               <div>
-                <h4 class="text-sm font-bold text-white">
+                <h4 class="text-sm font-bold text-aa-text">
                   {{ selectedNode.title }}
                 </h4>
                 <p class="text-xs text-aa-muted">{{ selectedNode.subtitle }}</p>

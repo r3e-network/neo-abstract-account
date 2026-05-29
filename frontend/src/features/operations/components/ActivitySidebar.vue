@@ -4,7 +4,7 @@
     class="glass-panel p-6 shadow-glow-blue"
   >
     <div class="mb-5 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-white flex items-center gap-2">
+      <h2 class="text-lg font-bold text-aa-text flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-aa-orange animate-pulse"></span>
         {{ t("operations.activitySidebarTitle", "Draft Activity") }}
       </h2>

@@ -17,7 +17,7 @@
       />
     </svg>
   </div>
-  <h1 class="text-2xl font-bold text-white mb-2 text-center">
+  <h1 class="text-2xl font-bold text-aa-text mb-2 text-center">
     {{ t("sharedDraft.transactionSubmitted", "Transaction Submitted") }}
   </h1>
   <p class="text-sm text-aa-muted mb-8 max-w-lg mx-auto text-center">

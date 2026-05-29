@@ -1,6 +1,6 @@
 <template>
   <section class="card">
-    <h2 class="text-lg font-bold text-white mb-2">
+    <h2 class="text-lg font-bold text-aa-text mb-2">
       {{ t("studioPanels.permissionsTitle", "Permissions & Limits") }}
     </h2>
     <p class="text-sm text-aa-muted mb-8">
@@ -18,7 +18,7 @@
           class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
         >
           <div>
-            <h3 class="text-sm font-bold text-white mb-2">
+            <h3 class="text-sm font-bold text-aa-text mb-2">
               {{ t("studioPanels.presetCatalog", "Preset Catalog") }}
             </h3>
             <p class="text-sm text-aa-muted">
@@ -166,7 +166,7 @@
         <div
           class="card hover:border-aa-muted transition-colors duration-200 flex flex-col p-5 rounded-lg"
         >
-          <h3 class="text-sm font-bold text-white mb-5">
+          <h3 class="text-sm font-bold text-aa-text mb-5">
             {{
               t(
                 "studioPanels.callActiveVerifier",
@@ -235,7 +235,7 @@
         <div
           class="card hover:border-aa-muted transition-colors duration-200 flex flex-col p-5 rounded-lg"
         >
-          <h3 class="text-sm font-bold text-white mb-5">
+          <h3 class="text-sm font-bold text-aa-text mb-5">
             {{ t("studioPanels.callActiveHook", "Call Active Hook Plugin") }}
           </h3>
           <div class="space-y-4">

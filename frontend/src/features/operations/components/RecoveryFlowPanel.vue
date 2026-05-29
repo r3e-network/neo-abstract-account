@@ -2,7 +2,7 @@
   <section class="glass-panel p-6">
     <div class="mb-6 flex items-center justify-between gap-4">
       <div>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-aa-text">
           {{ t("recovery.title", "Account Recovery") }}
         </h2>
         <p class="text-sm text-aa-muted">
@@ -42,7 +42,7 @@
             </svg>
           </div>
           <div class="flex-1">
-            <h3 class="text-lg font-bold text-white mb-2">
+            <h3 class="text-lg font-bold text-aa-text mb-2">
               {{ t("recovery.step1Title", "Verify Backup Owner") }}
             </h3>
             <p class="text-sm text-aa-muted mb-4">
@@ -177,7 +177,7 @@
             </svg>
           </div>
           <div class="flex-1">
-            <h3 class="text-lg font-bold text-white mb-2">
+            <h3 class="text-lg font-bold text-aa-text mb-2">
               {{ t("recovery.step2Title", "Initiate Escape Hatch") }}
             </h3>
             <p class="text-sm text-aa-muted mb-4">
@@ -360,7 +360,7 @@
             </svg>
           </div>
           <div class="flex-1">
-            <h3 class="text-lg font-bold text-white mb-2">
+            <h3 class="text-lg font-bold text-aa-text mb-2">
               {{ t("recovery.step3Title", "Wait for Timelock") }}
             </h3>
             <p class="text-sm text-aa-muted mb-4">
@@ -518,7 +518,7 @@
             </svg>
           </div>
           <div class="flex-1">
-            <h3 class="text-lg font-bold text-white mb-2">
+            <h3 class="text-lg font-bold text-aa-text mb-2">
               {{ t("recovery.step4Title", "Finalize Recovery") }}
             </h3>
             <p class="text-sm text-aa-muted mb-4">
@@ -663,7 +663,7 @@
             ></path>
           </svg>
         </div>
-        <h3 class="text-2xl font-bold text-white mb-2">
+        <h3 class="text-2xl font-bold text-aa-text mb-2">
           {{ t("recovery.completeTitle", "Recovery Complete") }}
         </h3>
         <p class="text-sm text-aa-muted mb-6">

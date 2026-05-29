@@ -25,7 +25,7 @@
           v-for="link in suggestions"
           :key="link.to"
           :to="link.to"
-          class="flex items-center gap-2 rounded-lg border border-aa-border bg-aa-dark/60 px-4 py-3 text-sm text-aa-muted hover:text-aa-text hover:border-aa-orange/40 transition-all duration-200"
+          class="flex items-center gap-2 rounded-2xl border border-aa-border bg-aa-dark/60 px-4 py-3 text-sm text-aa-muted hover:text-aa-text hover:border-aa-orange/40 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-aa-orange/40"
         >
           <svg
             aria-hidden="true"

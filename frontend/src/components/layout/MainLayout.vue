@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex min-h-screen flex-col overflow-hidden bg-[#f5f7fb] font-sans text-slate-950 selection:bg-slate-950 selection:text-white"
+    class="relative flex min-h-screen flex-col overflow-hidden bg-aa-dark font-sans text-slate-950 selection:bg-slate-950 selection:text-white"
   >
     <a
       href="#main-content"

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="rounded-2xl border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
+    class="rounded-[20px] border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
   >
     <button
       @click="expanded = !expanded"

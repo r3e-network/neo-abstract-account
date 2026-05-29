@@ -2,7 +2,7 @@
   <section class="glass-panel p-6">
     <div class="mb-4 flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <h2 class="text-lg font-bold text-aa-text flex items-center gap-2">
           <svg
             aria-hidden="true"
             class="w-5 h-5 text-aa-orange"

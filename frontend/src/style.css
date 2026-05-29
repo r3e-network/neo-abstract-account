@@ -68,6 +68,15 @@
   button:focus-visible {
     @apply outline-none ring-2 ring-[#7b61ff] ring-offset-2 ring-offset-white;
   }
+
+  /* Baseline keyboard focus ring for interactive links/elements that don't
+     declare their own focus-visible styling. Components using
+     `focus-visible:ring-*` utilities override this via Tailwind specificity. */
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible {
+    @apply outline-none rounded-[6px] ring-2 ring-[#7b61ff]/60 ring-offset-2 ring-offset-white;
+  }
 }
 
 @layer components {
@@ -147,7 +156,8 @@
     @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm;
   }
   .modal-panel {
-    @apply bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl;
+    @apply bg-white border border-slate-200 rounded-[24px] p-6 max-w-md w-full mx-4;
+    box-shadow: 0 24px 60px rgba(20, 22, 38, 0.14);
   }
 
   .card-hover-green,
@@ -170,7 +180,8 @@
   }
 
   .gradient-border-card {
-    @apply rounded-lg border border-slate-200 bg-white overflow-hidden;
+    @apply rounded-[20px] border border-slate-200 bg-white overflow-hidden;
+    box-shadow: var(--ns-shadow-md);
   }
   .gradient-border-card::before {
     display: none;
@@ -208,7 +219,7 @@
   }
 
   .empty-state {
-    @apply rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500 transition-colors duration-200;
+    @apply rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500 transition-colors duration-200;
   }
 
   .page-slide-up-enter-active,

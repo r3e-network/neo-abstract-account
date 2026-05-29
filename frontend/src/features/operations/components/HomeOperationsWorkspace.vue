@@ -227,7 +227,7 @@
       <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="space-y-6">
           <div
-            class="rounded-2xl border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
+            class="rounded-[20px] border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
           >
             <button
               @click="step1Expanded = !step1Expanded"
@@ -311,7 +311,7 @@
           </div>
 
           <div
-            class="rounded-2xl border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
+            class="rounded-[20px] border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
           >
             <button
               @click="step2Expanded = !step2Expanded"
@@ -428,7 +428,7 @@
           </div>
 
           <div
-            class="rounded-2xl border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
+            class="rounded-[20px] border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"
           >
             <button
               @click="step3Expanded = !step3Expanded"
@@ -559,7 +559,7 @@
           />
 
           <div
-            class="rounded-2xl border border-neo-500/20 bg-aa-panel/60 overflow-hidden shadow-glow-green-diffuse backdrop-blur-lg transition-all duration-200 relative"
+            class="rounded-[20px] border border-neo-500/20 bg-aa-panel/60 overflow-hidden shadow-glow-green-diffuse backdrop-blur-lg transition-all duration-200 relative"
           >
             <div
               class="absolute inset-0 bg-gradient-to-t from-neo-500/5 to-transparent pointer-events-none"
@@ -784,7 +784,7 @@
           </button>
           <div :class="sidebarExpanded ? 'block' : 'hidden xl:block'">
             <ActivitySidebar
-              class="xl:sticky xl:top-8 xl:max-h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl border border-aa-border bg-aa-panel/50 shadow-2xl backdrop-blur-xl"
+              class="xl:sticky xl:top-8 xl:max-h-[calc(100vh-4rem)] overflow-y-auto rounded-[20px] border border-aa-border bg-aa-panel/50 shadow-2xl backdrop-blur-xl"
               :draft-id="workspace.share.value.draftId"
               :share-path="workspace.share.value.sharePath"
               :share-url="shareUrl"

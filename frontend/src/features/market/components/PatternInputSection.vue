@@ -5,10 +5,10 @@
         v-for="typeOption in patternTypes"
         :key="typeOption.value"
         type="button"
-        class="rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200"
+        class="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-aa-orange/40"
         :class="
           selectedType === typeOption.value
-            ? 'border-orange-400 bg-orange-100 text-orange-900'
+            ? 'border-aa-orange/40 bg-aa-orange/10 text-aa-orange'
             : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900'
         "
         :aria-label="typeOption.label"

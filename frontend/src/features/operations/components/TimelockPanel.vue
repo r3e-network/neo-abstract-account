@@ -2,7 +2,7 @@
   <section class="glass-panel p-6">
     <div class="mb-4 flex items-center justify-between gap-4">
       <div>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-lg font-bold text-aa-text">
           {{ t("timelock.title", "Pending Updates & Timelocks") }}
         </h2>
         <p class="text-sm text-aa-muted">
@@ -405,7 +405,7 @@
         <div class="modal-panel">
           <h3
             id="cancel-dialog-title"
-            class="text-lg font-bold font-outfit text-white mb-2"
+            class="text-lg font-bold font-outfit text-aa-text mb-2"
           >
             {{ t("timelock.cancelEscapeTitle", "Cancel Escape Hatch?") }}
           </h3>

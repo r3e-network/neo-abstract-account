@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f5f7fb] text-slate-950">
+  <div class="min-h-screen bg-aa-dark text-slate-950">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
     <div class="mb-6 border-b border-slate-200">
       <div
@@ -279,7 +279,7 @@ const panelErrorMsg = t(
   "Failed to load panel. Please refresh.",
 );
 const PanelError = {
-  template: `<div class="card p-6 text-center"><p class="text-[#fda4af] text-sm font-medium">${panelErrorMsg}</p></div>`,
+  template: `<div class="card p-6 text-center"><p class="text-aa-error text-sm font-medium">${panelErrorMsg}</p></div>`,
 };
 const asyncErr = {
   loadingComponent: PanelSkeleton,
