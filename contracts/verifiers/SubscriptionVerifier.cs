@@ -25,6 +25,7 @@ namespace AbstractAccount.Verifiers
     {
         private static readonly byte[] Prefix_Subscription = new byte[] { 0x01 };
         private static readonly byte[] Prefix_SubscriptionNonceCounter = new byte[] { 0x02 };
+        private static readonly byte[] Prefix_SubscriptionLastPeriod = new byte[] { 0x03 };
 
         public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
 
@@ -91,6 +92,14 @@ namespace AbstractAccount.Verifiers
             BigInteger currentPeriod = Runtime.Time / billingPeriodMs;
             ExecutionEngine.Assert(currentPeriod > 0, "Subscription period not yet elapsed");
 
+            // Authoritative throttle: at most one charge per billing period. The last charged period
+            // is persisted in PostExecute; a charge is only allowed once the clock has advanced into a
+            // period strictly later than the last one charged. (0 = never charged; real periods are > 0.)
+            byte[] lastPeriodKey = Helper.Concat(Helper.Concat(Prefix_SubscriptionLastPeriod, (byte[])accountId), (byte[])subId);
+            ByteString? lastPeriodData = Storage.Get(Storage.CurrentContext, lastPeriodKey);
+            BigInteger lastChargedPeriod = lastPeriodData == null ? 0 : (BigInteger)lastPeriodData;
+            ExecutionEngine.Assert(currentPeriod > lastChargedPeriod, "Subscription already charged this period");
+
             // Get per-subscription nonce counter to prevent replay within the same billing period
             byte[] counterKey = Helper.Concat(Helper.Concat(Prefix_SubscriptionNonceCounter, (byte[])accountId), (byte[])subId);
             ByteString? counterData = Storage.Get(Storage.CurrentContext, counterKey);
@@ -129,6 +138,14 @@ namespace AbstractAccount.Verifiers
             {
                 Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
             }
+
+            // Clear last-charged-period markers
+            byte[] lastPeriodPrefix = Helper.Concat(Prefix_SubscriptionLastPeriod, (byte[])accountId);
+            iterator = Storage.Find(Storage.CurrentContext, lastPeriodPrefix, FindOptions.KeysOnly);
+            while (iterator.Next())
+            {
+                Storage.Delete(Storage.CurrentContext, (ByteString)iterator.Value);
+            }
         }
 
         public static void PostExecute(UInt160 accountId, UserOperation op, object result)
@@ -142,6 +159,14 @@ namespace AbstractAccount.Verifiers
             SubscriptionConfig config = (SubscriptionConfig)StdLib.Deserialize(data!);
             config.LastChargeTime = Runtime.Time;
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(config));
+
+            // Persist the billing period just charged. This is the authoritative throttle enforced by
+            // ValidateSignature (currentPeriod > lastChargedPeriod), independent of the free-running nonce.
+            ExecutionEngine.Assert(config.PeriodSeconds > 0, "Invalid subscription period");
+            BigInteger billingPeriodMs = config.PeriodSeconds * 1000;
+            BigInteger currentPeriod = Runtime.Time / billingPeriodMs;
+            byte[] lastPeriodKey = Helper.Concat(Helper.Concat(Prefix_SubscriptionLastPeriod, (byte[])accountId), (byte[])subId);
+            Storage.Put(Storage.CurrentContext, lastPeriodKey, currentPeriod);
 
             byte[] counterKey = Helper.Concat(Helper.Concat(Prefix_SubscriptionNonceCounter, (byte[])accountId), (byte[])subId);
             ByteString? counterData = Storage.Get(Storage.CurrentContext, counterKey);
