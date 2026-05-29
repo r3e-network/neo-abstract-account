@@ -8,6 +8,26 @@ const frontendRoot = fileURLToPath(new URL("..", import.meta.url));
 const read = (relativePath) =>
   fs.readFileSync(path.join(frontendRoot, relativePath), "utf8");
 
+// Markup from a parent SFC was extracted into colocated child components living
+// in a sibling folder named after the parent (e.g. `DidIdentityPanel.vue` ->
+// `DidIdentityPanel/*.vue`). This helper reads the parent file plus every
+// colocated child so source-text contract assertions still check the real
+// current location of the asserted markup.
+const readComponentTree = (relativeVuePath) => {
+  const parentVuePath = path.join(frontendRoot, relativeVuePath);
+  const sources = [fs.readFileSync(parentVuePath, "utf8")];
+  const childDir = parentVuePath.replace(/\.vue$/, "");
+  if (fs.existsSync(childDir) && fs.statSync(childDir).isDirectory()) {
+    for (const entry of fs.readdirSync(childDir).sort()) {
+      const childPath = path.join(childDir, entry);
+      if (fs.statSync(childPath).isFile()) {
+        sources.push(fs.readFileSync(childPath, "utf8"));
+      }
+    }
+  }
+  return sources.join("\n\n");
+};
+
 test("did service integrates Web3Auth as the NeoDID identity root", () => {
   const source = read("src/services/didService.js");
 
@@ -91,7 +111,11 @@ test("main layout and home workspace expose a DID connection path", () => {
   const workspace = read(
     "src/features/operations/components/HomeOperationsWorkspace.vue",
   );
-  const panel = read("src/features/operations/components/DidIdentityPanel.vue");
+  // Maintenance / pending-state markup was extracted into colocated
+  // DidIdentityPanel/*.vue child components, so scan the full component tree.
+  const panel = readComponentTree(
+    "src/features/operations/components/DidIdentityPanel.vue",
+  );
   const identityView = read("src/views/IdentityView.vue");
   const router = read("src/router/index.js");
 

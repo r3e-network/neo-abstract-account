@@ -80,6 +80,8 @@ test('invokeReadFunction posts an invokefunction payload', async () => {
   globalThis.fetch = async (url, options) => {
     calls.push([url, options]);
     return {
+      ok: true,
+      status: 200,
       async json() {
         return { result: { state: 'HALT', stack: [] } };
       },
