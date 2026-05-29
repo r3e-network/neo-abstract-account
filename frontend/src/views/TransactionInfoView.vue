@@ -50,217 +50,69 @@
           <!-- paymasterValidation route referenced via PaymasterValidationBanner -->
 
           <div class="grid gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
-              <p class="text-xs font-semibold text-aa-muted uppercase mb-1">
-                {{ t("sharedDraft.draftIdLabel", "Draft ID") }}
-              </p>
-              <div class="flex items-center">
-                <code
-                  class="block text-sm font-mono text-aa-text break-all flex-1"
-                  >{{ draftId }}</code
-                >
-                <button
-                  @click="
-                    copyText(draftId);
-                    markCopied('draftId');
-                  "
-                  :aria-label="t('didPanel.copyDraftId', 'Copy draft ID')"
-                  class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                >
-                  <svg
-                    aria-hidden="true"
-                    v-if="copiedKey !== 'draftId'"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                    <path
-                      d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                    />
-                  </svg>
-                  <svg
-                    aria-hidden="true"
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5 text-aa-success"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
-              <p class="text-xs font-semibold text-aa-muted uppercase mb-1">
-                {{ t("sharedDraft.shareUrlLabel", "Share URL") }}
-              </p>
-              <div class="flex items-center">
-                <code
-                  class="block text-sm font-mono text-aa-text break-all flex-1"
-                  >{{
-                    shareUrl || t("sharedDraft.loadingUrl", "Loading…")
-                  }}</code
-                >
-                <button
-                  v-if="shareUrl"
-                  @click="
-                    copyText(shareUrl);
-                    markCopied('shareUrl');
-                  "
-                  :aria-label="t('didPanel.copyShareUrl', 'Copy share URL')"
-                  class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                >
-                  <svg
-                    aria-hidden="true"
-                    v-if="copiedKey !== 'shareUrl'"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                    <path
-                      d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                    />
-                  </svg>
-                  <svg
-                    aria-hidden="true"
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5 text-aa-success"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
-              <p class="text-xs font-semibold text-aa-muted uppercase mb-1">
-                {{
-                  t("sharedDraft.collaboratorLinkLabel", "Collaborator Link")
-                }}
-              </p>
-              <div class="flex items-center">
-                <code
-                  class="block text-sm font-mono text-aa-text break-all flex-1"
-                  >{{
-                    collaborationUrl ||
-                    t("sharedDraft.readOnlyAccess", "Read-only access")
-                  }}</code
-                >
-                <button
-                  v-if="collaborationUrl"
-                  @click="
-                    copyText(collaborationUrl);
-                    markCopied('collaboratorUrl');
-                  "
-                  :aria-label="
-                    t(
-                      'operations.copyCollaboratorLink',
-                      'Copy collaborator link',
-                    )
-                  "
-                  class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                >
-                  <svg
-                    aria-hidden="true"
-                    v-if="copiedKey !== 'collaboratorUrl'"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                    <path
-                      d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                    />
-                  </svg>
-                  <svg
-                    aria-hidden="true"
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5 text-aa-success"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
-              <p class="text-xs font-semibold text-aa-muted uppercase mb-1">
-                {{ t("sharedDraft.operatorLinkLabel", "Operator Link") }}
-              </p>
-              <div class="flex items-center">
-                <code
-                  class="block text-sm font-mono text-aa-text break-all flex-1"
-                  >{{
-                    operatorUrl ||
-                    t(
-                      "sharedDraft.operatorAccessRequired",
-                      "Operator access required",
-                    )
-                  }}</code
-                >
-                <button
-                  v-if="operatorUrl"
-                  @click="
-                    copyText(operatorUrl);
-                    markCopied('operatorUrl');
-                  "
-                  :aria-label="
-                    t('operations.copyOperatorLink', 'Copy operator link')
-                  "
-                  class="ml-1.5 text-aa-muted hover:text-aa-text transition-colors duration-200 flex-shrink-0"
-                >
-                  <svg
-                    aria-hidden="true"
-                    v-if="copiedKey !== 'operatorUrl'"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                    <path
-                      d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                    />
-                  </svg>
-                  <svg
-                    aria-hidden="true"
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5 text-aa-success"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <CopyableField
+              :label="t('sharedDraft.draftIdLabel', 'Draft ID')"
+              :value="draftId"
+              copy-key="draftId"
+              :active-copied-key="copiedKey"
+              :copy-aria-label="t('didPanel.copyDraftId', 'Copy draft ID')"
+              :show-copy-button="true"
+              @copy="
+                copyText(draftId);
+                markCopied('draftId');
+              "
+            />
+            <CopyableField
+              :label="t('sharedDraft.shareUrlLabel', 'Share URL')"
+              :value="shareUrl || t('sharedDraft.loadingUrl', 'Loading…')"
+              copy-key="shareUrl"
+              :active-copied-key="copiedKey"
+              :copy-aria-label="t('didPanel.copyShareUrl', 'Copy share URL')"
+              :show-copy-button="Boolean(shareUrl)"
+              @copy="
+                copyText(shareUrl);
+                markCopied('shareUrl');
+              "
+            />
+            <CopyableField
+              :label="
+                t('sharedDraft.collaboratorLinkLabel', 'Collaborator Link')
+              "
+              :value="
+                collaborationUrl ||
+                t('sharedDraft.readOnlyAccess', 'Read-only access')
+              "
+              copy-key="collaboratorUrl"
+              :active-copied-key="copiedKey"
+              :copy-aria-label="
+                t('operations.copyCollaboratorLink', 'Copy collaborator link')
+              "
+              :show-copy-button="Boolean(collaborationUrl)"
+              @copy="
+                copyText(collaborationUrl);
+                markCopied('collaboratorUrl');
+              "
+            />
+            <CopyableField
+              :label="t('sharedDraft.operatorLinkLabel', 'Operator Link')"
+              :value="
+                operatorUrl ||
+                t(
+                  'sharedDraft.operatorAccessRequired',
+                  'Operator access required',
+                )
+              "
+              copy-key="operatorUrl"
+              :active-copied-key="copiedKey"
+              :copy-aria-label="
+                t('operations.copyOperatorLink', 'Copy operator link')
+              "
+              :show-copy-button="Boolean(operatorUrl)"
+              @copy="
+                copyText(operatorUrl);
+                markCopied('operatorUrl');
+              "
+            />
             <div class="rounded-lg border border-aa-border bg-aa-dark p-4">
               <p class="text-xs font-semibold text-aa-muted uppercase mb-1">
                 {{ t("sharedDraft.statusLabel", "Status") }}
@@ -270,28 +122,10 @@
               </div>
             </div>
           </div>
-          <div
-            v-if="draft && accessScope === 'read'"
-            class="mb-6 rounded-lg border border-aa-warning/30 bg-aa-warning/10 px-4 py-3 text-sm text-aa-warning font-medium"
-          >
-            {{
-              t(
-                "sharedDraft.readOnlyNotice",
-                "This shared draft is read-only. Open the Collaborator Link to sign, or the Operator Link to manage relay and broadcast actions.",
-              )
-            }}
-          </div>
-          <div
-            v-else-if="draft && accessScope === 'sign'"
-            class="mb-6 rounded-lg border border-aa-info/30 bg-aa-info/10 px-4 py-3 text-sm text-aa-info font-medium"
-          >
-            {{
-              t(
-                "sharedDraft.signatureOnlyNotice",
-                "This is a signature-only link. Relay checks, broadcasts, and link rotation require the Operator Link.",
-              )
-            }}
-          </div>
+          <AccessScopeNotice
+            :access-scope="accessScope"
+            :has-draft="Boolean(draft)"
+          />
           <div v-if="loading" class="space-y-3">
             <div class="skeleton h-6 w-48 rounded"></div>
             <div class="skeleton h-20 rounded-xl"></div>
@@ -321,107 +155,11 @@
           </div>
           <div v-else-if="draft" class="space-y-6">
             <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <section class="glass-panel p-5">
-                <div class="mb-4">
-                  <h2 class="text-base font-bold font-outfit text-white">
-                    {{
-                      t("sharedDraft.operationSnapshot", "Operation Snapshot")
-                    }}
-                  </h2>
-                  <p class="text-sm text-aa-muted">
-                    {{
-                      t(
-                        "sharedDraft.operationSnapshotDesc",
-                        "Key execution details, relay state, and payload availability for this immutable draft.",
-                      )
-                    }}
-                  </p>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2">
-                  <div
-                    v-for="item in operationSnapshotItems"
-                    :key="item.label"
-                    class="rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4"
-                  >
-                    <p class="text-xs font-semibold uppercase text-aa-muted">
-                      {{ item.label }}
-                    </p>
-                    <div
-                      class="mt-1 text-sm font-medium text-aa-text break-all"
-                    >
-                      {{ item.value }}
-                    </div>
-                    <p v-if="item.note" class="mt-1 text-xs text-aa-muted">
-                      {{ item.note }}
-                    </p>
-                  </div>
-                </div>
-              </section>
-              <section class="glass-panel p-5">
-                <div class="mb-4">
-                  <h2 class="text-base font-bold font-outfit text-white">
-                    {{ t("sharedDraft.signerChecklist", "Signer Checklist") }}
-                  </h2>
-                  <p class="text-sm text-aa-muted">{{ signerProgressText }}.</p>
-                </div>
-                <div
-                  v-if="signerChecklistItems.length === 0"
-                  class="empty-state"
-                >
-                  <svg
-                    aria-hidden="true"
-                    class="w-8 h-8 mx-auto mb-2 text-aa-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                    ></path>
-                  </svg>
-                  <p class="text-sm text-aa-muted">
-                    {{
-                      t(
-                        "sharedDraft.noSignerChecklist",
-                        "No signer checklist has been recorded for this draft yet.",
-                      )
-                    }}
-                  </p>
-                </div>
-                <div v-else class="space-y-3">
-                  <div
-                    v-for="item in signerChecklistItems"
-                    :key="item.key"
-                    class="flex items-start justify-between gap-3 rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4"
-                  >
-                    <div class="min-w-0">
-                      <div class="text-sm font-semibold text-aa-text break-all">
-                        {{ item.label }}
-                      </div>
-                      <div class="mt-1 text-xs text-aa-muted">
-                        {{ item.detail }}
-                      </div>
-                      <code
-                        v-if="item.signaturePreview"
-                        class="mt-2 block text-xs text-aa-muted"
-                        >{{ item.signaturePreview }}</code
-                      >
-                    </div>
-                    <span
-                      :class="
-                        item.statusKey === 'collected'
-                          ? 'badge-green'
-                          : 'badge-orange'
-                      "
-                      class="shrink-0"
-                      >{{ item.status }}</span
-                    >
-                  </div>
-                </div>
-              </section>
+              <OperationSnapshotSection :items="operationSnapshotItems" />
+              <SignerChecklistSection
+                :items="signerChecklistItems"
+                :progress-text="signerProgressText"
+              />
             </div>
 
             <div class="grid gap-6 lg:grid-cols-2">
@@ -763,149 +501,19 @@
                     selectedRelayPayloadLabel
                   }}</span>
                 </p>
-                <div
-                  v-if="activeSubmissionReceipt"
-                  role="alert"
-                  class="mt-4 rounded-lg border px-4 py-3 text-sm"
-                  :class="
-                    activeSubmissionReceipt.tone === 'success'
-                      ? 'border-aa-success/30 bg-aa-success/10 text-aa-success'
-                      : activeSubmissionReceipt.tone === 'error'
-                        ? 'border-aa-error/30 bg-aa-error/10 text-aa-error'
-                        : 'border-aa-warning/30 bg-aa-warning/10 text-aa-warning'
+                <SubmissionReceiptCard
+                  :receipt="activeSubmissionReceipt"
+                  :history-items="submissionReceiptHistoryItems"
+                />
+                <LatestSubmissionCard
+                  :txid="latestBroadcastTxid"
+                  :explorer-url="latestBroadcastExplorerUrl"
+                  :copied-key="copiedKey"
+                  @copy="
+                    copyText(latestBroadcastTxid);
+                    markCopied('latestTxid');
                   "
-                >
-                  <p class="text-xs font-semibold uppercase">
-                    {{
-                      t("sharedDraft.submissionReceipt", "Submission Receipt")
-                    }}
-                  </p>
-                  <div class="mt-1 text-sm font-medium">
-                    {{ activeSubmissionReceipt.title }}
-                  </div>
-                  <p class="mt-1 text-sm">
-                    {{ activeSubmissionReceipt.detail }}
-                  </p>
-                  <code
-                    v-if="activeSubmissionReceipt.txid"
-                    class="mt-2 block break-all rounded-md border border-aa-border bg-aa-dark/60 px-3 py-1.5 text-xs"
-                    >{{ activeSubmissionReceipt.txid }}</code
-                  >
-                  <a
-                    v-if="activeSubmissionReceipt.explorerUrl"
-                    :href="activeSubmissionReceipt.explorerUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="mt-2 inline-flex font-medium text-xs underline"
-                    >{{
-                      t("sharedDraft.openInExplorer", "Open in Explorer")
-                    }}</a
-                  >
-                  <div
-                    v-if="submissionReceiptHistoryItems.length > 0"
-                    class="mt-4 border-t border-aa-border/40 pt-3"
-                  >
-                    <p class="text-xs font-semibold uppercase">
-                      {{ t("sharedDraft.receiptHistory", "Receipt History") }}
-                    </p>
-                    <div class="mt-2 space-y-2">
-                      <div
-                        v-for="item in submissionReceiptHistoryItems"
-                        :key="`${item.createdAt}:${item.action}`"
-                        class="rounded-md border border-aa-border/40 bg-aa-panel/40 px-3 py-2"
-                      >
-                        <div class="flex items-center justify-between gap-3">
-                          <div class="text-xs font-medium text-aa-text">
-                            {{ item.title }}
-                          </div>
-                          <div class="text-xs text-aa-muted">
-                            {{ item.createdLabel }}
-                          </div>
-                        </div>
-                        <div class="mt-1 text-xs text-aa-muted">
-                          {{ item.detail }}
-                        </div>
-                        <a
-                          v-if="item.explorerUrl"
-                          :href="item.explorerUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="mt-1 inline-flex text-xs font-medium underline text-aa-text"
-                          >{{
-                            t("sharedDraft.openInExplorer", "Open in Explorer")
-                          }}</a
-                        >
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  v-if="latestBroadcastTxid"
-                  class="mt-4 rounded-lg border border-aa-border bg-aa-dark p-4"
-                >
-                  <p class="text-xs font-semibold uppercase text-aa-muted">
-                    {{ t("sharedDraft.latestSubmission", "Latest Submission") }}
-                  </p>
-                  <div class="flex items-start gap-2">
-                    <code
-                      class="mt-1 block break-all text-xs text-aa-text flex-1"
-                      >{{ latestBroadcastTxid }}</code
-                    >
-                    <button
-                      @click="
-                        copyText(latestBroadcastTxid);
-                        markCopied('latestTxid');
-                      "
-                      :aria-label="
-                        t('operations.copyTxid', 'Copy transaction ID')
-                      "
-                      class="shrink-0 mt-1 text-aa-muted hover:text-aa-text transition-colors duration-200"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        v-if="copiedKey !== 'latestTxid'"
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-3.5 w-3.5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                        />
-                        <path
-                          d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                        />
-                      </svg>
-                      <svg
-                        aria-hidden="true"
-                        v-else
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-3.5 w-3.5 text-aa-success"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clip-rule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <a
-                    v-if="latestBroadcastExplorerUrl"
-                    :href="latestBroadcastExplorerUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="mt-2 inline-flex rounded-md border border-aa-border bg-aa-panel px-3 py-1.5 text-xs font-medium text-aa-text hover:bg-aa-dark transition-colors duration-200"
-                    >{{
-                      t(
-                        "sharedDraft.viewLatestInExplorer",
-                        "View Latest in Explorer",
-                      )
-                    }}</a
-                  >
-                </div>
+                />
               </section>
             </div>
 
@@ -933,74 +541,7 @@
               />
             </section>
 
-            <section class="glass-panel p-5">
-              <h2 class="text-base font-bold font-outfit text-white mb-3">
-                {{
-                  t(
-                    "sharedDraft.collectedSignaturesTitle",
-                    "Collected Signatures",
-                  )
-                }}
-              </h2>
-              <div
-                v-if="collectedSignatureCards.length === 0"
-                class="text-sm text-aa-muted"
-              >
-                {{
-                  t(
-                    "sharedDraft.noSignaturesYet",
-                    "No signatures have been attached yet.",
-                  )
-                }}
-              </div>
-              <div v-else class="grid gap-3 sm:grid-cols-2">
-                <div
-                  v-for="signature in collectedSignatureCards"
-                  :key="signature.key"
-                  class="rounded-lg border border-aa-border/40 bg-aa-dark/40 p-4"
-                >
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <div class="text-sm font-semibold text-aa-text break-all">
-                        {{ signature.label }}
-                      </div>
-                      <div class="mt-1 text-xs text-aa-muted">
-                        {{ t("sharedDraft.addedPrefix", "Added") }}
-                        {{ signature.createdLabel }}
-                      </div>
-                    </div>
-                    <div class="flex flex-wrap justify-end gap-1">
-                      <span
-                        v-for="badge in signature.badges"
-                        :key="badge"
-                        class="rounded border border-aa-border bg-aa-panel px-2 py-0.5 text-xs font-medium text-aa-muted"
-                        >{{ badge }}</span
-                      >
-                    </div>
-                  </div>
-                  <code
-                    class="mt-3 block break-all rounded-md border border-aa-border bg-aa-panel px-3 py-1.5 text-xs text-aa-muted"
-                    >{{ signature.signaturePreview }}</code
-                  >
-                  <details class="mt-3">
-                    <summary
-                      class="cursor-pointer text-xs font-medium text-aa-muted hover:text-aa-text transition-colors duration-200"
-                    >
-                      {{
-                        t(
-                          "sharedDraft.viewFullSignature",
-                          "View Full Signature",
-                        )
-                      }}
-                    </summary>
-                    <code
-                      class="mt-2 block break-all text-xs text-aa-muted bg-aa-panel border border-aa-border p-2 rounded-md"
-                      >{{ signature.signatureHex }}</code
-                    >
-                  </details>
-                </div>
-              </div>
-            </section>
+            <CollectedSignaturesSection :signatures="collectedSignatureCards" />
           </div>
           <p
             v-if="statusMessage"
@@ -1017,74 +558,15 @@
           </div>
         </template>
         <template v-else>
-          <div
-            class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-aa-success/20 mb-6 border border-aa-success/30"
-          >
-            <svg
-              aria-hidden="true"
-              class="h-8 w-8 text-aa-success animate-fade-in"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h1 class="text-2xl font-bold text-white mb-2 text-center">
-            {{ t("sharedDraft.transactionSubmitted", "Transaction Submitted") }}
-          </h1>
-          <p class="text-sm text-aa-muted mb-8 max-w-lg mx-auto text-center">
-            {{
-              t(
-                "sharedDraft.transactionSubmittedDesc",
-                "Your transaction has been securely broadcast to the Neo N3 network.",
-              )
-            }}
-          </p>
-          <div class="glass-panel p-5 mb-8 inline-block w-full max-w-full">
-            <div class="flex items-center justify-between mb-2">
-              <p class="text-xs font-semibold text-aa-muted uppercase">
-                {{ t("sharedDraft.transactionHash", "Transaction Hash") }}
-              </p>
-              <button
-                @click="
-                  copyText(txid);
-                  markCopied('txid');
-                "
-                :aria-label="
-                  t('operations.copyTxHash', 'Copy transaction hash')
-                "
-                class="text-xs font-medium text-aa-text hover:text-aa-orange bg-aa-dark border border-aa-border px-3 py-2 sm:py-1 rounded transition-colors duration-200"
-              >
-                {{
-                  copiedKey === "txid"
-                    ? t("sharedDraft.copied", "Copied!")
-                    : t("sharedDraft.copy", "Copy")
-                }}
-              </button>
-            </div>
-            <code
-              class="block text-sm font-mono text-aa-text break-all bg-aa-dark border border-aa-border p-3 rounded-md select-all"
-              >{{ txid }}</code
-            >
-          </div>
-          <div class="flex flex-col sm:flex-row justify-center gap-3">
-            <RouterLink to="/" class="btn-secondary w-full sm:w-auto">{{
-              t("sharedDraft.returnHome", "Return Home")
-            }}</RouterLink>
-            <a
-              :href="submittedTxExplorerUrl || '#'"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn-primary w-full sm:w-auto"
-              >{{ t("sharedDraft.viewInExplorer", "View in Explorer") }}</a
-            >
-          </div>
+          <TransactionSubmittedPanel
+            :txid="txid"
+            :explorer-url="submittedTxExplorerUrl"
+            :copied-key="copiedKey"
+            @copy="
+              copyText(txid);
+              markCopied('txid');
+            "
+          />
         </template>
       </div>
     </div>
@@ -1147,6 +629,14 @@ import DraftStatusBanner from "@/features/operations/components/DraftStatusBanne
 import DraftSummaryStrip from "@/features/operations/components/DraftSummaryStrip.vue";
 import ActivityTimeline from "@/features/operations/components/ActivityTimeline.vue";
 import PaymasterValidationBanner from "@/components/common/PaymasterValidationBanner.vue";
+import CopyableField from "@/views/TransactionInfoView/CopyableField.vue";
+import AccessScopeNotice from "@/views/TransactionInfoView/AccessScopeNotice.vue";
+import OperationSnapshotSection from "@/views/TransactionInfoView/OperationSnapshotSection.vue";
+import SignerChecklistSection from "@/views/TransactionInfoView/SignerChecklistSection.vue";
+import CollectedSignaturesSection from "@/views/TransactionInfoView/CollectedSignaturesSection.vue";
+import SubmissionReceiptCard from "@/views/TransactionInfoView/SubmissionReceiptCard.vue";
+import LatestSubmissionCard from "@/views/TransactionInfoView/LatestSubmissionCard.vue";
+import TransactionSubmittedPanel from "@/views/TransactionInfoView/TransactionSubmittedPanel.vue";
 import {
   buildDraftCollaborationUrl,
   buildDraftShareUrl,
