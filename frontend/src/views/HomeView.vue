@@ -3,6 +3,14 @@
     <section class="border-b border-slate-200 bg-white">
       <div class="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_420px] lg:px-8 lg:py-14">
         <div class="flex min-w-0 flex-col justify-center">
+          <img
+            src="/brand/neo-mascot.svg"
+            alt=""
+            aria-hidden="true"
+            width="112"
+            height="112"
+            class="mb-5 h-24 w-24 animate-float md:h-28 md:w-28"
+          />
           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
             {{ t("home.powered", "Neo N3 Powered") }}
           </p>
