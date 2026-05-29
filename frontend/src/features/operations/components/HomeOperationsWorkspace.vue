@@ -2271,7 +2271,7 @@ async function signWithZkLogin() {
         nonce: String(nonce),
         deadline: String(deadline),
         metaInvocation,
-        zkloginTicket,
+        zkloginTicket: zkLoginTicket,
         verifierParamsHex: zkLoginTicket.verifier_params_hex,
       },
       createdAt: new Date().toISOString(),

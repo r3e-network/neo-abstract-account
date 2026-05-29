@@ -693,7 +693,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useI18n } from "@/i18n";
-import { sanitizeHex } from "@/utils/hex.js";
+import { sanitizeHex, formatHash as formatHashUtil } from "@/utils/hex.js";
 import RecoveryStepIndicator from "./RecoveryFlowPanel/RecoveryStepIndicator.vue";
 import RecoveryCountdownDisplay from "./RecoveryFlowPanel/RecoveryCountdownDisplay.vue";
 
@@ -856,9 +856,6 @@ function finalizeRecovery() {
 }
 
 function formatHash(hash) {
-  if (!hash) return t("recovery.unknown", "Unknown");
-  const clean = hash.startsWith("0x") ? hash.slice(2) : hash;
-  if (clean.length <= 10) return `0x${clean}`;
-  return `0x${clean.slice(0, 6)}…${clean.slice(-4)}`;
+  return formatHashUtil(hash, { notSetLabel: t("recovery.unknown", "Unknown") });
 }
 </script>

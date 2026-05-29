@@ -72,6 +72,7 @@
 <script setup>
 import { computed } from "vue";
 import { useI18n } from "@/i18n";
+import { formatHash as formatHashUtil } from "@/utils/hex.js";
 import SecurityEmptyState from "./SecurityDashboardPanel/SecurityEmptyState.vue";
 import SecurityScoreCard from "./SecurityDashboardPanel/SecurityScoreCard.vue";
 import SecurityStatusGrid from "./SecurityDashboardPanel/SecurityStatusGrid.vue";
@@ -317,10 +318,7 @@ const recommendations = computed(() => {
 });
 
 function formatHash(hash) {
-  if (!hash) return t("security.notSet", "Not Set");
-  const clean = hash.startsWith("0x") ? hash.slice(2) : hash;
-  if (clean.length <= 10) return `0x${clean}`;
-  return `0x${clean.slice(0, 6)}…${clean.slice(-4)}`;
+  return formatHashUtil(hash, { notSetLabel: t("security.notSet", "Not Set") });
 }
 
 function formatTime(iso) {

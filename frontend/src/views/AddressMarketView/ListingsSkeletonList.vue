@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4" role="status" aria-busy="true" aria-label="Loading listings">
     <div
       v-for="i in 2"
       :key="'listing-skel-' + i"
