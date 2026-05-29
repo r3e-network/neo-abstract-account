@@ -33,6 +33,11 @@ pushd hooks >/dev/null
 ~/.dotnet/tools/nccs ./TokenRestrictedHook.csproj -o ../bin/v3/hooks
 popd >/dev/null
 
+echo "Compiling verifier test-support stub..."
+pushd mocks >/dev/null
+~/.dotnet/tools/nccs ./MockVerifierCore.csproj -o ../bin/v3
+popd >/dev/null
+
 if [[ "${INCLUDE_VALIDATION_MOCKS:-0}" == "1" ]]; then
   echo "Compiling validation-only mock targets..."
   pushd mocks >/dev/null
