@@ -1256,7 +1256,7 @@
           </button>
           <div :class="sidebarExpanded ? 'block' : 'hidden xl:block'">
             <ActivitySidebar
-              class="xl:sticky xl:top-8 xl:max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar-dark rounded-2xl border border-aa-border bg-aa-panel/50 shadow-2xl backdrop-blur-xl"
+              class="xl:sticky xl:top-8 xl:max-h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl border border-aa-border bg-aa-panel/50 shadow-2xl backdrop-blur-xl"
               :draft-id="workspace.share.value.draftId"
               :share-path="workspace.share.value.sharePath"
               :share-url="shareUrl"
@@ -1329,7 +1329,7 @@
           role="dialog"
           aria-modal="true"
           aria-labelledby="shortcuts-title"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          class="modal-overlay"
           @click.self="showShortcuts = false"
           @keydown.escape="showShortcuts = false"
           tabindex="-1"

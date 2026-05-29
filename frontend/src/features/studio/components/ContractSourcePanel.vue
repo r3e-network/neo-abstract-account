@@ -88,7 +88,7 @@
         </select>
       </div>
       <div
-        class="md:w-72 bg-aa-dark/40 border-r border-aa-border overflow-y-auto hidden md:block custom-scrollbar-dark"
+        class="md:w-72 bg-aa-dark/40 border-r border-aa-border overflow-y-auto hidden md:block"
       >
         <nav class="flex-1 p-3 space-y-1">
           <button
@@ -180,7 +180,7 @@
           </button>
         </div>
         <div
-          class="flex-1 overflow-auto p-4 md:p-6 text-[13px] font-mono text-aa-text custom-scrollbar-dark"
+          class="flex-1 overflow-auto p-4 md:p-6 text-[13px] font-mono text-aa-text"
         >
           <highlightjs
             autodetect
