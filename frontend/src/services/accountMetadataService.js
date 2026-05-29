@@ -8,10 +8,10 @@ async function apiPost(body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const json = await res.json();
+  const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.ok) {
     const err = new Error(EC.metadataRequestFailed);
-    err.apiDetail = json.error || null;
+    err.apiDetail = json.error || `HTTP ${res.status}`;
     throw err;
   }
   return json;

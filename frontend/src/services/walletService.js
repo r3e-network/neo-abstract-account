@@ -474,10 +474,10 @@ class WalletService {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(requestBody),
     });
-    const responsePayload = await response.json();
+    const responsePayload = await response.json().catch(() => ({}));
     if (!response.ok || responsePayload?.error) {
       const err = new Error(EC.walletRequestFailed);
-      err.rpcDetail = responsePayload?.message || responsePayload?.error || null;
+      err.rpcDetail = responsePayload?.message || responsePayload?.error || `HTTP ${response.status}`;
       throw err;
     }
     return responsePayload;

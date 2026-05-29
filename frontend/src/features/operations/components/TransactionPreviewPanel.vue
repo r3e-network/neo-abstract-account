@@ -530,6 +530,7 @@
 <script setup>
 import { computed } from "vue";
 import { useI18n } from "@/i18n";
+import { formatHash as formatHashUtil } from "@/utils/hex.js";
 
 const { t } = useI18n();
 
@@ -643,9 +644,6 @@ function getParameterBadgeClass(type) {
 }
 
 function formatContractHash(hash) {
-  if (!hash) return t("txPreview.unknown", "Unknown");
-  const clean = hash.startsWith("0x") ? hash.slice(2) : hash;
-  if (clean.length <= 10) return `0x${clean}`;
-  return `0x${clean.slice(0, 6)}…${clean.slice(-4)}`;
+  return formatHashUtil(hash, { notSetLabel: t("txPreview.unknown", "Unknown") });
 }
 </script>

@@ -26,6 +26,7 @@ export function useWalletConnection() {
       toast.success(`${t('nav.connect', 'Connect Wallet')}: ${address}`);
     } catch (err) {
       toast.error(translateError(err?.message, t));
+      throw err;
     } finally {
       isConnecting.value = false;
     }

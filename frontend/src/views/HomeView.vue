@@ -201,6 +201,7 @@
 <script setup>
 import { computed, defineAsyncComponent, onMounted, ref } from "vue";
 import { useI18n } from "@/i18n";
+import { formatHash as formatHashUtil } from "@/utils/hex.js";
 import PaymasterValidationBanner from "@/components/common/PaymasterValidationBanner.vue";
 import {
   fetchNetworkStatus,
@@ -333,8 +334,10 @@ async function loadNetworkStatus() {
 }
 
 function formatHash(value = "") {
-  const normalized = String(value || "").replace(/^0x/i, "");
-  if (!normalized) return "--";
-  return `0x${normalized.slice(0, 6)}...${normalized.slice(-4)}`;
+  return formatHashUtil(value, {
+    notSetLabel: "--",
+    separator: "...",
+    shortCircuitLength: null,
+  });
 }
 </script>

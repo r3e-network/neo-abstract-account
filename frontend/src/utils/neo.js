@@ -256,7 +256,22 @@ export async function invokeReadFunction(rpcUrl, scriptHash, operation, args = [
     }),
   });
 
-  const payload = await response.json();
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = text || `HTTP ${response.status}`;
+    throw err;
+  }
+
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (_parseError) {
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = 'invalid JSON response';
+    throw err;
+  }
+
   if (payload.error) {
     const err = new Error(EC.rpcRequestFailed);
     err.rpcDetail = payload.error.message || null;

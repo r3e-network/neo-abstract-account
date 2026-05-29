@@ -25,13 +25,19 @@ function buildRestUrl(path, searchParams = {}, { apiBaseUrl = RUNTIME_CONFIG.n3I
 
 async function fetchJson(url, fetchImpl = globalThis.fetch) {
   const response = await fetchImpl(url, { headers: { accept: 'application/json' } });
-  const payload = await response.json();
   if (!response.ok) {
+    const text = await response.text().catch(() => '');
     const err = new Error(EC.rpcRequestFailed);
-    err.rpcDetail = payload?.message || payload?.error || `HTTP ${response.status}`;
+    err.rpcDetail = text || `HTTP ${response.status}`;
     throw err;
   }
-  return payload;
+  try {
+    return await response.json();
+  } catch (_parseError) {
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = 'invalid JSON response';
+    throw err;
+  }
 }
 
 async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpcUrl, fetchImpl = globalThis.fetch) {
@@ -46,7 +52,22 @@ async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpc
     }),
   });
 
-  const payload = await response.json();
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const err = new Error(EC.contractLookupFailed);
+    err.rpcDetail = text || `HTTP ${response.status}`;
+    throw err;
+  }
+
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (_parseError) {
+    const err = new Error(EC.contractLookupFailed);
+    err.rpcDetail = 'invalid JSON response';
+    throw err;
+  }
+
   if (payload.error) {
     const err = new Error(EC.contractLookupFailed);
     err.rpcDetail = payload.error.message || null;
