@@ -3,7 +3,7 @@
     class="relative min-h-screen bg-aa-dark overflow-hidden font-sans text-aa-text"
   >
     <div
-      class="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(rgba(255,68,0,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,68,0,0.035)_1px,transparent_1px)] bg-[size:48px_48px]"
+      class="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(rgba(123,97,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(123,97,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px]"
     ></div>
     <div
       class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up"

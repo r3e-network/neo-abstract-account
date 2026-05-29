@@ -40,7 +40,7 @@
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: #333 transparent;
+    scrollbar-color: rgba(20, 22, 38, 0.18) transparent;
   }
   ::-webkit-scrollbar {
     width: 6px;
@@ -50,10 +50,10 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-[#333] rounded-full transition-colors duration-200;
+    @apply bg-[rgba(20,22,38,0.18)] rounded-full transition-colors duration-200;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-[#666];
+    @apply bg-[rgba(20,22,38,0.28)];
   }
 
   h1,

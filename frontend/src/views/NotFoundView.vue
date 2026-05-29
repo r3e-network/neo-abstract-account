@@ -3,7 +3,7 @@
     class="min-h-[80vh] flex flex-col items-center justify-center text-center px-4 relative"
   >
     <div
-      class="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(rgba(255,68,0,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,68,0,0.035)_1px,transparent_1px)] bg-[size:48px_48px]"
+      class="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(rgba(123,97,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(123,97,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px]"
     ></div>
 
     <div class="relative z-10 glass-panel max-w-lg mx-auto p-10">

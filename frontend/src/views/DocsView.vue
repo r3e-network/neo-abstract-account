@@ -3,7 +3,7 @@
     class="relative min-h-screen bg-aa-dark overflow-hidden font-sans text-aa-text"
   >
     <div
-      class="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,68,0,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,68,0,0.04)_1px,transparent_1px)] bg-[size:48px_48px]"
+      class="absolute inset-0 z-0 bg-[linear-gradient(rgba(123,97,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(123,97,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px]"
     ></div>
     <div
       class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up"
@@ -186,7 +186,7 @@
                 <div
                   ref="contentRoot"
                   v-html="compiledMarkdown"
-                  class="markdown-body custom-scrollbar-dark"
+                  class="markdown-body"
                 ></div>
               </div>
             </transition>
@@ -417,7 +417,7 @@ watch(activeDoc, (value) => {
 }
 .markdown-body h2 {
   color: theme("colors.aa.text");
-  border-bottom: 1px solid rgba(255, 68, 0, 0.15);
+  border-bottom: 1px solid rgba(var(--aa-orange-rgb), 0.15);
   padding-bottom: 0.75rem;
   margin-top: 3rem;
   margin-bottom: 1.25rem;
@@ -479,7 +479,7 @@ watch(activeDoc, (value) => {
 .markdown-body a {
   color: theme("colors.aa.orange");
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 68, 0, 0.3);
+  border-bottom: 1px solid rgba(var(--aa-orange-rgb), 0.3);
   transition:
     color 0.2s ease,
     border-color 0.2s ease;
@@ -506,20 +506,20 @@ watch(activeDoc, (value) => {
   tab-size: 2;
 }
 .markdown-body code:not(pre code) {
-  background-color: rgba(255, 68, 0, 0.08);
+  background-color: rgba(var(--aa-orange-rgb), 0.08);
   color: theme("colors.aa.orange");
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
   font-size: 0.85em;
   font-weight: 600;
   font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-  border: 1px solid rgba(255, 68, 0, 0.15);
+  border: 1px solid rgba(var(--aa-orange-rgb), 0.15);
 }
 
 /* ── Blockquotes / Callouts ── */
 .markdown-body blockquote {
   border-left: 3px solid theme("colors.aa.orange");
-  background: rgba(255, 68, 0, 0.04);
+  background: rgba(var(--aa-orange-rgb), 0.04);
   padding: 1rem 1.25rem;
   margin: 1.5rem 0;
   border-radius: 0 0.5rem 0.5rem 0;
@@ -543,7 +543,7 @@ watch(activeDoc, (value) => {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .markdown-body thead th {
-  background: rgba(255, 68, 0, 0.06);
+  background: rgba(var(--aa-orange-rgb), 0.06);
   padding: 0.75rem 1rem;
   text-align: left;
   font-size: 0.8rem;
@@ -563,7 +563,7 @@ watch(activeDoc, (value) => {
   background: rgba(255, 255, 255, 0.015);
 }
 .markdown-body tbody tr:hover {
-  background: rgba(255, 68, 0, 0.03);
+  background: rgba(var(--aa-orange-rgb), 0.03);
 }
 
 /* ── Horizontal Rules ── */
@@ -573,7 +573,7 @@ watch(activeDoc, (value) => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 68, 0, 0.2),
+    rgba(var(--aa-orange-rgb), 0.2),
     transparent
   );
   margin: 2.5rem 0;
