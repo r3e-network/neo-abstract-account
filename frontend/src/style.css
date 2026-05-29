@@ -1,26 +1,32 @@
 :root {
-  --aa-orange: #c2410c;
-  --aa-orange-rgb: 194, 65, 12;
-  --aa-dark-orange: #9a3412;
-  --aa-light-orange: #ea580c;
-  --aa-blue: #00a3ff;
-  --aa-blue-rgb: 0, 163, 255;
-  --aa-dark: #f5f7fb;
+  /* Neo Soft — "orange" tokens repurposed to the violet interactive accent */
+  --aa-orange: #7b61ff;
+  --aa-orange-rgb: 123, 97, 255;
+  --aa-dark-orange: #6a4df4;
+  --aa-light-orange: #9b87ff;
+  --aa-blue: #3e8cff;
+  --aa-blue-rgb: 62, 140, 255;
+  --aa-dark: #f4f5f7;
   --aa-panel: #ffffff;
-  --aa-border: #d8e1ec;
-  --aa-text: #0f172a;
-  --aa-muted: #526176;
-  --aa-success: #10b981;
+  --aa-border: #e6e8ee;
+  --aa-text: #1e1e2e;
+  --aa-muted: #5b6478;
+  --aa-success: #16c784;
   --aa-success-light: #6ee7b7;
-  --aa-info: #0369a1;
-  --aa-info-light: #38bdf8;
-  --aa-warning: #f59e0b;
+  --aa-info: #3e8cff;
+  --aa-info-light: #7cb5ff;
+  --aa-warning: #f5a623;
   --aa-warning-light: #fcd34d;
-  --aa-error: #f43f5e;
+  --aa-error: #ea3943;
   --aa-error-light: #fda4af;
-  --neo-500: #22c55e;
-  --neo-500-rgb: 34, 197, 94;
-  --neo-400: #4ade80;
+  --neo-500: #16c784;
+  --neo-500-rgb: 22, 199, 132;
+  --neo-400: #34d399;
+
+  /* Neo Soft shared aliases */
+  --ns-shadow-md: 0 8px 24px rgba(20, 22, 38, 0.06);
+  --ns-shadow-lg: 0 16px 40px rgba(20, 22, 38, 0.1);
+  --ns-focus-ring: 0 0 0 4px rgba(123, 97, 255, 0.18);
 }
 
 @tailwind base;
@@ -29,7 +35,7 @@
 
 @layer base {
   body {
-    @apply bg-[#f5f7fb] text-slate-950 antialiased font-sans selection:bg-slate-950 selection:text-white;
+    @apply bg-[#f4f5f7] text-slate-950 antialiased font-sans selection:bg-slate-950 selection:text-white;
   }
 
   * {
@@ -60,17 +66,17 @@
   }
 
   button:focus-visible {
-    @apply outline-none ring-2 ring-emerald-500 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-[#7b61ff] ring-offset-2 ring-offset-white;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex justify-center items-center gap-2 rounded-md border border-slate-950 bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
+    @apply inline-flex justify-center items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b61ff] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
 
   .btn-secondary {
-    @apply inline-flex justify-center items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
+    @apply inline-flex justify-center items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b61ff] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
 
   .btn-warning,
@@ -80,7 +86,7 @@
   }
 
   .btn-ghost {
-    @apply inline-flex justify-center items-center gap-2 rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex justify-center items-center gap-2 rounded-full border border-transparent bg-transparent px-5 py-2 text-sm font-semibold text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b61ff] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-lg {
@@ -94,11 +100,12 @@
   }
 
   .card {
-    @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+    @apply rounded-[20px] border border-slate-200/70 bg-white p-6;
+    box-shadow: var(--ns-shadow-md);
   }
 
   .input-field {
-    @apply shadow-sm focus-visible:ring-1 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md bg-white text-slate-950 transition-all duration-200 placeholder-slate-400 px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed hover:border-slate-400 outline-none;
+    @apply shadow-sm focus-visible:ring-2 focus-visible:ring-[#7b61ff]/40 focus-visible:border-[#7b61ff] block w-full sm:text-sm border-slate-300 rounded-[14px] bg-white text-slate-950 transition-all duration-200 placeholder-slate-400 px-3.5 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed hover:border-slate-400 outline-none;
   }
 
   select.input-field {
@@ -113,7 +120,8 @@
   }
 
   .glass-panel {
-    @apply bg-white border border-slate-200 rounded-lg shadow-sm;
+    @apply bg-white border border-slate-200/70 rounded-[20px];
+    box-shadow: var(--ns-shadow-md);
   }
 
   .scroll-reveal {
@@ -147,7 +155,7 @@
   .card-hover-amber,
   .card-hover-orange,
   .card-glow {
-    @apply transition-colors duration-200 hover:border-emerald-300 hover:bg-emerald-50;
+    @apply transition-all duration-200 hover:-translate-y-px hover:border-[#7b61ff]/40 hover:shadow-[0_16px_40px_rgba(20,22,38,0.1)];
   }
 
   .badge {
