@@ -136,95 +136,14 @@
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.identityRoot", "Identity Root") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold break-all">
-            {{
-              didProfile?.identityRoot ||
-              didProfile?.providerUid ||
-              t("didPanel.notConnected", "not connected")
-            }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.provider", "Provider") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{ didProfile?.provider || t("operations.web3auth", "web3auth") }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.serviceDid", "NeoDID Service DID") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold break-all">
-            {{ serviceDid }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.resolvedAccountId", "Resolved AccountId") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold break-all">
-            {{ resolvedAccountId || t("didPanel.unresolved", "unresolved") }}
-          </p>
-        </div>
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.linkedAccounts", "Linked Accounts") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{ linkedAccountsLabel }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.emailNotice", "Email Notice") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{ didProfile?.email || t("didPanel.unavailable", "unavailable") }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.smsNotice", "SMS Notice") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{ didProfile?.phone || t("didPanel.unavailable", "unavailable") }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.emailChannel", "Email Channel") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{
-              canEmailNotice
-                ? t("didPanel.enabled", "enabled")
-                : t("didPanel.disabled", "disabled")
-            }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.smsChannel", "SMS Channel") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{
-              canSmsNotice
-                ? t("didPanel.enabled", "enabled")
-                : t("didPanel.disabled", "disabled")
-            }}
-          </p>
-        </div>
-      </div>
+      <DidIdentitySummaryGrids
+        :did-profile="didProfile"
+        :service-did="serviceDid"
+        :resolved-account-id="resolvedAccountId"
+        :linked-accounts-label="linkedAccountsLabel"
+        :can-email-notice="canEmailNotice"
+        :can-sms-notice="canSmsNotice"
+      />
 
       <div class="grid gap-4 xl:grid-cols-2">
         <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
@@ -326,242 +245,17 @@
         }}</span>
       </div>
 
-      <div
-        v-if="verifierState"
-        class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-      >
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.boundVerifier", "Bound Verifier") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold break-all">
-            {{ verifierState.verifierHash }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.verifierOwner", "Verifier Owner") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold break-all">
-            {{ verifierState.owner || t("didPanel.unset", "unset") }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.recovery", "Recovery") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{
-              verifierState.pendingRecovery?.active
-                ? `${t("didPanel.statusPending", "(pending)")
-                    .replace(/[()（）]/g, "")
-                    .trim()} ${verifierState.pendingRecovery.approvedCount}/${verifierState.threshold}`
-                : `${t("didPanel.nonce", "nonce")} ${verifierState.recoveryNonce}`
-            }}
-          </p>
-        </div>
-        <div class="rounded-xl border border-aa-border bg-aa-panel/40 p-4">
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("didPanel.privateSession", "Private Session") }}
-          </p>
-          <p class="text-sm text-aa-text font-semibold">
-            {{
-              verifierState.activeSession?.active
-                ? t("didPanel.statusActive", "(active)")
-                    .replace(/[()（）]/g, "")
-                    .trim()
-                : `${t("didPanel.nonce", "nonce")} ${verifierState.sessionNonce}`
-            }}
-          </p>
-        </div>
-      </div>
-      <div v-else class="empty-state rounded-xl bg-aa-panel/20 p-6">
-        <svg
-          aria-hidden="true"
-          class="w-8 h-8 mx-auto mb-2 text-aa-muted"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-          ></path>
-        </svg>
-        <p class="text-sm text-aa-muted">
-          {{
-            t(
-              "didPanel.noVerifierState",
-              "No on-chain verifier state loaded yet.",
-            )
-          }}
-        </p>
-        <p class="text-xs text-aa-muted mt-1">
-          {{
-            t(
-              "didPanel.refreshHint",
-              'Click "Refresh Chain State" to query the latest data.',
-            )
-          }}
-        </p>
-      </div>
+      <DidVerifierStateGrid :verifier-state="verifierState" />
 
-      <div
-        v-if="
-          verifierState &&
-          (verifierState.pendingRecovery?.active ||
-            verifierState.activeSession?.active)
-        "
-        class="grid gap-4 xl:grid-cols-2"
-      >
-        <div
-          v-if="verifierState.pendingRecovery?.active"
-          class="rounded-xl border border-aa-warning/30 bg-aa-warning/5 p-4"
-        >
-          <p class="text-xs uppercase text-aa-warning font-bold mb-2">
-            {{ t("didPanel.pendingRecovery", "Pending Recovery") }}
-          </p>
-          <p class="text-sm text-aa-text break-all">
-            {{ t("didPanel.newOwner", "new owner") }}:
-            {{
-              verifierState.pendingRecovery.newOwner ||
-              t("didPanel.unset", "unset")
-            }}
-          </p>
-          <p class="text-sm text-aa-text">
-            {{ t("didPanel.approved", "approved") }}:
-            {{ verifierState.pendingRecovery.approvedCount }} /
-            {{ verifierState.threshold }}
-          </p>
-          <p class="text-sm text-aa-text">
-            {{ t("didPanel.executableAt", "executable at") }}:
-            {{ verifierState.pendingRecovery.executableAt }}
-          </p>
-          <div class="mt-4 flex gap-3">
-            <button
-              class="btn-primary flex-1"
-              :aria-label="
-                t('operations.ariaFinalizeRecovery', 'Finalize recovery')
-              "
-              :class="{ 'btn-loading': busy === 'finalizeRecovery' }"
-              :disabled="busy === 'finalizeRecovery'"
-              @click="finalizeRecoveryAction"
-            >
-              {{
-                busy === "finalizeRecovery"
-                  ? t("didPanel.finalizingRecovery", "Finalizing…")
-                  : t("didPanel.finalizeRecovery", "Finalize Recovery")
-              }}
-            </button>
-            <button
-              class="btn-secondary flex-1"
-              :aria-label="
-                t('operations.ariaCancelRecovery', 'Cancel recovery')
-              "
-              :class="{ 'btn-loading': busy === 'cancelRecovery' }"
-              :disabled="busy === 'cancelRecovery'"
-              @click="cancelRecoveryAction"
-            >
-              {{
-                busy === "cancelRecovery"
-                  ? t("didPanel.cancellingRecovery", "Cancelling…")
-                  : t("didPanel.cancelRecovery", "Cancel Recovery")
-              }}
-            </button>
-          </div>
-        </div>
-        <div
-          v-if="verifierState.activeSession?.active"
-          class="rounded-xl border border-aa-info/30 bg-aa-info/5 p-4"
-        >
-          <p class="text-xs uppercase text-aa-info font-bold mb-2">
-            {{ t("didPanel.activePrivateSession", "Active Private Session") }}
-          </p>
-          <p class="text-sm text-aa-text break-all">
-            {{ t("didPanel.executor", "executor") }}:
-            {{
-              verifierState.activeSession.executor ||
-              t("didPanel.unset", "unset")
-            }}
-          </p>
-          <p class="text-sm text-aa-text break-all">
-            {{ t("didPanel.action", "action") }}:
-            {{
-              verifierState.activeSession.actionId ||
-              t("didPanel.unset", "unset")
-            }}
-          </p>
-          <p class="text-sm text-aa-text">
-            {{ t("didPanel.expiresAt", "expires at") }}:
-            {{ verifierState.activeSession.expiresAt }}
-          </p>
-          <button
-            class="btn-secondary mt-4 w-full"
-            :aria-label="t('operations.ariaRevokeSession', 'Revoke session')"
-            :class="{ 'btn-loading': busy === 'revokeSession' }"
-            :disabled="busy === 'revokeSession'"
-            @click="revokeSessionAction"
-          >
-            {{
-              busy === "revokeSession"
-                ? t("didPanel.revokingSession", "Revoking…")
-                : t("didPanel.revokeSession", "Revoke Session")
-            }}
-          </button>
-        </div>
-      </div>
+      <DidPendingStateCards
+        :verifier-state="verifierState"
+        :busy="busy"
+        @finalize="finalizeRecoveryAction"
+        @cancel="cancelRecoveryAction"
+        @revoke="revokeSessionAction"
+      />
 
-      <div
-        v-if="maintenanceItems.length > 0"
-        class="rounded-xl border border-aa-warning/30 bg-aa-warning/5 p-4 space-y-3"
-      >
-        <p class="text-xs uppercase text-aa-warning font-bold">
-          {{ t("didPanel.pendingMaintenance", "Pending Account Maintenance") }}
-        </p>
-        <div
-          v-for="item in maintenanceItems"
-          :key="item.id"
-          class="rounded-lg border border-aa-warning/20 bg-aa-panel/40 p-4"
-        >
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-sm font-semibold text-aa-text">{{ item.title }}</p>
-            <span class="text-xs font-medium text-aa-warning">{{
-              t("didPanel.statusPending", "(pending)")
-                .replace(/[()（）]/g, "")
-                .trim()
-            }}</span>
-          </div>
-          <p class="mt-1 text-xs text-aa-muted">{{ item.description }}</p>
-          <div class="mt-3 grid gap-3 md:grid-cols-3">
-            <div>
-              <p class="text-[10px] uppercase text-aa-muted font-bold">
-                {{ t("didPanel.executableAt", "executable at") }}
-              </p>
-              <p class="mt-1 text-sm text-aa-text break-all">
-                {{ item.executeAfter }}
-              </p>
-            </div>
-            <div>
-              <p class="text-[10px] uppercase text-aa-muted font-bold">
-                {{ t("didPanel.boundModule", "Bound Module") }}
-              </p>
-              <p class="mt-1 text-sm text-aa-text break-all">
-                {{ item.moduleHash || t("didPanel.unset", "unset") }}
-              </p>
-            </div>
-            <div>
-              <p class="text-[10px] uppercase text-aa-muted font-bold">
-                {{ t("didPanel.pendingCallHash", "Pending Call Hash") }}
-              </p>
-              <p class="mt-1 text-sm text-aa-text break-all">
-                {{ item.callHash || t("didPanel.unset", "unset") }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DidMaintenanceList :items="maintenanceItems" />
 
       <div class="grid gap-6 xl:grid-cols-3">
         <section
@@ -1109,6 +803,10 @@ import { getScriptHashFromAddress } from "@/utils/neo.js";
 import { sanitizeHex } from "@/utils/hex.js";
 import { RUNTIME_CONFIG } from "@/config/runtimeConfig.js";
 import { translateError } from "@/config/errorCodes.js";
+import DidIdentitySummaryGrids from "./DidIdentityPanel/DidIdentitySummaryGrids.vue";
+import DidVerifierStateGrid from "./DidIdentityPanel/DidVerifierStateGrid.vue";
+import DidPendingStateCards from "./DidIdentityPanel/DidPendingStateCards.vue";
+import DidMaintenanceList from "./DidIdentityPanel/DidMaintenanceList.vue";
 
 const props = defineProps({
   aaContractHash: {

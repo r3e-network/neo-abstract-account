@@ -199,298 +199,30 @@
         :activity="activityItems"
       />
 
-      <div
-        class="mb-8 rounded-xl border border-aa-border bg-aa-panel/40 p-4 backdrop-blur-md"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-bold uppercase text-aa-muted">
-            {{ t("operations.workflowProgress", "Workflow Progress") }}
-          </p>
-          <div class="flex items-center gap-3">
-            <p class="text-xs text-aa-muted">{{ currentStepLabel }}</p>
-            <button
-              @click="showShortcuts = !showShortcuts"
-              class="text-aa-muted hover:text-aa-text transition-colors duration-200 text-xs font-mono border border-aa-border rounded px-3 py-2 sm:py-1 hover:border-aa-orange/30"
-              :aria-label="
-                t('operations.keyboardShortcuts', 'Keyboard shortcuts')
-              "
-              :title="t('operations.keyboardShortcuts', 'Keyboard shortcuts')"
-            >
-              ?
-            </button>
-            <button
-              @click="resetWorkflow"
-              class="text-xs text-aa-muted hover:text-aa-error font-medium transition-colors duration-200"
-              :aria-label="t('operations.resetWorkflow', 'Reset workflow')"
-              :title="t('operations.resetWorkflow', 'Reset workflow')"
-            >
-              <svg
-                aria-hidden="true"
-                class="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                ></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 justify-center">
-          <template v-for="(step, index) in steps" :key="step.id">
-            <button
-              @click="step.state !== 'pending' ? jumpToStep(step.id) : null"
-              :aria-label="step.label"
-              :disabled="step.state === 'pending'"
-              :title="
-                step.state === 'pending'
-                  ? t('operations.stepLocked', 'Complete previous steps first')
-                  : step.label
-              "
-              class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200"
-              :class="
-                step.state === 'active'
-                  ? 'bg-neo-500/20 border border-neo-500/50 text-neo-300'
-                  : step.state === 'completed'
-                    ? 'bg-aa-success/10 border border-aa-success/30 text-aa-success-light hover:bg-aa-success/20 cursor-pointer'
-                    : 'bg-aa-dark/30 border border-aa-border text-aa-muted cursor-not-allowed opacity-60'
-              "
-            >
-              <div
-                class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                :class="
-                  step.state === 'active'
-                    ? 'bg-neo-500 text-aa-dark'
-                    : step.state === 'completed'
-                      ? 'bg-aa-success text-aa-dark'
-                      : 'bg-aa-dark text-aa-text'
-                "
-              >
-                <svg
-                  aria-hidden="true"
-                  v-if="step.state === 'completed'"
-                  class="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="3"
-                    d="M5 13l4 4L19 7"
-                  ></path>
-                </svg>
-                <span v-else>{{ index + 1 }}</span>
-              </div>
-              <span
-                class="text-xs font-medium truncate max-w-20 sm:max-w-none"
-                >{{ step.label }}</span
-              >
-            </button>
-            <div
-              v-if="index < steps.length - 1"
-              class="flex-1 h-0.5 rounded"
-              :class="
-                steps[index].state === 'completed' &&
-                steps[index + 1].state !== 'locked'
-                  ? 'bg-aa-success/50'
-                  : 'bg-aa-dark'
-              "
-            ></div>
-          </template>
-        </div>
-      </div>
+      <WorkflowProgressStepper
+        :steps="steps"
+        :current-step-label="currentStepLabel"
+        @jump-to-step="jumpToStep"
+        @reset-workflow="resetWorkflow"
+        @toggle-shortcuts="showShortcuts = !showShortcuts"
+      />
 
-      <div
-        class="mb-8 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
-      >
-        <div
-          class="rounded-2xl border p-5 shadow-inner backdrop-blur-md"
-          :class="statusCardClass(didConnection.isConnected.value)"
-        >
-          <p
-            class="text-xs uppercase font-bold mb-1"
-            :class="
-              didConnection.isConnected.value
-                ? 'text-aa-success'
-                : 'text-aa-muted'
-            "
-          >
-            {{ t("operations.didCardLabel", "Web3Auth") }}
-          </p>
-          <p
-            class="text-sm font-semibold truncate"
-            :class="
-              didConnection.isConnected.value
-                ? 'text-aa-success-light'
-                : 'text-aa-text'
-            "
-          >
-            {{ didLabel }}
-          </p>
-        </div>
-        <div
-          class="rounded-2xl border p-5 shadow-inner backdrop-blur-md"
-          :class="statusCardClass(walletConnection.isConnected.value)"
-        >
-          <p
-            class="text-xs uppercase font-bold mb-1"
-            :class="
-              walletConnection.isConnected.value
-                ? 'text-aa-success'
-                : 'text-aa-muted'
-            "
-          >
-            {{ t("operations.neoWallet", "Neo Wallet") }}
-          </p>
-          <p
-            class="text-sm font-semibold truncate"
-            :class="
-              walletConnection.isConnected.value
-                ? 'text-aa-success-light'
-                : 'text-aa-text'
-            "
-          >
-            {{ neoWalletLabel }}
-          </p>
-        </div>
-        <div
-          class="rounded-2xl border p-5 shadow-inner backdrop-blur-md"
-          :class="statusCardClass(evmAddress)"
-        >
-          <p
-            class="text-xs uppercase font-bold mb-1"
-            :class="evmAddress ? 'text-aa-success' : 'text-aa-muted'"
-          >
-            {{ t("operations.evmWallet", "EVM Wallet") }}
-          </p>
-          <p
-            class="text-sm font-semibold truncate"
-            :class="evmAddress ? 'text-aa-success-light' : 'text-aa-text'"
-          >
-            {{ evmWalletLabel }}
-          </p>
-        </div>
-        <div
-          class="rounded-2xl border border-aa-border bg-aa-panel/40 p-5 shadow-inner backdrop-blur-md"
-        >
-          <p class="text-xs uppercase text-aa-muted font-bold mb-1">
-            {{ t("operations.signaturesCardLabel", "Signatures") }}
-          </p>
-          <div class="flex items-center gap-2 mt-1">
-            <div
-              class="w-full bg-aa-dark rounded-full h-1.5"
-              role="progressbar"
-              :aria-valuenow="signerProgress.signatureCount"
-              aria-valuemin="0"
-              :aria-valuemax="signerProgress.requiredCount || 0"
-              :aria-label="
-                t('operations.signaturesProgress', 'Signature progress')
-              "
-            >
-              <div
-                class="bg-neo-500 h-1.5 rounded-full"
-                :style="{
-                  width:
-                    (signerProgress.requiredCount
-                      ? Math.min(
-                          100,
-                          (signerProgress.signatureCount /
-                            signerProgress.requiredCount) *
-                            100,
-                        )
-                      : 0) + '%',
-                }"
-              ></div>
-            </div>
-            <p class="text-sm text-aa-text font-semibold tabular-nums">
-              {{ signerProgress.signatureCount }} /
-              {{ signerProgress.requiredCount || 0 }}
-            </p>
-          </div>
-        </div>
-        <div
-          class="rounded-2xl border p-5 shadow-inner backdrop-blur-md"
-          :class="statusCardClass(runtime.collaborationEnabled, 'neo')"
-        >
-          <p
-            class="text-xs uppercase font-bold mb-1"
-            :class="
-              runtime.collaborationEnabled ? 'text-neo-400' : 'text-aa-muted'
-            "
-          >
-            {{ t("operations.collaborationCardLabel", "Collaboration") }}
-          </p>
-          <div class="flex items-center mt-1">
-            <span
-              class="w-2 h-2 rounded-full mr-2"
-              :class="
-                runtime.collaborationEnabled
-                  ? 'bg-neo-500 animate-pulse'
-                  : 'bg-aa-muted'
-              "
-            ></span>
-            <p
-              class="text-sm font-semibold"
-              :class="
-                runtime.collaborationEnabled ? 'text-neo-300' : 'text-aa-text'
-              "
-            >
-              {{
-                runtime.collaborationEnabled
-                  ? t("operations.collaborationReadyLabel", "Ready")
-                  : t("operations.collaborationLocalLabel", "Local")
-              }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <WorkflowStatusCards
+        :is-did-connected="didConnection.isConnected.value"
+        :did-label="didLabel"
+        :is-neo-connected="walletConnection.isConnected.value"
+        :neo-wallet-label="neoWalletLabel"
+        :evm-address="evmAddress"
+        :evm-wallet-label="evmWalletLabel"
+        :signature-count="signerProgress.signatureCount"
+        :required-signer-count="signerProgress.requiredCount"
+        :collaboration-enabled="runtime.collaborationEnabled"
+      />
 
-      <div
-        class="mb-8 rounded-2xl border border-aa-info/20 bg-aa-info/5 p-5 backdrop-blur-md"
-      >
-        <div
-          class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
-        >
-          <div>
-            <p class="text-xs font-bold uppercase text-aa-info">
-              {{ t("operations.identityWorkspaceLabel", "Identity Workspace") }}
-            </p>
-            <p class="mt-2 text-sm leading-6 text-aa-text">
-              {{
-                t(
-                  "operations.identityWorkspaceHint",
-                  "Web3Auth login, NeoDID bind, recovery, and private-session controls now live in a separate route so the main AA workspace stays lighter and faster.",
-                )
-              }}
-            </p>
-            <p class="mt-2 text-xs text-aa-muted">
-              {{
-                didConnection.isConnected.value
-                  ? t(
-                      "operations.identityWorkspaceConnected",
-                      "DID connected and ready for NeoDID actions.",
-                    )
-                  : t(
-                      "operations.identityWorkspaceDisconnected",
-                      "Open the identity workspace when you need login or NeoDID operations.",
-                    )
-              }}
-            </p>
-          </div>
-          <router-link class="btn-secondary" :to="identityWorkspaceLink">
-            {{
-              t("operations.openIdentityWorkspace", "Open Identity Workspace")
-            }}
-          </router-link>
-        </div>
-      </div>
+      <WorkspaceIdentityBanner
+        :is-did-connected="didConnection.isConnected.value"
+        :identity-workspace-link="identityWorkspaceLink"
+      />
 
       <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="space-y-6">
@@ -1002,222 +734,18 @@
                 />
 
                 <transition name="fade-in-up">
-                  <div
+                  <SubmissionReceiptCard
                     v-if="activeSubmissionReceipt"
-                    class="mt-6 rounded-xl border border-aa-border/50 bg-aa-panel/80 backdrop-blur-md px-6 py-5 shadow-xl"
-                    :class="
-                      activeSubmissionReceipt.tone === 'success'
-                        ? 'border-neo-500/30 shadow-glow-green'
-                        : activeSubmissionReceipt.tone === 'error'
-                          ? 'border-aa-error/40 bg-aa-error/5'
-                          : 'border-aa-warning/30'
+                    :receipt="activeSubmissionReceipt"
+                    :history-items="submissionReceiptHistoryItems"
+                    :copied-key="copiedKey"
+                    @copy="
+                      ({ text, key }) => {
+                        copyText(text);
+                        markCopied(key);
+                      }
                     "
-                  >
-                    <div class="flex items-center gap-2 mb-3">
-                      <span
-                        class="w-2.5 h-2.5 rounded-full"
-                        :class="
-                          activeSubmissionReceipt.tone === 'success'
-                            ? 'bg-neo-500 shadow-glow-green-sm'
-                            : activeSubmissionReceipt.tone === 'error'
-                              ? 'bg-aa-error shadow-glow-error-sm'
-                              : 'bg-aa-warning'
-                        "
-                      ></span>
-                      <p class="text-xs font-bold uppercase text-aa-text">
-                        {{ t("operations.receiptTitle", "Submission Receipt") }}
-                      </p>
-                    </div>
-                    <div
-                      v-if="activeSubmissionReceipt.tone === 'error'"
-                      class="mt-1 flex items-start gap-2"
-                    >
-                      <p
-                        role="alert"
-                        class="flex-1 text-sm text-aa-error-light leading-relaxed"
-                      >
-                        {{ activeSubmissionReceipt.detail }}
-                      </p>
-                      <button
-                        type="button"
-                        :aria-label="
-                          t('sharedDraft.copyErrorDetail', 'Copy error details')
-                        "
-                        class="shrink-0 mt-0.5 text-xs text-aa-muted hover:text-aa-text transition-colors duration-200"
-                        @click="
-                          copyText(
-                            activeSubmissionReceipt.rawDetail ||
-                              activeSubmissionReceipt.detail,
-                          );
-                          markCopied('receipt-error');
-                        "
-                      >
-                        <svg
-                          aria-hidden="true"
-                          v-if="copiedKey !== 'receipt-error'"
-                          class="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          ></path>
-                        </svg>
-                        <svg
-                          aria-hidden="true"
-                          v-else
-                          class="w-4 h-4 text-aa-success"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M5 13l4 4L19 7"
-                          ></path>
-                        </svg>
-                      </button>
-                    </div>
-                    <p v-else class="mt-1 text-sm text-aa-text leading-relaxed">
-                      {{ activeSubmissionReceipt.detail }}
-                    </p>
-                    <div
-                      v-if="activeSubmissionReceipt.txid"
-                      class="mt-3 flex items-start gap-2"
-                    >
-                      <code
-                        class="block flex-1 break-all rounded-lg border border-aa-border bg-aa-dark px-4 py-3 text-sm text-neo-300 font-mono shadow-inner"
-                        >{{ activeSubmissionReceipt.txid }}</code
-                      >
-                      <button
-                        type="button"
-                        :aria-label="
-                          t('operations.copyTxid', 'Copy transaction ID')
-                        "
-                        class="shrink-0 mt-2 text-xs text-aa-muted hover:text-aa-text transition-colors duration-200"
-                        @click="
-                          copyText(activeSubmissionReceipt.txid);
-                          markCopied('receipt-txid');
-                        "
-                      >
-                        <svg
-                          aria-hidden="true"
-                          v-if="copiedKey !== 'receipt-txid'"
-                          class="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          ></path>
-                        </svg>
-                        <svg
-                          aria-hidden="true"
-                          v-else
-                          class="w-4 h-4 text-aa-success"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M5 13l4 4L19 7"
-                          ></path>
-                        </svg>
-                      </button>
-                    </div>
-                    <a
-                      v-if="activeSubmissionReceipt.explorerUrl"
-                      :href="activeSubmissionReceipt.explorerUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="mt-4 inline-flex items-center text-sm font-semibold text-neo-400 hover:text-neo-300 transition-colors duration-200"
-                    >
-                      {{ t("operations.openInExplorer", "Open in Explorer") }}
-                      <svg
-                        aria-hidden="true"
-                        class="w-4 h-4 ml-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        ></path>
-                      </svg>
-                    </a>
-                    <div
-                      v-if="
-                        submissionReceiptHistoryItems &&
-                        submissionReceiptHistoryItems.length > 0
-                      "
-                      class="mt-6 border-t border-aa-border pt-5"
-                    >
-                      <p class="text-xs font-bold uppercase text-aa-muted mb-4">
-                        {{
-                          t("operations.receiptHistoryTitle", "Receipt History")
-                        }}
-                      </p>
-                      <div class="space-y-3">
-                        <div
-                          v-for="item in submissionReceiptHistoryItems"
-                          :key="`${item.createdAt}:${item.action}`"
-                          class="rounded-lg border px-4 py-3 transition-colors duration-200"
-                          :class="
-                            item.tone === 'error'
-                              ? 'border-aa-error/30 bg-aa-error/5 hover:bg-aa-error/10'
-                              : 'border-aa-border bg-aa-panel/40 hover:bg-aa-dark/60'
-                          "
-                        >
-                          <div
-                            class="flex items-center justify-between gap-3 mb-1"
-                          >
-                            <div class="flex items-center gap-2">
-                              <span
-                                v-if="item.tone === 'error'"
-                                class="w-1.5 h-1.5 rounded-full bg-aa-error shrink-0"
-                              ></span>
-                              <span
-                                v-else-if="item.tone === 'success'"
-                                class="w-1.5 h-1.5 rounded-full bg-aa-success shrink-0"
-                              ></span>
-                              <div class="text-sm font-semibold text-aa-text">
-                                {{ item.title }}
-                              </div>
-                            </div>
-                            <div class="text-xs text-aa-muted">
-                              {{ item.createdLabel }}
-                            </div>
-                          </div>
-                          <div
-                            class="text-sm leading-relaxed"
-                            :class="
-                              item.tone === 'error'
-                                ? 'text-aa-error-light'
-                                : 'text-aa-text'
-                            "
-                          >
-                            {{ item.detail }}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  />
                 </transition>
               </template>
             </div>
@@ -1286,146 +814,26 @@
 
     <teleport to="body">
       <transition name="fade-in-up">
-        <div
+        <ConfirmationDialog
           ref="confirmationOverlayRef"
           v-if="pendingConfirmation"
-          class="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirmation-dialog-title"
-          @click.self="cancelConfirmation"
-          @keydown.escape="cancelConfirmation"
-          tabindex="-1"
-        >
-          <div class="modal-panel">
-            <h3
-              id="confirmation-dialog-title"
-              class="text-lg font-bold text-aa-text font-outfit"
-            >
-              {{ confirmationMeta?.title }}
-            </h3>
-            <p class="mt-3 text-sm text-aa-text leading-relaxed">
-              {{ confirmationMeta?.message }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button class="btn-ghost" @click="cancelConfirmation">
-                {{ t("operations.confirmCancel", "Cancel") }}
-              </button>
-              <button class="btn-primary" @click="executeConfirmedAction">
-                {{ t("operations.confirmProceed", "Confirm") }}
-              </button>
-            </div>
-          </div>
-        </div>
+          :open="Boolean(pendingConfirmation)"
+          :title="confirmationMeta?.title"
+          :message="confirmationMeta?.message"
+          @cancel="cancelConfirmation"
+          @confirm="executeConfirmedAction"
+        />
       </transition>
     </teleport>
 
     <!-- Keyboard shortcuts overlay -->
     <teleport to="body">
       <transition name="fade-in-up">
-        <div
+        <KeyboardShortcutsModal
           ref="shortcutsOverlayRef"
           v-if="showShortcuts"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="shortcuts-title"
-          class="modal-overlay"
-          @click.self="showShortcuts = false"
-          @keydown.escape="showShortcuts = false"
-          tabindex="-1"
-        >
-          <div
-            class="bg-aa-panel border border-aa-border rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4"
-          >
-            <div class="flex items-center justify-between mb-4">
-              <h3
-                id="shortcuts-title"
-                class="text-lg font-bold font-outfit text-aa-text"
-              >
-                {{ t("shortcuts.title", "Keyboard Shortcuts") }}
-              </h3>
-              <button
-                @click="showShortcuts = false"
-                :aria-label="t('shortcuts.close', 'Close keyboard shortcuts')"
-                class="text-aa-muted hover:text-aa-text transition-colors duration-200"
-              >
-                <svg
-                  aria-hidden="true"
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  ></path>
-                </svg>
-              </button>
-            </div>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-aa-muted">{{
-                  t("shortcuts.toggle", "Toggle shortcuts")
-                }}</span>
-                <kbd
-                  class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                  >?</kbd
-                >
-              </div>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-aa-muted">{{
-                  t("shortcuts.navigateSteps", "Navigate steps")
-                }}</span>
-                <div class="flex gap-1">
-                  <kbd
-                    class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                    >Ctrl</kbd
-                  >
-                  <span class="text-aa-muted text-xs">+</span>
-                  <kbd
-                    class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                    >1-5</kbd
-                  >
-                </div>
-              </div>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-aa-muted">{{
-                  t("shortcuts.saveDraft", "Save draft")
-                }}</span>
-                <div class="flex gap-1">
-                  <kbd
-                    class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                    >Ctrl</kbd
-                  >
-                  <span class="text-aa-muted text-xs">+</span>
-                  <kbd
-                    class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                    >S</kbd
-                  >
-                </div>
-              </div>
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-aa-muted">{{
-                  t("shortcuts.broadcast", "Broadcast")
-                }}</span>
-                <div class="flex gap-1">
-                  <kbd
-                    class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                    >Ctrl</kbd
-                  >
-                  <span class="text-aa-muted text-xs">+</span>
-                  <kbd
-                    class="px-2 py-1 rounded bg-aa-dark border border-aa-border text-xs font-mono text-aa-text"
-                    >Enter</kbd
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          @close="showShortcuts = false"
+        />
       </transition>
     </teleport>
   </section>
@@ -1521,6 +929,12 @@ import LoadAccountPanel from "./LoadAccountPanel.vue";
 import OperationComposerPanel from "./OperationComposerPanel.vue";
 import RelayPreflightPanel from "./RelayPreflightPanel.vue";
 import SignatureWorkflowPanel from "./SignatureWorkflowPanel.vue";
+import ConfirmationDialog from "./HomeOperationsWorkspace/ConfirmationDialog.vue";
+import KeyboardShortcutsModal from "./HomeOperationsWorkspace/KeyboardShortcutsModal.vue";
+import SubmissionReceiptCard from "./HomeOperationsWorkspace/SubmissionReceiptCard.vue";
+import WorkflowProgressStepper from "./HomeOperationsWorkspace/WorkflowProgressStepper.vue";
+import WorkflowStatusCards from "./HomeOperationsWorkspace/WorkflowStatusCards.vue";
+import WorkspaceIdentityBanner from "./HomeOperationsWorkspace/WorkspaceIdentityBanner.vue";
 
 const runtime = OPERATIONS_RUNTIME;
 const { t } = useI18n();
@@ -1655,14 +1069,6 @@ watch(showShortcuts, (value) => {
 });
 let contractLookupRequestId = 0;
 let contractSuggestionTimer = null;
-
-function statusCardClass(active, color = "emerald") {
-  if (active)
-    return color === "neo"
-      ? "border-neo-500/30 bg-neo-500/5"
-      : "border-aa-success/30 bg-aa-success/5";
-  return "border-aa-border bg-aa-panel/40";
-}
 
 const confirmationMeta = computed(() => {
   const map = {
