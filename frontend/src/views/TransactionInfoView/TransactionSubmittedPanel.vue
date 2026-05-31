@@ -1,22 +1,10 @@
 <template>
-  <div
-    class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-aa-success/20 mb-6 border border-aa-success/30"
-  >
-    <svg
-      aria-hidden="true"
-      class="h-8 w-8 text-aa-success animate-fade-in"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2.5"
-        d="M5 13l4 4L19 7"
-      />
-    </svg>
-  </div>
+  <StatusArt
+    tone="success"
+    :size="96"
+    class="mx-auto mb-5 animate-fade-in"
+    :title="t('sharedDraft.transactionSubmitted', 'Transaction Submitted')"
+  />
   <h1 class="text-2xl font-bold text-aa-text mb-2 text-center">
     {{ t("sharedDraft.transactionSubmitted", "Transaction Submitted") }}
   </h1>
@@ -67,6 +55,7 @@
 <script setup>
 import { RouterLink } from "vue-router";
 import { useI18n } from "@/i18n";
+import { StatusArt } from "@/components/illustrations";
 
 const { t } = useI18n();
 

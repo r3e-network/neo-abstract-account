@@ -7,6 +7,12 @@
       class="absolute -bottom-16 -left-16 w-56 h-56 bg-aa-success/5 rounded-full blur-3xl pointer-events-none"
     ></div>
     <div class="relative">
+      <CoinArt
+        kind="stack"
+        :size="56"
+        class="mb-4"
+        :title="t('market.subtitlePart2', 'Marketplace')"
+      />
       <div
         class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-aa-info/10 text-aa-info text-sm font-semibold border border-aa-info/25 shadow-sm mb-4"
       >
@@ -65,6 +71,7 @@
 
 <script setup>
 import { useI18n } from "@/i18n";
+import { CoinArt } from "@/components/illustrations";
 
 const { t } = useI18n();
 </script>
