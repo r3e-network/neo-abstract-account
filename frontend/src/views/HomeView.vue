@@ -199,7 +199,7 @@
 
       <section class="sr-only">
         Programmable Accounts for Neo N3. Open App Workspace. Browse Address Market.
-        Live-Validated Paymaster Path. Open Validation Ledger. Open Explorer Tx.
+        Paymaster Readiness. Open Validation Ledger. Open Explorer Tx.
         Address Market. ArchitectureDiagram. buildTransactionExplorerUrl.
       </section>
     </main>

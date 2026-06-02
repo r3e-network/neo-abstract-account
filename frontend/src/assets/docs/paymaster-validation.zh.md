@@ -1,10 +1,16 @@
-# Paymaster 实网验证
+# Paymaster 就绪状态
 
 ## 范围
 
-本页汇总 `Neo Abstract Account + Morpheus Paymaster + Relay` 在 Neo N3 Testnet 上的实网验证结果。
+本页汇总 `Neo Abstract Account + Morpheus Paymaster + Relay` 在 Neo N3 Testnet 上的历史实网验证结果，以及当前前端应展示的运行时就绪边界。
 
-已验证组件：
+当前前端口径：
+
+- `AAPaymaster` 链上赞助执行路径已有 testnet 验证依据。
+- `Morpheus policy` 与 `relay-backed authorization` 需要服务端配置 `MORPHEUS_RUNTIME_TOKEN`、`PHALA_API_TOKEN` 或 `PHALA_SHARED_SECRET` 后才能作为可用的无 Gas 广播路径展示。
+- 最新 `v3-testnet-validation-suite.latest.json` 在缺少这些运行时凭证时会跳过 `paymaster_policy` 与 `paymaster` 阶段；界面不能把该状态显示为无条件完整可用。
+
+链上验证组件：
 
 - Morpheus Paymaster policy：`testnet-aa`
 - AA Core：`0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2`
@@ -26,6 +32,14 @@
 - relay 可以继续广播并在链上执行
 
 ## 验证结果
+
+### 当前 suite 摘要
+
+- 链上赞助执行交易：`0x36d42e73dedbdb20f27d2a66c491ae5df4c1e8546cfcaf9fe311788c94135d13`
+- 最新 relay 验证交易：`0x27806fe947c16eb9cf930b35ff242ecb65e4ea4304e8b570ac23384ad9ed6987`
+- `paymaster_policy` / `paymaster`：当运行时凭证缺失时跳过
+
+下面保留历史完整路径记录，作为链上与 relay 集成曾经跑通的证据。
 
 ### 1. 直接 paymaster 授权成功
 
@@ -69,11 +83,11 @@
 
 ## 结论
 
-当前 `AA + Morpheus Paymaster` 在 Neo N3 Testnet 上已经完成完整实网验证，包含：
+`AA + Morpheus Paymaster` 在 Neo N3 Testnet 上已有链上赞助与 relay 集成验证记录，包含：
 
 - 直接授权
 - 直接 relay
 - 旧账户回放
 - 新账户注册到赞助执行的完整路径
 
-这意味着用户在前端中启用 paymaster 后，当前服务端逻辑已经具备真实可用的 testnet 验证依据，而不只是本地模拟或单元测试。
+这意味着前端可以展示“链上赞助路径已验证”。但在当前部署或本地 suite 缺少 Morpheus/Phala 运行时凭证时，界面必须明确显示 policy/relay 阶段尚未就绪，不能承诺启用 paymaster 后一定能完成无 Gas relay 广播。

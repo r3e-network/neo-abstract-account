@@ -206,13 +206,13 @@
             :aria-label="
               t(
                 'operations.directLookupLabel',
-                'Account seed or accountId hash',
+                'AccountId hash',
               )
             "
             :placeholder="
               t(
                 'operations.directLookupPlaceholder',
-                'Account seed or 40-char accountId hash',
+                '40-char accountId hash',
               )
             "
             @keydown.enter="loadDirect"

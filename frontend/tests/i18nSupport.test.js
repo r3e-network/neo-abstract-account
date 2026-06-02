@@ -66,14 +66,14 @@ test('docs registry localizes the security audit page for Chinese readers', () =
   assert.match(registrySource, /security-audit\.zh\.md/);
 });
 
-test('docs registry includes localized paymaster live validation documentation', () => {
+test('docs registry includes localized paymaster readiness documentation', () => {
   const registrySource = fs.readFileSync(path.resolve('src/features/docs/registry.js'), 'utf8');
   const paymasterValidationZh = fs.readFileSync(path.resolve('src/assets/docs/paymaster-validation.zh.md'), 'utf8');
 
   assert.match(registrySource, /paymasterValidation/);
-  assert.match(registrySource, /Paymaster Live Validation/);
-  assert.match(registrySource, /Paymaster 实网验证/);
+  assert.match(registrySource, /Paymaster Readiness/);
+  assert.match(registrySource, /Paymaster 就绪状态/);
   assert.match(registrySource, /paymaster-validation\.zh\.md/);
   assert.match(paymasterValidationZh, /paymaster/i);
-  assert.match(paymasterValidationZh, /实网验证/);
+  assert.match(paymasterValidationZh, /就绪状态/);
 });

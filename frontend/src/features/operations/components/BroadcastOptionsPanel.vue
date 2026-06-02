@@ -167,18 +167,18 @@
             <p class="text-xs font-bold uppercase text-aa-muted">
               {{ t("operations.paymasterTitle", "Morpheus Paymaster") }}
             </p>
-            <span v-if="paymasterEnabled" class="badge-green">
+            <span v-if="paymasterEnabled" class="badge-amber">
               <span
-                class="w-1.5 h-1.5 rounded-full bg-aa-success animate-pulse"
+                class="w-1.5 h-1.5 rounded-full bg-aa-warning animate-pulse"
               ></span>
-              {{ t("operations.paymasterActive", "Active") }}
+              {{ t("operations.paymasterActive", "Included") }}
             </span>
           </div>
           <p class="mt-1 text-sm text-aa-muted">
             {{
               t(
                 "operations.paymasterSubtitle",
-                "Get your transaction fees sponsored by Morpheus.",
+                "Include sponsorship metadata in relay requests; approval depends on configured Morpheus runtime credentials.",
               )
             }}
           </p>
@@ -235,10 +235,13 @@
             }}
           </p>
         </div>
-        <div class="rounded-lg border border-aa-success/20 bg-aa-success/5 p-3">
-          <p class="text-xs font-bold uppercase text-aa-success">
+        <div class="rounded-lg border border-aa-warning/25 bg-aa-warning/5 p-3">
+          <p class="text-xs font-bold uppercase text-aa-warning">
             {{
-              t("operations.validatedOnTestnet", "Validated on Neo N3 Testnet")
+              t(
+                "operations.paymasterReadinessTitle",
+                "On-chain sponsor verified",
+              )
             }}
           </p>
           <p class="mt-1 text-xs leading-5 text-aa-muted">
@@ -246,19 +249,27 @@
             <code class="font-mono text-neo-300">testnet-aa</code>
             {{
               t(
-                "operations.policyTestnetAaDescSuffix",
-                "supports registerAccount, updateVerifier, paymaster authorization, and relay executeUserOp.",
+                "operations.paymasterReadinessDesc",
+                "has a verified on-chain sponsor path; Morpheus policy and relay authorization still require server runtime credentials before gasless broadcast is available.",
+              )
+            }}
+          </p>
+          <p class="mt-2 text-xs leading-5 text-aa-warning-light">
+            {{
+              t(
+                "operations.paymasterCredentialNote",
+                "Current validation suite skips policy/relay stages when MORPHEUS_RUNTIME_TOKEN, PHALA_API_TOKEN, or PHALA_SHARED_SECRET is missing.",
               )
             }}
           </p>
           <span class="sr-only">{{
             t(
               "operations.srOpenPaymasterValidation",
-              "Open Paymaster Live Validation",
+              "Open Paymaster Readiness Ledger",
             )
           }}</span>
           <router-link
-            class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-aa-success hover:text-aa-success-light transition-colors duration-200"
+            class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-aa-warning hover:text-aa-warning-light transition-colors duration-200"
             :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
           >
             {{

@@ -1,16 +1,16 @@
 <template>
   <section
-    class="mb-6 rounded-[20px] border border-emerald-200 bg-white p-6 shadow-sm"
+    class="mb-6 rounded-[20px] border border-amber-200 bg-amber-50/80 p-6 shadow-sm"
   >
     <div
       class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
     >
       <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationLabel`,
-              "Live-Validated Paymaster Path",
+              "Paymaster Readiness",
             )
           }}
         </p>
@@ -18,7 +18,7 @@
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationTitle`,
-              "AA + Morpheus paymaster is verified on Neo N3 testnet",
+              "On-chain sponsorship verified; relay requires runtime credentials",
             )
           }}
         </p>
@@ -26,24 +26,24 @@
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationBody`,
-              "The current workspace path has passed live validation for registerAccount, updateVerifier, remote allowlist update, paymaster authorization, relay submission, and on-chain executeUserOp execution.",
+              "The latest suite verifies the on-chain sponsored execution path on Neo N3 testnet. Policy and relay authorization stages depend on Morpheus/Phala runtime secrets and are skipped when those credentials are not configured.",
             )
           }}
         </p>
         <code
-          class="mt-3 block break-all rounded-lg border border-slate-200 bg-slate-950 px-4 py-3 text-xs font-medium text-emerald-200"
+          class="mt-3 block break-all rounded-lg border border-amber-200 bg-slate-950 px-4 py-3 text-xs font-medium text-amber-100"
         >
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationTx`,
-              `Latest full-path relay tx: ${txid}`,
+              `Latest relay validation tx: ${txid}`,
             )
           }}
         </code>
       </div>
       <div class="flex shrink-0 flex-wrap items-center gap-3">
         <router-link
-          class="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors duration-200 hover:border-emerald-300 hover:bg-emerald-100"
+          class="inline-flex items-center rounded-md border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-700 transition-colors duration-200 hover:border-amber-300 hover:bg-amber-100"
           :to="{ path: '/docs', query: { doc: 'paymasterValidation' } }"
         >
           {{

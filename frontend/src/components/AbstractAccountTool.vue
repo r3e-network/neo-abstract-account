@@ -28,7 +28,7 @@
       </div>
 
       <nav
-        class="flex space-x-6 w-full overflow-x-auto"
+        class="-mx-4 flex w-[calc(100%+2rem)] gap-5 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:mx-0 sm:w-full sm:gap-6 sm:px-0"
         role="tablist"
         :aria-label="t('studio.tabsAriaLabel', 'Tabs')"
       >
@@ -47,7 +47,7 @@
           :aria-selected="studio.activePanel.value === tab.key"
           :id="'tab-' + tab.key"
           :aria-controls="'panel-' + tab.key"
-          class="relative pb-3 text-sm font-medium transition-colors whitespace-nowrap"
+          class="relative shrink-0 pb-3 text-sm font-medium transition-colors whitespace-nowrap"
           :class="[
             studio.activePanel.value === tab.key
               ? 'text-slate-950 border-b-2 border-emerald-500'
@@ -73,8 +73,11 @@
     </transition>
 
     <!-- Guided onboarding state when wallet not connected -->
-    <div v-if="!studio.walletConnected.value">
-      <div class="max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+    <div
+      v-if="!studio.walletConnected.value"
+      class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.85fr)]"
+    >
+      <div class="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div class="mb-8">
           <div
             class="w-12 h-12 rounded-md border border-emerald-200 bg-emerald-50 flex items-center justify-center mb-6"
@@ -107,6 +110,41 @@
               )
             }}
           </p>
+          <div
+            v-if="routeAccountId"
+            class="mb-8 rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+          >
+            <p class="text-xs font-bold uppercase text-emerald-700">
+              {{ t("studio.pendingAccountId", "AccountId ready to load") }}
+            </p>
+            <code class="mt-1 block break-all font-mono text-sm text-slate-950">
+              0x{{ routeAccountId }}
+            </code>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                class="btn-secondary btn-sm"
+                @click="
+                  copyText(`0x${routeAccountId}`);
+                  markCopied('routeAccountId');
+                "
+              >
+                {{
+                  copiedKey === "routeAccountId"
+                    ? t("studio.copied", "Copied")
+                    : t("studio.copyAccountId", "Copy AccountId")
+                }}
+              </button>
+              <span class="text-xs text-slate-600">
+                {{
+                  t(
+                    "studio.pendingAccountIdHint",
+                    "Connect your wallet; Operations will prefill this accountId.",
+                  )
+                }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- AA Pipeline Steps -->
@@ -213,6 +251,62 @@
           </div>
         </div>
       </div>
+
+      <aside class="space-y-4">
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                {{ t("studio.readinessLabel", "Workspace readiness") }}
+              </p>
+              <h2 class="mt-1 text-lg font-semibold text-slate-950">
+                {{ t("studio.readinessTitle", "Runtime configuration detected") }}
+              </h2>
+            </div>
+            <span
+              class="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+            >
+              {{ networkLabel }}
+            </span>
+          </div>
+
+          <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div
+              v-for="item in readinessItems"
+              :key="item.label"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+            >
+              <dt class="text-xs font-semibold text-slate-500">{{ item.label }}</dt>
+              <dd class="mt-1 break-all font-mono text-sm font-semibold text-slate-950">
+                {{ item.value }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            {{ t("studio.validationCoverageLabel", "Validation coverage") }}
+          </p>
+          <div class="mt-4 space-y-3">
+            <div
+              v-for="item in validationCoverage"
+              :key="item.title"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-sm font-semibold text-slate-950">{{ item.title }}</h3>
+                <span
+                  class="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600"
+                >
+                  {{ item.state }}
+                </span>
+              </div>
+              <p class="mt-2 text-xs leading-5 text-slate-600">{{ item.detail }}</p>
+            </div>
+          </div>
+        </section>
+      </aside>
     </div>
 
     <!-- Normal workspace when wallet connected -->
@@ -268,11 +362,16 @@
 
 <script setup>
 import { computed, defineAsyncComponent, provide, h, ref } from "vue";
+import { useRoute } from "vue-router";
 import { useI18n } from "@/i18n";
 import { useStudioController } from "@/features/studio/useStudioController";
 import { useWalletConnection } from "@/composables/useWalletConnection";
+import { useClipboard } from "@/composables/useClipboard";
+import { RUNTIME_CONFIG } from "@/config/runtimeConfig";
 
 const { t } = useI18n();
+const route = useRoute();
+const { copiedKey, markCopied, copyText } = useClipboard();
 const PanelSkeleton = { template: '<div class="skeleton h-64 w-full"></div>' };
 const panelErrorMsg = t(
   "studio.panelLoadError",
@@ -371,6 +470,74 @@ const onboardingHints = [
     icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>',
   },
 ];
+
+function formatHash(value) {
+  const normalized = String(value || "").replace(/^0x/i, "");
+  if (!normalized) return t("studio.unconfigured", "Unconfigured");
+  if (normalized.length <= 14) return `0x${normalized}`;
+  return `0x${normalized.slice(0, 6)}...${normalized.slice(-6)}`;
+}
+
+const networkLabel = computed(() =>
+  RUNTIME_CONFIG.morpheusNetwork === "testnet"
+    ? t("studio.testnet", "Testnet")
+    : t("studio.mainnet", "Mainnet"),
+);
+
+const routeAccountId = computed(() => {
+  const raw = String(route.query.accountId || route.query.accountIdHash || "")
+    .trim()
+    .replace(/^0x/i, "");
+  return /^[0-9a-fA-F]{40}$/.test(raw) ? raw.toLowerCase() : "";
+});
+
+const readinessItems = computed(() => [
+  {
+    label: t("studio.readinessNetwork", "Network"),
+    value: networkLabel.value,
+  },
+  {
+    label: t("studio.readinessCore", "AA Core"),
+    value: formatHash(RUNTIME_CONFIG.abstractAccountHash),
+  },
+  {
+    label: t("studio.readinessPaymaster", "Paymaster"),
+    value: formatHash(RUNTIME_CONFIG.paymasterHash),
+  },
+  {
+    label: t("studio.readinessRelay", "Relay"),
+    value: RUNTIME_CONFIG.relayEndpoint || t("studio.unconfigured", "Unconfigured"),
+  },
+]);
+
+const validationCoverage = computed(() => [
+  {
+    title: t("studio.validationAccountDeployment", "Account deployment"),
+    state: t("studio.validationRequiresWallet", "Wallet required"),
+    detail: t(
+      "studio.validationAccountDeploymentDetail",
+      `AA core ${formatHash(RUNTIME_CONFIG.abstractAccountHash)}`,
+    ),
+  },
+  {
+    title: t("studio.validationPaymasterRelay", "Paymaster relay"),
+    state: RUNTIME_CONFIG.paymasterHash
+      ? t("studio.validationPreflightRequired", "Preflight required")
+      : t("studio.unconfigured", "Unconfigured"),
+    detail: t(
+      "studio.validationPaymasterRelayDetail",
+      `${formatHash(RUNTIME_CONFIG.paymasterHash)} via ${RUNTIME_CONFIG.relayEndpoint || "-"}; relay signer and Morpheus credentials are verified by Relay Preflight.`,
+    ),
+  },
+  {
+    title: t("studio.validationReceiptCheck", "Receipt verification"),
+    state: t("studio.validationReady", "Ready"),
+    detail: t(
+      "studio.validationReceiptCheckDetail",
+      `${networkLabel.value} explorer and local submission receipts`,
+    ),
+  },
+]);
 
 const activeTabDescription = computed(() => {
   const active = studio.tabs.find(

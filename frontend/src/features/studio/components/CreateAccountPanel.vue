@@ -197,6 +197,62 @@
               </div>
             </div>
           </div>
+          <div
+            v-if="computedAccountIdHash"
+            class="mt-5 rounded-lg border border-aa-success/25 bg-aa-success/10 p-4"
+          >
+            <div
+              class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+            >
+              <div class="min-w-0">
+                <p class="text-xs font-bold uppercase text-aa-success-light">
+                  {{ t("studioPanels.accountIdHash", "AccountId Hash") }}
+                </p>
+                <code
+                  class="mt-1 block break-all font-mono text-sm text-aa-text"
+                  >0x{{ computedAccountIdHash }}</code
+                >
+                <p class="mt-1 text-xs text-aa-muted">
+                  {{
+                    t(
+                      "studioPanels.accountIdHashHint",
+                      "Use this value to load the account in Operations after registration is confirmed.",
+                    )
+                  }}
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="btn-secondary btn-sm"
+                  @click="
+                    copyText(`0x${computedAccountIdHash}`);
+                    markCopied('accountIdHash');
+                  "
+                >
+                  {{
+                    copiedKey === "accountIdHash"
+                      ? t("studioPanels.copied", "Copied!")
+                      : t("studioPanels.copyAccountId", "Copy AccountId")
+                  }}
+                </button>
+                <router-link
+                  class="btn-primary btn-sm"
+                  :to="{
+                    path: '/app',
+                    query: { accountId: `0x${computedAccountIdHash}` },
+                  }"
+                >
+                  {{
+                    t(
+                      "studioPanels.openOperations",
+                      "Open Operations",
+                    )
+                  }}
+                </router-link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -492,6 +548,7 @@ const studio = inject("studio");
 const {
   createForm,
   computedAddress,
+  computedAccountIdHash,
   computedScriptHex,
   isCreating,
   canCreate,

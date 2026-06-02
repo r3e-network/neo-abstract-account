@@ -21,8 +21,8 @@ test('buildOperationSnapshotItems summarizes operation fields and available payl
       },
     },
     relayReadiness: {
-      label: 'Relay Ready',
-      detail: 'Signed raw transaction is ready for relay submission.',
+      label: 'Relay Payload Ready',
+      detail: 'Signed raw transaction is staged; run relay preflight first.',
       runtime: { relayRawEnabled: true },
     },
   });
@@ -37,7 +37,7 @@ test('buildOperationSnapshotItems summarizes operation fields and available payl
   assert.equal(items[0].value, '0xabc123');
   assert.equal(items[1].value, 'transfer');
   assert.equal(items[2].value, '2 argument(s)');
-  assert.equal(items[3].value, 'Relay Ready');
+  assert.equal(items[3].value, 'Relay Payload Ready');
   assert.equal(items[4].value, 'Raw Tx + Relay Invocation');
 });
 

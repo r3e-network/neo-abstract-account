@@ -193,14 +193,17 @@ export function deriveRegistrationAccountIdHash({
     throw new Error(EC.addressValidationFailed);
   }
 
-  return hash160Hex([
+  // The contract's ComputeRegistrationAccountId returns (UInt160)ReverseBytes(ripemd160(sha256(payload))),
+  // i.e. the final hash is byte-reversed. Mirror that here so the frontend-derived accountId matches
+  // the on-chain assert (verified against computeRegistrationAccountId: contract=reverse(rawHash)).
+  return reverseHex(hash160Hex([
     'aa524701',
     backupOwner,
     verifierHash,
     hookHash,
     toUint32LittleEndianHex(escapeTimelock),
     sanitizeHex(verifierParamsHex || ''),
-  ].join(''));
+  ].join('')));
 }
 
 export function getAddressFromScriptHash(scriptHash, addressVersion = DEFAULT_NEO_ADDRESS_VERSION) {

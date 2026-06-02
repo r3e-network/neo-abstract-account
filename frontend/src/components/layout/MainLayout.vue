@@ -35,9 +35,13 @@
                 <router-link
                   v-if="link.isConsole"
                   :to="link.to"
-                  class="inline-flex items-center gap-1.5 rounded-md bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
-                  active-class="bg-slate-800"
-                  :aria-current="route.path === link.to ? 'page' : undefined"
+                  class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors duration-200"
+                  :class="
+                    isRouteActive(link.to)
+                      ? 'bg-slate-950 text-white hover:bg-slate-800'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'
+                  "
+                  :aria-current="isRouteActive(link.to) ? 'page' : undefined"
                 >
                   <svg
                     aria-hidden="true"
@@ -59,8 +63,8 @@
                   v-else
                   :to="link.to"
                   class="rounded-md px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950"
-                  active-class="text-slate-950 bg-slate-100"
-                  :aria-current="route.path === link.to ? 'page' : undefined"
+                  :class="isRouteActive(link.to) ? 'text-slate-950 bg-slate-100' : ''"
+                  :aria-current="isRouteActive(link.to) ? 'page' : undefined"
                 >
                   {{ t(link.label, link.fallback) }}
                 </router-link>
@@ -102,9 +106,13 @@
               <router-link
                 v-if="link.isConsole"
                 :to="link.to"
-                class="rounded-md bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
-                active-class="bg-slate-800"
-                :aria-current="route.path === link.to ? 'page' : undefined"
+                class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200"
+                :class="
+                  isRouteActive(link.to)
+                    ? 'bg-slate-950 text-white hover:bg-slate-800'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'
+                "
+                :aria-current="isRouteActive(link.to) ? 'page' : undefined"
               >
                 {{ t(link.label, link.fallback) }}
               </router-link>
@@ -112,8 +120,8 @@
                 v-else
                 :to="link.to"
                 class="rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-950"
-                active-class="text-slate-950 bg-slate-100"
-                :aria-current="route.path === link.to ? 'page' : undefined"
+                :class="isRouteActive(link.to) ? 'text-slate-950 bg-slate-100' : ''"
+                :aria-current="isRouteActive(link.to) ? 'page' : undefined"
               >
                 {{ t(link.label, link.fallback) }}
               </router-link>
@@ -306,6 +314,10 @@ function onScroll() {
 
 function scrollToTop() {
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function isRouteActive(path) {
+  return route.path === path;
 }
 
 onMounted(() => {
