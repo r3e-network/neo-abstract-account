@@ -268,6 +268,7 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
     }
     return {
       relayEndpoint,
+      relayPayloadMode: 'raw',
       ...(relayNetwork ? { morpheus_network: relayNetwork } : {}),
       rawTransaction,
       ...(paymaster ? { paymaster } : {}),
@@ -277,6 +278,7 @@ export function buildRelayBroadcastRequest({ relayEndpoint = '', relayPayloadMod
   if (resolvedMode === 'meta' && metaInvocation) {
     return {
       relayEndpoint,
+      relayPayloadMode: 'meta',
       ...(relayNetwork ? { morpheus_network: relayNetwork } : {}),
       metaInvocation,
       ...(paymaster ? { paymaster } : {}),

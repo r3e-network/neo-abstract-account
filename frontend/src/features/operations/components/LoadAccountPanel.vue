@@ -9,7 +9,7 @@
           {{
             t(
               "operations.loadAccountSubtitle",
-              "Enter a 20-byte accountId hash. The virtual AA address is derived locally from that identity root.",
+              "Enter the 20-byte accountId hash captured when the V3 account was registered. The virtual AA address is derived locally from that identity root.",
             )
           }}
         </p>
@@ -17,7 +17,7 @@
           {{
             t(
               "operations.loadAccountHelp",
-              "Enter the 40-char accountId hash captured at registration time.",
+              "Use the accountId shown in Create Account, Address Market, or an existing draft. Neo address and .matrix reverse discovery are intentionally not used for V3 loading.",
             )
           }}
         </p>
@@ -60,7 +60,7 @@
     <div class="space-y-4">
       <label class="block space-y-1 text-sm" for="load-account-seed">
         <span class="font-medium text-aa-text">{{
-          t("operations.boundAddressHashLabel", "Account Seed / AccountId Hash")
+          t("operations.boundAddressHashLabel", "AccountId Hash")
         }}</span>
         <input
           id="load-account-seed"
@@ -70,7 +70,7 @@
           :placeholder="
             t(
               'operations.accountSeedPlaceholder',
-              'e.g. 02a7...3f9c or 40-char hex seed',
+              '40-char hash, e.g. 02a7...3f9c',
             )
           "
           @input="$emit('update:accountAddressScriptHash', $event.target.value)"
@@ -93,15 +93,6 @@
         <ul class="list-disc list-inside space-y-0.5 text-aa-muted">
           <li>
             <code class="font-mono text-neo-300">{{
-              t("operations.formatLabel64CharHex", "64-char hex")
-            }}</code>
-            —
-            {{
-              t("operations.format64CharHex", "EVM private key or session seed")
-            }}
-          </li>
-          <li>
-            <code class="font-mono text-neo-300">{{
               t("operations.formatLabel40CharHex", "40-char hex")
             }}</code>
             —
@@ -109,22 +100,22 @@
           </li>
           <li>
             <code class="font-mono text-neo-300">{{
-              t("operations.formatLabelNeoAddress", "NEO address")
+              t("operations.formatLabel0xHash", "0x + 40-char hex")
             }}</code>
             —
             {{
               t(
-                "operations.formatNeoAddress",
-                "Legacy bound address (reverse lookup not supported)",
+                "operations.format0xHash",
+                "The same accountId hash with an optional 0x prefix.",
               )
             }}
           </li>
           <li>
-            <code class="font-mono text-neo-300">.matrix</code> —
+            <code class="font-mono text-neo-300">N... / .matrix</code> —
             {{
               t(
-                "operations.formatMatrixDomain",
-                "Registration-only naming surface; V3 reverse discovery is not supported here.",
+                "operations.formatUnsupportedDiscovery",
+                "Not accepted here; use Account Discovery or paste the accountId hash.",
               )
             }}
           </li>
@@ -147,7 +138,6 @@ defineEmits(["load", "update:accountAddressScriptHash"]);
 const { t } = useI18n();
 
 const HEX_RE = /^[0-9a-fA-F]+$/;
-const NEO_ADDRESS_RE = /^N[0-9a-zA-Z]{33}$/;
 
 const detectedFormat = computed(() => {
   const raw = props.accountAddressScriptHash.trim();
@@ -156,16 +146,10 @@ const detectedFormat = computed(() => {
     const hex = raw.slice(2);
     if (hex.length === 40 && HEX_RE.test(hex))
       return t("operations.formatDetected0xHash", "0x-prefixed hash");
-    if (hex.length === 64 && HEX_RE.test(hex))
-      return t("operations.formatDetected0xSeed", "0x-prefixed seed");
     return "";
   }
-  if (raw.length === 64 && HEX_RE.test(raw))
-    return t("operations.formatDetectedRawSeed", "Raw hex seed");
   if (raw.length === 40 && HEX_RE.test(raw))
     return t("operations.formatDetectedAccountId", "Account ID hash");
-  if (NEO_ADDRESS_RE.test(raw))
-    return t("operations.formatDetectedNeoAddress", "NEO address");
   return "";
 });
 
@@ -179,26 +163,27 @@ const validationError = computed(() => {
         "operations.invalidHexChars",
         "Contains non-hexadecimal characters",
       );
-    if (hex.length > 0 && hex.length !== 40 && hex.length !== 64)
+    if (hex.length > 0 && hex.length !== 40)
       return t(
         "operations.invalidHexLength",
-        "Expected 40 or 64 hex characters after 0x",
+        "Expected 40 hex characters after 0x",
       );
     return "";
   }
   if (/^[0-9a-fA-F]+$/.test(raw)) {
-    if (raw.length !== 40 && raw.length !== 64)
+    if (raw.length !== 40)
       return t(
         "operations.invalidHexLength",
-        "Expected 40 or 64 hex characters",
+        "Expected 40 hex characters",
       );
     return "";
   }
-  if (/^N/.test(raw) && !NEO_ADDRESS_RE.test(raw))
-    return t("operations.invalidNeoAddress", "Invalid NEO address format");
-  if (!NEO_ADDRESS_RE.test(raw))
-    return t("operations.unrecognizedFormat", "Unrecognized format");
-  return "";
+  if (/^N/.test(raw) || isMatrixLike(raw))
+    return t(
+      "operations.unsupportedDiscoveryInput",
+      "Neo address and .matrix lookup are not supported here. Paste the 20-byte accountId hash.",
+    );
+  return t("operations.unrecognizedFormat", "Unrecognized format");
 });
 
 const canLoad = computed(() => {
@@ -208,4 +193,8 @@ const canLoad = computed(() => {
     !validationError.value
   );
 });
+
+function isMatrixLike(value) {
+  return String(value || "").toLowerCase().endsWith(".matrix");
+}
 </script>

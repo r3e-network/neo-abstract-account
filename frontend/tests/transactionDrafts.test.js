@@ -493,7 +493,7 @@ test('transaction info view exposes the polished shared draft workspace sections
   const txViewSource = readComponentTree(path.resolve('src/views/TransactionInfoView.vue'));
 
   assert.match(txViewSource, /Shared Draft Overview/);
-  assert.match(txViewSource, /Live-Validated Paymaster Path/);
+  assert.match(txViewSource, /Paymaster Readiness/);
   assert.match(txViewSource, /Open Validation Ledger/);
   assert.match(txViewSource, /Open Explorer Tx/);
   assert.match(txViewSource, /paymasterValidation/);

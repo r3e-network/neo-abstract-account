@@ -44,7 +44,7 @@
           <span class="sr-only">{{
             t(
               "sharedDraft.srPaymasterDescription",
-              "Live-Validated Paymaster Path. Open Validation Ledger. Open Explorer Tx.",
+              "Paymaster Readiness. Open Validation Ledger. Open Explorer Tx.",
             )
           }}</span>
           <!-- paymasterValidation route referenced via PaymasterValidationBanner -->
@@ -453,7 +453,7 @@
                     }"
                     :disabled="
                       !hasOperatorAccess ||
-                      !relayReadiness.isReady ||
+                      !canRelayBroadcast ||
                       isSubmissionPending
                     "
                     :title="
@@ -748,6 +748,33 @@ const relayReadiness = computed(() =>
     signatures: draft.value?.signatures || [],
     t,
   }),
+);
+const currentRelayPreflightRequest = computed(() => {
+  try {
+    return buildRelayPreflightRequest({
+      relayEndpoint: runtime.relayEndpoint,
+      relayPayloadMode: relayPayloadMode.value,
+      relayRawEnabled: runtime.relayRawEnabled,
+      morpheusNetwork: runtime.morpheusNetwork,
+      transactionBody: draft.value?.transaction_body || {},
+      signatures: draft.value?.signatures || [],
+    });
+  } catch (_error) {
+    return null;
+  }
+});
+const relayCheckMatchesCurrentPayload = computed(
+  () =>
+    Boolean(currentRelayPreflightRequest.value && relayCheckRequest.value) &&
+    JSON.stringify(currentRelayPreflightRequest.value) ===
+      JSON.stringify(relayCheckRequest.value),
+);
+const canRelayBroadcast = computed(() =>
+  Boolean(
+    relayReadiness.value.payloadReady &&
+      relayCheck.value?.ok === true &&
+      relayCheckMatchesCurrentPayload.value,
+  ),
 );
 const clientBroadcastReady = computed(() =>
   Boolean(draft.value?.transaction_body?.clientInvocation),
@@ -1275,13 +1302,30 @@ async function broadcastWithNeoWallet() {
 }
 
 async function submitViaRelay() {
-  if (!draft.value?.transaction_body) return;
+  if (!canRelayBroadcast.value) {
+    const errorMessage = t(
+      "sharedDraft.relayPreflightRequired",
+      "Run a successful relay preflight before submitting through the relay.",
+    );
+    toast.error(errorMessage);
+    await persistSubmissionReceipt(
+      setSubmissionResult("relay-submit", {
+        phase: "error",
+        detail: errorMessage,
+      }),
+    );
+    return;
+  }
+
   setSubmissionPending("relay-submit");
   try {
     const result = await executeBroadcast({
       mode: "relay",
+      relayPayloadMode: relayPayloadMode.value,
       relayRawEnabled: runtime.relayRawEnabled,
+      morpheusNetwork: runtime.morpheusNetwork,
       transactionBody: draft.value.transaction_body,
+      signatures: draft.value.signatures || [],
       walletService,
       relayEndpoint: runtime.relayEndpoint,
     });

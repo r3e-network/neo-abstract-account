@@ -67,6 +67,7 @@ export function useStudioController() {
 
   const computedScriptHex = ref('');
   const computedAddress = ref('');
+  const computedAccountIdHash = ref('');
 
   let contractFilesPromise = null;
 
@@ -183,6 +184,7 @@ export function useStudioController() {
     if (!createForm.value.backupOwner || escapeTimelockDays < MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS || escapeTimelockDays > MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS) {
       computedScriptHex.value = '';
       computedAddress.value = '';
+      computedAccountIdHash.value = '';
       return;
     }
 
@@ -206,6 +208,7 @@ export function useStudioController() {
       });
       const script = createVerifyScript(aaHash, accountIdHash);
 
+      computedAccountIdHash.value = accountIdHash;
       computedScriptHex.value = script;
       const scriptHash = reverseHex(hash160(script));
       computedAddress.value = getAddressFromScriptHash(scriptHash);
@@ -213,6 +216,7 @@ export function useStudioController() {
       if (import.meta.env.DEV) console.error('[useStudioController] computeAA failed:', err?.message);
       computedScriptHex.value = '';
       computedAddress.value = '';
+      computedAccountIdHash.value = '';
     }
   }
 
@@ -588,6 +592,7 @@ export function useStudioController() {
     metadataBusy,
     computedScriptHex,
     computedAddress,
+    computedAccountIdHash,
     contractFiles,
     isContractFilesLoading,
     walletConnected,

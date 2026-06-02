@@ -211,8 +211,52 @@ test('broadcast helpers route client broadcasts through the wallet and relay bro
     kind: 'relay',
     input: {
       relayEndpoint: '/api/relay-transaction',
+      relayPayloadMode: 'raw',
       morpheus_network: 'testnet',
       rawTransaction: 'deadbeef',
+    },
+  });
+});
+
+test('executeBroadcast relay submit can use meta invocation carried by collected signatures', async () => {
+  const calls = [];
+  const wallet = {
+    async relayTransaction(input) {
+      calls.push(input);
+      return { txid: '0xrelay' };
+    },
+  };
+
+  const result = await executeBroadcast({
+    mode: 'relay',
+    relayPayloadMode: 'meta',
+    relayRawEnabled: false,
+    morpheusNetwork: 'testnet',
+    transactionBody: {},
+    signatures: [{
+      signerId: 'evm:bob',
+      kind: 'evm',
+      metadata: {
+        metaInvocation: {
+          scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+          operation: 'executeUserOp',
+          args: [{ type: 'String', value: 'ok' }],
+        },
+      },
+    }],
+    walletService: wallet,
+    relayEndpoint: '/api/relay-transaction',
+  });
+
+  assert.equal(result.txid, '0xrelay');
+  assert.deepEqual(calls[0], {
+    relayEndpoint: '/api/relay-transaction',
+    relayPayloadMode: 'meta',
+    morpheus_network: 'testnet',
+    metaInvocation: {
+      scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+      operation: 'executeUserOp',
+      args: [{ type: 'String', value: 'ok' }],
     },
   });
 });
@@ -290,6 +334,7 @@ test('buildRelayBroadcastRequest uses stored meta invocations when raw transacti
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    relayPayloadMode: 'meta',
     morpheus_network: 'testnet',
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
@@ -332,6 +377,7 @@ test('buildRelayBroadcastRequest honors explicit meta selection when raw and met
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    relayPayloadMode: 'meta',
     morpheus_network: 'testnet',
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
@@ -369,6 +415,7 @@ test('buildRelayBroadcastRequest forwards paymaster metadata when present', () =
 
   assert.deepEqual(request, {
     relayEndpoint: '/api/relay-transaction',
+    relayPayloadMode: 'meta',
     morpheus_network: 'testnet',
     metaInvocation: {
       scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',

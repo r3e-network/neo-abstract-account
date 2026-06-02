@@ -73,7 +73,7 @@ const DOC_DEFINITIONS = {
     },
   },
   paymasterValidation: {
-    title: { en: 'Paymaster Live Validation', 'zh-CN': 'Paymaster 实网验证' },
+    title: { en: 'Paymaster Readiness', 'zh-CN': 'Paymaster 就绪状态' },
     loaders: {
       en: () => import('@repo/docs/PAYMASTER_RELAY_VALIDATION.md?raw'),
       'zh-CN': () => import('@/assets/docs/paymaster-validation.zh.md?raw'),

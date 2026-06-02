@@ -30,9 +30,15 @@ Refresh note on 2026-04-24:
 - `sdk/js/tests/v3_testnet_paymaster_relay.mjs` keeps the allowlist mutation path active when a local handler is supplied, so fresh derived accounts can be validated without requiring an existing `PAYMASTER_ACCOUNT_ID`
 - latest full paymaster-only testnet replay succeeded with relay txid `0xed4976c866d1374de25f9c11accde4f4273faf6d05d5fb2dbcf70b4589ffef8e`, policy `testnet-aa`, VM state `HALT`, and GAS return stack
 
+Refresh note on 2026-05-18:
+
+- `v3-testnet-validation-suite.latest.json` verifies the on-chain sponsored execution path with sponsored txid `0x36d42e73dedbdb20f27d2a66c491ae5df4c1e8546cfcaf9fe311788c94135d13`
+- the latest standalone relay validation ledger records txid `0x27806fe947c16eb9cf930b35ff242ecb65e4ea4304e8b570ac23384ad9ed6987`
+- the suite skips `paymaster_policy` and `paymaster` when `MORPHEUS_RUNTIME_TOKEN`, `PHALA_API_TOKEN`, or `PHALA_SHARED_SECRET` is missing, so product UI must present relay sponsorship as runtime-credential gated rather than unconditionally live
+
 ## Scope
 
-This report validates the end-to-end `AbstractAccount -> Morpheus paymaster pre-authorization -> AA relay -> Neo N3 execution` flow on testnet.
+This historical report records end-to-end `AbstractAccount -> Morpheus paymaster pre-authorization -> AA relay -> Neo N3 execution` validation on testnet, plus the current runtime-credential gates that determine whether the same path is available from a deployed frontend.
 
 Validated components:
 
@@ -114,7 +120,7 @@ Validated live pieces after the fix:
 
 ## Final Conclusion
 
-The live testnet path is now validated end-to-end:
+Historical live testnet runs validated the full path:
 
 - `registerAccount`
 - `updateVerifier`
@@ -124,3 +130,5 @@ The live testnet path is now validated end-to-end:
 - on-chain `executeUserOp` execution
 
 The original blocker was an AA relay API bug (`sanitizeHex` missing import), and the remaining intermittent workstation harness failure was resolved by switching the CVM bridge from stdin piping to uploaded helper scripts executed over `phala cp` + `phala ssh`.
+
+Current product readiness should be phrased more narrowly: the on-chain sponsored execution path has testnet evidence, while policy and relay authorization require configured Morpheus/Phala runtime credentials before the frontend can truthfully present gasless relay broadcast as available.

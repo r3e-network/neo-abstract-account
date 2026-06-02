@@ -73,7 +73,7 @@ test("home view is a product landing page with app, market, and docs entry point
   assert.match(homeSource, /Transferable AA addresses/);
   assert.match(homeSource, /pluginGuide/);
   assert.match(homeSource, /Address Market/);
-  assert.match(homeSource, /Live-Validated Paymaster Path/);
+  assert.match(homeSource, /Paymaster Readiness/);
   assert.match(homeSource, /Open Validation Ledger/);
   assert.match(homeSource, /Open Explorer Tx/);
   assert.match(homeSource, /buildTransactionExplorerUrl/);
@@ -160,9 +160,18 @@ test("operations workspace exposes load, compose, signature, and broadcast secti
   assert.match(fs.readFileSync(broadcastPath, "utf8"), /Relay Invocation/);
   assert.match(fs.readFileSync(broadcastPath, "utf8"), /Paymaster/);
   assert.match(fs.readFileSync(broadcastPath, "utf8"), /DApp ID/);
+  assert.match(fs.readFileSync(broadcastPath, "utf8"), /Included/);
   assert.match(
     fs.readFileSync(broadcastPath, "utf8"),
-    /Open Paymaster Live Validation/,
+    /Open Paymaster Readiness Ledger/,
+  );
+  assert.match(
+    fs.readFileSync(workspacePath, "utf8"),
+    /relayCheck\.value\?\.ok === true/,
+  );
+  assert.match(
+    fs.readFileSync(workspacePath, "utf8"),
+    /relayCheckMatchesCurrentPayload/,
   );
   assert.match(fs.readFileSync(workspacePath, "utf8"), /Check Relay/);
   assert.match(fs.readFileSync(workspacePath, "utf8"), /Sign with ZK Login/);
@@ -268,6 +277,27 @@ test("relay preflight state is persisted through draft metadata hooks", () => {
     txViewSource,
     /metadata?.relayPreflight|metadata.relayPreflight/,
   );
+});
+
+test("shared draft relay submit requires a matching successful preflight", () => {
+  const txViewSource = fs.readFileSync(
+    path.resolve("src/views/TransactionInfoView.vue"),
+    "utf8",
+  );
+
+  assert.match(txViewSource, /currentRelayPreflightRequest\s*=\s*computed/);
+  assert.match(txViewSource, /buildRelayPreflightRequest\(\{/);
+  assert.match(txViewSource, /relayCheckMatchesCurrentPayload\s*=\s*computed/);
+  assert.match(
+    txViewSource,
+    /JSON\.stringify\(currentRelayPreflightRequest\.value\)/,
+  );
+  assert.match(txViewSource, /JSON\.stringify\(relayCheckRequest\.value\)/);
+  assert.match(txViewSource, /relayReadiness\.value\.payloadReady/);
+  assert.match(txViewSource, /relayCheck\.value\?\.ok === true/);
+  assert.match(txViewSource, /!canRelayBroadcast\s*\|\|/);
+  assert.match(txViewSource, /if \(!canRelayBroadcast\.value\)/);
+  assert.match(txViewSource, /sharedDraft\.relayPreflightRequired/);
 });
 
 test("home workspace appends activity events for signatures relay checks and broadcasts", () => {

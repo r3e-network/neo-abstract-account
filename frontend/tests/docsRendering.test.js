@@ -481,3 +481,13 @@ test("AbstractAccountTool lazy-loads heavy studio panels", () => {
   );
   assert.doesNotMatch(studioToolSource, /import CreateAccountPanel from/);
 });
+
+test("AbstractAccountTool does not present paymaster relay as operational before preflight", () => {
+  const studioToolSource = read("src/components/AbstractAccountTool.vue");
+
+  assert.match(studioToolSource, /Runtime configuration detected/);
+  assert.match(studioToolSource, /Preflight required/);
+  assert.match(studioToolSource, /Relay Preflight/);
+  assert.doesNotMatch(studioToolSource, /Configured for live AA operations/);
+  assert.doesNotMatch(studioToolSource, /validationConfigured["'], "Configured"/);
+});

@@ -840,6 +840,7 @@
 </template>
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { useI18n } from "@/i18n";
 import { useToast } from "vue-toastification";
 import { useClickOutside } from "@/composables/useClickOutside.js";
@@ -939,6 +940,7 @@ import WorkspaceIdentityBanner from "./HomeOperationsWorkspace/WorkspaceIdentity
 const runtime = OPERATIONS_RUNTIME;
 const { t } = useI18n();
 const toast = useToast();
+const route = useRoute();
 const workspace = createOperationsWorkspace();
 const draftStore = createDraftStore();
 const walletConnection = useWalletConnection();
@@ -1272,6 +1274,26 @@ const selectedRelayPayloadMode = computed(() =>
     availableModes: relayPayloadOptions.value,
   }),
 );
+const currentRelayPreflightRequest = computed(() => {
+  try {
+    return buildRelayPreflightRequest({
+      relayEndpoint: runtime.relayEndpoint,
+      relayPayloadMode: relayPayloadMode.value,
+      relayRawEnabled: runtime.relayRawEnabled,
+      morpheusNetwork: runtime.morpheusNetwork,
+      transactionBody: workspace.transactionBody.value,
+      signatures: workspace.signatures.value,
+    });
+  } catch (_error) {
+    return null;
+  }
+});
+const relayCheckMatchesCurrentPayload = computed(
+  () =>
+    Boolean(currentRelayPreflightRequest.value && relayCheckRequest.value) &&
+    JSON.stringify(currentRelayPreflightRequest.value) ===
+      JSON.stringify(relayCheckRequest.value),
+);
 const relayReadiness = computed(() =>
   evaluateRelayReadiness({
     runtime,
@@ -1280,7 +1302,13 @@ const relayReadiness = computed(() =>
     t,
   }),
 );
-const canRelayBroadcast = computed(() => relayReadiness.value.isReady);
+const canRelayBroadcast = computed(() =>
+  Boolean(
+    relayReadiness.value.payloadReady &&
+      relayCheck.value?.ok === true &&
+      relayCheckMatchesCurrentPayload.value,
+  ),
+);
 const isSubmissionPending = computed(() =>
   Boolean(pendingSubmissionAction.value),
 );
@@ -1463,6 +1491,19 @@ function selectContractSuggestion(suggestion) {
   contractSuggestions.value = [];
   void refreshContractMethods(`0x${sanitizeHex(suggestion.contractHash)}`);
 }
+
+function prefillAccountIdFromRoute() {
+  const raw = String(route.query.accountId || route.query.accountIdHash || "")
+    .trim();
+  if (!/^(0x)?[0-9a-fA-F]{40}$/.test(raw)) return;
+  accountAddressScriptHash.value = sanitizeHex(raw);
+  step1Expanded.value = true;
+}
+
+watch(
+  () => [route.query.accountId, route.query.accountIdHash],
+  () => prefillAccountIdFromRoute(),
+);
 
 async function refreshContractMethods(identifier = targetContract.value) {
   const requestId = ++contractLookupRequestId;
@@ -1654,6 +1695,7 @@ function handleKeydown(e) {
 }
 
 onMounted(() => {
+  prefillAccountIdFromRoute();
   window.addEventListener("keydown", handleKeydown);
   if (String(targetContract.value || "").trim()) {
     void refreshContractMethods(targetContract.value);
@@ -2447,12 +2489,30 @@ async function broadcastWithNeoWallet() {
 }
 
 async function submitViaRelay() {
+  if (!canRelayBroadcast.value) {
+    const errorMessage = t(
+      "operations.relayPreflightRequired",
+      "Run a successful relay preflight before submitting through the relay.",
+    );
+    toast.error(errorMessage);
+    await persistSubmissionReceipt(
+      setSubmissionResult("relay-submit", {
+        phase: "error",
+        detail: errorMessage,
+      }),
+    );
+    return;
+  }
+
   setSubmissionPending("relay-submit");
   try {
     const result = await executeBroadcast({
       mode: "relay",
+      relayPayloadMode: relayPayloadMode.value,
       relayRawEnabled: runtime.relayRawEnabled,
+      morpheusNetwork: runtime.morpheusNetwork,
       transactionBody: workspace.transactionBody.value,
+      signatures: workspace.signatures.value,
       walletService,
       relayEndpoint: runtime.relayEndpoint,
     });
