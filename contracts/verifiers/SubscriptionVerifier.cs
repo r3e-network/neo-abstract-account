@@ -78,6 +78,13 @@ namespace AbstractAccount.Verifiers
 
             SubscriptionConfig config = (SubscriptionConfig)StdLib.Deserialize(data!);
 
+            // Audit fix M-8: ExecuteUserOp is permissionless and op.Signature carries no
+            // cryptographic proof (it is just the public subscription id), so without this
+            // check ANY third party who observes the subId could trigger the owner-authorized
+            // charge. Require the configured merchant to witness (sign) the pull, so only the
+            // merchant the owner authorized can collect — within the owner-set token/amount/period.
+            ExecutionEngine.Assert(Runtime.CheckWitness(config.Merchant), "merchant authorization required");
+
             ExecutionEngine.Assert(op.TargetContract == config.Token, "Target must be the subscription token");
             ExecutionEngine.Assert(op.Method == "transfer", "Method must be transfer");
 
