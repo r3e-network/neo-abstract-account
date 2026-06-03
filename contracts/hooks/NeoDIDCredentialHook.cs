@@ -34,6 +34,13 @@ namespace AbstractAccount.Hooks
         public static UInt160 AuthorizedCore() => HookAuthority.AuthorizedCore();
 
         public static void SetAuthorizedCore(UInt160 coreContract) => HookAuthority.SetAuthorizedCore(coreContract);
+        // Audit fix M-7: timelocked core re-pointing + exposed admin rotation lifecycle.
+        public static void ProposeAuthorizedCore(UInt160 coreContract) => HookAuthority.ProposeAuthorizedCore(coreContract);
+        public static void ConfirmAuthorizedCore(UInt160 coreContract) => HookAuthority.ConfirmAuthorizedCore(coreContract);
+        public static void CancelAuthorizedCoreChange() => HookAuthority.CancelAuthorizedCoreChange();
+        public static void RotateAdmin(UInt160 newAdmin) => HookAuthority.RotateAdmin(newAdmin);
+        public static void ConfirmAdminRotation(UInt160 newAdmin) => HookAuthority.ConfirmAdminRotation(newAdmin);
+        public static void CancelAdminRotation() => HookAuthority.CancelAdminRotation();
 
         public static void Update(ByteString nef, string manifest) => HookAuthority.Update(nef, manifest);
 

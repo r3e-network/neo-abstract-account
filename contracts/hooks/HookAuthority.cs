@@ -12,6 +12,10 @@ namespace AbstractAccount.Hooks
         private static readonly byte[] Prefix_AuthorizedCore = new byte[] { 0xF1 };
         private static readonly byte[] Prefix_PendingAdmin = new byte[] { 0xF2 };
         private static readonly byte[] Prefix_AdminRotationTimelock = new byte[] { 0xF3 };
+        // Audit fix M-7: timelocked change of the trusted AA core (repointing it
+        // disables every account's hook policy, so it must not be instant).
+        private static readonly byte[] Prefix_PendingCore = new byte[] { 0xF4 };
+        private static readonly byte[] Prefix_CoreTimelock = new byte[] { 0xF5 };
         private static readonly BigInteger AdminRotationTimelockMs = 7L * 24 * 60 * 60 * 1000;
 
         internal static void Initialize(object data, bool update)
@@ -48,7 +52,41 @@ namespace AbstractAccount.Hooks
         {
             ValidateAdmin();
             ExecutionEngine.Assert(coreContract != UInt160.Zero && coreContract.IsValid, "Invalid core contract");
+            // Audit fix M-7: instant set is permitted ONLY for the initial (unset)
+            // configuration. Re-pointing an already-configured core must go through the
+            // timelocked Propose/ConfirmAuthorizedCore path so account owners get a
+            // 7-day window to react before their hook policy could be disabled.
+            ExecutionEngine.Assert(AuthorizedCore() == UInt160.Zero, "core already set; use ProposeAuthorizedCore");
             Storage.Put(Storage.CurrentContext, Prefix_AuthorizedCore, (byte[])coreContract);
+        }
+
+        internal static void ProposeAuthorizedCore(UInt160 coreContract)
+        {
+            ValidateAdmin();
+            ExecutionEngine.Assert(coreContract != UInt160.Zero && coreContract.IsValid, "Invalid core contract");
+            Storage.Put(Storage.CurrentContext, Prefix_PendingCore, (byte[])coreContract);
+            Storage.Put(Storage.CurrentContext, Prefix_CoreTimelock, Runtime.Time);
+        }
+
+        internal static void ConfirmAuthorizedCore(UInt160 coreContract)
+        {
+            ValidateAdmin();
+            ByteString? pending = Storage.Get(Storage.CurrentContext, Prefix_PendingCore);
+            ExecutionEngine.Assert(pending != null, "No pending core change");
+            ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_CoreTimelock);
+            ExecutionEngine.Assert(timelockData != null, "No timelock set");
+            ExecutionEngine.Assert(Runtime.Time >= (BigInteger)timelockData + AdminRotationTimelockMs, "Core change timelock not expired");
+            ExecutionEngine.Assert((UInt160)pending! == coreContract, "Pending core mismatch");
+            Storage.Put(Storage.CurrentContext, Prefix_AuthorizedCore, (byte[])coreContract);
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingCore);
+            Storage.Delete(Storage.CurrentContext, Prefix_CoreTimelock);
+        }
+
+        internal static void CancelAuthorizedCoreChange()
+        {
+            ValidateAdmin();
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingCore);
+            Storage.Delete(Storage.CurrentContext, Prefix_CoreTimelock);
         }
 
         internal static void ValidateAdminCaller()
