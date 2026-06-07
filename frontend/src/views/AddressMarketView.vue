@@ -12,16 +12,44 @@
     </div>
 
     <div class="relative z-10 mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <AddressMarketHero />
+      <section class="aa-market-focus-entry">
+        <div>
+          <p class="text-xs font-bold uppercase text-aa-info">
+            {{ t("market.focusEyebrow", "Market workflow") }}
+          </p>
+          <h1 class="mt-2 text-3xl font-extrabold text-aa-text font-outfit md:text-4xl">
+            {{ t("market.focusTitle", "Create or settle an AA listing") }}
+          </h1>
+          <p class="mt-3 max-w-3xl text-sm leading-7 text-aa-muted md:text-base">
+            {{
+              t(
+                "market.focusSubtitle",
+                "Use the left action panel to prepare an escrow listing, then review active listings on the right.",
+              )
+            }}
+          </p>
+        </div>
+        <a class="btn-secondary" href="#vanity-generator">
+          {{ t("market.prepareAddress", "Prepare address") }}
+        </a>
+      </section>
 
-      <!-- Stats summary -->
-      <MarketStatsStrip
-        :loading="loading"
-        :has-loaded="hasLoaded"
-        :total-listings="listings.length"
-        :active-count="activeListingsCount"
-        :avg-price="averagePrice"
-      />
+      <details class="aa-focus-reference mb-6">
+        <summary>
+          <span>{{ t("market.marketReference", "Market reference") }}</span>
+          <strong>{{ activeListingsCount }} active</strong>
+        </summary>
+        <div class="aa-market-reference-stack">
+          <AddressMarketHero />
+          <MarketStatsStrip
+            :loading="loading"
+            :has-loaded="hasLoaded"
+            :total-listings="listings.length"
+            :active-count="activeListingsCount"
+            :avg-price="averagePrice"
+          />
+        </div>
+      </details>
 
       <MarketNotConfiguredBanner v-if="!marketConfigured" />
 

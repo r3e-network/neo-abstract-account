@@ -38,38 +38,28 @@
         </div>
       </div>
 
-      <div class="mb-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-        <div
-          class="rounded-[20px] border border-aa-border bg-aa-panel p-5 shadow-sm"
-        >
-          <p class="text-xs font-bold uppercase text-aa-muted">
-            {{ t("identity.connectedWallet", "Connected Neo Wallet") }}
-          </p>
-          <p class="mt-2 break-all text-sm font-semibold text-aa-text">
-            {{ walletLabel }}
-          </p>
+      <details class="aa-focus-reference mb-6">
+        <summary>
+          <span>{{ t("identity.contextReference", "Connection reference") }}</span>
+          <strong>{{ walletLabel }}</strong>
+        </summary>
+        <div class="aa-reference-grid">
+          <div class="aa-reference-card">
+            <p>{{ t("identity.connectedWallet", "Connected Neo Wallet") }}</p>
+            <strong>{{ walletLabel }}</strong>
+          </div>
+          <div class="aa-reference-card">
+            <p>{{ t("identity.boundAccount", "Bound Account Context") }}</p>
+            <strong>{{ accountContextLabel }}</strong>
+          </div>
+          <div class="aa-reference-card">
+            <p>{{ t("identity.aaContract", "AA Contract") }}</p>
+            <strong>{{
+              aaContractHash || t("identity.unconfigured", "unconfigured")
+            }}</strong>
+          </div>
         </div>
-        <div
-          class="rounded-[20px] border border-aa-border bg-aa-panel p-5 shadow-sm"
-        >
-          <p class="text-xs font-bold uppercase text-aa-muted">
-            {{ t("identity.boundAccount", "Bound Account Context") }}
-          </p>
-          <p class="mt-2 break-all text-sm font-semibold text-aa-text">
-            {{ accountContextLabel }}
-          </p>
-        </div>
-        <div
-          class="rounded-[20px] border border-aa-border bg-aa-panel p-5 shadow-sm"
-        >
-          <p class="text-xs font-bold uppercase text-aa-muted">
-            {{ t("identity.aaContract", "AA Contract") }}
-          </p>
-          <p class="mt-2 break-all text-sm font-semibold text-aa-text">
-            {{ aaContractHash || t("identity.unconfigured", "unconfigured") }}
-          </p>
-        </div>
-      </div>
+      </details>
 
       <DidIdentityPanel
         :aa-contract-hash="aaContractHash"
