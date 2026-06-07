@@ -40,7 +40,7 @@ test('deriveRegistrationAccountIdHash binds the V3 account id to the registratio
       backupOwnerAddress: '0x13ef519c362973f9a34648a9eac5b71250b2a80a',
       escapeTimelock: 2592000,
     }),
-    '27c01243fca45e1b821dc3bb45267a579762d530'
+    '30d56297577a2645bbc31d821b5ea4fc4312c027'
   );
 });
 

@@ -69,12 +69,10 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     morpheusAutomationTriggerKinds: ['interval', 'threshold'],
     morpheusOracleCvmId: 'ddff154546fe22d15b65667156dd4b7c611e6093',
     morpheusOracleCvmName: 'oracle-morpheus-neo-r3e',
-    morpheusOracleAttestationExplorerUrl:
-      'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093',
+    morpheusOracleAttestationExplorerUrl: '',
     morpheusDatafeedCvmId: 'ac5b6886a2832df36e479294206611652400178f',
     morpheusDatafeedCvmName: 'datafeed-morpheus-neo-r3e',
-    morpheusDatafeedAttestationExplorerUrl:
-      'https://cloud.phala.com/explorer/app_ac5b6886a2832df36e479294206611652400178f',
+    morpheusDatafeedAttestationExplorerUrl: '',
     morpheusNeoDidServiceDid: 'did:morpheus:neo_n3:service:neodid',
     didVerificationEndpoint: '/api/did-verify',
     didNotificationEndpoint: '/api/did-notify',
@@ -104,11 +102,11 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
   assert.equal(config.morpheusApiBaseUrl, 'https://oracle.meshmini.app/testnet');
   assert.equal(
     config.morpheusOracleAttestationExplorerUrl,
-    'https://cloud.phala.com/explorer/app_ddff154546fe22d15b65667156dd4b7c611e6093'
+    ''
   );
   assert.equal(
     config.morpheusDatafeedAttestationExplorerUrl,
-    'https://cloud.phala.com/explorer/app_ac5b6886a2832df36e479294206611652400178f'
+    ''
   );
 });
 

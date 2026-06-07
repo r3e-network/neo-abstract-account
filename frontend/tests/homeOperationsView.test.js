@@ -64,21 +64,22 @@ const didPanelPath = path.resolve(
   "src/features/operations/components/DidIdentityPanel.vue",
 );
 
-test("home view is a product landing page with app, market, and docs entry points", () => {
+test("home view is a focus workflow entry with app, market, and deployment reference", () => {
   const homeSource = fs.readFileSync(homePath, "utf8");
   assert.doesNotMatch(homeSource, /HomeOperationsWorkspace/);
   assert.match(homeSource, /Programmable Accounts for Neo N3/);
   assert.match(homeSource, /Open App Workspace/);
   assert.match(homeSource, /Browse Address Market/);
-  assert.match(homeSource, /Transferable AA addresses/);
-  assert.match(homeSource, /pluginGuide/);
+  assert.match(homeSource, /aa-home-focus/);
+  assert.match(homeSource, /aa-home-step-link/);
+  assert.match(homeSource, /Deployment reference/);
   assert.match(homeSource, /Address Market/);
   assert.match(homeSource, /Paymaster Readiness/);
   assert.match(homeSource, /Open Validation Ledger/);
   assert.match(homeSource, /Open Explorer Tx/);
   assert.match(homeSource, /buildTransactionExplorerUrl/);
   assert.match(homeSource, /paymasterValidation/);
-  assert.match(homeSource, /ArchitectureDiagram/);
+  assert.doesNotMatch(homeSource, /ArchitectureDiagram/);
 });
 
 test("operation composer supports live contract suggestions, method dropdowns, and generated parameter fields", () => {
@@ -419,10 +420,14 @@ test("router includes console route", () => {
   assert.match(routerSource, /Console — Neo Abstract Account/);
 });
 
-test("home view hero CTAs point to console", () => {
+test("home view prioritizes focus workflow entry points", () => {
   const homeSource = fs.readFileSync(homePath, "utf8");
-  assert.match(homeSource, /to="\/console" class="btn-primary/);
-  assert.match(homeSource, /Open Console/);
+  assert.match(homeSource, /aa-home-focus/);
+  assert.match(homeSource, /aa-home-step-link/);
+  assert.match(homeSource, /to="\/app" class="btn-primary/);
+  assert.match(homeSource, /to="\/market" class="btn-secondary/);
+  assert.match(homeSource, /Deployment reference/);
+  assert.doesNotMatch(homeSource, /to="\/console" class="btn-primary/);
 });
 
 test("main layout navigation includes console link with distinct styling", () => {

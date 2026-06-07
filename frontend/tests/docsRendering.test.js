@@ -456,15 +456,15 @@ test("frontend package does not depend on Neon SDK bundles directly", () => {
   assert.equal(packageJson.dependencies["@cityofzion/neon-js"], undefined);
 });
 
-test("HomeView lazy-loads the architecture diagram component", () => {
+test("HomeView keeps the first screen focused on AA operation entry", () => {
   const homeViewSource = read("src/views/HomeView.vue");
 
-  assert.match(homeViewSource, /defineAsyncComponent/);
-  assert.match(
-    homeViewSource,
-    /import\(["']@\/components\/ArchitectureDiagram\.vue["']\)/,
-  );
-  assert.doesNotMatch(homeViewSource, /import ArchitectureDiagram from/);
+  assert.match(homeViewSource, /aa-home-focus/);
+  assert.match(homeViewSource, /aa-home-step-link/);
+  assert.match(homeViewSource, /Deployment reference/);
+  assert.match(homeViewSource, /to="\/app" class="btn-primary/);
+  assert.doesNotMatch(homeViewSource, /ArchitectureDiagram/);
+  assert.doesNotMatch(homeViewSource, /defineAsyncComponent/);
 });
 
 test("AbstractAccountTool lazy-loads heavy studio panels", () => {

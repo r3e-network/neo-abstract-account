@@ -1,19 +1,15 @@
 <template>
-  <section
-    class="rounded-3xl border border-aa-border bg-aa-dark/60 backdrop-blur-xl shadow-xl p-6 md:p-8 relative overflow-hidden"
-  >
+  <section class="aa-focus-shell">
     <div
       class="absolute inset-0 bg-gradient-to-br from-neo-500/5 to-transparent pointer-events-none"
     ></div>
     <div class="relative z-10">
-      <div
-        class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
-      >
+      <div class="aa-focus-header">
         <div>
-          <p class="mb-2 text-xs font-bold uppercase text-neo-400">
-            {{ t("operations.workspaceTitle", "Abstract Account Workspace") }}
+          <p class="mb-2 text-xs font-bold uppercase text-emerald-700">
+            {{ t("operations.workspaceTitle", "Abstract Account Workspace") }} · Focus workflow
           </p>
-          <h2 class="text-3xl font-extrabold text-aa-text font-outfit">
+          <h2 class="text-2xl md:text-3xl font-semibold text-aa-text">
             {{
               t(
                 "operations.workspaceHero",
@@ -30,7 +26,7 @@
             }}
           </p>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="aa-focus-wallet-actions">
           <router-link
             v-if="didConnection.isConfigured.value"
             class="btn-secondary"
@@ -207,24 +203,32 @@
         @toggle-shortcuts="showShortcuts = !showShortcuts"
       />
 
-      <WorkflowStatusCards
-        :is-did-connected="didConnection.isConnected.value"
-        :did-label="didLabel"
-        :is-neo-connected="walletConnection.isConnected.value"
-        :neo-wallet-label="neoWalletLabel"
-        :evm-address="evmAddress"
-        :evm-wallet-label="evmWalletLabel"
-        :signature-count="signerProgress.signatureCount"
-        :required-signer-count="signerProgress.requiredCount"
-        :collaboration-enabled="runtime.collaborationEnabled"
-      />
+      <details class="aa-focus-reference">
+        <summary>
+          <span>{{ t("operations.activitySidebarTitle", "Draft Activity") }}</span>
+          <strong>Connection details</strong>
+        </summary>
+        <div class="mt-5 space-y-5">
+          <WorkflowStatusCards
+            :is-did-connected="didConnection.isConnected.value"
+            :did-label="didLabel"
+            :is-neo-connected="walletConnection.isConnected.value"
+            :neo-wallet-label="neoWalletLabel"
+            :evm-address="evmAddress"
+            :evm-wallet-label="evmWalletLabel"
+            :signature-count="signerProgress.signatureCount"
+            :required-signer-count="signerProgress.requiredCount"
+            :collaboration-enabled="runtime.collaborationEnabled"
+          />
 
-      <WorkspaceIdentityBanner
-        :is-did-connected="didConnection.isConnected.value"
-        :identity-workspace-link="identityWorkspaceLink"
-      />
+          <WorkspaceIdentityBanner
+            :is-did-connected="didConnection.isConnected.value"
+            :identity-workspace-link="identityWorkspaceLink"
+          />
+        </div>
+      </details>
 
-      <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div class="space-y-6">
           <div
             class="rounded-[20px] border border-aa-border bg-aa-panel/60 overflow-hidden shadow-glow-panel backdrop-blur-lg transition-all duration-200"

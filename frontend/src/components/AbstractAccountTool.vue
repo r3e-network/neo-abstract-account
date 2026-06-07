@@ -252,7 +252,13 @@
         </div>
       </div>
 
-      <aside class="space-y-4">
+      <aside>
+        <details class="aa-focus-reference lg:sticky lg:top-24">
+          <summary>
+            <span>{{ t("studio.readinessLabel", "Workspace readiness") }}</span>
+            <strong>Deployment reference</strong>
+          </summary>
+          <div class="mt-5 space-y-4">
         <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-4 flex items-start justify-between gap-4">
             <div>
@@ -306,6 +312,8 @@
             </div>
           </div>
         </section>
+          </div>
+        </details>
       </aside>
     </div>
 
