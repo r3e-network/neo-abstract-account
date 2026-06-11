@@ -151,11 +151,15 @@ function buildV3UserOperationTypedData({
 }
 
 /**
- * Converts a Hash160 to 32-byte word with reversed byte order.
+ * Converts a Hash160 to a 32-byte word (20 bytes right-padded with zeros).
  * Matches Web3AuthVerifier.ToBytes20Word in contract.
  *
- * @param {string} hash160 - 20-byte hash (40 hex chars)
- * @returns {Uint8Array} 32-byte word with reversed bytes
+ * The input is big-endian display hex and is copied as-is — no client-side
+ * byte reversal. The contract's UInt160 is little-endian internally and its
+ * ToBytes20Word reverses to big-endian, so both sides already agree.
+ *
+ * @param {string} hash160 - 20-byte hash (40 hex chars, big-endian display hex)
+ * @returns {Uint8Array} 32-byte word: 20 big-endian bytes then 12 zero bytes
  * @private
  */
 function toBytes20Word(hash160) {
@@ -178,11 +182,15 @@ function toBytes20Word(hash160) {
 }
 
 /**
- * Converts a Hash160 to 32-byte EVM address word with reversed byte order and left padding.
+ * Converts a Hash160 to a 32-byte EVM address word (left-padded with zeros).
  * Matches Web3AuthVerifier.ToAddressWord in contract.
  *
- * @param {string} hash160 - 20-byte hash (40 hex chars)
- * @returns {Uint8Array} 32-byte word with 12 zero bytes then reversed address
+ * The input is big-endian display hex and is copied as-is — no client-side
+ * byte reversal. The contract's UInt160 is little-endian internally and its
+ * ToAddressWord reverses to big-endian, so both sides already agree.
+ *
+ * @param {string} hash160 - 20-byte hash (40 hex chars, big-endian display hex)
+ * @returns {Uint8Array} 32-byte word: 12 zero bytes then 20 big-endian bytes
  * @private
  */
 function toAddressWord(hash160) {
@@ -232,7 +240,9 @@ function toUint256Word(value) {
 
 /**
  * Type hash for EIP-712 domain.
- * Pre-computed keccak256("EIP712Domain(uint256 chainId,address verifyingContract)")
+ * Pre-computed keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+ * — the canonical 4-field domain type hash; the preimage below includes the
+ * name and version hashes accordingly.
  */
 const EIP712_DOMAIN_TYPE_HASH = new Uint8Array([
   0x8b, 0x73, 0xc3, 0xc6, 0x9b, 0xb8, 0xfe, 0x3d,
@@ -309,9 +319,13 @@ function buildContractCompatibleDomainSeparator(network, verifyingContract) {
  *
  * This function replicates the contract's custom encoding:
  * - Uses raw keccak256 of method string (not EIP-712 string encoding)
- * - Reverses bytes for accountId (ToBytes20Word)
- * - Reverses and pads bytes for targetContract (ToAddressWord)
+ * - Right-pads the big-endian accountId bytes to 32 bytes (ToBytes20Word)
+ * - Left-pads the big-endian targetContract bytes to 32 bytes (ToAddressWord)
  * - Uses big-endian encoding for nonce/deadline
+ *
+ * All Hash160 inputs are big-endian display hex; no client-side byte
+ * reversal is performed (the contract reverses its internal little-endian
+ * form, so both sides already agree).
  *
  * @param {Object} options - Struct hash options
  * @param {string} options.accountIdHash - Account ID hash (40 hex chars)
@@ -335,15 +349,17 @@ function buildContractCompatibleDomainSeparator(network, verifyingContract) {
  *   deadline: Date.now() + 3600_000,
  * });
  *
- * // Create EIP-712 signing payload
- * const domainSeparator = buildContractCompatibleDomainSeparator(chainId, verifierHash);
- * const payload = ethers.solidityPackedKeccak256(
- *   ['bytes32', 'bytes32', 'bytes32'],
- *   ['0x1901', domainSeparator, structHash]
- * );
+ * // Create the 66-byte signing payload (0x1901 || domainSeparator || structHash)
+ * const payload = buildWeb3AuthSigningPayload({
+ *   chainId, verifierHash, accountIdHash, targetContract,
+ *   method, argsHash, nonce, deadline,
+ * });
  *
- * // Sign with EVM wallet
- * const signature = await wallet.signMessage(ethers.getBytes(payload));
+ * // Sign the raw keccak256 digest — the contract verifies keccak256(payload)
+ * // with NO EIP-191 prefix, and expects a 64-byte r||s signature.
+ * const digest = ethers.keccak256(payload);
+ * const sig = wallet.signingKey.sign(digest);
+ * const signature = sanitizeHex(sig.r) + sanitizeHex(sig.s);
  * ```
  */
 function buildContractCompatibleStructHash({

@@ -1,8 +1,10 @@
 const crypto = require('node:crypto');
+const { EC, createError } = require('./errors');
 
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const BASE58_LOOKUP = new Map([...BASE58_ALPHABET].map((char, index) => [char, index]));
 const DEFAULT_ADDRESS_VERSION = 53;
+const DEFAULT_RPC_TIMEOUT_MS = 15000;
 const CALL_FLAGS_ALL = 15;
 const OPCODE = {
   PUSHINT8: 0,
@@ -236,7 +238,9 @@ class ContractParam {
   }
 
   static byteArray(value) {
-    const hex = value instanceof HexString ? value : HexString.fromBase64(String(value || ''), true);
+    // Plain strings are interpreted as hex, matching @cityofzion/neon-js
+    // semantics. Use HexString.fromBase64 explicitly for base64 inputs.
+    const hex = value instanceof HexString ? value : HexString.fromHex(String(value || ''), true);
     return new ContractParam(ContractParamType.ByteArray, hex);
   }
 
@@ -371,7 +375,7 @@ class ScriptBuilder {
   emitPush(value) {
     if (value === null || value === undefined) return this.emitPush(false);
     if (typeof value === 'boolean') return this.emit(value ? 8 : 9);
-    if (typeof value === 'number' || typeof value === 'bigint' || /^-?\d+$/.test(String(value))) {
+    if (typeof value === 'number' || typeof value === 'bigint') {
       this.script.push(...emitPushInt(value));
       return this;
     }
@@ -398,9 +402,11 @@ class ScriptBuilder {
         case ContractParamType.Boolean:
           return this.emitPush(value.value);
         case ContractParamType.Integer:
-          return this.emitPush(value.value);
+          this.script.push(...emitPushInt(value.value));
+          return this;
         case ContractParamType.String:
-          return this.emitPush(value.value);
+          this.script.push(...emitPushBytes(Buffer.from(String(value.value), 'utf8')));
+          return this;
         case ContractParamType.ByteArray:
         case ContractParamType.Hash160:
           this.script.push(...emitPushBytes(value.value.toArrayBuffer(true)));
@@ -466,17 +472,43 @@ function serializeSigner(signer) {
 }
 
 class RPCClient {
-  constructor(rpcUrl) {
+  constructor(rpcUrl, options = {}) {
     this.rpcUrl = rpcUrl;
+    this.timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : DEFAULT_RPC_TIMEOUT_MS;
   }
 
   async send(method, params = []) {
-    const response = await fetch(this.rpcUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    });
-    const payload = await response.json();
+    let response;
+    try {
+      response = await fetch(this.rpcUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (error) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        throw createError(EC.NETWORK_TIMEOUT, { method, timeoutMs: this.timeoutMs });
+      }
+      throw error;
+    }
+    if (!response.ok) {
+      // Embed the HTTP status in the message so retry layers matching
+      // '502'/'503'/'504' patterns classify gateway errors as retryable.
+      const error = new Error(`RPC endpoint returned HTTP ${response.status} for ${method}`);
+      error.code = EC.NETWORK_RPC_CONNECTION_FAILED.code;
+      error.details = { method, status: response.status };
+      throw error;
+    }
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      const wrapped = new Error(`RPC endpoint returned non-JSON response for ${method}: ${error.message}`);
+      wrapped.code = EC.NETWORK_RPC_CONNECTION_FAILED.code;
+      wrapped.details = { method };
+      throw wrapped;
+    }
     if (payload.error) throw new Error(payload.error.message || `RPC error ${payload.error.code || ''}`.trim());
     return payload.result;
   }

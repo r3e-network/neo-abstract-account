@@ -105,14 +105,22 @@ function decodeStackBoolean(item) {
 /**
  * Decodes a Hash160 stack item to hex string.
  *
+ * Real nodes return UInt160 values as ByteString stack items carrying the
+ * internal little-endian bytes; this helper reverses them so every SDK
+ * output uses the same big-endian display form (e.g. 0xb4107cb2...) that
+ * all SDK hash inputs accept.
+ *
  * @param {Object} item - Stack item from RPC response
- * @returns {string} 40-character hex string
+ * @returns {string} 40-character big-endian display hex string
  * @private
  */
 function decodeHash160Stack(item) {
   if (!item || typeof item !== 'object') return '';
   if (item.type === 'Hash160' && item.value) return sanitizeHex(item.value);
-  if (item.type === 'ByteString' && item.value) return sanitizeHex(Buffer.from(item.value, 'base64').toString('hex'));
+  if (item.type === 'ByteString' && item.value) {
+    const rawHex = Buffer.from(item.value, 'base64').toString('hex');
+    return rawHex ? sanitizeHex(u.reverseHex(rawHex)) : '';
+  }
   return '';
 }
 
@@ -503,7 +511,7 @@ class AbstractAccountClient {
 
     return {
       scriptHash: this.masterContractHash,
-      operation: 'SetMetadataUri',
+      operation: 'setMetadataUri',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
         sc.ContractParam.string(metadataUri),
@@ -648,7 +656,10 @@ class AbstractAccountClient {
           throw createError(EC.CONTRACT_VM_FAULT, { exception: response.exception });
         }
 
-        resolvedVerifierHash = sanitizeHex(response?.stack?.[0]?.value || '');
+        // The node returns the UInt160 as a base64 ByteString in little-endian
+        // byte order; decode and reverse to the big-endian display form.
+        const verifierLeHex = metaTxExports.decodeByteStringStackHex(response?.stack?.[0]);
+        resolvedVerifierHash = verifierLeHex ? sanitizeHex(u.reverseHex(verifierLeHex)) : '';
       }
 
       if (!resolvedVerifierHash) {
@@ -822,8 +833,8 @@ class AbstractAccountClient {
    * @returns {boolean} returns.deadlineValid - Deadline is valid
    * @returns {boolean} returns.nonceAcceptable - Nonce is acceptable
    * @returns {boolean} returns.hasVerifier - Verifier is configured
-   * @returns {string} returns.verifier - Verifier hash
-   * @returns {string} returns.hook - Hook hash
+   * @returns {string} returns.verifier - Verifier hash (big-endian display hex)
+   * @returns {string} returns.hook - Hook hash (big-endian display hex)
    * @throws {Error} If RPC call fails
    */
   async getUserOpValidationPreview({
@@ -849,7 +860,7 @@ class AbstractAccountClient {
           { type: 'Array', value: args },
           { type: 'Integer', value: String(nonce) },
           { type: 'Integer', value: String(deadline) },
-          { type: 'ByteArray', value: '0x' },
+          { type: 'ByteArray', value: '' },
         ],
       },
     ]);
@@ -904,12 +915,16 @@ class AbstractAccountClient {
   /**
    * Gets the complete state of an abstract account.
    *
+   * All Hash160 fields are returned as big-endian display hex (the same
+   * byte order every SDK hash input accepts), regardless of the node's
+   * little-endian wire encoding.
+   *
    * @param {string} accountHashOrAddress - Account hash or address
    * @returns {Promise<Object>} Account state
-   * @returns {string} returns.accountId - Account ID hash
-   * @returns {string} returns.verifier - Verifier contract hash
-   * @returns {string} returns.hook - Hook contract hash
-   * @returns {string} returns.backupOwner - Backup owner address
+   * @returns {string} returns.accountId - Account ID hash (big-endian display hex)
+   * @returns {string} returns.verifier - Verifier contract hash (big-endian display hex)
+   * @returns {string} returns.hook - Hook contract hash (big-endian display hex)
+   * @returns {string} returns.backupOwner - Backup owner hash (big-endian display hex)
    * @returns {string} returns.escapeTimelock - Escape hatch timelock (seconds)
    * @returns {string} returns.escapeTriggeredAt - Timestamp when escape was triggered
    * @returns {boolean} returns.escapeActive - Whether escape hatch is active
@@ -994,7 +1009,7 @@ class AbstractAccountClient {
 
     return {
       scriptHash: this.masterContractHash,
-      operation: 'ConfirmHookUpdate',
+      operation: 'confirmHookUpdate',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
       ],
@@ -1028,7 +1043,7 @@ class AbstractAccountClient {
 
     return {
       scriptHash: this.masterContractHash,
-      operation: 'ConfirmVerifierUpdate',
+      operation: 'confirmVerifierUpdate',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
       ],
@@ -1062,7 +1077,7 @@ class AbstractAccountClient {
 
     return {
       scriptHash: this.masterContractHash,
-      operation: 'CancelHookUpdate',
+      operation: 'cancelHookUpdate',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
       ],
@@ -1096,7 +1111,7 @@ class AbstractAccountClient {
 
     return {
       scriptHash: this.masterContractHash,
-      operation: 'CancelVerifierUpdate',
+      operation: 'cancelVerifierUpdate',
       args: [
         sc.ContractParam.hash160(resolvedAccountHash),
       ],
@@ -1282,16 +1297,18 @@ class AbstractAccountClient {
   }
 
   /**
-   * Checks if any execution is currently active for the contract.
+   * Checks if an execution is currently active for an account.
    *
+   * @param {string} accountHashOrAddress - Account hash or address
    * @returns {Promise<boolean>} True if an execution is active
    * @throws {Error} If RPC call fails
    */
-  async getIsAnyExecutionActive() {
+  async getIsExecutionActive(accountHashOrAddress) {
+    const accountId = normalizeAddress(accountHashOrAddress);
     const script = sc.createScript({
       scriptHash: this.masterContractHash,
-      operation: 'IsAnyExecutionActive',
-      args: [],
+      operation: 'isExecutionActive',
+      args: [{ type: 'Hash160', value: accountId }],
     });
 
     const response = await this.invokeScriptWithRetry(u.HexString.fromHex(script), []);
@@ -1531,9 +1548,6 @@ module.exports = {
   createUserOpBuilder: require('./UserOpBuilder').createUserOpBuilder,
   simulateUserOperation: require('./simulation').simulateUserOperation,
   preFlightCheck: require('./simulation').preFlightCheck,
-  EVENT_NAMES: require('./events').EVENT_NAMES,
-  EventSubscription: require('./events').EventSubscription,
-  createEventSubscription: require('./events').createEventSubscription,
   // Retry utility
   withRetry: require('./retry').withRetry,
   isRetryableError: require('./retry').isRetryableError,
