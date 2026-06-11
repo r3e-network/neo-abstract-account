@@ -13,6 +13,13 @@ const { checkEscapeStatus } = require('../src/simulation');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
+// Real nodes return UInt160 stack items as ByteString carrying the internal
+// little-endian bytes (base64-encoded). Build that wire shape from the
+// big-endian display hex the SDK works with.
+function leByteStringStackItem(displayHex) {
+  return { type: 'ByteString', value: Buffer.from(displayHex, 'hex').reverse().toString('base64') };
+}
+
 test('buildV3UserOp constructs valid layout', () => {
   const op = buildV3UserOp({
     targetContract: '1234567890123456789012345678901234567890',
@@ -292,6 +299,38 @@ test('legacy market deploy scripts refuse non-testnet RPC magic before writing',
   }
 });
 
+test('market deploy scripts abort on FAULT previews instead of broadcasting with a forced 1-GAS fee', () => {
+  const deployAndListSource = fs.readFileSync(path.join(repoRoot, 'scripts', 'deploy_market_and_list.js'), 'utf8');
+  const phase2Source = fs.readFileSync(path.join(repoRoot, 'scripts', 'deploy_market_phase2.js'), 'utf8');
+
+  for (const source of [deployAndListSource, phase2Source]) {
+    assert.match(source, /preview FAULT/);
+    assert.doesNotMatch(source, /fromDecimal\('1', 8\)/);
+  }
+  // invokeMultiPersisted must surface preview transport errors, not swallow them
+  assert.doesNotMatch(deployAndListSource, /\.catch\(\(\) => null\)/);
+});
+
+test('mainnet deploy script reads GAS balance from the resolved RPC URL and surfaces contractExists failures', () => {
+  const mainnetSource = fs.readFileSync(path.join(repoRoot, 'scripts', 'deploy_mainnet_market_paymaster.js'), 'utf8');
+
+  // readGasBalance: resolved rpcUrl + retry + timeout, not the hardcoded default
+  assert.match(mainnetSource, /async function readGasBalance\(rpcUrl, address\)/);
+  assert.match(mainnetSource, /readGasBalance\(rpcUrl, account\.address\)/);
+  assert.match(mainnetSource, /getnep17balances \$\{address\}/);
+  assert.match(mainnetSource, /signal: AbortSignal\.timeout\(15000\)/);
+  assert.doesNotMatch(mainnetSource, /fetch\(DEFAULT_RPC_URL/);
+
+  // contractExists: only the unknown-contract pattern means "not deployed";
+  // unrecognized RPC failures must be rethrown
+  const contractExistsBody = mainnetSource.slice(
+    mainnetSource.indexOf('async function contractExists'),
+    mainnetSource.indexOf('async function waitForAppLog'),
+  );
+  assert.match(contractExistsBody, /unknown contract\|contract not found/);
+  assert.match(contractExistsBody, /throw error;/);
+});
+
 test('createEIP712Payload builds the V3 UserOperation schema when accountIdHash is provided', async () => {
   const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
   client.computeArgsHash = async () => 'ab'.repeat(32);
@@ -299,7 +338,7 @@ test('createEIP712Payload builds the V3 UserOperation schema when accountIdHash 
     async invokeScript() {
       return {
         state: 'HALT',
-        stack: [{ value: '49c095ce04d38642e39155f5481615c58227a498' }],
+        stack: [leByteStringStackItem('49c095ce04d38642e39155f5481615c58227a498')],
       };
     },
   };
@@ -387,8 +426,8 @@ test('client decodes previewUserOpValidation into a structured validation previe
             { type: 'Boolean', value: true },
             { type: 'Boolean', value: false },
             { type: 'Boolean', value: true },
-            { type: 'Hash160', value: '0xb4107cb2cb4bace0ebe15bc4842890734abe133a' },
-            { type: 'Hash160', value: '0x1111111111111111111111111111111111111111' },
+            leByteStringStackItem('b4107cb2cb4bace0ebe15bc4842890734abe133a'),
+            leByteStringStackItem('1111111111111111111111111111111111111111'),
           ],
         }],
       };
@@ -416,9 +455,9 @@ test('client decodes previewUserOpValidation into a structured validation previe
 test('getAccountState uses invokefunction for every V3 getter', async () => {
   const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
   const responses = new Map([
-    ['getVerifier', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('b4107cb2cb4bace0ebe15bc4842890734abe133a', 'hex').toString('base64') }] }],
-    ['getHook', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('1111111111111111111111111111111111111111', 'hex').toString('base64') }] }],
-    ['getBackupOwner', { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('2222222222222222222222222222222222222222', 'hex').toString('base64') }] }],
+    ['getVerifier', { state: 'HALT', stack: [leByteStringStackItem('b4107cb2cb4bace0ebe15bc4842890734abe133a')] }],
+    ['getHook', { state: 'HALT', stack: [leByteStringStackItem('1111111111111111111111111111111111111111')] }],
+    ['getBackupOwner', { state: 'HALT', stack: [leByteStringStackItem('2222222222222222222222222222222222222222')] }],
     ['getEscapeTimelock', { state: 'HALT', stack: [{ type: 'Integer', value: '604800' }] }],
     ['getEscapeTriggeredAt', { state: 'HALT', stack: [{ type: 'Integer', value: '0' }] }],
     ['isEscapeActive', { state: 'HALT', stack: [{ type: 'Boolean', value: false }] }],
@@ -485,11 +524,11 @@ test('pending maintenance helpers read pending verifier and hook calls through i
   const responses = {
     hasPendingVerifierCall: { state: 'HALT', stack: [{ type: 'Boolean', value: true }] },
     getPendingVerifierCallTime: { state: 'HALT', stack: [{ type: 'Integer', value: '123456' }] },
-    getPendingVerifierCallModule: { state: 'HALT', stack: [{ type: 'Hash160', value: '0xb4107cb2cb4bace0ebe15bc4842890734abe133a' }] },
+    getPendingVerifierCallModule: { state: 'HALT', stack: [leByteStringStackItem('b4107cb2cb4bace0ebe15bc4842890734abe133a')] },
     getPendingVerifierCallHash: { state: 'HALT', stack: [{ type: 'ByteString', value: Buffer.from('ab'.repeat(32), 'hex').toString('base64') }] },
     hasPendingHookCall: { state: 'HALT', stack: [{ type: 'Boolean', value: false }] },
     getPendingHookCallTime: { state: 'HALT', stack: [{ type: 'Integer', value: '0' }] },
-    getPendingHookCallModule: { state: 'HALT', stack: [{ type: 'Hash160', value: '0x0000000000000000000000000000000000000000' }] },
+    getPendingHookCallModule: { state: 'HALT', stack: [leByteStringStackItem('0000000000000000000000000000000000000000')] },
     getPendingHookCallHash: { state: 'HALT', stack: [{ type: 'ByteString', value: '' }] },
   };
   const seen = [];
@@ -804,4 +843,149 @@ test('EIP-712 byte-order convention: SDK expects big-endian hex for accountIdHas
 
   assert.notEqual(hash1, hash2,
     'LE vs BE accountIdHash must produce different struct hashes — byte order matters');
+});
+
+// ---------------------------------------------------------------------------
+// Hash160 wire-decoding: real nodes return UInt160s as little-endian
+// ByteStrings; every SDK read API must surface big-endian display hex.
+// ---------------------------------------------------------------------------
+
+// Captured from a real testnet node: getVerifier returned this ByteString for
+// the deployed TEEVerifier whose display hash is 0x4e4c22ea...d8f350d2.
+const REAL_NODE_VERIFIER_BYTESTRING_B64 = '0lDz2Bn8Nxri/znKgUi+u+oiTE4=';
+const REAL_NODE_VERIFIER_DISPLAY_HEX = '4e4c22eabbbe4881ca39ffe21a37fc19d8f350d2';
+
+function realNodeAccountStateRpcMock() {
+  const responses = new Map([
+    ['getVerifier', { state: 'HALT', stack: [{ type: 'ByteString', value: REAL_NODE_VERIFIER_BYTESTRING_B64 }] }],
+    ['getHook', { state: 'HALT', stack: [leByteStringStackItem('1111111111111111111111111111111111111111')] }],
+    ['getBackupOwner', { state: 'HALT', stack: [leByteStringStackItem('2222222222222222222222222222222222222222')] }],
+    ['getEscapeTimelock', { state: 'HALT', stack: [{ type: 'Integer', value: '604800' }] }],
+    ['getEscapeTriggeredAt', { state: 'HALT', stack: [{ type: 'Integer', value: '0' }] }],
+    ['isEscapeActive', { state: 'HALT', stack: [{ type: 'Boolean', value: false }] }],
+    ['getMetadataUri', { state: 'HALT', stack: [{ type: 'ByteString', value: '' }] }],
+  ]);
+  return {
+    async invokeScript() {
+      throw new Error('invokeScript should not be used for getAccountState');
+    },
+    async invokeFunction(_scriptHash, operation) {
+      return responses.get(operation);
+    },
+  };
+}
+
+test('getAccountState decodes real-node little-endian ByteStrings to big-endian display hex', async () => {
+  // Sanity: the captured base64 really is the byte-reverse of the display hash
+  const rawHex = Buffer.from(REAL_NODE_VERIFIER_BYTESTRING_B64, 'base64').toString('hex');
+  assert.equal(
+    rawHex.match(/.{2}/g).reverse().join(''),
+    REAL_NODE_VERIFIER_DISPLAY_HEX,
+    'fixture must be the little-endian form of the display hash',
+  );
+
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  client.rpcClient = realNodeAccountStateRpcMock();
+
+  const state = await client.getAccountState('0xf951cd3eb5196dacde99b339c5dcca37ac38cc22');
+  assert.equal(state.verifier, REAL_NODE_VERIFIER_DISPLAY_HEX,
+    'verifier must come back in big-endian display form, not raw node bytes');
+});
+
+test('preFlightCheck accepts a matching verifier against real-node wire encoding', async () => {
+  const { preFlightCheck, checkVerifier } = require('../src/simulation');
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  client.rpcClient = realNodeAccountStateRpcMock();
+
+  const verifierCheck = await checkVerifier(
+    client,
+    '0xf951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    REAL_NODE_VERIFIER_DISPLAY_HEX,
+  );
+  assert.equal(verifierCheck.valid, true, 'checkVerifier must not false-mismatch on byte order');
+  assert.equal(verifierCheck.currentVerifier, REAL_NODE_VERIFIER_DISPLAY_HEX);
+
+  const results = await preFlightCheck(client, {
+    accountHashOrAddress: '0xf951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    verifierHash: REAL_NODE_VERIFIER_DISPLAY_HEX,
+    hookHash: '1111111111111111111111111111111111111111',
+  });
+  assert.equal(results.passed, true, `preFlightCheck must pass, got errors: ${results.errors.join('; ')}`);
+  assert.deepEqual(results.errors, []);
+});
+
+test('createEIP712Payload auto-resolves the verifier from real-node wire encoding', async () => {
+  const client = new AbstractAccountClient('https://example.invalid', '0x1234567890123456789012345678901234567890');
+  client.computeArgsHash = async () => 'ab'.repeat(32);
+  client.rpcClient = {
+    async invokeScript() {
+      return {
+        state: 'HALT',
+        stack: [{ type: 'ByteString', value: REAL_NODE_VERIFIER_BYTESTRING_B64 }],
+      };
+    },
+  };
+
+  const payload = await client.createEIP712Payload({
+    chainId: 894710606,
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    targetContract: '0x49c095ce04d38642e39155f5481615c58227a498',
+    method: 'balanceOf',
+    args: [],
+    nonce: 7,
+    deadline: 1710000000,
+  });
+
+  assert.equal(payload.domain.verifyingContract, `0x${REAL_NODE_VERIFIER_DISPLAY_HEX}`,
+    'auto-resolved verifier must be the big-endian display hash');
+});
+
+// ---------------------------------------------------------------------------
+// Signing documentation: the shipped example and metaTx JSDoc must teach the
+// raw-keccak256 + signingKey.sign recipe (NOT EIP-191 signMessage), and the
+// recipe itself must produce a recoverable 64-byte r||s signature.
+// ---------------------------------------------------------------------------
+
+test('contract-compatible signing recipe produces a recoverable 64-byte r||s signature', () => {
+  const {
+    sanitizeHex,
+    buildWeb3AuthSigningPayload,
+  } = require('../src/metaTx');
+
+  const wallet = ethers.Wallet.createRandom();
+  const payload = buildWeb3AuthSigningPayload({
+    chainId: 894710606,
+    verifierHash: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    targetContract: '49c095ce04d38642e39155f5481615c58227a498',
+    method: 'transfer',
+    argsHash: 'aa'.repeat(32),
+    nonce: 1,
+    deadline: 1700000000000,
+  });
+  assert.equal(payload.length, 66, 'payload must be 0x1901 || domainSeparator || structHash');
+
+  const digest = ethers.keccak256(payload);
+  const sig = wallet.signingKey.sign(digest);
+  const signature = sanitizeHex(sig.r) + sanitizeHex(sig.s);
+  assert.equal(signature.length, 128, 'contract asserts Signature.Length == 64 bytes (r||s)');
+  assert.equal(ethers.recoverAddress(digest, sig), wallet.address,
+    'raw digest signature must recover the signer');
+});
+
+test('shipped signing example and metaTx JSDoc teach the contract-compatible recipe', () => {
+  const exampleSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'contract-compatible-signing.example.js'), 'utf8');
+  const metaTxSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'src', 'metaTx.js'), 'utf8');
+
+  assert.match(exampleSource, /signingKey\.sign\(signingDigest\)/);
+  assert.match(exampleSource, /keccak256\(signingPayload\)/);
+  assert.match(exampleSource, /sanitizeHex\(sig\.r\) \+ sanitizeHex\(sig\.s\)/);
+  assert.doesNotMatch(exampleSource, /signMessage\(/, 'EIP-191 signMessage is always rejected by the contract');
+  assert.doesNotMatch(exampleSource, /bytes are reversed/);
+
+  assert.match(metaTxSource, /string name,string version,uint256 chainId,address verifyingContract/);
+  assert.match(metaTxSource, /no client-side\s+\* byte reversal|No client-side byte reversal|no client-side byte reversal/i);
+  assert.doesNotMatch(metaTxSource, /32-byte word with reversed bytes/);
+  assert.doesNotMatch(metaTxSource, /Reverses bytes for accountId/);
+  assert.doesNotMatch(metaTxSource, /wallet\.signMessage/);
 });

@@ -7,6 +7,7 @@
 
 const { ethers } = require('ethers');
 const {
+  sanitizeHex,
   buildContractCompatibleStructHash,
   buildContractCompatibleDomainSeparator,
   buildWeb3AuthSigningPayload,
@@ -17,7 +18,9 @@ async function signUserOperation() {
   const evmWallet = new ethers.Wallet('YOUR_PRIVATE_KEY');
   console.log('EVM Address:', evmWallet.address);
 
-  // 2. Define your UserOperation parameters
+  // 2. Define your UserOperation parameters.
+  // All Hash160 values are big-endian display hex — the SDK performs no
+  // client-side byte reversal.
   const userOpParams = {
     chainId: 860833102, // Neo testnet magic
     verifierHash: '0xYOUR_VERIFIER_HASH_40_CHARS',
@@ -44,10 +47,18 @@ async function signUserOperation() {
   const signingPayload = buildWeb3AuthSigningPayload(userOpParams);
   console.log('Signing payload length:', signingPayload.length, 'bytes (expected: 66)');
 
-  // 6. Sign using ethers.Wallet.signMessage
-  // This applies the EIP-191 personal_sign wrapper: "\x19Ethereum Signed Message:\n" + len + payload
-  const signature = evmWallet.signMessage(signingPayload);
-  console.log('Signature:', signature);
+  // 6. Sign the raw keccak256 digest of the payload.
+  // The contract verifies with CryptoLib.VerifyWithECDsa(payload, ...,
+  // secp256k1Keccak256), i.e. keccak256 over the RAW payload with NO
+  // EIP-191 prefix — do NOT use ethers.Wallet.signMessage here (it wraps
+  // with "\x19Ethereum Signed Message:\n" and the contract will reject it).
+  const signingDigest = ethers.keccak256(signingPayload);
+  const sig = evmWallet.signingKey.sign(signingDigest);
+
+  // The contract asserts Signature.Length == 64: r (32 bytes) || s (32 bytes),
+  // no recovery byte v.
+  const signature = sanitizeHex(sig.r) + sanitizeHex(sig.s);
+  console.log('Signature (64 bytes r||s):', signature);
 
   // 7. Create the final UserOperation
   const userOperation = {
@@ -76,20 +87,22 @@ console.log(`
    - Contract: keccak256(method_utf8_bytes)
    - Standard: keccak256(abiEncode(string))
 
-2. Reversed bytes for accountId
-   - Contract: bytes are reversed (little-endian style for 20-byte values)
-   - Standard: bytes20 encoding does not reverse
+2. Raw ECDSA over keccak256(payload), no EIP-191 prefix
+   - Contract: CryptoLib.VerifyWithECDsa(payload, pubKey, sig, secp256k1Keccak256)
+   - Standard wallets: personal_sign/signMessage adds "\\x19Ethereum Signed Message:\\n"
+   - Use wallet.signingKey.sign(keccak256(payload)) instead of signMessage
 
-3. Reversed+padding for targetContract
-   - Contract: 12 zero bytes + reversed 20-byte address
-   - Standard: address encoding uses padding but no reversal
+3. 64-byte signature (r||s)
+   - Contract: asserts Signature.Length == 64 — strip the recovery byte v
+   - Standard: 65-byte signatures include v
 
-4. Big-endian uint256 encoding
-   - Contract: little-endian bytes are reversed to big-endian
-   - Standard: uint256 is already big-endian
+4. No client-side byte reversal for Hash160 values
+   - Inputs are big-endian display hex; the contract's ToBytes20Word /
+     ToAddressWord reverse its internal little-endian UInt160 form to the
+     same big-endian bytes, so both sides already agree
 
-These differences exist because the contract was designed to
-match Neo's byte order conventions, not Ethereum's.
+5. Big-endian uint256 encoding for nonce/deadline
+   - Matches standard EIP-712 word encoding
 `);
 
 // Uncomment to run:

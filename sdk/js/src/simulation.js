@@ -162,10 +162,13 @@ async function simulateUserOperation(client, options) {
 
 /**
  * Checks if a verifier is valid for the account.
+ * Both the expected hash input and the reported current hash are big-endian
+ * display hex — getAccountState normalizes the node's little-endian wire
+ * bytes, so the comparison is byte-order safe against real nodes.
  * @param {AbstractAccountClient} client - The SDK client instance
  * @param {string} accountHashOrAddress - Account hash or address
- * @param {string} verifierHash - Verifier contract hash to check
- * @returns {Promise<Object>} Check result with valid flag and details
+ * @param {string} verifierHash - Verifier contract hash to check (big-endian display hex)
+ * @returns {Promise<Object>} Check result with valid flag and details (hashes in big-endian display hex)
  */
 async function checkVerifier(client, accountHashOrAddress, verifierHash) {
   try {
@@ -188,10 +191,11 @@ async function checkVerifier(client, accountHashOrAddress, verifierHash) {
 
 /**
  * Checks if a hook is valid for the account.
+ * Hash inputs and outputs are big-endian display hex, matching getAccountState.
  * @param {AbstractAccountClient} client - The SDK client instance
  * @param {string} accountHashOrAddress - Account hash or address
- * @param {string} hookHash - Hook contract hash to check (optional)
- * @returns {Promise<Object>} Check result with valid flag and details
+ * @param {string} hookHash - Hook contract hash to check (optional, big-endian display hex)
+ * @returns {Promise<Object>} Check result with valid flag and details (hashes in big-endian display hex)
  */
 async function checkHook(client, accountHashOrAddress, hookHash) {
   try {
@@ -265,6 +269,8 @@ async function estimateGas(client, userOp) {
 
 /**
  * Runs a comprehensive pre-flight check suite.
+ * All Hash160 options (verifierHash, hookHash) are big-endian display hex;
+ * reported hashes in the results use the same byte order.
  * @param {AbstractAccountClient} client - The SDK client instance
  * @param {Object} options - Check options
  * @returns {Promise<Object>} Comprehensive check results
