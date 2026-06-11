@@ -441,13 +441,17 @@ public class ContractTests
         }
     }
 
+    private const string PinnedFrameworkVersion = "3.9.1";
+
     [TestMethod]
     public void ContractSubprojectsUseConsistentFrameworkVersionAndOptInNccs()
     {
         foreach (string project in ContractProjectFiles)
         {
             string projectFile = ReadContractFile(project);
-            StringAssert.Contains(projectFile, "<PackageReference Include=\"Neo.SmartContract.Framework\" Version=\"3.8.1\" />");
+            StringAssert.Contains(
+                projectFile,
+                $"<PackageReference Include=\"Neo.SmartContract.Framework\" Version=\"{PinnedFrameworkVersion}\" />");
             StringAssert.Contains(projectFile, "<RunNccsAfterBuild>false</RunNccsAfterBuild>");
             StringAssert.Contains(projectFile, "Condition=\"'$(RunNccsAfterBuild)' == 'true'\"");
         }
