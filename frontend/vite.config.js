@@ -73,8 +73,6 @@ export default defineConfig({
             return "vue-vendor";
           // supabase
           if (id.includes("@supabase")) return "supabase";
-          // visualization (heavy, rarely needed on first load)
-          if (id.includes("@vue-flow")) return "vue-flow";
           if (id.includes("highlight.js") || id.includes("@highlightjs"))
             return "highlight";
           if (id.includes("katex")) return "katex";

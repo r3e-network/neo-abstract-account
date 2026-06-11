@@ -1,6 +1,5 @@
 import { EC } from '../config/errorCodes.js';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig.js';
-import { fetchWithTimeout } from '@/utils/fetchWithTimeout.js';
 import { walletService } from '@/services/walletService.js';
 import { connectedAccount } from '@/utils/wallet.js';
 import { sanitizeHex } from '@/utils/hex.js';
@@ -410,43 +409,4 @@ export async function buyAddressListing(id, options = {}) {
   });
 
   return { txid: result?.txid || '' };
-}
-
-function getVanityEndpoint() {
-  return RUNTIME_CONFIG.vanityServiceEndpoint || '/api/vanity';
-}
-
-export async function createVanityOrder({ pattern, patternType, gasAmount, buyerAddress }) {
-  const endpoint = getVanityEndpoint();
-  const response = await fetchWithTimeout(`${endpoint}/orders`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pattern, patternType, gasAmount, buyerAddress }),
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    const err = new Error(EC.vanityOrderFailed);
-    err.apiDetail = body || null;
-    throw err;
-  }
-  return response.json();
-}
-
-export async function getVanityOrder(orderId) {
-  const endpoint = getVanityEndpoint();
-  const response = await fetchWithTimeout(`${endpoint}/orders/${encodeURIComponent(orderId)}`);
-  if (!response.ok) {
-    throw new Error(EC.vanityOrdersFetchFailed);
-  }
-  return response.json();
-}
-
-export async function listVanityOrders(buyerAddress) {
-  const endpoint = getVanityEndpoint();
-  const qs = buyerAddress ? `?buyer=${encodeURIComponent(buyerAddress)}` : '';
-  const response = await fetchWithTimeout(`${endpoint}/orders${qs}`);
-  if (!response.ok) {
-    throw new Error(EC.vanityOrdersListFailed);
-  }
-  return response.json();
 }

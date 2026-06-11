@@ -868,10 +868,7 @@ import {
   OPERATION_PRESETS,
   buildOperationFromPreset,
 } from "@/features/operations/presets.js";
-import {
-  appendActivityEntries,
-  createActivityEvent,
-} from "@/features/operations/activity.js";
+import { createActivityEvent } from "@/features/operations/activity.js";
 import { createOperationsPreferences } from "@/features/operations/preferences.js";
 import { evaluateRelayReadiness } from "@/features/operations/relayReadiness.js";
 import {
@@ -887,20 +884,18 @@ import {
 import {
   assertV3AccountExists,
   buildExecuteUserOpInvocation,
-  buildV3UserOperationTypedData,
-  computeArgsHash,
-  fetchV3Nonce,
-  fetchV3Verifier,
-  recoverPublicKeyFromTypedDataSignature,
-  toCompactEcdsaSignature,
 } from "@/features/operations/metaTx.js";
+import {
+  prepareV3UserOpContext,
+  signUserOpWithEvm,
+} from "@/features/operations/useUserOpSigning.js";
+import { useDraftPersistence } from "@/features/operations/useDraftPersistence.js";
 import { createOperationsWorkspace } from "@/features/operations/useOperationsWorkspace.js";
 import {
   buildSubmissionReceipt,
   resolveLatestSubmissionReceipt,
 } from "@/features/operations/submissionFeedback.js";
 import {
-  appendSubmissionReceiptEntries,
   buildSubmissionReceiptHistoryItems,
   createSubmissionReceiptEntry,
 } from "@/features/operations/submissionReceipts.js";
@@ -1017,20 +1012,22 @@ const loadingAccount = ref(false);
 const signingWithEvm = ref(false);
 const signingWithZkLogin = ref(false);
 const isAppendingSignature = ref(false);
-const loading = computed(
-  () =>
-    connectingNeo.value ||
-    connectingEvm.value ||
-    loadingAccount.value ||
-    signingWithEvm.value ||
-    signingWithZkLogin.value,
-);
 const lastBroadcastTxid = ref("");
 const pendingSubmissionAction = ref("");
 const isPersisting = ref(false);
 const submissionReceipt = ref(null);
-const submissionReceiptEntries = ref([]);
-const activityItems = ref([]);
+const {
+  activityItems,
+  submissionReceiptEntries,
+  appendActivity,
+  persistSubmissionReceipt,
+} = useDraftPersistence({
+  draftStore,
+  getShareSlug: () => workspace.share.value.shareSlug,
+  getAccessMutationOptions: () => accessMutationOptions(),
+  getOperatorMutationOptions: () => operatorMutationOptions(),
+  devWarnTag: "HomeOperationsWorkspace",
+});
 const relayCheck = ref({
   level: "idle",
   label: t("operations.relayCheckIdle", "Not Checked"),
@@ -1815,46 +1812,6 @@ function syncPaymasterStateFromRecord(record = null) {
     record?.transaction_body?.paymaster?.dapp_id || defaultPaymasterDappId;
 }
 
-async function persistSubmissionReceipt(entry) {
-  submissionReceiptEntries.value = appendSubmissionReceiptEntries(
-    submissionReceiptEntries.value,
-    entry,
-  );
-  if (!workspace.share.value.shareSlug) return;
-  try {
-    const record = await draftStore.appendSubmissionReceipt(
-      workspace.share.value.shareSlug,
-      entry,
-      operatorMutationOptions(),
-    );
-    submissionReceiptEntries.value =
-      record.metadata?.submissionReceipts || submissionReceiptEntries.value;
-  } catch (_) {
-    if (import.meta.env.DEV)
-      console.warn(
-        "[HomeOperationsWorkspace] persistSubmissionReceipt sync failed",
-      ); /* best-effort remote sync; local state already updated */
-  }
-}
-
-async function appendActivity(event) {
-  activityItems.value = appendActivityEntries(activityItems.value, event);
-  if (!workspace.share.value.shareSlug) return;
-  try {
-    const record = await draftStore.appendActivity(
-      workspace.share.value.shareSlug,
-      event,
-      accessMutationOptions(),
-    );
-    activityItems.value = record.metadata?.activity || activityItems.value;
-  } catch (_) {
-    if (import.meta.env.DEV)
-      console.warn(
-        "[HomeOperationsWorkspace] appendActivity sync failed",
-      ); /* best-effort remote sync; local state already updated */
-  }
-}
-
 function syncSignerRequirements() {
   if (
     !workspace.account.value.accountAddressScriptHash &&
@@ -1876,16 +1833,16 @@ function syncSignerRequirements() {
   ]);
 }
 
+// Connect success/error toasts are owned by useWalletConnection so users see
+// exactly one toast per connect action; this wrapper only tracks button state
+// and syncs the signer roster.
 async function connectNeoWallet() {
   connectingNeo.value = true;
   try {
     await walletConnection.connect();
     syncSignerRequirements();
-    toast.success(
-      `${t("operations.neoWalletConnectedPrefix", "Neo wallet connected:")} ${walletService.address}`,
-    );
-  } catch (error) {
-    toast.error(translateError(error?.message, t));
+  } catch (_error) {
+    /* useWalletConnection.connect already toasted the failure */
   } finally {
     connectingNeo.value = false;
   }
@@ -1897,11 +1854,8 @@ async function connectEvmWalletAction() {
     const { address } = await walletConnection.connectEvm();
     evmAddress.value = address.toLowerCase();
     syncSignerRequirements();
-    toast.success(
-      `${t("operations.evmWalletConnectedPrefix", "EVM wallet connected:")} ${evmAddress.value}`,
-    );
-  } catch (error) {
-    toast.error(translateError(error?.message, t));
+  } catch (_error) {
+    /* useWalletConnection.connectEvm already toasted the failure */
   } finally {
     connectingEvm.value = false;
   }
@@ -2139,63 +2093,16 @@ async function signWithEvmWallet() {
       evmAddress.value = address.toLowerCase();
       syncSignerRequirements();
     }
-    const aaContractHash = getAbstractAccountHash();
-    const rpcUrl = walletService.rpcUrl;
-    const deadline = Date.now() + 60 * 60 * 1000;
-    const argsHashHex = await computeArgsHash({
-      rpcUrl,
-      aaContractHash,
-      args: workspace.operationBody.value?.args || [],
-    });
-    let nonce;
-    let typedData;
-    let metaInvocation;
 
-    if (!workspace.account.value.accountIdHash) {
-      throw new Error(EC.v3AccountIdHashMissing);
-    }
-
-    const verifierHash = await fetchV3Verifier({
-      rpcUrl,
-      aaContractHash,
+    const { signatureRecord, metaInvocation } = await signUserOpWithEvm({
+      rpcUrl: walletService.rpcUrl,
+      aaContractHash: getAbstractAccountHash(),
       accountIdHash: workspace.account.value.accountIdHash,
-    });
-    if (!verifierHash) {
-      throw new Error(EC.noVerifierConfigured);
-    }
-    nonce = await fetchV3Nonce({
-      rpcUrl,
-      aaContractHash,
-      accountIdHash: workspace.account.value.accountIdHash,
-      channel: 0n,
-    });
-    typedData = buildV3UserOperationTypedData({
-      chainId: 894710606,
-      verifyingContract: verifierHash,
-      accountIdHash: workspace.account.value.accountIdHash,
-      targetContract: workspace.operationBody.value?.targetContract,
-      method: workspace.operationBody.value?.method,
-      argsHashHex,
-      nonce,
-      deadline,
-    });
-
-    const signature = await walletService.signTypedDataWithEvm(typedData);
-    const contractSignature = toCompactEcdsaSignature(signature);
-    const publicKey = recoverPublicKeyFromTypedDataSignature({
-      typedData,
-      signature,
-    });
-
-    metaInvocation = buildExecuteUserOpInvocation({
-      aaContractHash,
-      accountIdHash: workspace.account.value.accountIdHash,
-      targetContract: workspace.operationBody.value?.targetContract,
-      method: workspace.operationBody.value?.method,
-      methodArgs: workspace.operationBody.value?.args || [],
-      nonce,
-      deadline,
-      signatureHex: contractSignature,
+      operationBody: workspace.operationBody.value,
+      signerId: evmAddress.value,
+      signTypedData: (typedData) => walletService.signTypedDataWithEvm(typedData),
+      missingAccountError: EC.v3AccountIdHashMissing,
+      missingVerifierError: EC.noVerifierConfigured,
     });
     // Persisted drafts have an immutable transaction body; the broadcast path
     // reads metaInvocation from the signature metadata instead.
@@ -2210,23 +2117,7 @@ async function signWithEvmWallet() {
       );
     }
 
-    await appendSignatureRecordToWorkspace({
-      signerId: evmAddress.value,
-      kind: "evm",
-      signatureHex: contractSignature,
-      publicKey,
-      payloadDigest: argsHashHex,
-      metadata: {
-        typedData,
-        verifierHash,
-        argsHashHex,
-        nonce: String(nonce),
-        deadline: String(deadline),
-        metaInvocation,
-        signatureFullHex: signature,
-      },
-      createdAt: new Date().toISOString(),
-    });
+    await appendSignatureRecordToWorkspace(signatureRecord);
     await appendActivity(
       createActivityEvent({
         type: "signature_added",
@@ -2258,32 +2149,17 @@ async function signWithZkLogin() {
     if (!didConnection.isConnected.value) {
       await didConnection.connectDid();
     }
-    if (!workspace.account.value.accountIdHash) {
-      throw new Error(EC.v3AccountIdHashMissing);
-    }
 
     const aaContractHash = getAbstractAccountHash();
-    const rpcUrl = walletService.rpcUrl;
-    const deadline = Date.now() + 60 * 60 * 1000;
-    const argsHashHex = await computeArgsHash({
-      rpcUrl,
-      aaContractHash,
-      args: workspace.operationBody.value?.args || [],
-    });
-    const verifierHash = await fetchV3Verifier({
-      rpcUrl,
-      aaContractHash,
-      accountIdHash: workspace.account.value.accountIdHash,
-    });
-    if (!verifierHash) {
-      throw new Error(EC.noVerifierConfigured);
-    }
-    const nonce = await fetchV3Nonce({
-      rpcUrl,
-      aaContractHash,
-      accountIdHash: workspace.account.value.accountIdHash,
-      channel: 0n,
-    });
+    const { argsHashHex, verifierHash, nonce, deadline } =
+      await prepareV3UserOpContext({
+        rpcUrl: walletService.rpcUrl,
+        aaContractHash,
+        accountIdHash: workspace.account.value.accountIdHash,
+        operationBody: workspace.operationBody.value,
+        missingAccountError: EC.v3AccountIdHashMissing,
+        missingVerifierError: EC.noVerifierConfigured,
+      });
 
     const zkLoginTicket = await morpheusDidService.previewZkLoginTicket({
       verifierContract: verifierHash,

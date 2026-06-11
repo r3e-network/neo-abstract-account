@@ -164,7 +164,6 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     morpheusOracleKeyEndpoint: '/api/morpheus-oracle-public-key',
     didNotificationEmailEnabled: true,
     didNotificationSmsEnabled: true,
-    vanityServiceEndpoint: '/api/vanity',
   });
 });
 
