@@ -1,154 +1,43 @@
 const { ethers } = require('ethers');
 const { EC, createError } = require('./errors');
+// Shared meta-tx core (single source of truth for the EIP-712 typed-data
+// layouts and the stack-item decode helpers; also consumed by the frontend).
+const metaTxCore = require('../../../shared/metaTxCore.mjs');
+
+const {
+  sanitizeHex,
+  decodeByteStringStackHex,
+  decodeIntegerStack,
+  decodeStackBoolean,
+  decodeHash160Stack,
+  decodeValidationPreviewStack,
+} = metaTxCore;
 
 /**
- * Sanitizes a hex string by removing 0x prefix and converting to lowercase.
- *
- * @param {string} value - The hex string to sanitize
- * @returns {string} Sanitized hex string
+ * Maps the shared core's validation-error kinds onto SDK error codes so the
+ * builders keep throwing the exact errors this SDK has always thrown.
  */
-function sanitizeHex(value) {
-  return String(value || '').replace(/^0x/i, '').toLowerCase();
-}
+const CORE_ERROR_CODES = {
+  NONCE_REQUIRED: EC.VALIDATION_NONCE_REQUIRED,
+  DEADLINE_REQUIRED: EC.VALIDATION_DEADLINE_REQUIRED,
+  ARGS_HASH_INVALID: EC.VALIDATION_ARGS_HASH_INVALID,
+};
 
 /**
- * Decodes a ByteString stack item to hex string.
+ * EIP-712 typed-data builders, delegated to the shared core.
  *
- * @param {Object} item - Stack item from RPC response
- * @returns {string} Decoded hex string (lowercase)
+ * buildMetaTransactionTypedData builds the legacy MetaTransaction layout;
+ * buildV3UserOperationTypedData builds the V3 UserOperation layout. Both
+ * validate nonce/deadline presence and the 32-byte args hash, throwing SDK
+ * errors (SDK_008/SDK_009/SDK_010) on failure.
  */
-function decodeByteStringStackHex(item) {
-  if (!item || item.type !== 'ByteString' || !item.value) return '';
-  return Buffer.from(item.value, 'base64').toString('hex').toLowerCase();
-}
-
-/**
- * Builds the EIP-712 typed data for a meta transaction.
- * Compatible with legacy account binding format.
- *
- * @param {Object} options - Typed data options
- * @param {string|number} options.chainId - Chain ID for EIP-712 domain
- * @param {string} options.verifyingContract - Verifying contract hash (40 hex chars)
- * @param {string} [options.accountAddressScriptHash] - Account script hash (legacy)
- * @param {string} [options.accountAddressHash] - Account address hash (legacy)
- * @param {string} options.targetContract - Target contract hash (40 hex chars)
- * @param {string} options.method - Method name
- * @param {string} options.argsHashHex - Args hash (32 bytes, 64 hex chars)
- * @param {string|number} options.nonce - Nonce value
- * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
- * @returns {Object} EIP-712 typed data structure
- * @throws {Error} If nonce/deadline missing or argsHash invalid
- */
-function buildMetaTransactionTypedData({
-  chainId,
-  verifyingContract,
-  accountAddressScriptHash,
-  accountAddressHash,
-  targetContract,
-  method,
-  argsHashHex,
-  nonce,
-  deadline,
-}) {
-  if (nonce == null) throw createError(EC.VALIDATION_NONCE_REQUIRED);
-  if (deadline == null) throw createError(EC.VALIDATION_DEADLINE_REQUIRED);
-  const sanitized = sanitizeHex(argsHashHex);
-  if (sanitized.length !== 64) {
-    throw createError(EC.VALIDATION_ARGS_HASH_INVALID, {
-      provided: argsHashHex,
-      hint: `Expected 64 hex chars, got ${sanitized.length}`,
-    });
-  }
-  return {
-    domain: {
-      name: 'Neo N3 Abstract Account',
-      version: '1',
-      chainId,
-      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
-    },
-    types: {
-      MetaTransaction: [
-        { name: 'accountAddress', type: 'address' },
-        { name: 'targetContract', type: 'address' },
-        { name: 'methodHash', type: 'bytes32' },
-        { name: 'argsHash', type: 'bytes32' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    },
-    message: {
-      accountAddress: `0x${sanitizeHex(accountAddressScriptHash || accountAddressHash)}`,
-      targetContract: `0x${sanitizeHex(targetContract)}`,
-      methodHash: ethers.keccak256(ethers.toUtf8Bytes(String(method))),
-      argsHash: `0x${sanitizeHex(argsHashHex)}`,
-      nonce: String(nonce),
-      deadline: String(deadline),
-    },
-  };
-}
-
-/**
- * Builds the EIP-712 typed data for a V3 UserOperation.
- * Uses accountId-based verification (V3 format).
- *
- * @param {Object} options - Typed data options
- * @param {string|number} options.chainId - Chain ID for EIP-712 domain
- * @param {string} options.verifyingContract - Verifier contract hash (40 hex chars)
- * @param {string} options.accountIdHash - Account ID hash (40 hex chars)
- * @param {string} options.targetContract - Target contract hash (40 hex chars)
- * @param {string} options.method - Method name
- * @param {string} options.argsHashHex - Args hash (32 bytes, 64 hex chars)
- * @param {string|number} options.nonce - Nonce value
- * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
- * @returns {Object} EIP-712 typed data structure
- * @throws {Error} If nonce/deadline missing or argsHash invalid
- */
-function buildV3UserOperationTypedData({
-  chainId,
-  verifyingContract,
-  accountIdHash,
-  targetContract,
-  method,
-  argsHashHex,
-  nonce,
-  deadline,
-}) {
-  if (nonce == null) throw createError(EC.VALIDATION_NONCE_REQUIRED);
-  if (deadline == null) throw createError(EC.VALIDATION_DEADLINE_REQUIRED);
-  const sanitized = sanitizeHex(argsHashHex);
-  if (sanitized.length !== 64) {
-    throw createError(EC.VALIDATION_ARGS_HASH_INVALID, {
-      provided: argsHashHex,
-      hint: `Expected 64 hex chars, got ${sanitized.length}`,
-    });
-  }
-  return {
-    domain: {
-      name: 'Neo N3 Abstract Account',
-      version: '1',
-      chainId,
-      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
-    },
-    types: {
-      UserOperation: [
-        { name: 'accountId', type: 'bytes20' },
-        { name: 'targetContract', type: 'address' },
-        { name: 'method', type: 'string' },
-        { name: 'argsHash', type: 'bytes32' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    },
-    message: {
-      accountId: `0x${sanitizeHex(accountIdHash)}`,
-      targetContract: `0x${sanitizeHex(targetContract)}`,
-      method: String(method || ''),
-      argsHash: `0x${sanitizeHex(argsHashHex)}`,
-      nonce: String(nonce),
-      deadline: String(deadline),
-    },
-  };
-}
+const {
+  buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData,
+} = metaTxCore.createMetaTxBuilders({
+  keccak256: ethers.keccak256,
+  createError: (kind, details) => createError(CORE_ERROR_CODES[kind], details),
+});
 
 /**
  * Converts a Hash160 to a 32-byte word (20 bytes right-padded with zeros).
@@ -484,6 +373,10 @@ function buildWeb3AuthSigningPayload({
 module.exports = {
   sanitizeHex,
   decodeByteStringStackHex,
+  decodeIntegerStack,
+  decodeStackBoolean,
+  decodeHash160Stack,
+  decodeValidationPreviewStack,
   buildMetaTransactionTypedData,
   buildV3UserOperationTypedData,
   buildContractCompatibleStructHash,

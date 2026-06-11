@@ -3,9 +3,12 @@
  * Provides a chainable API for building UserOperation objects.
  */
 
-const { ethers } = require('ethers');
 const { EC, createError } = require('./errors');
 const { validateHash160, validateEIP712Fields, sanitizeHex } = require('./validation');
+const {
+  buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData,
+} = require('./metaTx');
 
 /**
  * Default deadline buffer (seconds) from current time.
@@ -145,12 +148,24 @@ class UserOperationBuilder {
   /**
    * Auto-generates the nonce (defaults to 0).
    * In production, this should fetch the current nonce from the contract.
+   *
+   * Await-aware: when the fetcher returns a promise, a promise resolving to
+   * this builder is returned so the awaited nonce value (never the promise
+   * itself) is stored. Synchronous fetchers keep the synchronous chaining.
+   *
    * @param {Function} fetchNonceFn - Optional function to fetch current nonce
-   * @returns {UserOperationBuilder} This builder for chaining
+   * @returns {UserOperationBuilder|Promise<UserOperationBuilder>} This builder for chaining
    */
   autoNonce(fetchNonceFn) {
     if (typeof fetchNonceFn === 'function') {
-      this.nonce = fetchNonceFn();
+      const result = fetchNonceFn();
+      if (result && typeof result.then === 'function') {
+        return result.then((nonce) => {
+          this.nonce = nonce;
+          return this;
+        });
+      }
+      this.nonce = result;
     } else {
       this.nonce = DEFAULT_NONCE;
     }
@@ -279,6 +294,8 @@ class UserOperationBuilder {
 
   /**
    * Builds the EIP-712 typed data for V3 UserOperation.
+   * Delegates to the shared buildV3UserOperationTypedData so the builder can
+   * never drift from the layout the verifier contracts check.
    * @param {string} argsHash - The computed args hash (32 bytes)
    * @returns {Object} The EIP-712 typed data structure
    */
@@ -312,40 +329,32 @@ class UserOperationBuilder {
       });
     }
 
-    return {
-      domain: {
-        name: 'Neo N3 Abstract Account',
-        version: '1',
-        chainId: this.chainId,
-        verifyingContract: `0x${this.verifierHash}`,
-      },
-      types: {
-        UserOperation: [
-          { name: 'accountId', type: 'bytes20' },
-          { name: 'targetContract', type: 'address' },
-          { name: 'method', type: 'string' },
-          { name: 'argsHash', type: 'bytes32' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' },
-        ],
-      },
-      message: {
-        accountId: `0x${this.accountIdHash}`,
-        targetContract: `0x${this.targetContract}`,
-        method: this.method,
-        argsHash: `0x${finalArgsHash}`,
-        nonce: String(this.nonce),
-        deadline: String(this.deadline),
-      },
-    };
+    return buildV3UserOperationTypedData({
+      chainId: this.chainId,
+      verifyingContract: this.verifierHash,
+      accountIdHash: this.accountIdHash,
+      targetContract: this.targetContract,
+      method: this.method,
+      argsHashHex: finalArgsHash,
+      nonce: this.nonce,
+      deadline: this.deadline,
+    });
   }
 
   /**
    * Builds the legacy MetaTransaction EIP-712 typed data.
+   * Delegates to the shared buildMetaTransactionTypedData.
+   *
+   * The legacy flow verifies against the MASTER contract, not the account's
+   * verifier plugin, so the verifying contract must be passed explicitly
+   * (AbstractAccountClient.createEIP712Payload uses its masterContractHash).
+   *
    * @param {string} argsHash - The computed args hash (32 bytes)
+   * @param {string} verifyingContract - The master contract hash the legacy
+   *   flow verifies against (40 hex chars)
    * @returns {Object} The EIP-712 typed data structure
    */
-  buildLegacyEIP712(argsHash) {
+  buildLegacyEIP712(argsHash, verifyingContract) {
     const finalArgsHash = argsHash || this._argsHash;
     if (!finalArgsHash) {
       throw createError(EC.VALIDATION_ARGS_HASH_INVALID, {
@@ -354,6 +363,13 @@ class UserOperationBuilder {
     }
 
     validateEIP712Fields(this.nonce, this.deadline);
+
+    if (!verifyingContract) {
+      throw createError(EC.VALIDATION_OPTIONS_REQUIRED, {
+        hint: 'Explicit verifyingContract (master contract hash) is required for legacy EIP-712',
+      });
+    }
+    validateHash160(sanitizeHex(verifyingContract));
 
     const resolvedAccountHash = this.accountAddressScriptHash ||
                                 this.accountAddressHash;
@@ -364,40 +380,25 @@ class UserOperationBuilder {
       });
     }
 
-    return {
-      domain: {
-        name: 'Neo N3 Abstract Account',
-        version: '1',
-        chainId: this.chainId,
-        verifyingContract: `0x${sanitizeHex(this.verifierHash || '')}`,
-      },
-      types: {
-        MetaTransaction: [
-          { name: 'accountAddress', type: 'address' },
-          { name: 'targetContract', type: 'address' },
-          { name: 'methodHash', type: 'bytes32' },
-          { name: 'argsHash', type: 'bytes32' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' },
-        ],
-      },
-      message: {
-        accountAddress: `0x${resolvedAccountHash}`,
-        targetContract: `0x${this.targetContract}`,
-        methodHash: ethers.keccak256(ethers.toUtf8Bytes(this.method)),
-        argsHash: `0x${finalArgsHash}`,
-        nonce: String(this.nonce),
-        deadline: String(this.deadline),
-      },
-    };
+    return buildMetaTransactionTypedData({
+      chainId: this.chainId,
+      verifyingContract,
+      accountAddressScriptHash: this.accountAddressScriptHash,
+      accountAddressHash: this.accountAddressHash,
+      targetContract: this.targetContract,
+      method: this.method,
+      argsHashHex: finalArgsHash,
+      nonce: this.nonce,
+      deadline: this.deadline,
+    });
   }
 
   /**
-   * Clones the builder with current state.
+   * Clones the builder with current state, including the cached args hash.
    * @returns {UserOperationBuilder} A new builder instance
    */
   clone() {
-    return new UserOperationBuilder({
+    const cloned = new UserOperationBuilder({
       accountIdHash: this.accountIdHash,
       targetContract: this.targetContract,
       method: this.method,
@@ -410,6 +411,8 @@ class UserOperationBuilder {
       accountAddressHash: this.accountAddressHash,
       signature: this.signature,
     });
+    cloned._argsHash = this._argsHash;
+    return cloned;
   }
 
   /**
