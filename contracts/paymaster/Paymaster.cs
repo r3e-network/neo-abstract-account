@@ -93,6 +93,10 @@ namespace AbstractAccount
         public static UInt160 Admin() => PaymasterAuthority.Admin();
 
         public static void SetAuthorizedCore(UInt160 coreContract) => PaymasterAuthority.SetAuthorizedCore(coreContract);
+        // Audit fix M-7 (parity with HookAuthority): timelocked core re-pointing.
+        public static void ProposeAuthorizedCore(UInt160 coreContract) => PaymasterAuthority.ProposeAuthorizedCore(coreContract);
+        public static void ConfirmAuthorizedCore(UInt160 coreContract) => PaymasterAuthority.ConfirmAuthorizedCore(coreContract);
+        public static void CancelAuthorizedCoreChange() => PaymasterAuthority.CancelAuthorizedCoreChange();
 
         public static void RotateAdmin(UInt160 newAdmin) => PaymasterAuthority.RotateAdmin(newAdmin);
 
@@ -100,14 +104,25 @@ namespace AbstractAccount
 
         public static void CancelAdminRotation() => PaymasterAuthority.CancelAdminRotation();
 
+        // AA-D-01: contract upgrade is timelocked. The admin proposes the sha256 of the
+        // new NEF and manifest, then can only apply that exact artifact pair after the
+        // 7-day window. One-way: once deployed, every future upgrade waits 7 days.
+        public static void ProposeUpdate(UInt256 nefHash, UInt256 manifestHash) => PaymasterAuthority.ProposeUpdate(nefHash, manifestHash);
+
+        public static void ConfirmUpdate(ByteString nef, string manifest) => Update(nef, manifest);
+
+        public static void CancelUpdate() => PaymasterAuthority.CancelUpdate();
+
         /// <summary>
-        /// Upgrades the Paymaster contract. Admin-only.
+        /// Upgrades the Paymaster contract. Admin-only, and only after a matching
+        /// <c>ProposeUpdate</c> has aged past the 7-day timelock (AA-D-01).
         /// </summary>
         public static void Update(ByteString nef, string manifest)
         {
             UInt160 admin = PaymasterAuthority.Admin();
             ExecutionEngine.Assert(admin != UInt160.Zero, "No admin set");
             ExecutionEngine.Assert(Runtime.CheckWitness(admin), "Not admin");
+            PaymasterAuthority.AssertConfirmableUpdate(nef, manifest);
             ContractManagement.Update(nef, manifest);
         }
 

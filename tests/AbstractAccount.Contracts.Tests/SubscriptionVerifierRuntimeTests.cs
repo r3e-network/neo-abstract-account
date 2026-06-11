@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neo;
 using Neo.Extensions;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.SmartContract.Testing;
@@ -109,6 +110,27 @@ public class SubscriptionVerifierRuntimeTests
     }
 
     /// <summary>
+    /// Audit fix M-8: <c>op.Signature</c> carries no cryptographic proof (it is the public
+    /// subscription id), so a charge presented without the configured merchant's witness must
+    /// be rejected — otherwise any observer of the subId could trigger the pull.
+    /// </summary>
+    [TestMethod]
+    public void ValidateSignature_RequiresMerchantWitness()
+    {
+        Harness h = new(merchantSigns: false);
+
+        h.Engine.PersistingBlock.Advance(TimeSpan.FromMilliseconds((double)PeriodMs));
+        h.CreateSubscription(AccountId, SubId, Merchant, Token, Amount, PeriodSeconds);
+
+        BigInteger period = h.Now() / PeriodMs;
+        object[] charge = BuildTransferOp(ExpectedNonce(SubId, period, nonceCounter: 0));
+        TestException rejected = Assert.ThrowsExactly<TestException>(
+            () => h.ValidateSignature(AccountId, charge),
+            "A charge without the merchant's witness must be rejected.");
+        StringAssert.Contains(rejected.Message, "merchant authorization required");
+    }
+
+    /// <summary>
     /// Builds the UserOperation array (positional struct layout) for a subscription transfer.
     /// Field order matches <c>AbstractAccount.Verifiers.UserOperation</c>:
     /// [TargetContract, Method, Args, Nonce, Deadline, Signature].
@@ -148,9 +170,21 @@ public class SubscriptionVerifierRuntimeTests
 
         public UInt160 CoreHash { get; }
 
-        public Harness()
+        public Harness(bool merchantSigns = true)
         {
-            Engine.SetTransactionSigners(Engine.ValidatorsAddress);
+            // Audit fix M-8: validateSignature requires the configured merchant to witness the
+            // pull, so charge validations sign as the merchant alongside the validators. The
+            // validators stay first so they remain the transaction sender for the deploys.
+            if (merchantSigns)
+            {
+                Engine.SetTransactionSigners(
+                    new Signer { Account = Engine.ValidatorsAddress, Scopes = WitnessScope.Global },
+                    new Signer { Account = Merchant, Scopes = WitnessScope.Global });
+            }
+            else
+            {
+                Engine.SetTransactionSigners(Engine.ValidatorsAddress);
+            }
 
             CoreHash = Engine.GetDeployHash(CoreNef, CoreManifest);
             VerifierHash = Engine.GetDeployHash(VerifierNef, VerifierManifest);
