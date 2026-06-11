@@ -1,7 +1,7 @@
-import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { RUNTIME_CONFIG } from '../config/runtimeConfig.js';
 import { EC } from '../config/errorCodes.js';
-import { invokeReadFunction, getAddressFromScriptHash, getScriptHashFromAddress, reverseHex } from '@/utils/neo.js';
-import { sanitizeHex } from '@/utils/hex.js';
+import { invokeReadFunction, getAddressFromScriptHash, getScriptHashFromAddress, reverseHex } from '../utils/neo.js';
+import { sanitizeHex } from '../utils/hex.js';
 
 export const MATRIX_SUFFIX = '.matrix';
 

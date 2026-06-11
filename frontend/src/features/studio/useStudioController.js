@@ -489,7 +489,7 @@ export function useStudioController() {
 
       // On-chain: set MetadataUri
       const metadataUri = metadataForm.value.metadataUri.trim();
-      await invokeOperation('Set metadata URI', 'SetMetadataUri', [
+      await invokeOperation('Set metadata URI', 'setMetadataUri', [
         { type: 'Hash160', value: accountIdHash },
         { type: 'String', value: metadataUri },
       ]);

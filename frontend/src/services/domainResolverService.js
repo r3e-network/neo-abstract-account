@@ -1,11 +1,13 @@
 import { EC } from '../config/errorCodes.js';
-import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
-import { getScriptHashFromAddress, invokeReadFunction } from '@/utils/neo.js';
-import { sanitizeHex } from '@/utils/hex.js';
-import { isMatrixDomain, normalizeMatrixDomain, resolveMatrixDomain } from '@/services/matrixDomainService.js';
+import { RUNTIME_CONFIG } from '../config/runtimeConfig.js';
+import { getScriptHashFromAddress, invokeReadFunction } from '../utils/neo.js';
+import { sanitizeHex } from '../utils/hex.js';
+import { isMatrixDomain, normalizeMatrixDomain, resolveMatrixDomain } from './matrixDomainService.js';
 
 export const NEO_SUFFIX = '.neo';
-export const DEFAULT_MAINNET_RPC_URL = 'http://seed1.neo.org:10332';
+// HTTPS mainnet RPC allowed by the deployed CSP (connect-src api.n3index.dev);
+// a plain-http seed node would be blocked as mixed content in production.
+export const DEFAULT_MAINNET_RPC_URL = 'https://api.n3index.dev/mainnet';
 export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
 
 export function isNeoDomain(value = '') {
@@ -86,7 +88,7 @@ export async function resolveContractIdentifier(
   }
 
   if (isNeoDomain(raw)) {
-    const address = await resolveNeoDomain(raw, { neoNnsContractHash, fetchImpl });
+    const address = await resolveNeoDomain(raw, { rpcUrl, neoNnsContractHash, fetchImpl });
     return {
       kind: 'neo-domain',
       raw,

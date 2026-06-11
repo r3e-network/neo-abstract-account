@@ -3,6 +3,7 @@ import { connectedAccount, setConnectedAccount } from '@/utils/wallet';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { EC } from '../config/errorCodes.js';
 import { getScriptHashFromAddress } from '../utils/neo.js';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout.js';
 
 export function getAbstractAccountHash() {
   return RUNTIME_CONFIG.abstractAccountHash;
@@ -469,7 +470,7 @@ class WalletService {
 
   async relayTransaction(request = {}) {
     const { relayEndpoint, ...requestBody } = request || {};
-    const response = await fetch(relayEndpoint, {
+    const response = await fetchWithTimeout(relayEndpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(requestBody),

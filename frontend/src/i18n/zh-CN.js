@@ -1644,6 +1644,7 @@ export default {
       contractLookupFailed: '合约查询失败。',
       rpcFault: '操作失败。',
       rpcRequestFailed: '请求失败。',
+      requestTimedOut: '请求超时，请检查网络连接后重试。',
       addressValidationFailed: '地址验证失败。',
       broadcastModeUnsupported: '不支持的广播模式。',
       vanityOrderFailed: 'Vanity 订单失败。',

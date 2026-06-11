@@ -1,6 +1,7 @@
 import { ripemd160, sha256 } from 'ethers';
 import { EC } from '../config/errorCodes.js';
 import { sanitizeHex } from './hex.js';
+import { fetchWithTimeout } from './fetchWithTimeout.js';
 
 export const DEFAULT_NEO_ADDRESS_VERSION = 53;
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -245,8 +246,8 @@ export function createVerifyScript(contractHash, accountIdHex) {
   ].join('');
 }
 
-export async function invokeReadFunction(rpcUrl, scriptHash, operation, args = []) {
-  const response = await fetch(rpcUrl, {
+export async function invokeReadFunction(rpcUrl, scriptHash, operation, args = [], fetchImpl = undefined) {
+  const response = await fetchWithTimeout(rpcUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -257,7 +258,7 @@ export async function invokeReadFunction(rpcUrl, scriptHash, operation, args = [
       method: 'invokefunction',
       params: [scriptHash, operation, args],
     }),
-  });
+  }, { fetchImpl });
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');

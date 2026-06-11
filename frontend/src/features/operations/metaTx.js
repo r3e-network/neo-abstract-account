@@ -1,6 +1,7 @@
 import { Signature, SigningKey, TypedDataEncoder, keccak256, toUtf8Bytes } from 'ethers';
 import { EC } from '../../config/errorCodes.js';
 import { sanitizeHex } from '../../utils/hex.js';
+import { fetchWithTimeout } from '../../utils/fetchWithTimeout.js';
 
 function decodeBase64ToHex(value) {
   if (!value) return '';
@@ -12,8 +13,8 @@ function decodeBase64ToHex(value) {
   return Array.from(binary, (char) => char.charCodeAt(0).toString(16).padStart(2, '0')).join('');
 }
 
-async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl = globalThis.fetch } = {}) {
-  const response = await fetchImpl(rpcUrl, {
+async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl } = {}) {
+  const response = await fetchWithTimeout(rpcUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -24,9 +25,24 @@ async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl 
       method: 'invokefunction',
       params: [scriptHash, operation, args],
     }),
-  });
+  }, { fetchImpl });
 
-  const payload = await response.json();
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = text || `HTTP ${response.status}`;
+    throw err;
+  }
+
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (_parseError) {
+    const err = new Error(EC.rpcRequestFailed);
+    err.rpcDetail = 'invalid JSON response';
+    throw err;
+  }
+
   if (payload.error) {
     const err = new Error(EC.rpcRequestFailed);
     err.rpcDetail = payload.error.message || null;

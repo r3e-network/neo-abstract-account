@@ -64,6 +64,7 @@ test('computeArgsHash invokes the contract helper and decodes the returned bytes
   const fetchImpl = async (url, options) => {
     calls.push([url, JSON.parse(options.body)]);
     return {
+      ok: true,
       async json() {
         return {
           result: {
@@ -96,6 +97,7 @@ test('computeArgsHash invokes the contract helper and decodes the returned bytes
 
 test('fetchNonceForAddress reads the current meta-tx nonce for an address signer pair', async () => {
   const fetchImpl = async () => ({
+    ok: true,
     async json() {
       return {
         result: {
@@ -188,6 +190,7 @@ test('buildV3UserOperationTypedData matches the V3 verifier field layout', () =>
 
 test('fetchV3Nonce reads the current V3 channel nonce', async () => {
   const fetchImpl = async () => ({
+    ok: true,
     async json() {
       return {
         result: {
@@ -211,6 +214,7 @@ test('fetchV3Nonce reads the current V3 channel nonce', async () => {
 
 test('fetchV3Verifier reads the bound verifier for a V3 account id', async () => {
   const fetchImpl = async () => ({
+    ok: true,
     async json() {
       return {
         result: {
@@ -236,6 +240,7 @@ test('fetchV3ValidationPreview reads the structured validation preview for a use
   const fetchImpl = async (url, options) => {
     calls.push([url, JSON.parse(options.body)]);
     return {
+      ok: true,
       async json() {
         return {
           result: {

@@ -4,7 +4,7 @@ import { buildDraftCollaborationPath, buildDraftSharePath } from './shareLinks.j
 import { appendSignatureEntries } from './signatures.js';
 import { appendActivityEntries } from './activity.js';
 import { appendSubmissionReceiptEntries } from './submissionReceipts.js';
-import { EC } from '../../config/errorCodes.js';
+import { EC, isErrorCode } from '../../config/errorCodes.js';
 
 function createScopedError(code, message) {
   const error = new Error(`${code}: ${message}`);
@@ -51,6 +51,12 @@ function unwrapRpcResult(data) {
 
 function normalizeDraftStoreError(error) {
   const message = String(error?.message || error || '');
+  // Idempotent: errors already carrying an EC code (locally thrown or
+  // previously normalized) pass through so specific codes never degrade
+  // to the generic draft-request failure.
+  if (isErrorCode(message)) {
+    return error instanceof Error ? error : new Error(message);
+  }
   if (/draft_operator_access_required/i.test(message)) {
     return new Error(EC.operatorAccessRequired);
   }
@@ -102,10 +108,6 @@ function writeLocalDraftMap(storage, value) {
     throw new Error(EC.draftStorageUnavailable);
   }
   backend.setItem(LOCAL_DRAFTS_STORAGE_KEY, JSON.stringify(value));
-}
-
-function resolveCollaborationSlug(options = {}) {
-  return String(options?.collaborationSlug || options?.collaboration_slug || '').trim();
 }
 
 function resolveOperatorSlug(options = {}) {
@@ -226,13 +228,6 @@ function mergeDraftMetadata(record, metadataPatch = {}) {
 }
 
 function createLocalDraftStore(storage) {
-  const runOperatorMutation = async ({ shareSlug, accessSlug, mutation, payload }) => {
-    if (!operatorMutationTransport?.run) {
-      throw new Error(EC.operatorMutationsUnavailable);
-    }
-    return operatorMutationTransport.run({ shareSlug, accessSlug, mutation, payload });
-  };
-
   return {
     async createDraft(record) {
       const payload = createDraftRecord(record);
@@ -417,7 +412,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
         const { data, error } = await supabase.rpc('create_aa_draft', {
           p_payload: payload,
         });
-        if (error) throw normalizeDraftStoreError(error);
+        if (error) throw error;
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -429,7 +424,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
           p_share_slug: shareSlug,
           p_access_slug: resolveAccessSlug(options) || null,
         });
-        if (error) throw normalizeDraftStoreError(error);
+        if (error) throw error;
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -446,7 +441,7 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
           p_access_slug: accessSlug,
           p_signature: cloneImmutable(signature),
         });
-        if (error) throw normalizeDraftStoreError(error);
+        if (error) throw error;
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);
@@ -489,23 +484,16 @@ export function createDraftStore({ supabase = getSupabaseClient(), storage = nul
       if (!accessSlug) {
         throw new Error(EC.collaboratorAccessRequired);
       }
-      const accessScope = resolveOperatorSlug(options) ? 'operate' : resolveCollaborationSlug(options) ? 'sign' : 'read';
+      // Callers only know their access slug; append_aa_draft_activity resolves
+      // whether it is an operator or collaborator capability and enforces the
+      // allowed event types server-side.
       try {
-        const nextEvent = sanitizeDraftActivityEvent(event, { accessScope });
-        if (accessScope === 'operate') {
-          return await runOperatorMutation({
-            shareSlug,
-            accessSlug,
-            mutation: 'appendActivity',
-            payload: { event: nextEvent },
-          });
-        }
         const { data, error } = await supabase.rpc('append_aa_draft_activity', {
           p_share_slug: shareSlug,
           p_access_slug: accessSlug,
-          p_event: nextEvent,
+          p_event: cloneImmutable(event || {}),
         });
-        if (error) throw normalizeDraftStoreError(error);
+        if (error) throw error;
         return unwrapRpcResult(data);
       } catch (error) {
         throw normalizeDraftStoreError(error);

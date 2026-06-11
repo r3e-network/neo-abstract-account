@@ -1,9 +1,10 @@
 import { EC } from '../../config/errorCodes.js';
+import { fetchWithTimeout } from '../../utils/fetchWithTimeout.js';
 import {
   canonicalizeOperatorMutationPayload,
   importOperatorPrivateKey,
   signOperatorMutationPayload,
-} from '../../api/operatorMutationHelpers.js';
+} from '../../../api/operatorMutationHelpers.js';
 
 const STORAGE_PREFIX = 'aa_operator_session_v1';
 const DEFAULT_OPERATOR_MUTATION_ENDPOINT = '/api/draft-operator';
@@ -63,12 +64,12 @@ async function ensureKeyMaterial(shareSlug, storage) {
 }
 
 async function postJson(url, body, fetchImpl) {
-  const response = await fetchImpl(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
-  });
-  const payload = await response.json();
+  }, { fetchImpl });
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const err = new Error(EC.mutationTransportFailed);
     err.rpcDetail = payload?.message || payload?.error || null;

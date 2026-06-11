@@ -1,6 +1,7 @@
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { connectedDidProfile } from '@/utils/did';
 import { EC } from '../config/errorCodes.js';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -17,7 +18,7 @@ async function postNotification(body) {
     throw new Error(EC.web3AuthTokenRequired);
   }
 
-  const response = await fetch(endpoint, {
+  const response = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({

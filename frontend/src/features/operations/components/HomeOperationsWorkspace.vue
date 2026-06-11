@@ -856,6 +856,7 @@ import {
   createDraftRecord,
   createDraftStore,
 } from "@/features/operations/drafts.js";
+import { createOperatorMutationTransport } from "@/features/operations/operatorMutationTransport.js";
 import {
   buildDraftExportBundle,
   buildRelayPayloadOptions,
@@ -946,7 +947,9 @@ const { t } = useI18n();
 const toast = useToast();
 const route = useRoute();
 const workspace = createOperationsWorkspace();
-const draftStore = createDraftStore();
+const draftStore = createDraftStore({
+  operatorMutationTransport: createOperatorMutationTransport(),
+});
 const walletConnection = useWalletConnection();
 const didConnection = useDidConnection();
 const { copiedKey, markCopied, copyText } = useClipboard();
@@ -1597,12 +1600,14 @@ watch(targetContract, (value) => {
   }
 
   const directLookup =
-    lookup.startsWith("N") ||
+    (lookup.startsWith("N") && lookup.length === 34) ||
     isMatrixDomain(lookup) ||
     isNeoDomain(lookup) ||
     /^[0-9a-f]{40}$/i.test(sanitizeHex(lookup));
   if (directLookup) {
-    void refreshContractMethods(lookup);
+    contractSuggestionTimer = setTimeout(() => {
+      void refreshContractMethods(lookup);
+    }, 250);
     return;
   }
 
@@ -2192,14 +2197,18 @@ async function signWithEvmWallet() {
       deadline,
       signatureHex: contractSignature,
     });
-    workspace.setTransactionBody({
-      ...workspace.transactionBody.value,
-      clientInvocation: metaInvocation,
-      v3Invocation: metaInvocation,
-    });
-    workspace.setTransactionBody(
-      applyPaymasterConfig(workspace.transactionBody.value),
-    );
+    // Persisted drafts have an immutable transaction body; the broadcast path
+    // reads metaInvocation from the signature metadata instead.
+    if (!workspace.isDraftImmutable.value) {
+      workspace.setTransactionBody({
+        ...workspace.transactionBody.value,
+        clientInvocation: metaInvocation,
+        v3Invocation: metaInvocation,
+      });
+      workspace.setTransactionBody(
+        applyPaymasterConfig(workspace.transactionBody.value),
+      );
+    }
 
     await appendSignatureRecordToWorkspace({
       signerId: evmAddress.value,
@@ -2297,14 +2306,18 @@ async function signWithZkLogin() {
       deadline,
       signatureHex: zkLoginTicket.proof_hex,
     });
-    workspace.setTransactionBody({
-      ...workspace.transactionBody.value,
-      clientInvocation: metaInvocation,
-      v3Invocation: metaInvocation,
-    });
-    workspace.setTransactionBody(
-      applyPaymasterConfig(workspace.transactionBody.value),
-    );
+    // Persisted drafts have an immutable transaction body; the broadcast path
+    // reads metaInvocation from the signature metadata instead.
+    if (!workspace.isDraftImmutable.value) {
+      workspace.setTransactionBody({
+        ...workspace.transactionBody.value,
+        clientInvocation: metaInvocation,
+        v3Invocation: metaInvocation,
+      });
+      workspace.setTransactionBody(
+        applyPaymasterConfig(workspace.transactionBody.value),
+      );
+    }
 
     await appendSignatureRecordToWorkspace({
       signerId: resolveSignerId("zklogin"),
@@ -2427,12 +2440,19 @@ async function checkRelay() {
 
 async function updateDraftStatus(status) {
   if (!workspace.share.value.shareSlug) return;
-  const record = await draftStore.updateStatus(
-    workspace.share.value.shareSlug,
-    status,
-    operatorMutationOptions(),
-  );
-  workspace.setShareStatus(record.status || status);
+  try {
+    const record = await draftStore.updateStatus(
+      workspace.share.value.shareSlug,
+      status,
+      operatorMutationOptions(),
+    );
+    workspace.setShareStatus(record.status || status);
+  } catch (_) {
+    if (import.meta.env.DEV)
+      console.warn(
+        "[HomeOperationsWorkspace] updateDraftStatus sync failed",
+      ); /* best-effort remote sync; the broadcast itself already succeeded */
+  }
 }
 
 async function broadcastWithNeoWallet() {

@@ -2,6 +2,7 @@ import '@/polyfills/buffer.js';
 import { connectedDidProfile, setConnectedDidProfile } from '@/utils/did';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { EC } from '../config/errorCodes.js';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout.js';
 
 const DID_STORAGE_KEY = 'aa_connected_did_profile';
 
@@ -96,7 +97,7 @@ function buildDidProfile(userInfo = {}, tokenClaims = {}, options = {}) {
 async function verifyDidProfile(idToken) {
   const endpoint = trim(RUNTIME_CONFIG.didVerificationEndpoint);
   if (!endpoint || !trim(idToken)) return null;
-  const response = await fetch(endpoint, {
+  const response = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ idToken }),
