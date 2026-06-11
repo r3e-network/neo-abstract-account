@@ -1,5 +1,16 @@
-revoke execute on function public.set_aa_draft_relay_preflight(text, jsonb) from anon;
-revoke execute on function public.append_aa_draft_submission_receipt(text, jsonb) from anon;
+-- In filename-order replays set_aa_draft_relay_preflight(text, jsonb) is
+-- already gone by this point while append_aa_draft_submission_receipt(text,
+-- jsonb) has just been recreated by 20260309_submission_receipts.sql, and
+-- REVOKE has no IF EXISTS, so guard each revoke on the function existing.
+do $$
+begin
+  if to_regprocedure('public.set_aa_draft_relay_preflight(text, jsonb)') is not null then
+    revoke execute on function public.set_aa_draft_relay_preflight(text, jsonb) from anon;
+  end if;
+  if to_regprocedure('public.append_aa_draft_submission_receipt(text, jsonb)') is not null then
+    revoke execute on function public.append_aa_draft_submission_receipt(text, jsonb) from anon;
+  end if;
+end $$;
 
 drop function if exists public.set_aa_draft_relay_preflight(text, jsonb);
 drop function if exists public.append_aa_draft_submission_receipt(text, jsonb);
