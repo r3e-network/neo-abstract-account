@@ -29,7 +29,7 @@ The frontend now separates:
 
 For the market UI, set `VITE_AA_MARKET_HASH` to the deployed `AAAddressMarket` contract hash.
 
-For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, and `VITE_AA_RELAY_RPC_URL`, then apply the Supabase draft migrations in order. Start with `supabase/migrations/20260308_home_operations_workspace.sql`, then apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql`, `supabase/migrations/20260309_submission_receipts.sql`, `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql`, `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql`, `supabase/migrations/20260312_scoped_draft_access.sql`, `supabase/migrations/20260313_activity_scope_guards.sql`, and `supabase/migrations/20260314_signed_operator_mutations.sql`. That full chain keeps the public share link read-only, narrows collaborator links to signature-safe writes, and moves operator-only status/relay mutations behind the signed operator mutation server route in `frontend/api/draft-operator.js`.
+For a Vercel deployment, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AA_RELAY_URL`, and `VITE_AA_RELAY_RPC_URL`, then apply every file in `supabase/migrations/` in filename order — the chain is replayable end to end on a fresh database and is exercised against a scratch Postgres by `.github/workflows/supabase-migrations.yml` on every change. The full chain keeps the public share link read-only, narrows collaborator links to signature-safe writes, moves operator-only status/relay mutations behind the signed operator mutation server route in `frontend/api/draft-operator.js`, and bounds anonymous draft payloads. `supabase/migrations/20260327_security_hardening.sql` and `supabase/migrations/20260611_draft_metadata_hardening.sql` are mandatory — without them the draft tables keep permissive RLS policies, racy metadata writers, and unbounded anonymous draft creation.
 
 If you deploy the bundled server routes, keep `SUPABASE_SERVICE_ROLE_KEY` and `AA_RELAY_WIF` on the server, prefer `AA_RELAY_RPC_URL` for the relay backend, pin `AA_RELAY_ALLOWED_HASH` to the intended AA contract, and leave `AA_RELAY_ALLOW_RAW_FORWARD=0` unless you explicitly want raw passthrough in `frontend/api/relay-transaction.js`.
 For local setup, start from `frontend/.env.example` and copy the values you need into `frontend/.env.local` or your hosting provider's environment-variable dashboard.
@@ -128,14 +128,10 @@ Shared draft metadata is intentionally bounded: the frontend keeps the latest 10
 
 ### Deployment Checklist
 
-- Apply `supabase/migrations/20260308_home_operations_workspace.sql` before enabling anonymous shared drafts.
-- Apply `supabase/migrations/20260309_shared_draft_collaboration_capability.sql` so public share links are read-only and collaborator links carry the write capability.
-- Apply `supabase/migrations/20260309_submission_receipts.sql` so append-only submission receipts are persisted for shared drafts.
-- Apply `supabase/migrations/20260310_shared_draft_collaboration_cleanup.sql` so fresh installs drop the legacy anonymous write RPC signatures recreated by the receipt migration.
-- Apply `supabase/migrations/20260311_rotate_draft_collaboration_slug.sql` so leaked collaborator links can be rotated in place.
-- Apply `supabase/migrations/20260312_scoped_draft_access.sql` so collaborator links become signature-only while operator links retain relay/broadcast authority.
-- Apply `supabase/migrations/20260313_activity_scope_guards.sql` so collaborator links cannot forge operator-class relay or broadcast activity entries.
-- Apply `supabase/migrations/20260314_signed_operator_mutations.sql` so operator-only writes move behind the signed operator mutation flow and direct anon operator RPCs are revoked.
+- Apply every file in `supabase/migrations/` in filename order (`20260308_home_operations_workspace.sql` through `20260611_draft_metadata_hardening.sql`). The chain replays cleanly on a fresh database; do not cherry-pick individual files.
+- Treat `supabase/migrations/20260327_security_hardening.sql` as mandatory: it removes the permissive `aa_account_metadata` RLS policies, revokes direct table access on `aa_transaction_drafts`, and fixes the signature-append race.
+- Treat `supabase/migrations/20260611_draft_metadata_hardening.sql` as mandatory: it locks the remaining draft metadata writers against lost updates, bounds anonymous `create_aa_draft` payloads (64 KiB cap, array caps, inbound activity/receipt trimming), and revokes anon execute on the internal activity-scope helper.
+- The migration chain is replay-tested in CI by `.github/workflows/supabase-migrations.yml`, which applies every file in filename order against a scratch Postgres 16 and then runs `supabase/tests/replay_assertions.sql`.
 - Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for browser-side anonymous draft persistence.
 - Share the normal draft URL for read-only review, the collaborator link for signature collection, and the operator link for relay checks, broadcast, and other operator-only actions. Signer links cannot append operator-class relay or broadcast activity entries.
 - Use the Rotate Collaborator Link action when a signer link leaks, and rotate the operator link if an operator-only URL should be invalidated without rebuilding the draft.

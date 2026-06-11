@@ -78,6 +78,11 @@ as $$
   end;
 $$;
 
+-- The 20260309/20260311 versions of the functions below name their second
+-- parameter p_collaboration_slug; create or replace cannot rename an input
+-- parameter, so drop the old definitions first. Their anon grants are
+-- re-issued at the end of this migration.
+drop function if exists public.require_aa_draft_collaboration_access(text, text);
 create or replace function public.require_aa_draft_collaboration_access(p_share_slug text, p_access_slug text)
 returns public.aa_transaction_drafts
 language plpgsql
@@ -191,6 +196,7 @@ begin
 end;
 $$;
 
+drop function if exists public.get_aa_draft_by_share_slug(text, text);
 create or replace function public.get_aa_draft_by_share_slug(p_share_slug text, p_access_slug text default null)
 returns jsonb
 language plpgsql
@@ -215,6 +221,7 @@ begin
 end;
 $$;
 
+drop function if exists public.append_aa_draft_signature(text, text, jsonb);
 create or replace function public.append_aa_draft_signature(p_share_slug text, p_access_slug text, p_signature jsonb)
 returns jsonb
 language plpgsql
@@ -249,6 +256,7 @@ begin
 end;
 $$;
 
+drop function if exists public.append_aa_draft_activity(text, text, jsonb);
 create or replace function public.append_aa_draft_activity(p_share_slug text, p_access_slug text, p_event jsonb)
 returns jsonb
 language plpgsql
@@ -282,6 +290,7 @@ begin
 end;
 $$;
 
+drop function if exists public.set_aa_draft_status(text, text, text);
 create or replace function public.set_aa_draft_status(p_share_slug text, p_access_slug text, p_status text)
 returns jsonb
 language plpgsql
@@ -302,6 +311,7 @@ begin
 end;
 $$;
 
+drop function if exists public.set_aa_draft_relay_preflight(text, text, jsonb);
 create or replace function public.set_aa_draft_relay_preflight(p_share_slug text, p_access_slug text, p_relay_preflight jsonb)
 returns jsonb
 language plpgsql
@@ -322,6 +332,7 @@ begin
 end;
 $$;
 
+drop function if exists public.append_aa_draft_submission_receipt(text, text, jsonb);
 create or replace function public.append_aa_draft_submission_receipt(p_share_slug text, p_access_slug text, p_receipt jsonb)
 returns jsonb
 language plpgsql
@@ -353,6 +364,7 @@ begin
 end;
 $$;
 
+drop function if exists public.rotate_aa_draft_collaboration_slug(text, text);
 create or replace function public.rotate_aa_draft_collaboration_slug(p_share_slug text, p_access_slug text)
 returns jsonb
 language plpgsql
