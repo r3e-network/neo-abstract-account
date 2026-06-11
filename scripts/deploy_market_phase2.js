@@ -1,191 +1,62 @@
 #!/usr/bin/env node
 /**
- * Phase 2: Deploy TEEVerifier, register accounts on the already-deployed core,
- * and create market listings.
+ * Phase 2 (archival, parameterized): deploy TEEVerifier, register accounts on
+ * an already-deployed AA core, and create market listings on an
+ * already-deployed market.
  *
- * Phase 1 deployed:
- *   AA Core:  0x2818ce328d6a7a92ff2c0200fe7cb2c76bee8870
- *   Market:   0x8dbd4cf6fc47afc013e7fd7128d028db2985bddf
- *   Verifier: (NeoNativeVerifier - wrong, needs TEEVerifier)
+ * This was originally a one-shot follow-up to a specific phase-1 run of
+ * deploy_market_and_list.js (which had deployed NeoNativeVerifier where
+ * TEEVerifier was needed). The phase-1 contract hashes from that run remain
+ * the defaults, but every deployment-specific value can now be overridden:
+ *
+ *   AA_TESTNET_CORE_HASH    already-deployed AA core (default: 2026-03 phase 1)
+ *   AA_TESTNET_MARKET_HASH  already-deployed AAAddressMarket (default: 2026-03 phase 1)
+ *   MARKET_DEPLOY_TAG       manifest suffix tag for the TEEVerifier deployment
+ *   MARKET_DEPLOY_WIF / NEO_TESTNET_WIF   funded deployer WIF
+ *   NEON_DB_URL             Neon/Postgres connection string with aa_accounts
+ *
+ * Shared deploy plumbing lives in scripts/lib/deploy-helpers.js; its
+ * invokePersisted/deployArtifact helpers abort with "<operation> preview FAULT"
+ * before broadcasting whenever the testInvoke preview FAULTs.
  */
 
 const fs = require('fs');
 const path = require('path');
-const { rpc, sc, tx, wallet, experimental, u, CONST } = require('@cityofzion/neon-js');
 
-const { extractDeployedContractHash } = require('../sdk/js/src/deployLog');
-const { sanitizeHex } = require('../sdk/js/src/metaTx');
+const {
+  neon,
+  sanitizeHex,
+  withRpcRetry,
+  normalizeHash,
+  hash160Param,
+  integerParam,
+  stringParam,
+  byteArrayParam,
+  makeSigner,
+  makeCustomContractSigner,
+  invokePersisted,
+  deployArtifact,
+  classifyPrice,
+  loadAccountsFromDB,
+} = require('./lib/deploy-helpers');
+
+const { rpc, wallet } = neon;
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const WIF = process.env.MARKET_DEPLOY_WIF || process.env.NEO_TESTNET_WIF || '';
 const RPC_URL = 'http://seed1t5.neo.org:20332';
 const NEON_DB_URL = process.env.NEON_DB_URL || '';
-const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
 const TESTNET_NETWORK_MAGIC = 894710606;
 
-// Already-deployed contracts from phase 1
-const CORE_HASH = '0x2818ce328d6a7a92ff2c0200fe7cb2c76bee8870';
-const MARKET_HASH = '0x8dbd4cf6fc47afc013e7fd7128d028db2985bddf';
+// Already-deployed contracts; defaults are the 2026-03 phase-1 deployment.
+const CORE_HASH = normalizeHash(process.env.AA_TESTNET_CORE_HASH || '0x2818ce328d6a7a92ff2c0200fe7cb2c76bee8870');
+const MARKET_HASH = normalizeHash(process.env.AA_TESTNET_MARKET_HASH || '0x8dbd4cf6fc47afc013e7fd7128d028db2985bddf');
 
-const DEPLOY_TAG = 'market-mneku8bc';
+const DEPLOY_TAG = process.env.MARKET_DEPLOY_TAG || 'market-mneku8bc';
 const ZERO_HASH160 = '0000000000000000000000000000000000000000';
 
-// Price tiers (GAS has 8 decimals)
-const PRICE_MIRROR = 50_00000000n;
-const PRICE_NAMED = 100_00000000n;
-const PRICE_PREFIX = 10_00000000n;
-const PRICE_ULTRA = 200_00000000n;
-const PRICE_COMPOUND = 25_00000000n;
-
 const RESULTS_FILE = path.resolve(__dirname, '..', 'market-deployment-results.json');
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function decodeDbUrlPart(value) {
-  return decodeURIComponent(value || '');
-}
-
-function buildPsqlEnv(connectionString) {
-  const url = new URL(connectionString);
-  if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
-    throw new Error('NEON_DB_URL must be a postgres connection string');
-  }
-
-  const env = { ...process.env };
-  delete env.NEON_DB_URL;
-  env.PGHOST = url.hostname;
-  env.PGPORT = url.port || '5432';
-  env.PGDATABASE = decodeDbUrlPart(url.pathname.replace(/^\/+/, ''));
-  env.PGUSER = decodeDbUrlPart(url.username);
-  env.PGPASSWORD = decodeDbUrlPart(url.password);
-  env.PGSSLMODE = url.searchParams.get('sslmode') || process.env.PGSSLMODE || 'require';
-  return env;
-}
-
-function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
-
-function isRetryableRpcError(error) {
-  const msg = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL/i.test(msg);
-}
-
-async function withRpcRetry(label, fn, attempts = 5) {
-  let lastError;
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try { return await fn(); } catch (error) {
-      lastError = error;
-      if (!isRetryableRpcError(error) || attempt >= attempts) throw error;
-      console.warn(`  [retry] ${label} ${attempt}/${attempts}: ${error.message?.substring(0, 80)}`);
-      await sleep(1500 * attempt);
-    }
-  }
-  throw lastError;
-}
-
-function artifactPaths(baseName) {
-  const base = path.resolve(__dirname, '..', 'contracts', 'bin', 'v3');
-  return { nef: path.join(base, `${baseName}.nef`), manifest: path.join(base, `${baseName}.manifest.json`) };
-}
-
-function loadArtifact(baseName, uniqueSuffix) {
-  const paths = artifactPaths(baseName);
-  const nef = sc.NEF.fromBuffer(fs.readFileSync(paths.nef));
-  const manifestJson = JSON.parse(fs.readFileSync(paths.manifest, 'utf8'));
-  manifestJson.name = `${manifestJson.name}-${uniqueSuffix}`;
-  return { nef, manifest: sc.ContractManifest.fromJson(manifestJson) };
-}
-
-function normalizeHash(v) { const h = sanitizeHex(v || ''); return h ? `0x${h}` : ''; }
-function buildConfig(account, networkMagic) { return { account, networkMagic, rpcAddress: RPC_URL, blocksTillExpiry: 200 }; }
-function hash160Param(v) { return sc.ContractParam.hash160(sanitizeHex(v)); }
-function integerParam(v) { return sc.ContractParam.integer(typeof v === 'bigint' ? v.toString() : String(v)); }
-function stringParam(v) { return sc.ContractParam.string(String(v)); }
-function byteArrayParam(hex = '') { return sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(hex), true)); }
-function makeSigner(sh) { return new tx.Signer({ account: sh, scopes: tx.WitnessScope.CalledByEntry }); }
-function makeCustomContractSigner(sh, contracts = []) {
-  return new tx.Signer({ account: sh, scopes: tx.WitnessScope.CustomContracts, allowedContracts: contracts.map(sanitizeHex) });
-}
-
-async function waitForAppLog(client, txid, label, timeoutMs = 300000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    try { const a = await client.getApplicationLog(txid); if (a?.executions?.length) return a; } catch (_) {}
-    await sleep(3000);
-  }
-  throw new Error(`${label}: timed out for ${txid}`);
-}
-
-function assertVmState(appLog, label, expected = 'HALT') {
-  const ex = appLog?.executions?.[0];
-  if (!ex) throw new Error(`${label}: missing execution log`);
-  const vs = String(ex.vmstate || ex.state || '');
-  if (!vs.includes(expected)) throw new Error(`${label}: ${expected} != ${vs} -- ${ex.exception || ''}`.trim());
-  return ex;
-}
-
-async function deployContract(client, account, networkMagic, baseName, uniqueSuffix) {
-  const { nef, manifest } = loadArtifact(baseName, uniqueSuffix);
-  const predictedHash = normalizeHash(experimental.getContractHash(account.scriptHash, nef.checksum, manifest.name));
-  console.log(`  Deploying ${baseName}...`);
-  const txid = await withRpcRetry(`deploy ${baseName}`, () => experimental.deployContract(nef, manifest, buildConfig(account, networkMagic)));
-  console.log(`  TX: ${txid}`);
-  const appLog = await waitForAppLog(client, txid, `deploy ${baseName}`);
-  assertVmState(appLog, `deploy ${baseName}`, 'HALT');
-  const hash = normalizeHash(extractDeployedContractHash(appLog) || predictedHash);
-  console.log(`  Deployed: ${hash}`);
-  return { txid, hash };
-}
-
-async function invokePersisted(client, contractHash, account, networkMagic, operation, params = [], signers = undefined) {
-  const contract = new experimental.SmartContract(sanitizeHex(contractHash), buildConfig(account, networkMagic));
-  const preview = await withRpcRetry(`${operation}.preview`, () => contract.testInvoke(operation, params, signers));
-  if (String(preview?.state || '').includes('FAULT')) {
-    throw new Error(`${operation} preview FAULT: ${preview.exception || 'unknown error'}`);
-  }
-  const sysFee = u.BigInteger.fromDecimal(preview.gasconsumed, 0);
-  const txid = await withRpcRetry(`${operation}.invoke`, () =>
-    new experimental.SmartContract(sanitizeHex(contractHash), { ...buildConfig(account, networkMagic), systemFeeOverride: sysFee }).invoke(operation, params, signers)
-  );
-  const appLog = await waitForAppLog(client, txid, operation);
-  assertVmState(appLog, operation, 'HALT');
-  return { txid, appLog };
-}
-
-// ── Price Classification ────────────────────────────────────────────────────
-
-function classifyPrice(pattern) {
-  const p = pattern.toUpperCase();
-  if (p.startsWith('ULTRA')) return PRICE_ULTRA;
-  if (p.startsWith('MIRROR')) return PRICE_MIRROR;
-  const namedPatterns = ['TRUMP', 'NVIDIA', 'BITCOIN'];
-  for (const name of namedPatterns) { if (p.includes(name)) return PRICE_NAMED; }
-  const compoundTokens = ['BTC', 'ETH', 'NGD', 'NNT', 'NEO', 'R3E', 'COZ'];
-  let tokenCount = 0;
-  for (const tok of compoundTokens) { if (p.includes(tok)) tokenCount++; }
-  if (tokenCount >= 2) return PRICE_COMPOUND;
-  if (p.includes('NEOVM') || p.includes('NEOFS') || p.includes('CRYPTO')) return PRICE_COMPOUND;
-  return PRICE_PREFIX;
-}
-
-// ── DB Access ───────────────────────────────────────────────────────────────
-
-function loadAccountsFromDB() {
-  const { execFileSync } = require('child_process');
-  const query = "SELECT id, pattern, address, account_id_hash, script_hash, verify_script FROM aa_accounts ORDER BY id";
-  if (!NEON_DB_URL) {
-    throw new Error('NEON_DB_URL is required');
-  }
-  const result = execFileSync(
-    'psql',
-    ['-t', '-A', '-F', '|', '-c', query],
-    { env: buildPsqlEnv(NEON_DB_URL), encoding: 'utf8', timeout: 30000 }
-  );
-  return result.trim().split('\n').filter(Boolean).map((line) => {
-    const [id, pattern, address, account_id_hash, script_hash, verify_script] = line.split('|');
-    return { id: parseInt(id), pattern, address, account_id_hash, script_hash, verify_script };
-  });
-}
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
@@ -211,22 +82,27 @@ async function main() {
   console.log(`Market: ${MARKET_HASH}`);
   console.log('');
 
+  const deployCtx = { client, account, networkMagic, rpcUrl: RPC_URL };
+
   // Step 1: Deploy TEEVerifier
   console.log('[1/4] Deploying TEEVerifier...');
-  const teeVerifier = await deployContract(client, account, networkMagic, 'TEEVerifier', `${DEPLOY_TAG}-tee`);
+  const teeVerifier = await deployArtifact({ ...deployCtx, baseName: 'TEEVerifier', uniqueSuffix: `${DEPLOY_TAG}-tee` });
   console.log('');
 
   // Step 2: Authorize the TEEVerifier to accept calls from our AA Core
   console.log('[2/4] Authorizing TEEVerifier for core...');
-  await invokePersisted(client, teeVerifier.hash, account, networkMagic, 'setAuthorizedCore', [
-    hash160Param(CORE_HASH),
-  ]);
+  await invokePersisted({
+    ...deployCtx,
+    contractHash: teeVerifier.hash,
+    operation: 'setAuthorizedCore',
+    params: [hash160Param(CORE_HASH)],
+  });
   console.log('  TEEVerifier authorized');
   console.log('');
 
-  // Step 3: Register all 55 accounts
-  console.log('[3/4] Registering 55 vanity accounts...');
-  const accounts = loadAccountsFromDB();
+  // Step 3: Register all accounts
+  console.log('[3/4] Registering vanity accounts...');
+  const accounts = loadAccountsFromDB(NEON_DB_URL);
   console.log(`  Loaded ${accounts.length} accounts from DB`);
 
   let registered = 0;
@@ -234,14 +110,20 @@ async function main() {
   for (const acct of accounts) {
     try {
       process.stdout.write(`  #${acct.id} ${acct.pattern}... `);
-      await invokePersisted(client, CORE_HASH, account, networkMagic, 'registerAccount', [
-        hash160Param(acct.account_id_hash),
-        hash160Param(teeVerifier.hash),
-        byteArrayParam(sanitizeHex(account.publicKey)),
-        hash160Param(ZERO_HASH160),        // no hook
-        hash160Param(account.scriptHash),   // backupOwner = our address
-        integerParam(604800),               // 7 day escape timelock
-      ], [makeSigner(account.scriptHash)]);
+      await invokePersisted({
+        ...deployCtx,
+        contractHash: CORE_HASH,
+        operation: 'registerAccount',
+        params: [
+          hash160Param(acct.account_id_hash),
+          hash160Param(teeVerifier.hash),
+          byteArrayParam(sanitizeHex(account.publicKey)),
+          hash160Param(ZERO_HASH160),        // no hook
+          hash160Param(account.scriptHash),   // backupOwner = our address
+          integerParam(604800),               // 7 day escape timelock
+        ],
+        signers: [makeSigner(account.scriptHash)],
+      });
       registered++;
       console.log('OK');
     } catch (err) {
@@ -265,13 +147,19 @@ async function main() {
 
     try {
       process.stdout.write(`  #${acct.id} ${acct.pattern} (${Number(price) / 1e8} GAS)... `);
-      const result = await invokePersisted(client, MARKET_HASH, account, networkMagic, 'createListing', [
-        hash160Param(CORE_HASH),
-        hash160Param(acct.account_id_hash),
-        integerParam(price),
-        stringParam(truncatedTitle),
-        stringParam(''),
-      ], [makeCustomContractSigner(account.scriptHash, [MARKET_HASH, CORE_HASH])]);
+      const result = await invokePersisted({
+        ...deployCtx,
+        contractHash: MARKET_HASH,
+        operation: 'createListing',
+        params: [
+          hash160Param(CORE_HASH),
+          hash160Param(acct.account_id_hash),
+          integerParam(price),
+          stringParam(truncatedTitle),
+          stringParam(''),
+        ],
+        signers: [makeCustomContractSigner(account.scriptHash, [MARKET_HASH, CORE_HASH])],
+      });
 
       listings.push({
         dbId: acct.id, pattern: acct.pattern, address: acct.address,

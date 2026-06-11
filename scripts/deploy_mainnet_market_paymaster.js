@@ -6,29 +6,40 @@
  *
  * This script is intentionally mainnet-only and refuses to broadcast unless
  * CONFIRM_MAINNET_AA_DEPLOY=1 is set. It never prints private key material.
+ *
+ * Shared deploy plumbing lives in scripts/lib/deploy-helpers.js; its
+ * invokePersisted helper aborts with "<operation> preview FAULT" before
+ * broadcasting whenever the testInvoke preview FAULTs.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-function requireWorkspacePackage(name) {
-  try {
-    return require(name);
-  } catch (error) {
-    if (error?.code !== 'MODULE_NOT_FOUND') throw error;
-    return require(path.resolve(__dirname, '..', 'sdk', 'js', 'node_modules', name));
-  }
-}
+const {
+  neon,
+  requireWorkspacePackage,
+  sanitizeHex,
+  extractDeployedContractHash,
+  withRpcRetry,
+  loadArtifact,
+  normalizeHash,
+  buildConfig,
+  hash160Param,
+  integerParam,
+  stringParam,
+  byteArrayParam,
+  arrayParam,
+  makeSigner,
+  waitForAppLog,
+  assertVmState,
+  invokePersisted,
+} = require('./lib/deploy-helpers');
 
-const { rpc, sc, tx, wallet, experimental, u, CONST } = requireWorkspacePackage('@cityofzion/neon-js');
+const { rpc, sc, wallet, experimental, CONST } = neon;
 const { ethers } = requireWorkspacePackage('ethers');
 
-const { extractDeployedContractHash } = require('../sdk/js/src/deployLog');
 const { AbstractAccountClient } = require('../sdk/js/src/index');
-const {
-  buildV3UserOperationTypedData,
-  sanitizeHex,
-} = require('../sdk/js/src/metaTx');
+const { buildV3UserOperationTypedData } = require('../sdk/js/src/metaTx');
 
 const MAINNET_MAGIC = 860833102;
 const DEFAULT_RPC_URL = 'https://api.n3index.dev/mainnet';
@@ -83,82 +94,6 @@ function resolveWif() {
   return '';
 }
 
-function normalizeHash(value) {
-  const hex = sanitizeHex(value || '');
-  return hex ? `0x${hex}` : '';
-}
-
-function artifactPaths(baseName) {
-  const base = path.resolve(__dirname, '..', 'contracts', 'bin', 'v3');
-  return {
-    nef: path.join(base, `${baseName}.nef`),
-    manifest: path.join(base, `${baseName}.manifest.json`),
-  };
-}
-
-function loadArtifact(baseName) {
-  const paths = artifactPaths(baseName);
-  const nef = sc.NEF.fromBuffer(fs.readFileSync(paths.nef));
-  const manifestJson = JSON.parse(fs.readFileSync(paths.manifest, 'utf8'));
-  const suffix = String(process.env.AA_DEPLOY_SUFFIX || '').trim();
-  if (suffix) manifestJson.name = `${manifestJson.name}-${suffix}`;
-  const manifest = sc.ContractManifest.fromJson(manifestJson);
-  return { nef, manifest, manifestName: manifestJson.name };
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isRetryableRpcError(error) {
-  const msg = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|premature close/i.test(msg);
-}
-
-async function withRpcRetry(label, fn, attempts = 5) {
-  let lastError;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      if (!isRetryableRpcError(error) || attempt >= attempts) throw error;
-      const msg = error instanceof Error ? error.message : String(error);
-      console.warn(`  [rpc-retry] ${label} attempt ${attempt}/${attempts}: ${msg}`);
-      await sleep(1500 * attempt);
-    }
-  }
-  throw lastError;
-}
-
-function buildConfig(account, networkMagic, rpcUrl) {
-  return { account, networkMagic, rpcAddress: rpcUrl, blocksTillExpiry: 200 };
-}
-
-function hash160Param(value) {
-  return sc.ContractParam.hash160(sanitizeHex(value));
-}
-
-function integerParam(value) {
-  return sc.ContractParam.integer(typeof value === 'bigint' ? value.toString() : String(value));
-}
-
-function stringParam(value) {
-  return sc.ContractParam.string(String(value));
-}
-
-function byteArrayParam(hexValue = '') {
-  return sc.ContractParam.byteArray(u.HexString.fromHex(sanitizeHex(hexValue), true));
-}
-
-function arrayParam(...items) {
-  return sc.ContractParam.array(...items);
-}
-
-function makeSigner(scriptHash) {
-  return new tx.Signer({ account: scriptHash, scopes: tx.WitnessScope.CalledByEntry });
-}
-
 function userOpParam({ targetContract, method, args = [], nonce = 0n, deadline = 0n, signatureHex = '' }) {
   return arrayParam(
     hash160Param(targetContract),
@@ -190,32 +125,9 @@ async function contractExists(client, hash) {
   }
 }
 
-async function waitForAppLog(client, txid, label, timeoutMs = 300000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    try {
-      const appLog = await client.getApplicationLog(txid);
-      if (appLog?.executions?.length) return appLog;
-    } catch (_) {
-      // Still waiting for persistence.
-    }
-    await sleep(3000);
-  }
-  throw new Error(`${label}: timed out waiting for application log for ${txid}`);
-}
-
-function assertHalt(appLog, label) {
-  const execution = appLog?.executions?.[0];
-  if (!execution) throw new Error(`${label}: missing execution log`);
-  const vmState = String(execution.vmstate || execution.state || '');
-  if (!vmState.includes('HALT')) {
-    throw new Error(`${label}: VM did not HALT (${vmState}) ${execution.exception || ''}`.trim());
-  }
-  return execution;
-}
-
 async function deployContract(client, account, networkMagic, rpcUrl, baseName) {
-  const { nef, manifest, manifestName } = loadArtifact(baseName);
+  const suffix = String(process.env.AA_DEPLOY_SUFFIX || '').trim();
+  const { nef, manifest, manifestName } = loadArtifact(baseName, suffix);
   const predictedHash = normalizeHash(experimental.getContractHash(account.scriptHash, nef.checksum, manifestName));
   const alreadyDeployed = await contractExists(client, predictedHash);
   if (planOnly || alreadyDeployed) {
@@ -244,7 +156,7 @@ async function deployContract(client, account, networkMagic, rpcUrl, baseName) {
   }
   console.log(`  ${baseName} tx=${txid}`);
   const appLog = await waitForAppLog(client, txid, `deploy ${baseName}`);
-  assertHalt(appLog, `deploy ${baseName}`);
+  assertVmState(appLog, `deploy ${baseName}`, 'HALT');
   const deployedHash = normalizeHash(extractDeployedContractHash(appLog) || predictedHash);
   console.log(`  ${baseName} deployed=${deployedHash}`);
   return { baseName, manifestName, hash: deployedHash, txid, status: 'deployed' };
@@ -253,26 +165,6 @@ async function deployContract(client, account, networkMagic, rpcUrl, baseName) {
 async function invokeRead(client, contractHash, operation, params = [], signers) {
   return withRpcRetry(`${operation}.read`, () =>
     client.invokeFunction(sanitizeHex(contractHash), operation, params, signers));
-}
-
-async function invokePersisted(client, account, networkMagic, rpcUrl, contractHash, operation, params = [], signers = [makeSigner(account.scriptHash)]) {
-  const baseConfig = buildConfig(account, networkMagic, rpcUrl);
-  const contract = new experimental.SmartContract(sanitizeHex(contractHash), baseConfig);
-  const preview = await withRpcRetry(`${operation}.preview`, () =>
-    contract.testInvoke(operation, params, signers));
-  if (String(preview?.state || '').includes('FAULT')) {
-    throw new Error(`${operation} preview FAULT: ${preview.exception || 'unknown error'}`);
-  }
-  const systemFeeOverride = u.BigInteger.fromDecimal(preview.gasconsumed || '1', 0);
-  const invokeContract = new experimental.SmartContract(
-    sanitizeHex(contractHash),
-    { ...baseConfig, systemFeeOverride },
-  );
-  const txid = await withRpcRetry(`${operation}.invoke`, () =>
-    invokeContract.invoke(operation, params, signers));
-  const appLog = await waitForAppLog(client, txid, operation);
-  assertHalt(appLog, operation);
-  return { txid, appLog };
 }
 
 function stackBoolean(item) {
@@ -306,6 +198,7 @@ function writeResults(results) {
 
 async function runPaymasterSmoke({ client, account, networkMagic, rpcUrl, coreHash, verifierHash, paymasterHash }) {
   if (planOnly) return null;
+  const invokeCtx = { client, account, networkMagic, rpcUrl };
   const aaClient = new AbstractAccountClient(rpcUrl, coreHash);
   const evmWallet = ethers.Wallet.createRandom();
   const verifierParamsHex = evmWallet.signingKey.publicKey.slice(2);
@@ -316,33 +209,48 @@ async function runPaymasterSmoke({ client, account, networkMagic, rpcUrl, coreHa
     escapeTimelock: ESCAPE_TIMELOCK,
   });
 
-  const register = await invokePersisted(client, account, networkMagic, rpcUrl, coreHash, 'registerAccount', [
-    hash160Param(accountId),
-    hash160Param(verifierHash),
-    byteArrayParam(verifierParamsHex),
-    hash160Param(ZERO_HASH160),
-    hash160Param(account.scriptHash),
-    integerParam(ESCAPE_TIMELOCK),
-  ]);
+  const register = await invokePersisted({
+    ...invokeCtx,
+    contractHash: coreHash,
+    operation: 'registerAccount',
+    params: [
+      hash160Param(accountId),
+      hash160Param(verifierHash),
+      byteArrayParam(verifierParamsHex),
+      hash160Param(ZERO_HASH160),
+      hash160Param(account.scriptHash),
+      integerParam(ESCAPE_TIMELOCK),
+    ],
+  });
 
   const depositAmount = BigInt(process.env.AA_MAINNET_PAYMASTER_SMOKE_DEPOSIT || '2000000');
   const reimbursement = BigInt(process.env.AA_MAINNET_PAYMASTER_SMOKE_REIMBURSEMENT || '100000');
-  const deposit = await invokePersisted(client, account, networkMagic, rpcUrl, GAS_HASH, 'transfer', [
-    hash160Param(account.scriptHash),
-    hash160Param(paymasterHash),
-    integerParam(depositAmount),
-    sc.ContractParam.any(),
-  ]);
+  const deposit = await invokePersisted({
+    ...invokeCtx,
+    contractHash: GAS_HASH,
+    operation: 'transfer',
+    params: [
+      hash160Param(account.scriptHash),
+      hash160Param(paymasterHash),
+      integerParam(depositAmount),
+      sc.ContractParam.any(),
+    ],
+  });
 
-  const policy = await invokePersisted(client, account, networkMagic, rpcUrl, paymasterHash, 'setPolicy', [
-    hash160Param(accountId),
-    hash160Param(GAS_HASH),
-    stringParam('symbol'),
-    integerParam(500000n),
-    integerParam(depositAmount),
-    integerParam(depositAmount),
-    integerParam(0),
-  ]);
+  const policy = await invokePersisted({
+    ...invokeCtx,
+    contractHash: paymasterHash,
+    operation: 'setPolicy',
+    params: [
+      hash160Param(accountId),
+      hash160Param(GAS_HASH),
+      stringParam('symbol'),
+      integerParam(500000n),
+      integerParam(depositAmount),
+      integerParam(depositAmount),
+      integerParam(0),
+    ],
+  });
 
   const valid = await invokeRead(client, paymasterHash, 'validatePaymasterOp', [
     hash160Param(account.scriptHash),
@@ -381,13 +289,18 @@ async function runPaymasterSmoke({ client, account, networkMagic, rpcUrl, coreHa
     signatureHex: signature,
   });
 
-  const sponsored = await invokePersisted(client, account, networkMagic, rpcUrl, coreHash, 'executeSponsoredUserOp', [
-    hash160Param(accountId),
-    op,
-    hash160Param(paymasterHash),
-    hash160Param(account.scriptHash),
-    integerParam(reimbursement),
-  ]);
+  const sponsored = await invokePersisted({
+    ...invokeCtx,
+    contractHash: coreHash,
+    operation: 'executeSponsoredUserOp',
+    params: [
+      hash160Param(accountId),
+      op,
+      hash160Param(paymasterHash),
+      hash160Param(account.scriptHash),
+      integerParam(reimbursement),
+    ],
+  });
 
   return {
     accountId: normalizeHash(accountId),
@@ -425,6 +338,8 @@ async function main() {
   }
   if (!deployCore && !(await contractExists(client, coreHash))) throw new Error(`AA core not deployed: ${coreHash}`);
   if (!(await contractExists(client, verifierHash))) throw new Error(`Web3Auth verifier not deployed: ${verifierHash}`);
+
+  const invokeCtx = { client, account, networkMagic, rpcUrl };
 
   const plan = {
     network: 'mainnet',
@@ -473,9 +388,12 @@ async function main() {
     const currentCore = normalizeHash(authorizedCore?.stack?.[0]?.value || '');
     if (currentCore !== activeCoreHash) {
       console.log(`Binding ${moduleName} ${moduleDeployment.hash} to AA core ${activeCoreHash}`);
-      const bind = await invokePersisted(client, account, networkMagic, rpcUrl, moduleDeployment.hash, 'setAuthorizedCore', [
-        hash160Param(activeCoreHash),
-      ]);
+      const bind = await invokePersisted({
+        ...invokeCtx,
+        contractHash: moduleDeployment.hash,
+        operation: 'setAuthorizedCore',
+        params: [hash160Param(activeCoreHash)],
+      });
       transactions[`set${moduleName}AuthorizedCoreTx`] = bind.txid;
     }
   }
@@ -485,9 +403,12 @@ async function main() {
     const currentCore = normalizeHash(authorizedCore?.stack?.[0]?.value || '');
     if (currentCore !== activeCoreHash) {
       console.log(`Binding Paymaster ${paymaster.hash} to AA core ${activeCoreHash}`);
-      const bind = await invokePersisted(client, account, networkMagic, rpcUrl, paymaster.hash, 'setAuthorizedCore', [
-        hash160Param(activeCoreHash),
-      ]);
+      const bind = await invokePersisted({
+        ...invokeCtx,
+        contractHash: paymaster.hash,
+        operation: 'setAuthorizedCore',
+        params: [hash160Param(activeCoreHash)],
+      });
       transactions.setAuthorizedCoreTx = bind.txid;
     }
   }
