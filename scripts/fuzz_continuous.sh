@@ -18,28 +18,31 @@ echo "    Start:    $(date -Iseconds)"
 echo "    End:      $(date -Iseconds -d "+${HOURS} hours" 2>/dev/null || date -v+${HOURS}H -Iseconds 2>/dev/null || echo "~${HOURS}h from now")"
 echo ""
 
+echo "Building once before the sweep..."
+dotnet build "$SLN" --nologo
+echo ""
+
 while [ "$(date +%s)" -lt "$END_TIME" ]; do
   SEED=$RANDOM
   ELAPSED=$(( $(date +%s) - START ))
   REMAINING=$(( END_TIME - $(date +%s) ))
-  printf "[%02d:%02d:%02d] seed=%-6d pass=%-4d total_iters=%-10d remaining=%-8ds ... " \
+  printf "[%02d:%02d:%02d] seed=%-6d pass=%-4d iters_per_test=%-10d remaining=%-8ds ... " \
     $((ELAPSED/3600)) $((ELAPSED%3600/60)) $((ELAPSED%60)) \
     "$SEED" "$PASS" "$TOTAL_ITERATIONS" "$REMAINING"
 
   if SOURCE_INVARIANT_SEED="$SEED" SOURCE_INVARIANT_ITERATIONS="$ITERATIONS" \
-     dotnet test "$SLN" --nologo --no-build --filter "$FILTER" -q 2>&1 \
-     | tail -1 | grep -q "Passed"; then
+     dotnet test "$SLN" --nologo --no-build --filter "$FILTER" -q >/dev/null 2>&1; then
     PASS=$((PASS + 1))
-    TOTAL_ITERATIONS=$((TOTAL_ITERATIONS + ITERATIONS * 19))
+    TOTAL_ITERATIONS=$((TOTAL_ITERATIONS + ITERATIONS))
     echo "PASS"
   else
     echo "FAIL  <-- seed=$SEED"
     echo ""
     echo "!!! FAILURE DETECTED — re-running with verbose output:"
     SOURCE_INVARIANT_SEED="$SEED" SOURCE_INVARIANT_ITERATIONS="$ITERATIONS" \
-      dotnet test "$SLN" --nologo --no-build --filter "$FILTER" -v normal 2>&1
+      dotnet test "$SLN" --nologo --no-build --filter "$FILTER" -v normal 2>&1 || true
     echo ""
-    echo "Failed seed: $SEED  (after $PASS passes, $TOTAL_ITERATIONS total iterations)"
+    echo "Failed seed: $SEED  (after $PASS passes, $TOTAL_ITERATIONS iterations per test)"
     exit 1
   fi
 done
@@ -49,5 +52,5 @@ echo ""
 echo "=== Continuous Source-Invariant Sweep Complete ==="
 echo "    Duration:    $(printf '%02d:%02d:%02d' $((ELAPSED/3600)) $((ELAPSED%3600/60)) $((ELAPSED%60)))"
 echo "    Seeds tried: $PASS"
-echo "    Total iters: $TOTAL_ITERATIONS"
+echo "    Iterations:  $TOTAL_ITERATIONS per invariant test"
 echo "    Result:      ALL PASSED"

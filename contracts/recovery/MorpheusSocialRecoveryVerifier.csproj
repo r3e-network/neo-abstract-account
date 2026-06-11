@@ -7,7 +7,17 @@
     <AssemblyName>SocialRecoveryVerifier</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <!--
+      The compiler orders members by source file name, so the part names are chosen to sort
+      in the original single-file member order. This keeps the compiled NEF byte-identical
+      to the deployed artifact (verified by sha256 against contracts/bin/v3).
+    -->
     <Compile Include="MorpheusSocialRecoveryVerifier.Fixed.cs" />
+    <Compile Include="MorpheusSocialRecoveryVerifier.Flows.cs" />
+    <Compile Include="MorpheusSocialRecoveryVerifier.Lifecycle.cs" />
+    <Compile Include="MorpheusSocialRecoveryVerifier.Queries.cs" />
+    <Compile Include="MorpheusSocialRecoveryVerifier.Storage.cs" />
+    <Compile Include="MorpheusSocialRecoveryVerifier.Validation.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Neo.SmartContract.Framework" Version="3.9.1" />

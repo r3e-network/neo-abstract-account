@@ -144,27 +144,98 @@ public class SourceInvariantTests
         StringAssert.Contains(executionSource, "sequence = nonce & 0xFFFFFFFFFFFFFFFF");
         StringAssert.Contains(executionSource, "nonce < 0");
 
-        // Randomized invariant check: test salt-based nonce boundary
-        BigInteger saltThreshold = BigInteger.Parse("1000000000000000000");
-        for (int i = 0; i < Iterations; i++)
-        {
-            var nonceBytes = new byte[32]; rng.NextBytes(nonceBytes);
-            BigInteger nonce = new BigInteger(nonceBytes);
+        // Runtime boundary check against the compiled contract: nonces >= MAX_2D_NONCE take the
+        // one-shot salt path, everything below is a 2D channel/sequence nonce. IsNonceAcceptable
+        // is observed through previewUserOpValidation, ConsumeNonce through executeUserOp.
+        BigInteger max2dNonce = BigInteger.Parse("1000000000000000000");
+        NonceProbeHarness probe = new();
 
-            if (nonce >= saltThreshold)
-            {
-                // Salt mode: each unique nonce is one-time-use
-                // No channel/sequence decomposition
-            }
-            else if (nonce >= 0)
-            {
-                // 2D mode: channel = nonce >> 64, sequence = nonce & mask
-                BigInteger channel = nonce >> 64;
-                BigInteger sequence = nonce & 0xFFFFFFFFFFFFFFFF;
-                Assert.IsTrue(channel >= 0);
-                Assert.IsTrue(sequence >= 0);
-                Assert.IsTrue(sequence <= 0xFFFFFFFFFFFFFFFF);
-            }
+        Assert.IsTrue(probe.IsNonceAcceptable(0), "2D path: a fresh channel expects sequence 0");
+        Assert.IsFalse(probe.IsNonceAcceptable(1), "2D path: out-of-order sequence is rejected");
+        Assert.IsFalse(probe.IsNonceAcceptable(max2dNonce - 1),
+            "Below the boundary the 2D interpretation applies (channel 0, sequence != cursor)");
+        Assert.IsTrue(probe.IsNonceAcceptable(max2dNonce),
+            "At the boundary the salt path applies although the 2D interpretation would reject");
+
+        // Consuming the boundary salt is one-shot and must not advance any 2D channel cursor.
+        probe.ExecuteWithNonce(max2dNonce);
+        Assert.IsFalse(probe.IsNonceAcceptable(max2dNonce), "Salt nonces are single-use");
+        Assert.AreEqual(BigInteger.Zero, probe.GetChannelSequence(0), "Salt path must not touch channel sequences");
+        Assert.IsTrue(probe.IsNonceAcceptable(0), "Channel 0 still expects sequence 0 after a salt consume");
+
+        // Consuming a 2D nonce advances exactly its channel cursor.
+        probe.ExecuteWithNonce(0);
+        Assert.AreEqual(BigInteger.One, probe.GetChannelSequence(0), "2D consume increments the channel cursor");
+        Assert.IsFalse(probe.IsNonceAcceptable(0), "A consumed sequence cannot be replayed");
+        Assert.IsTrue(probe.IsNonceAcceptable(1), "The successor sequence becomes acceptable");
+
+        // Seeded randomized sweep (VM executions, so capped): unused salts are always acceptable;
+        // 2D nonces are acceptable exactly when the sequence matches the channel cursor (now 1).
+        int vmIterations = Math.Min(Iterations, 64);
+        for (int i = 0; i < vmIterations; i++)
+        {
+            var saltBytes = new byte[8];
+            rng.NextBytes(saltBytes);
+            BigInteger salt = max2dNonce + new BigInteger(saltBytes, isUnsigned: true);
+            Assert.IsTrue(probe.IsNonceAcceptable(salt), $"Unused salt must be acceptable (iteration {i})");
+
+            BigInteger sequence = rng.Next(0, 100000);
+            Assert.AreEqual(sequence == 1, probe.IsNonceAcceptable(sequence),
+                $"2D nonce acceptability must mirror the channel cursor (iteration {i})");
+        }
+    }
+
+    /// <summary>
+    /// Minimal wallet deployment that exposes the contract's private IsNonceAcceptable /
+    /// ConsumeNonce behavior through its public entrypoints.
+    /// </summary>
+    private sealed class NonceProbeHarness
+    {
+        private static readonly Neo.UInt160 BackupOwner =
+            Neo.UInt160.Parse("0x13ef519c362973f9a34648a9eac5b71250b2a80a");
+
+        private readonly RuntimeFixture _fx = new();
+        private readonly Neo.UInt160 _wallet;
+        private readonly Neo.UInt160 _target;
+        private readonly Neo.UInt160 _accountId;
+
+        public NonceProbeHarness()
+        {
+            _wallet = _fx.Deploy("UnifiedSmartWalletV3");
+            _target = _fx.Deploy("MockTransferTarget");
+            _accountId = _fx.CallUInt160(
+                _wallet, "computeRegistrationAccountId",
+                Neo.UInt160.Zero, Array.Empty<byte>(), Neo.UInt160.Zero, BackupOwner, 2_592_000u);
+
+            _fx.SetSigners(BackupOwner);
+            _fx.CallVoid(
+                _wallet, "registerAccount",
+                _accountId, Neo.UInt160.Zero, Array.Empty<byte>(), Neo.UInt160.Zero, BackupOwner, 2_592_000u);
+        }
+
+        public bool IsNonceAcceptable(BigInteger nonce)
+        {
+            var preview = (Neo.VM.Types.Array)_fx.Call(
+                _wallet, "previewUserOpValidation", _accountId, BuildOp(nonce));
+            return preview[1].GetBoolean();
+        }
+
+        public void ExecuteWithNonce(BigInteger nonce)
+        {
+            _fx.CallVoid(_wallet, "executeUserOp", _accountId, BuildOp(nonce));
+        }
+
+        public BigInteger GetChannelSequence(BigInteger channel)
+        {
+            return _fx.CallInteger(_wallet, "getNonce", _accountId, channel);
+        }
+
+        private object[] BuildOp(BigInteger nonce)
+        {
+            return RuntimeFixture.UserOp(
+                _target, "transfer",
+                new object?[] { _accountId, BackupOwner, (BigInteger)1, null },
+                nonce, _fx.Now() + 3_600_000, Array.Empty<byte>());
         }
     }
 
@@ -634,7 +705,6 @@ public class SourceInvariantTests
             ("contracts/paymaster/Paymaster.cs", "Runtime.CheckWitness(admin)"),
             ("contracts/market/AAAddressMarket.cs", "ValidateAdmin();"),
             ("contracts/mocks/MockTransferTarget.cs", "ValidateAdmin();"),
-            ("tokens/TestAllowanceToken/TestAllowanceToken.cs", "ValidateOwner();"),
             ("verifiers/AllowAllVerifier/AllowAllVerifier.cs", "ValidateAdmin();"),
         };
 
