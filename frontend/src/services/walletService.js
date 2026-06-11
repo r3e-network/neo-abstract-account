@@ -1,6 +1,6 @@
 import { BrowserProvider } from 'ethers';
-import { connectedAccount, setConnectedAccount } from '@/utils/wallet';
-import { RUNTIME_CONFIG } from '@/config/runtimeConfig';
+import { connectedAccount, setConnectedAccount } from '../utils/wallet.js';
+import { RUNTIME_CONFIG } from '../config/runtimeConfig.js';
 import { EC } from '../config/errorCodes.js';
 import { getScriptHashFromAddress } from '../utils/neo.js';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout.js';
@@ -11,6 +11,50 @@ export function getAbstractAccountHash() {
 
 const MAINNET_MAGIC = 860833102;
 const TESTNET_MAGIC = 894710606;
+
+export const SESSION_STATES = {
+  DISCONNECTED: 'disconnected',
+  PENDING: 'pending',
+  VERIFIED: 'verified',
+};
+
+// Single persistence key for the wallet session. The value is a JSON envelope
+// ({ address, hash, provider }) so account metadata survives reloads; legacy
+// plain-address strings written by earlier versions are still accepted.
+export const SESSION_STORAGE_KEY = 'aa_connected_account';
+const LEGACY_SESSION_FLAG_KEY = 'aa_wallet_connected';
+
+const ACCOUNT_CHANGED_EVENTS = [
+  'NEOLine.NEO.EVENT.ACCOUNT_CHANGED',
+  'Neo.DapiProvider.ACCOUNT_CHANGED',
+];
+const NETWORK_CHANGED_EVENTS = [
+  'NEOLine.NEO.EVENT.NETWORK_CHANGED',
+  'Neo.DapiProvider.NETWORK_CHANGED',
+];
+
+function getSessionStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  return window.localStorage;
+}
+
+function parsePersistedSession(raw) {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.address) {
+      return {
+        address: String(parsed.address).trim(),
+        hash: String(parsed.hash || '').trim(),
+        provider: String(parsed.provider || '').trim(),
+      };
+    }
+  } catch (_error) {
+    /* legacy plain-address payload */
+  }
+  const address = String(raw).trim();
+  return address && !address.startsWith('{') ? { address, hash: '', provider: '' } : null;
+}
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object';
@@ -180,15 +224,27 @@ class WalletService {
     this.provider = this.PROVIDERS.NEO_WALLET;
     this.account = null;
     this.rpcUrl = RUNTIME_CONFIG.rpcUrl;
+    this.sessionState = SESSION_STATES.DISCONNECTED;
+    this._reconcilePromise = null;
+    this._sessionListenersInstalled = false;
     this.bootstrap();
+    this.installSessionListeners();
   }
 
   bootstrap() {
-    const cached = window.localStorage.getItem('aa_connected_account');
-    if (cached) {
-      setConnectedAccount(cached);
-      this.account = { address: cached };
-    }
+    const storage = getSessionStorage();
+    if (!storage) return;
+    // The session now lives under a single key; drop the legacy boolean flag
+    // that useWalletConnection used to mirror alongside it.
+    storage.removeItem(LEGACY_SESSION_FLAG_KEY);
+    const cached = parsePersistedSession(storage.getItem(SESSION_STORAGE_KEY));
+    if (!cached?.address) return;
+    // Restore optimistically so the UI can render the cached address, but mark
+    // the session 'pending' until reconcileSession() verifies it against the
+    // provider on first mount.
+    setConnectedAccount(cached.address);
+    this.account = { ...cached };
+    this.sessionState = SESSION_STATES.PENDING;
   }
 
   get isConnected() {
@@ -202,15 +258,114 @@ class WalletService {
   setConnected(address, metadata = {}) {
     setConnectedAccount(address);
     this.account = address ? { address, ...metadata } : null;
+    this.sessionState = address ? SESSION_STATES.VERIFIED : SESSION_STATES.DISCONNECTED;
+    const storage = getSessionStorage();
+    if (!storage) return;
     if (address) {
-      window.localStorage.setItem('aa_connected_account', address);
+      storage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        address,
+        hash: this.account?.hash || '',
+        provider: this.account?.provider || '',
+      }));
     } else {
-      window.localStorage.removeItem('aa_connected_account');
+      storage.removeItem(SESSION_STORAGE_KEY);
     }
   }
 
   disconnect() {
     this.setConnected('');
+  }
+
+  installSessionListeners() {
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    if (this._sessionListenersInstalled) return;
+    this._sessionListenersInstalled = true;
+    const onAccountChanged = (event) => this.handleAccountChanged(event?.detail);
+    const onNetworkChanged = () => this.handleNetworkChanged();
+    for (const eventName of ACCOUNT_CHANGED_EVENTS) {
+      window.addEventListener(eventName, onAccountChanged);
+    }
+    for (const eventName of NETWORK_CHANGED_EVENTS) {
+      window.addEventListener(eventName, onNetworkChanged);
+    }
+  }
+
+  handleAccountChanged(detail) {
+    if (!this.isConnected) return;
+    const next = normalizeNep21Account(detail) || normalizeNep21Account(detail?.account);
+    if (!next?.address || next.address === this.account?.address) return;
+    this.setConnected(next.address, {
+      hash: next.hash || '',
+      provider: this.account?.provider || '',
+    });
+  }
+
+  handleNetworkChanged() {
+    if (!this.isConnected) return;
+    // The cached account and its hash metadata may not be valid on the new
+    // network; force a re-verification pass.
+    this.sessionState = SESSION_STATES.PENDING;
+    void this.reconcileSession();
+  }
+
+  /**
+   * Verify a 'pending' session (restored from storage) against the wallet
+   * provider without prompting the user. Single-flight: concurrent callers
+   * share one reconciliation pass.
+   *
+   * - No provider available at all -> the session cannot be verified, clear it.
+   * - NEP-21 provider available -> getAccounts() (non-interactive). An empty
+   *   roster clears the session; a changed selection adopts the provider's
+   *   current default account; a match re-verifies and refreshes hash metadata.
+   * - Only a legacy provider lane (NeoLine/neo3Dapi) is present -> keep the
+   *   cached session but leave it 'pending' (verification would prompt).
+   */
+  async reconcileSession(options = {}) {
+    if (this.sessionState !== SESSION_STATES.PENDING) return this.sessionState;
+    if (!this._reconcilePromise) {
+      this._reconcilePromise = this.runSessionReconciliation(options)
+        .finally(() => { this._reconcilePromise = null; });
+    }
+    return this._reconcilePromise;
+  }
+
+  async runSessionReconciliation({ providerTimeoutMs = 1500 } = {}) {
+    const cachedAddress = this.account?.address || '';
+    const candidate = await this.waitForNep21Provider(providerTimeoutMs);
+    // An explicit connect()/disconnect() may have raced the provider wait.
+    if (this.sessionState !== SESSION_STATES.PENDING) return this.sessionState;
+
+    if (!candidate) {
+      if (this.getConnectProvider()) {
+        // A legacy provider lane exists but cannot be queried without
+        // prompting; keep the cached session unverified.
+        return this.sessionState;
+      }
+      this.disconnect();
+      return this.sessionState;
+    }
+
+    const accounts = await candidate.api.getAccounts().catch(() => []);
+    if (this.sessionState !== SESSION_STATES.PENDING) return this.sessionState;
+
+    const roster = Array.isArray(accounts) ? accounts : [];
+    const matching = roster
+      .map((entry) => normalizeNep21Account(entry))
+      .find((entry) => entry?.address && entry.address === cachedAddress);
+    const fallback = normalizeNep21Account(
+      roster.find((entry) => entry?.isDefault) || roster[0],
+    );
+    const selected = matching || fallback;
+    if (!selected?.address) {
+      this.disconnect();
+      return this.sessionState;
+    }
+
+    this.setConnected(selected.address, {
+      hash: selected.hash || (matching ? this.account?.hash || '' : ''),
+      provider: candidate.name || 'NEP-21',
+    });
+    return this.sessionState;
   }
 
   getNeoLineProviderCandidates() {

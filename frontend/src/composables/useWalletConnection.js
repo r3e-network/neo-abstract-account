@@ -1,9 +1,13 @@
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
 import { walletService } from '@/services/walletService';
 import { useI18n } from '@/i18n';
 import { translateError } from '@/config/errorCodes.js';
+
+// The session-expired toast must fire at most once per page load even though
+// several components mount this composable concurrently.
+let sessionExpiredToastShown = false;
 
 export function useWalletConnection() {
   const toast = useToast();
@@ -37,25 +41,16 @@ export function useWalletConnection() {
     toast.info(`${t('nav.disconnect', 'Disconnect')}.`);
   }
 
-  // Auto-reconnect: persist connection state
-  watch(connectedAccount, (addr) => {
-    if (addr) {
-      localStorage.setItem('aa_wallet_connected', 'true');
-    } else {
-      localStorage.removeItem('aa_wallet_connected');
-    }
-  });
-
-  // Auto-reconnect on page load
+  // Lazy session verification: walletService restores the persisted session as
+  // 'pending'; the first mount reconciles it against the provider without
+  // prompting (provider.getAccounts()). Persistence lives in walletService
+  // under a single key, so no extra storage writes happen here.
   onMounted(async () => {
-    if (localStorage.getItem('aa_wallet_connected') && !connectedAccount.value) {
-      try {
-        await walletService.connect();
-      } catch (error) {
-        if (import.meta.env.DEV) console.error('[useWalletConnection] Auto-reconnect failed:', error?.message);
-        toast.error(t('nav.walletSessionExpired', 'Wallet session expired. Please reconnect.'));
-        localStorage.removeItem('aa_wallet_connected');
-      }
+    if (walletService.sessionState !== 'pending') return;
+    const state = await walletService.reconcileSession();
+    if (state === 'disconnected' && !sessionExpiredToastShown) {
+      sessionExpiredToastShown = true;
+      toast.error(t('nav.walletSessionExpired', 'Wallet session expired. Please reconnect.'));
     }
   });
 

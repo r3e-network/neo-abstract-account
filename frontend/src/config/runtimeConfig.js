@@ -311,10 +311,6 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
       env.VITE_DID_NOTIFICATION_SMS_ENABLED,
       true
     ),
-    vanityServiceEndpoint: resolveOptionalUrl(
-      env.VITE_AA_VANITY_SERVICE_URL,
-      '/api/vanity'
-    ),
   };
 }
 

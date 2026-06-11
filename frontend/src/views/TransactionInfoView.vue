@@ -588,15 +588,7 @@ import {
   executeBroadcast,
   resolveRelayPayloadMode,
 } from "@/features/operations/execution.js";
-import {
-  buildExecuteUserOpInvocation,
-  buildV3UserOperationTypedData,
-  computeArgsHash,
-  fetchV3Nonce,
-  fetchV3Verifier,
-  recoverPublicKeyFromTypedDataSignature,
-  toCompactEcdsaSignature,
-} from "@/features/operations/metaTx.js";
+import { signUserOpWithEvm } from "@/features/operations/useUserOpSigning.js";
 import { summarizeSignerProgress } from "@/features/operations/signatures.js";
 import { createActivityEvent } from "@/features/operations/activity.js";
 import { createOperationsPreferences } from "@/features/operations/preferences.js";
@@ -955,6 +947,9 @@ async function loadDraft() {
   }
 }
 
+// Connect success/error toasts are owned by useWalletConnection so users see
+// exactly one toast per connect action; these wrappers only track button state
+// and update the inline status line.
 async function connectNeoWallet() {
   isConnectingNeo.value = true;
   try {
@@ -964,8 +959,8 @@ async function connectNeoWallet() {
       "sharedDraft.neoWalletConnected",
       "Neo wallet connected: {address}",
     ).replace("{address}", walletService.address);
-  } catch (error) {
-    toast.error(translateError(error?.message, t));
+  } catch (_error) {
+    /* useWalletConnection.connect already toasted the failure */
   } finally {
     isConnectingNeo.value = false;
   }
@@ -982,8 +977,8 @@ async function connectEvmWallet() {
       "sharedDraft.evmWalletConnected",
       "EVM wallet connected: {address}",
     ).replace("{address}", evmAddress.value);
-  } catch (error) {
-    toast.error(translateError(error?.message, t));
+  } catch (_error) {
+    /* useWalletConnection.connectEvm already toasted the failure */
   } finally {
     isConnectingEvm.value = false;
   }
@@ -1080,83 +1075,20 @@ async function signWithEvmWallet() {
       evmAddress.value = address.toLowerCase();
     }
 
-    const aaContractHash = getAbstractAccountHash();
-    const rpcUrl = walletService.rpcUrl;
-    const deadline = Date.now() + 60 * 60 * 1000;
-    const argsHashHex = await computeArgsHash({
-      rpcUrl,
-      aaContractHash,
-      args: draft.value.operation_body?.args || [],
-    });
-    let nonce;
-    let typedData;
-
-    if (!draft.value.account?.accountIdHash) {
-      throw new Error(EC.v3AccountRequired);
-    }
-
-    const verifierHash = await fetchV3Verifier({
-      rpcUrl,
-      aaContractHash,
-      accountIdHash: draft.value.account.accountIdHash,
-    });
-    if (!verifierHash) {
-      throw new Error(EC.noVerifierPlugin);
-    }
-
-    nonce = await fetchV3Nonce({
-      rpcUrl,
-      aaContractHash,
-      accountIdHash: draft.value.account.accountIdHash,
-      channel: 0n,
-    });
-    typedData = buildV3UserOperationTypedData({
-      chainId: 894710606,
-      verifyingContract: verifierHash,
-      accountIdHash: draft.value.account.accountIdHash,
-      targetContract: draft.value.operation_body?.targetContract,
-      method: draft.value.operation_body?.method,
-      argsHashHex,
-      nonce,
-      deadline,
-    });
-
-    const signature = await walletService.signTypedDataWithEvm(typedData);
-    const contractSignature = toCompactEcdsaSignature(signature);
-    const publicKey = recoverPublicKeyFromTypedDataSignature({
-      typedData,
-      signature,
-    });
-    const metaInvocation = buildExecuteUserOpInvocation({
-      aaContractHash,
-      accountIdHash: draft.value.account.accountIdHash,
-      targetContract: draft.value.operation_body?.targetContract,
-      method: draft.value.operation_body?.method,
-      methodArgs: draft.value.operation_body?.args || [],
-      nonce,
-      deadline,
-      signatureHex: contractSignature,
+    const { signatureRecord } = await signUserOpWithEvm({
+      rpcUrl: walletService.rpcUrl,
+      aaContractHash: getAbstractAccountHash(),
+      accountIdHash: draft.value.account?.accountIdHash,
+      operationBody: draft.value.operation_body,
+      signerId: evmAddress.value,
+      signTypedData: (typedData) => walletService.signTypedDataWithEvm(typedData),
+      missingAccountError: EC.v3AccountRequired,
+      missingVerifierError: EC.noVerifierPlugin,
     });
     assertSignatureAccess();
     draft.value = await draftStore.appendSignature(
       draft.value.share_slug,
-      {
-        signerId: evmAddress.value,
-        kind: "evm",
-        signatureHex: contractSignature,
-        publicKey,
-        payloadDigest: argsHashHex,
-        metadata: {
-          typedData,
-          verifierHash,
-          argsHashHex,
-          nonce: String(nonce),
-          deadline: String(deadline),
-          metaInvocation,
-          signatureFullHex: signature,
-        },
-        createdAt: new Date().toISOString(),
-      },
+      signatureRecord,
       accessMutationOptions(),
     );
     signerKind.value = "evm";
