@@ -1,0 +1,226 @@
+using System;
+using System.Numerics;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neo;
+using Neo.Extensions;
+using Neo.SmartContract.Testing.Exceptions;
+
+namespace AbstractAccount.Contracts.Tests;
+
+/// <summary>
+/// Behavioral VM tests for <c>UnifiedSmartWalletV3.ExecuteUserOp</c>: the happy path, replay
+/// protection, deadline expiry, witness enforcement on the native fallback path, the verifier
+/// delegation path with real secp256r1 signatures, and the escape-hatch interaction that only
+/// the backup owner may implicitly cancel an active escape by executing.
+/// </summary>
+[TestClass]
+public class ExecuteUserOpRuntimeTests
+{
+    private static readonly UInt160 BackupOwner =
+        UInt160.Parse("0x13ef519c362973f9a34648a9eac5b71250b2a80a");
+
+    private static readonly UInt160 Stranger =
+        UInt160.Parse("0x9999999999999999999999999999999999999999");
+
+    private static readonly UInt160 Recipient =
+        UInt160.Parse("0x4444444444444444444444444444444444444444");
+
+    private const uint EscapeTimelockSeconds = 2_592_000;
+
+    private sealed class WalletHarness
+    {
+        public RuntimeFixture Fx { get; } = new();
+
+        public UInt160 Wallet { get; }
+
+        public UInt160 Target { get; }
+
+        public UInt160 Core { get; }
+
+        public WalletHarness()
+        {
+            Wallet = Fx.Deploy("UnifiedSmartWalletV3");
+            Target = Fx.Deploy("MockTransferTarget");
+            Core = Fx.Deploy("MockVerifierCore");
+        }
+
+        public UInt160 RegisterAccount(UInt160 verifier, UInt160 backupOwner, uint escapeTimelock)
+        {
+            UInt160 accountId = Fx.CallUInt160(
+                Wallet, "computeRegistrationAccountId",
+                verifier, Array.Empty<byte>(), UInt160.Zero, backupOwner, escapeTimelock);
+
+            Fx.SetSigners(backupOwner);
+            Fx.CallVoid(
+                Wallet, "registerAccount",
+                accountId, verifier, Array.Empty<byte>(), UInt160.Zero, backupOwner, escapeTimelock);
+            return accountId;
+        }
+
+        public object?[] TransferArgs(UInt160 accountId) => new object?[] { accountId, Recipient, (BigInteger)1000, null };
+
+        public object[] TransferOp(UInt160 accountId, BigInteger nonce, BigInteger deadline, object? signature = null) =>
+            RuntimeFixture.UserOp(Target, "transfer", TransferArgs(accountId), nonce, deadline, signature ?? Array.Empty<byte>());
+
+        public bool ExecuteUserOp(UInt160 accountId, object[] op) =>
+            Fx.CallBoolean(Wallet, "executeUserOp", accountId, op);
+
+        public BigInteger GetNonce(UInt160 accountId, BigInteger channel) =>
+            Fx.CallInteger(Wallet, "getNonce", accountId, channel);
+
+        /// <summary>
+        /// Deploys a SessionKeyVerifier bound to the mock AA core, registers a wallet account
+        /// using it, and authorizes <paramref name="key"/> for transfer calls on the mock target.
+        /// </summary>
+        public UInt160 RegisterSessionKeyAccount(P256SessionKey key, out UInt160 verifier)
+        {
+            verifier = Fx.Deploy("verifiers/SessionKeyVerifier", Core.ToArray());
+            UInt160 accountId = RegisterAccount(verifier, BackupOwner, EscapeTimelockSeconds);
+
+            BigInteger validUntil = Fx.Now() + 86_400_000; // 24h
+            Fx.CallVoid(Core, "forward", verifier, "setSessionKey", new object?[]
+            {
+                accountId, key.CompressedPublicKey, Target, "transfer", validUntil, BigInteger.Zero, "runtime suite"
+            });
+            return accountId;
+        }
+
+        public byte[] SignTransferOp(P256SessionKey key, UInt160 verifier, UInt160 accountId, BigInteger nonce, BigInteger deadline)
+        {
+            byte[] payload = Fx.CallBytes(
+                verifier, "getPayload", accountId, Target, "transfer", TransferArgs(accountId), nonce, deadline);
+            return key.Sign(payload);
+        }
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_NativeFallback_ExecutesAndConsumesChannelNonce()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(BackupOwner);
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+
+        Assert.AreEqual(BigInteger.Zero, h.GetNonce(accountId, 0), "Fresh account starts at sequence 0");
+        Assert.IsTrue(h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: 0, deadline)),
+            "Mock transfer target should report success");
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0), "Channel 0 sequence advances exactly once");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_RejectsReplayedNonce()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(BackupOwner);
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+        object[] op = h.TransferOp(accountId, nonce: 0, deadline);
+
+        Assert.IsTrue(h.ExecuteUserOp(accountId, op));
+
+        TestException replay = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, op),
+            "Replaying a consumed nonce must fault");
+        StringAssert.Contains(replay.Message, "Invalid sequence for channel");
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0), "Failed replay must not advance the sequence");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_RejectsExpiredDeadline()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(BackupOwner);
+        BigInteger expiredDeadline = h.Fx.Now() - 1;
+
+        TestException expired = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: 0, expiredDeadline)),
+            "An op past its deadline must fault");
+        StringAssert.Contains(expired.Message, "UserOp expired");
+        Assert.AreEqual(BigInteger.Zero, h.GetNonce(accountId, 0), "Expired op must not consume the nonce");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_NativeFallback_RejectsMissingBackupOwnerWitness()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(Stranger);
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+
+        TestException unauthorized = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: 0, deadline)),
+            "Without a verifier, only the backup owner witness may execute");
+        StringAssert.Contains(unauthorized.Message, "Native witness failed");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_VerifierPath_AcceptsValidSessionSignatureWithoutOwnerWitness()
+    {
+        WalletHarness h = new();
+        using P256SessionKey key = new();
+        UInt160 accountId = h.RegisterSessionKeyAccount(key, out UInt160 verifier);
+
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+        byte[] signature = h.SignTransferOp(key, verifier, accountId, nonce: 0, deadline);
+
+        // The session key alone authorizes — no backup-owner witness attached.
+        h.Fx.SetSigners(Stranger);
+        Assert.IsTrue(h.ExecuteUserOp(accountId, h.TransferOp(accountId, 0, deadline, signature)));
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0));
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_VerifierPath_RejectsTamperedSessionSignature()
+    {
+        WalletHarness h = new();
+        using P256SessionKey key = new();
+        UInt160 accountId = h.RegisterSessionKeyAccount(key, out UInt160 verifier);
+
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+        byte[] signature = h.SignTransferOp(key, verifier, accountId, nonce: 0, deadline);
+        signature[0] ^= 0xFF;
+
+        h.Fx.SetSigners(Stranger);
+        TestException rejected = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, h.TransferOp(accountId, 0, deadline, signature)),
+            "A tampered session signature must fault execution");
+        StringAssert.Contains(rejected.Message, "Verifier rejected signature");
+        Assert.AreEqual(BigInteger.Zero, h.GetNonce(accountId, 0), "Rejected op must not consume the nonce");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_ActiveEscape_OnlyBackupOwnerWitnessMayExecute()
+    {
+        WalletHarness h = new();
+        using P256SessionKey key = new();
+        UInt160 accountId = h.RegisterSessionKeyAccount(key, out UInt160 verifier);
+
+        h.Fx.SetSigners(BackupOwner);
+        h.Fx.CallVoid(h.Wallet, "initiateEscape", accountId);
+        Assert.IsTrue(h.Fx.CallBoolean(h.Wallet, "isEscapeActive", accountId));
+
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+        byte[] signature = h.SignTransferOp(key, verifier, accountId, nonce: 0, deadline);
+        object[] op = h.TransferOp(accountId, 0, deadline, signature);
+
+        // A valid verifier signature is NOT enough while an escape is pending: an attacker who
+        // compromised the session key must not be able to silently cancel the escape hatch.
+        h.Fx.SetSigners(Stranger);
+        TestException blocked = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, op),
+            "Execution during an active escape requires the backup owner witness");
+        StringAssert.Contains(blocked.Message, "Only backup owner can cancel escape");
+        Assert.IsTrue(h.Fx.CallBoolean(h.Wallet, "isEscapeActive", accountId), "Escape must survive the rejected op");
+
+        // The backup owner executing the same operation implicitly cancels the escape.
+        h.Fx.SetSigners(BackupOwner);
+        Assert.IsTrue(h.ExecuteUserOp(accountId, op));
+        Assert.IsFalse(h.Fx.CallBoolean(h.Wallet, "isEscapeActive", accountId), "Owner execution cancels the escape");
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0));
+    }
+}
