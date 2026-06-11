@@ -185,9 +185,10 @@ async function invokePersisted(client, contractHash, account, networkMagic, oper
   const preview = await withRpcRetry(`${operation}.preview`, () =>
     contract.testInvoke(operation, params, signers)
   );
-  const systemFeeOverride = String(preview?.state || '').includes('FAULT')
-    ? u.BigInteger.fromDecimal('1', 8)
-    : u.BigInteger.fromDecimal(preview.gasconsumed, 0);
+  if (String(preview?.state || '').includes('FAULT')) {
+    throw new Error(`${operation} preview FAULT: ${preview.exception || 'unknown error'}`);
+  }
+  const systemFeeOverride = u.BigInteger.fromDecimal(preview.gasconsumed, 0);
   const txid = await withRpcRetry(
     `${operation}.invoke`,
     () => new experimental.SmartContract(
@@ -212,12 +213,11 @@ async function invokeMultiPersisted(client, account, networkMagic, calls = [], s
   transaction.signers = signers && signers.length > 0 ? signers : [makeSigner(account.scriptHash)];
   const preview = await withRpcRetry('invokeScript', () =>
     client.invokeScript(scriptHex, transaction.signers)
-  ).catch(() => null);
-  if (preview && !String(preview?.state || '').includes('FAULT')) {
-    transaction.systemFee = u.BigInteger.fromDecimal(preview.gasconsumed, 0);
-  } else {
-    transaction.systemFee = u.BigInteger.fromDecimal('1', 8);
+  );
+  if (String(preview?.state || '').includes('FAULT')) {
+    throw new Error(`invokeMulti preview FAULT: ${preview.exception || 'unknown error'}`);
   }
+  transaction.systemFee = u.BigInteger.fromDecimal(preview.gasconsumed, 0);
   await experimental.txHelpers.addFees(transaction, buildConfig(account, networkMagic));
   transaction.sign(account, networkMagic);
   const txid = await withRpcRetry('sendRawTransaction', () => client.sendRawTransaction(transaction));

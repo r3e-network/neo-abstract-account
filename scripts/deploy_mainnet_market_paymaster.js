@@ -180,10 +180,13 @@ async function contractExists(client, hash) {
     await withRpcRetry(`getContractState ${hash}`, () => client.getContractState(sanitizeHex(hash)));
     return true;
   } catch (error) {
-    if (/unknown contract|contract not found|Unknown contract/i.test(String(error?.message || error))) {
+    if (/unknown contract|contract not found/i.test(String(error?.message || error))) {
       return false;
     }
-    return false;
+    // Anything else (HTTP failures, parse errors, exhausted retries) is an
+    // RPC failure, not evidence the contract is missing — surface it so the
+    // operator sees the real root cause instead of a wrong deployment state.
+    throw error;
   }
 }
 
@@ -276,13 +279,19 @@ function stackBoolean(item) {
   return item?.value === true || item?.value === 1 || item?.value === '1' || item?.value === 'true';
 }
 
-async function readGasBalance(address) {
-  const response = await fetch(DEFAULT_RPC_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getnep17balances', params: [address] }),
+async function readGasBalance(rpcUrl, address) {
+  const payload = await withRpcRetry(`getnep17balances ${address}`, async () => {
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getnep17balances', params: [address] }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) {
+      throw new Error(`getnep17balances returned HTTP ${response.status}`);
+    }
+    return response.json();
   });
-  const payload = await response.json();
   const rows = payload?.result?.balance || [];
   const gas = rows.find((item) => sanitizeHex(item.assethash) === sanitizeHex(GAS_HASH));
   return gas?.amount || '0';
@@ -424,7 +433,7 @@ async function main() {
     deployer: {
       address: account.address,
       scriptHash: normalizeHash(account.scriptHash),
-      gasBalance: await readGasBalance(account.address),
+      gasBalance: await readGasBalance(rpcUrl, account.address),
     },
     configuredCore: coreHash,
     web3AuthVerifier: verifierHash,

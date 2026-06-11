@@ -140,9 +140,10 @@ async function deployContract(client, account, networkMagic, baseName, uniqueSuf
 async function invokePersisted(client, contractHash, account, networkMagic, operation, params = [], signers = undefined) {
   const contract = new experimental.SmartContract(sanitizeHex(contractHash), buildConfig(account, networkMagic));
   const preview = await withRpcRetry(`${operation}.preview`, () => contract.testInvoke(operation, params, signers));
-  const sysFee = String(preview?.state || '').includes('FAULT')
-    ? u.BigInteger.fromDecimal('1', 8)
-    : u.BigInteger.fromDecimal(preview.gasconsumed, 0);
+  if (String(preview?.state || '').includes('FAULT')) {
+    throw new Error(`${operation} preview FAULT: ${preview.exception || 'unknown error'}`);
+  }
+  const sysFee = u.BigInteger.fromDecimal(preview.gasconsumed, 0);
   const txid = await withRpcRetry(`${operation}.invoke`, () =>
     new experimental.SmartContract(sanitizeHex(contractHash), { ...buildConfig(account, networkMagic), systemFeeOverride: sysFee }).invoke(operation, params, signers)
   );
