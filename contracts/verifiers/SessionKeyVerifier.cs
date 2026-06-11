@@ -43,6 +43,18 @@ namespace AbstractAccount.Verifiers
         public static UInt160 AuthorizedCore() => VerifierAuthority.AuthorizedCore();
 
         public static void SetAuthorizedCore(UInt160 coreContract) => VerifierAuthority.SetAuthorizedCore(coreContract);
+        // Audit fix M-7 (parity with hooks): timelocked core re-pointing.
+        public static void ProposeAuthorizedCore(UInt160 coreContract) => VerifierAuthority.ProposeAuthorizedCore(coreContract);
+        public static void ConfirmAuthorizedCore(UInt160 coreContract) => VerifierAuthority.ConfirmAuthorizedCore(coreContract);
+        public static void CancelAuthorizedCoreChange() => VerifierAuthority.CancelAuthorizedCoreChange();
+
+        // AA-D-01: timelocked upgrade — Update only succeeds for an artifact pair that was
+        // pinned via ProposeUpdate at least 7 days earlier.
+        public static void ProposeUpdate(UInt256 nefHash, UInt256 manifestHash) => VerifierAuthority.ProposeUpdate(nefHash, manifestHash);
+
+        public static void ConfirmUpdate(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);
+
+        public static void CancelUpdate() => VerifierAuthority.CancelUpdate();
 
         public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);
 
