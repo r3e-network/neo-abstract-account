@@ -1,5 +1,6 @@
 const { rpc, sc, u, wallet } = require('./neonCompat');
 const metaTxExports = require('./metaTx');
+const { withRetry } = require('./retry');
 const { EC, createError, mapRpcError, formatError } = require('./errors');
 const {
   validateNeoAddress,
@@ -87,88 +88,31 @@ function decodeByteStringStackText(item) {
   return '';
 }
 
-/**
- * Decodes a stack item to a boolean value.
- *
- * @param {Object} item - Stack item from RPC response
- * @returns {boolean} Boolean value
- * @private
- */
-function decodeStackBoolean(item) {
-  return item?.value === true
-    || item?.value === 1
-    || item?.value === '1'
-    || item?.value === 'true'
-    || item?.value === 'True';
-}
-
-/**
- * Decodes a Hash160 stack item to hex string.
- *
- * Real nodes return UInt160 values as ByteString stack items carrying the
- * internal little-endian bytes; this helper reverses them so every SDK
- * output uses the same big-endian display form (e.g. 0xb4107cb2...) that
- * all SDK hash inputs accept.
- *
- * @param {Object} item - Stack item from RPC response
- * @returns {string} 40-character big-endian display hex string
- * @private
- */
-function decodeHash160Stack(item) {
-  if (!item || typeof item !== 'object') return '';
-  if (item.type === 'Hash160' && item.value) return sanitizeHex(item.value);
-  if (item.type === 'ByteString' && item.value) {
-    const rawHex = Buffer.from(item.value, 'base64').toString('hex');
-    return rawHex ? sanitizeHex(u.reverseHex(rawHex)) : '';
-  }
-  return '';
-}
-
-/**
- * Decodes a validation preview stack item.
- *
- * @param {Object} item - Stack item from previewUserOpValidation
- * @returns {Object} Validation preview with deadlineValid, nonceAcceptable, hasVerifier, verifier, hook
- * @private
- */
-function decodeValidationPreviewStack(item) {
-  const values = item?.type === 'Array' && Array.isArray(item.value) ? item.value : [];
-  return {
-    deadlineValid: decodeStackBoolean(values[0]),
-    nonceAcceptable: decodeStackBoolean(values[1]),
-    hasVerifier: decodeStackBoolean(values[2]),
-    verifier: decodeHash160Stack(values[3]),
-    hook: decodeHash160Stack(values[4]),
-  };
-}
+// Stack-item decode helpers shared with the frontend via shared/metaTxCore.mjs.
+const { decodeStackBoolean, decodeHash160Stack, decodeValidationPreviewStack } = metaTxExports;
 
 const DEFAULT_RPC_READ_RETRY_ATTEMPTS = 4;
 const DEFAULT_RPC_READ_RETRY_DELAY_MS = 250;
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isRetryableTransportError(error) {
-  const message = error instanceof Error ? error.message : String(error || '');
-  return /socket hang up|ECONNRESET|ETIMEDOUT|fetch failed|network error|EAI_AGAIN|ECONNREFUSED|EADDRNOTAVAIL|socket disconnected before secure TLS connection was established|TLS connection was established/i.test(message);
-}
-
-async function invokeRpcReadWithRetry(fn, attempts = DEFAULT_RPC_READ_RETRY_ATTEMPTS) {
-  let lastError;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      if (!isRetryableTransportError(error) || attempt >= attempts) {
-        throw error;
-      }
-      await sleep(DEFAULT_RPC_READ_RETRY_DELAY_MS * attempt);
-    }
-  }
-
-  throw lastError;
+/**
+ * Retries transient RPC read failures.
+ *
+ * Thin wrapper over the shared withRetry helper (src/retry.js) so the SDK
+ * uses a single retryable-error classification everywhere, while keeping the
+ * historical read-path profile: 4 attempts with fast sub-second backoff.
+ *
+ * @param {Function} fn - The RPC call to retry
+ * @param {number} attempts - Maximum attempts (default 4)
+ * @returns {Promise<*>} Result of fn
+ * @private
+ */
+function invokeRpcReadWithRetry(fn, attempts = DEFAULT_RPC_READ_RETRY_ATTEMPTS) {
+  return withRetry('rpc read', () => fn(), {
+    maxAttempts: attempts,
+    baseDelayMs: DEFAULT_RPC_READ_RETRY_DELAY_MS,
+    backoffMultiplier: 2,
+    maxDelayMs: 1000,
+  });
 }
 
 /**

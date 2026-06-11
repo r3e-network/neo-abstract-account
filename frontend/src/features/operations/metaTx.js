@@ -1,17 +1,34 @@
-import { Signature, SigningKey, TypedDataEncoder, keccak256, toUtf8Bytes } from 'ethers';
+import { Signature, SigningKey, TypedDataEncoder, keccak256 } from 'ethers';
 import { EC } from '../../config/errorCodes.js';
 import { sanitizeHex } from '../../utils/hex.js';
 import { fetchWithTimeout } from '../../utils/fetchWithTimeout.js';
+import {
+  createMetaTxBuilders,
+  decodeByteStringStackHex,
+  decodeHash160Stack,
+  decodeIntegerStack,
+  decodeValidationPreviewStack,
+} from '../../../../shared/metaTxCore.mjs';
 
-function decodeBase64ToHex(value) {
-  if (!value) return '';
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(value, 'base64').toString('hex').toLowerCase();
-  }
+// EIP-712 typed-data builders come from the shared core (single source of
+// truth with the SDK, see shared/metaTxCore.mjs). The core carries the SDK's
+// validation guards, so a missing nonce/deadline or a malformed args hash now
+// throws instead of being silently embedded in the signed message. The shared
+// decodeHash160Stack also reverses ByteString stack items to big-endian
+// display hex, so fetchV3Verifier feeds the EIP-712 verifyingContract in the
+// same convention the SDK and the verifier contracts use.
+const { buildMetaTransactionTypedData, buildV3UserOperationTypedData } = createMetaTxBuilders({
+  keccak256,
+});
 
-  const binary = globalThis.atob ? globalThis.atob(value) : '';
-  return Array.from(binary, (char) => char.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-}
+export {
+  buildMetaTransactionTypedData,
+  buildV3UserOperationTypedData,
+  decodeByteStringStackHex,
+  decodeHash160Stack,
+  decodeIntegerStack,
+  decodeValidationPreviewStack,
+};
 
 async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl } = {}) {
   const response = await fetchWithTimeout(rpcUrl, {
@@ -49,110 +66,6 @@ async function invokeRead({ rpcUrl, scriptHash, operation, args = [], fetchImpl 
     throw err;
   }
   return payload.result;
-}
-
-export function decodeByteStringStackHex(item) {
-  if (!item || item.type !== 'ByteString' || !item.value) return '';
-  return decodeBase64ToHex(item.value);
-}
-
-export function decodeIntegerStack(item) {
-  if (!item || item.type !== 'Integer' || item.value == null) return 0n;
-  return BigInt(item.value);
-}
-
-export function decodeHash160Stack(item) {
-  if (!item || typeof item !== 'object') return '';
-  if (item.type === 'Hash160' && item.value) return sanitizeHex(item.value);
-  if (item.type === 'ByteString' && item.value) return sanitizeHex(decodeBase64ToHex(item.value));
-  return '';
-}
-
-export function decodeValidationPreviewStack(item) {
-  const values = item?.type === 'Array' && Array.isArray(item.value) ? item.value : [];
-  return {
-    deadlineValid: values?.[0]?.value === true || values?.[0]?.value === 1 || values?.[0]?.value === '1',
-    nonceAcceptable: values?.[1]?.value === true || values?.[1]?.value === 1 || values?.[1]?.value === '1',
-    hasVerifier: values?.[2]?.value === true || values?.[2]?.value === 1 || values?.[2]?.value === '1',
-    verifier: decodeHash160Stack(values?.[3]),
-    hook: decodeHash160Stack(values?.[4]),
-  };
-}
-
-export function buildV3UserOperationTypedData({
-  chainId,
-  verifyingContract,
-  accountIdHash,
-  targetContract,
-  method,
-  argsHashHex,
-  nonce,
-  deadline,
-}) {
-  return {
-    domain: {
-      name: 'Neo N3 Abstract Account',
-      version: '1',
-      chainId,
-      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
-    },
-    types: {
-      UserOperation: [
-        { name: 'accountId', type: 'bytes20' },
-        { name: 'targetContract', type: 'address' },
-        { name: 'method', type: 'string' },
-        { name: 'argsHash', type: 'bytes32' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    },
-    message: {
-      accountId: `0x${sanitizeHex(accountIdHash)}`,
-      targetContract: `0x${sanitizeHex(targetContract)}`,
-      method: String(method || ''),
-      argsHash: `0x${sanitizeHex(argsHashHex)}`,
-      nonce: String(nonce),
-      deadline: String(deadline),
-    },
-  };
-}
-
-export function buildMetaTransactionTypedData({
-  chainId,
-  verifyingContract,
-  accountAddressScriptHash,
-  targetContract,
-  method,
-  argsHashHex,
-  nonce,
-  deadline,
-}) {
-  return {
-    domain: {
-      name: 'Neo N3 Abstract Account',
-      version: '1',
-      chainId,
-      verifyingContract: `0x${sanitizeHex(verifyingContract)}`,
-    },
-    types: {
-      MetaTransaction: [
-        { name: 'accountAddress', type: 'address' },
-        { name: 'targetContract', type: 'address' },
-        { name: 'methodHash', type: 'bytes32' },
-        { name: 'argsHash', type: 'bytes32' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    },
-    message: {
-      accountAddress: `0x${sanitizeHex(accountAddressScriptHash)}`,
-      targetContract: `0x${sanitizeHex(targetContract)}`,
-      methodHash: keccak256(toUtf8Bytes(String(method || ''))),
-      argsHash: `0x${sanitizeHex(argsHashHex)}`,
-      nonce: String(nonce),
-      deadline: String(deadline),
-    },
-  };
 }
 
 export async function computeArgsHash({ rpcUrl, aaContractHash, args = [], fetchImpl } = {}) {

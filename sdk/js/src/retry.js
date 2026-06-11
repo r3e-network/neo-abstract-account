@@ -10,10 +10,15 @@ const DEFAULT_CONFIG = {
   maxDelayMs: 15000,
 };
 
+// Single retryable-error classification for every retry layer in this SDK
+// (withRetry and the RPC read wrapper in src/index.js). 'TLS connection was
+// established' also covers Node's longer "socket disconnected before secure
+// TLS connection was established" transport error.
 const RETRYABLE_PATTERNS = [
-  'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND',
+  'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'EADDRNOTAVAIL',
   'rate limit', 'too many requests', '502', '503', '504',
   'socket hang up', 'network', 'fetch failed',
+  'TLS connection was established',
 ];
 
 function isRetryableError(err) {
