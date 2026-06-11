@@ -41,12 +41,16 @@ This index keeps the root documentation set visible and easy to browse.
 
 ## Security Notes
 
-- `SECURITY_IMPROVEMENTS.md`
+- `docs/SECURITY_MODEL.md` — current threat model and trust assumptions
 - `docs/SECURITY_AUDIT.md`
-- `docs/SECURITY_MODEL.md`
 - `docs/ETHEREUM_AA_COMPARISON.md`
 - `docs/PLUGIN_MATRIX.md`
 - `docs/PLUGIN_DEVELOPER_GUIDE.md`
+- `SECURITY_IMPROVEMENTS.md` — historical 2026-03-09 hardening note (pre-V3 tree)
+
+## Historical Reports
+
+- `docs/reports/testnet-validation-v1v2-2026-03.md` — archived pre-V3 (V1/V2) testnet validation status
 
 ## Matrix Domain Support
 

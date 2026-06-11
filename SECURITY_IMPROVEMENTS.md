@@ -1,18 +1,26 @@
-# Security & Production Readiness Improvements - 2026-03-09
+# Security & Production Readiness Improvements — Historical Note (2026-03-09)
 
-This note summarizes the currently implemented hardening slice and the verification that was actually run for it.
+> **Historical document.** This note records a hardening slice implemented on
+> 2026-03-09 against the pre-V3 contract tree. The `contracts/AbstractAccount.*`
+> files it references were removed in the V3 rewrite
+> (`contracts/UnifiedSmartWallet*.cs`), so individual entries are annotated
+> below with where the protection lives today. For the current security
+> reference, see `docs/SECURITY_MODEL.md` (threat model, trust assumptions,
+> defense-in-depth) and `docs/SECURITY_AUDIT_RESULTS.md`.
 
 ## Implemented Changes
 
 ### 1. Smart contract input validation
-- **File**: `contracts/AbstractAccount.MetaTx.cs`
+- **File (historical)**: `contracts/AbstractAccount.MetaTx.cs` — removed in the V3 rewrite
 - **Change**: added explicit 65-byte uncompressed pubkey length validation before signature verification
 - **Why**: rejects malformed pubkey payloads earlier in the meta-tx flow
+- **Where it lives now**: `contracts/verifiers/Web3AuthVerifier.cs` asserts `uncompressedPubKey.Length == 65` on setup and `pubKey.Length == 65` on verification
 
 ### 2. Project isolation for repo-wide C# builds
-- **File**: `contracts/AbstractAccount.csproj`
+- **File (historical)**: `contracts/AbstractAccount.csproj` — removed in the V3 rewrite
 - **Change**: disabled default compile globbing and explicitly included the intended contract sources
 - **Why**: prevents `contracts/recovery/obj` intermediates from polluting the main contract build
+- **Where it lives now**: `contracts/UnifiedSmartWallet.csproj` keeps `EnableDefaultCompileItems=false` with explicit `<Compile Include=...>` entries
 
 ### 3. Relay and operator API rate limiting
 - **Files**: `frontend/api/rateLimiter.js`, `frontend/api/relay-transaction.js`, `frontend/api/draft-operator.js`
@@ -33,8 +41,9 @@ This note summarizes the currently implemented hardening slice and the verificat
 - **File**: `supabase/migrations/20260309_add_performance_indexes.sql`
 - **Change**: adds indexes for `share_slug`, `operator_slug`, `collaboration_slug`, `status`, and descending `created_at`
 - **Why**: improves common draft lookup/query paths
+- **Note**: the migration chain was later reworked to be replayable on a fresh database; the file remains but its contents have evolved past this entry
 
-## Verification Actually Run
+## Verification Run At The Time (2026-03-09)
 
 ```bash
 cd frontend && npm test -- tests/apiSecurity.test.js
@@ -43,7 +52,10 @@ dotnet test neo-abstract-account.sln -c Release --nologo
 node --test sdk/js/tests/projectIsolation.unit.test.js
 ```
 
+`sdk/js/tests/projectIsolation.unit.test.js` was removed along with the pre-V3
+tree it tested; the remaining commands still exist.
+
 ## Notes
 
 - This file is a factual implementation summary, not a formal third-party audit.
-- Additional hardening work can still be done later, such as stricter persistence-backed rate limiting or a full CSP review.
+- Current security documentation: `docs/SECURITY_MODEL.md`, `docs/SECURITY_AUDIT.md`, `docs/SECURITY_AUDIT_RESULTS.md`, `docs/PLUGIN_MATRIX.md`.
