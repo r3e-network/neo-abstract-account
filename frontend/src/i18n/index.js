@@ -1652,6 +1652,7 @@ const MESSAGES = {
       contractLookupFailed: 'Contract lookup failed.',
       rpcFault: 'Operation failed.',
       rpcRequestFailed: 'Request failed.',
+      requestTimedOut: 'Request timed out. Please check your connection and try again.',
       addressValidationFailed: 'Address validation failed.',
       broadcastModeUnsupported: 'Unsupported broadcast mode.',
       vanityOrderFailed: 'Vanity order failed.',

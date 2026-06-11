@@ -582,6 +582,7 @@ import { useWalletConnection } from "@/composables/useWalletConnection.js";
 import { useClipboard } from "@/composables/useClipboard";
 import { OPERATIONS_RUNTIME } from "@/config/operationsRuntime.js";
 import { createDraftStore } from "@/features/operations/drafts.js";
+import { createOperatorMutationTransport } from "@/features/operations/operatorMutationTransport.js";
 import {
   buildRelayPayloadOptions,
   executeBroadcast,
@@ -654,7 +655,9 @@ const props = defineProps({
 const runtime = OPERATIONS_RUNTIME;
 const { t } = useI18n();
 const toast = useToast();
-const draftStore = createDraftStore();
+const draftStore = createDraftStore({
+  operatorMutationTransport: createOperatorMutationTransport(),
+});
 const walletConnection = useWalletConnection();
 const route = useRoute();
 const preferences = createOperationsPreferences();
@@ -1020,11 +1023,18 @@ async function appendActivity(event) {
 
 async function refreshDraftStatus(status) {
   if (!runtime.collaborationEnabled || !draft.value?.share_slug) return;
-  draft.value = await draftStore.updateStatus(
-    draft.value.share_slug,
-    status,
-    operatorMutationOptions(),
-  );
+  try {
+    draft.value = await draftStore.updateStatus(
+      draft.value.share_slug,
+      status,
+      operatorMutationOptions(),
+    );
+  } catch (_) {
+    if (import.meta.env.DEV)
+      console.warn(
+        "[TransactionInfoView] refreshDraftStatus sync failed",
+      ); /* best-effort remote sync; the broadcast itself already succeeded */
+  }
 }
 
 async function appendManualSignature() {

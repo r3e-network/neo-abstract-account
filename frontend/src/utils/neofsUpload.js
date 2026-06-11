@@ -1,6 +1,9 @@
 import { EC } from '../config/errorCodes.js';
+import { fetchWithTimeout } from './fetchWithTimeout.js';
 
 const NEOFS_GATEWAY = 'https://rest.fs.neo.org';
+// File payloads can legitimately take longer than the default API timeout.
+const NEOFS_UPLOAD_TIMEOUT_MS = 60000;
 
 const NEOFS_CONTAINER_ID = String(import.meta.env.VITE_NEOFS_CONTAINER_ID || '').trim();
 if (import.meta.env.DEV && !import.meta.env.VITE_NEOFS_CONTAINER_ID) {
@@ -24,10 +27,10 @@ export async function uploadToNeoFS(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${NEOFS_GATEWAY}/v1/containers/${containerId}/objects`, {
+  const res = await fetchWithTimeout(`${NEOFS_GATEWAY}/v1/containers/${containerId}/objects`, {
     method: 'POST',
     body: formData,
-  });
+  }, { timeoutMs: NEOFS_UPLOAD_TIMEOUT_MS });
 
   if (!res.ok) {
     throw new Error(EC.neofsUploadFailed);

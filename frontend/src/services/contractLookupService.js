@@ -1,12 +1,19 @@
 import { DEFAULT_N3INDEX_API_BASE_URL, DEFAULT_N3INDEX_NETWORK, RUNTIME_CONFIG } from '@/config/runtimeConfig';
 import { EC } from '../config/errorCodes.js';
 import { sanitizeHex } from '@/utils/hex.js';
-import { getScriptHashFromAddress, invokeReadFunction } from '@/utils/neo.js';
-import { resolveMatrixDomain } from '@/services/matrixDomainService.js';
-import { resolveContractIdentifier } from '@/services/domainResolverService.js';
+import { getScriptHashFromAddress } from '@/utils/neo.js';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout.js';
+import { isMatrixDomain, resolveMatrixDomain } from '@/services/matrixDomainService.js';
+import {
+  DEFAULT_MAINNET_RPC_URL,
+  isNeoDomain,
+  resolveContractIdentifier,
+  resolveNeoDomain,
+} from '@/services/domainResolverService.js';
 
-export const DEFAULT_NEO_NNS_CONTRACT_HASH = '50ac1c37690cc2cfc594472833cf57505d5f46de';
-export const DEFAULT_MAINNET_RPC_URL = 'http://seed1.neo.org:10332';
+// The .neo / .matrix resolution helpers live in domainResolverService.js;
+// they are re-exported here for the existing lookup-service import surface.
+export { DEFAULT_MAINNET_RPC_URL, isNeoDomain, isMatrixDomain, resolveNeoDomain };
 
 const CONTRACT_SEARCH_LIMIT = 10;
 
@@ -23,8 +30,8 @@ function buildRestUrl(path, searchParams = {}, { apiBaseUrl = RUNTIME_CONFIG.n3I
   return url.toString();
 }
 
-async function fetchJson(url, fetchImpl = globalThis.fetch) {
-  const response = await fetchImpl(url, { headers: { accept: 'application/json' } });
+async function fetchJson(url, fetchImpl = undefined) {
+  const response = await fetchWithTimeout(url, { headers: { accept: 'application/json' } }, { fetchImpl });
   if (!response.ok) {
     const text = await response.text().catch(() => '');
     const err = new Error(EC.rpcRequestFailed);
@@ -40,8 +47,8 @@ async function fetchJson(url, fetchImpl = globalThis.fetch) {
   }
 }
 
-async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpcUrl, fetchImpl = globalThis.fetch) {
-  const response = await fetchImpl(rpcUrl, {
+async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpcUrl, fetchImpl = undefined) {
+  const response = await fetchWithTimeout(rpcUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -50,7 +57,7 @@ async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpc
       method: 'getcontractstate',
       params: [`0x${sanitizeHex(contractHash)}`],
     }),
-  });
+  }, { fetchImpl });
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
@@ -76,22 +83,8 @@ async function fetchContractStateByRpc(contractHash, rpcUrl = RUNTIME_CONFIG.rpc
   return payload.result || null;
 }
 
-function decodeBase64ToUtf8(value = '') {
-  if (!value) return '';
-  if (typeof Buffer !== 'undefined') return Buffer.from(value, 'base64').toString('utf8');
-  return globalThis.atob ? globalThis.atob(value) : '';
-}
-
 export function isContractHash(value = '') {
   return /^[0-9a-f]{40}$/i.test(sanitizeHex(value));
-}
-
-export function isNeoDomain(value = '') {
-  return String(value || '').trim().toLowerCase().endsWith('.neo');
-}
-
-export function isMatrixDomain(value = '') {
-  return String(value || '').trim().toLowerCase().endsWith('.matrix');
 }
 
 export function isNamedContractLookup(value = '') {
@@ -309,19 +302,6 @@ export async function loadContractMethodsByHash(contractHash, { apiBaseUrl = RUN
     manifest,
     methodOptions,
   };
-}
-
-export async function resolveNeoDomain(domain, { rpcUrl = DEFAULT_MAINNET_RPC_URL, contractHash = DEFAULT_NEO_NNS_CONTRACT_HASH, fetchImpl } = {}) {
-  const normalized = String(domain || '').trim().toLowerCase();
-  if (!isNeoDomain(normalized)) return '';
-  const result = await invokeReadFunction(rpcUrl, sanitizeHex(contractHash), 'resolve', [
-    { type: 'String', value: normalized },
-    { type: 'Integer', value: 16 },
-  ], fetchImpl);
-  const item = result?.stack?.[0];
-  if (item?.type !== 'ByteString' || !item.value) return '';
-  const decoded = decodeBase64ToUtf8(item.value);
-  return decoded && decoded.startsWith('N') ? decoded : '';
 }
 
 export async function searchContractsByDomain(domain, { apiBaseUrl = RUNTIME_CONFIG.n3IndexApiBaseUrl || DEFAULT_N3INDEX_API_BASE_URL, network = RUNTIME_CONFIG.n3IndexNetwork || DEFAULT_N3INDEX_NETWORK, rpcUrl = RUNTIME_CONFIG.rpcUrl, matrixContractHash = RUNTIME_CONFIG.matrixContractHash, fetchImpl } = {}) {

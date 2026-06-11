@@ -49,3 +49,19 @@ test('home workspace wires contract lookup state into the invoke composer', () =
   assert.match(source, /selectContractSuggestion/);
   assert.match(source, /loadContractMethods|refreshContractMethods/);
 });
+
+test('home workspace treats N-prefixed input as an address only at the exact base58 length', () => {
+  const source = fs.readFileSync(workspacePath, 'utf8');
+
+  // Names like "NeoBurger" or "NEP17" must fall through to the N3Index name
+  // search instead of throwing invalid-address errors on every keystroke.
+  assert.match(source, /lookup\.startsWith\("N"\) && lookup\.length === 34/);
+  assert.doesNotMatch(source, /lookup\.startsWith\("N"\) \|\|\n\s*isMatrixDomain/);
+
+  // The direct-lookup branch is debounced like the name-search branch so
+  // partially-typed hashes and addresses do not fire an RPC per keystroke.
+  const directBranch = source.match(/if \(directLookup\) \{[\s\S]*?\n  \}/)?.[0];
+  assert.ok(directBranch, 'expected the directLookup branch in the targetContract watcher');
+  assert.match(directBranch, /contractSuggestionTimer = setTimeout/);
+  assert.match(directBranch, /refreshContractMethods\(lookup\)/);
+});

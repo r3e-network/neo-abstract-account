@@ -202,16 +202,13 @@ test("operations docs cover the app workspace, anonymous drafts, both broadcast 
   assert.match(readme, /100 activity entries/i);
   assert.match(readme, /12 submission receipts/i);
   assert.match(readme, /Deployment Checklist/i);
-  assert.match(
-    readme,
-    /supabase\/migrations\/20260308_home_operations_workspace\.sql/i,
-  );
-  assert.match(readme, /20260309_shared_draft_collaboration_capability\.sql/i);
-  assert.match(readme, /20260310_shared_draft_collaboration_cleanup\.sql/i);
-  assert.match(readme, /20260311_rotate_draft_collaboration_slug\.sql/i);
-  assert.match(readme, /20260312_scoped_draft_access\.sql/i);
-  assert.match(readme, /20260313_activity_scope_guards\.sql/i);
-  assert.match(readme, /20260314_signed_operator_mutations\.sql/i);
+  // The README documents the migration chain as "apply every file in
+  // filename order" instead of enumerating each file; assert the chain
+  // boundaries and the mandatory hardening migrations.
+  assert.match(readme, /apply every file in `?supabase\/migrations\/`? in filename order/i);
+  assert.match(readme, /20260308_home_operations_workspace\.sql/i);
+  assert.match(readme, /20260327_security_hardening\.sql/i);
+  assert.match(readme, /20260611_draft_metadata_hardening\.sql/i);
   assert.match(readme, /collaborator link/i);
   assert.match(readme, /operator link/i);
   assert.match(readme, /rotate collaborator link/i);

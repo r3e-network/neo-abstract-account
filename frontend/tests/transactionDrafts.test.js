@@ -432,6 +432,73 @@ test('remote operator mutations use signed operator transport instead of direct 
   }]);
 });
 
+test('remote activity syncs with only an accessSlug and lets the server resolve the scope', async () => {
+  const calls = [];
+  const supabase = {
+    async rpc(name, args) {
+      calls.push({ kind: 'rpc', name, args });
+      return {
+        data: {
+          share_slug: 'share-remote-3',
+          collaboration_slug: 'collab-remote-3',
+          can_write: true,
+          can_operate: false,
+          access_scope: 'sign',
+          metadata: { activity: [args.p_event] },
+        },
+        error: null,
+      };
+    },
+  };
+  const store = createDraftStore({ supabase });
+
+  // Production callers only know their opaque access slug; the previous
+  // client-side scope inference treated this as 'read' and silently dropped
+  // every event before it reached Supabase.
+  const updated = await store.appendActivity('share-remote-3', {
+    type: 'signature_added',
+    actor: 'neo',
+    detail: 'Signature appended',
+    createdAt: '2026-06-11T00:00:00.000Z',
+  }, { accessSlug: 'collab-remote-3' });
+
+  assert.equal(updated.metadata.activity[0].type, 'signature_added');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, 'append_aa_draft_activity');
+  assert.equal(calls[0].args.p_access_slug, 'collab-remote-3');
+  assert.equal(calls[0].args.p_event.type, 'signature_added');
+});
+
+test('remote store surfaces specific access errors instead of degrading them to the generic failure', async () => {
+  const supabase = {
+    async rpc() {
+      return { data: null, error: new Error('draft_collaboration_access_required') };
+    },
+  };
+  const store = createDraftStore({ supabase });
+
+  // A single normalization pass must map the Postgres exception to its EC
+  // code; re-normalizing the EC message used to flatten it to
+  // EC_draft_request_failed.
+  await assert.rejects(
+    () => store.appendSignature('share-remote-4', { signerId: 'neo:alice', kind: 'neo', signatureHex: '11' }, {
+      accessSlug: 'collab-remote-4',
+    }),
+    /EC_collaborator_access_required/,
+  );
+
+  const scopedSupabase = {
+    async rpc() {
+      return { data: null, error: new Error('draft_activity_scope_not_allowed') };
+    },
+  };
+  const scopedStore = createDraftStore({ supabase: scopedSupabase });
+  await assert.rejects(
+    () => scopedStore.appendActivity('share-remote-4', { type: 'broadcast_relay' }, { accessSlug: 'collab-remote-4' }),
+    /EC_activity_scope_denied/,
+  );
+});
+
 test('remote collaborator activity stays on the anonymous Supabase path for signature events', async () => {
   const calls = [];
   const supabase = {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createOperationsWorkspace } from '../src/features/operations/useOperationsWorkspace.js';
+import { buildRelayPayloadOptions } from '../src/features/operations/execution.js';
 
 test('workspace holds AA identity, operation body, signers, signatures, and share metadata', () => {
   const workspace = createOperationsWorkspace();
@@ -81,6 +82,40 @@ test('immutable drafts reject transaction-body mutation after persistence', () =
   assert.throws(
     () => workspace.setTransactionBody({ txHex: 'cafe' }),
     /immutable draft/
+  );
+});
+
+test('signing a persisted draft appends the signature without mutating the immutable body', () => {
+  const workspace = createOperationsWorkspace();
+  workspace.setOperationBody({ kind: 'invoke', targetContract: 'cc33', method: 'transfer', args: [] });
+  workspace.setTransactionBody({ txHex: '' });
+  workspace.markPersisted({ draftId: 'draft-1', shareSlug: 'share-1' });
+  assert.equal(workspace.isDraftImmutable.value, true);
+
+  const metaInvocation = {
+    scriptHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+    operation: 'executeUserOp',
+    args: [],
+  };
+
+  // The signing flows skip setTransactionBody on persisted drafts and store
+  // the invocation in the signature metadata instead — the relay path reads
+  // it from there.
+  workspace.appendSignature({
+    signerId: 'evm:0xabc',
+    kind: 'evm',
+    signatureHex: '12'.repeat(64),
+    metadata: { metaInvocation },
+  });
+
+  assert.equal(workspace.signatures.value.length, 1);
+  assert.deepEqual(workspace.signatures.value[0].metadata.metaInvocation, metaInvocation);
+  assert.deepEqual(
+    buildRelayPayloadOptions({
+      transactionBody: workspace.transactionBody.value,
+      signatures: workspace.signatures.value,
+    }),
+    ['meta'],
   );
 });
 

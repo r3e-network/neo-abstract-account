@@ -3,6 +3,7 @@ import { EC } from '../config/errorCodes.js';
 import { notificationService } from '@/services/notificationService';
 import { invokeReadFunction, getScriptHashFromAddress } from '@/utils/neo';
 import { sanitizeHex } from '@/utils/hex';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout.js';
 import { encryptJsonWithMorpheusOracleKey } from '@/utils/morpheusEncryption';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
 import { buildZkLoginVerifierParamsHex, formatZkLoginTicket, normalizeZkLoginProvider } from '@/services/zkLoginVerifierService.js';
@@ -264,7 +265,7 @@ export async function fetchUnifiedVerifierState({ rpcUrl, verifierHash, accountI
 }
 
 async function fetchOraclePublicKey() {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${RUNTIME_CONFIG.morpheusOracleKeyEndpoint}?${new URLSearchParams({ morpheus_network: RUNTIME_CONFIG.morpheusNetwork }).toString()}`,
     {
       method: 'GET',
@@ -292,7 +293,7 @@ async function callNeoDid(action, payload = {}) {
         Object.entries({ action: normalizedAction, ...requestPayload }).filter(([, value]) => value != null && value !== '')
       ).toString()}`
     : RUNTIME_CONFIG.morpheusNeoDidEndpoint;
-  const response = await fetch(url, method === 'GET'
+  const response = await fetchWithTimeout(url, method === 'GET'
     ? { method, headers: { accept: 'application/json' } }
     : {
         method,

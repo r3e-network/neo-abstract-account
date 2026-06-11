@@ -1,5 +1,6 @@
 import { EC } from '../config/errorCodes.js';
 import { RUNTIME_CONFIG } from '@/config/runtimeConfig.js';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout.js';
 import { walletService } from '@/services/walletService.js';
 import { connectedAccount } from '@/utils/wallet.js';
 import { sanitizeHex } from '@/utils/hex.js';
@@ -417,7 +418,7 @@ function getVanityEndpoint() {
 
 export async function createVanityOrder({ pattern, patternType, gasAmount, buyerAddress }) {
   const endpoint = getVanityEndpoint();
-  const response = await fetch(`${endpoint}/orders`, {
+  const response = await fetchWithTimeout(`${endpoint}/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pattern, patternType, gasAmount, buyerAddress }),
@@ -433,7 +434,7 @@ export async function createVanityOrder({ pattern, patternType, gasAmount, buyer
 
 export async function getVanityOrder(orderId) {
   const endpoint = getVanityEndpoint();
-  const response = await fetch(`${endpoint}/orders/${encodeURIComponent(orderId)}`);
+  const response = await fetchWithTimeout(`${endpoint}/orders/${encodeURIComponent(orderId)}`);
   if (!response.ok) {
     throw new Error(EC.vanityOrdersFetchFailed);
   }
@@ -443,7 +444,7 @@ export async function getVanityOrder(orderId) {
 export async function listVanityOrders(buyerAddress) {
   const endpoint = getVanityEndpoint();
   const qs = buyerAddress ? `?buyer=${encodeURIComponent(buyerAddress)}` : '';
-  const response = await fetch(`${endpoint}/orders${qs}`);
+  const response = await fetchWithTimeout(`${endpoint}/orders${qs}`);
   if (!response.ok) {
     throw new Error(EC.vanityOrdersListFailed);
   }

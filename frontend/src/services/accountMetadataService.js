@@ -1,9 +1,10 @@
 import { EC } from '../config/errorCodes.js';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout.js';
 
 const API_PATH = '/api/account-metadata';
 
 async function apiPost(body) {
-  const res = await fetch(API_PATH, {
+  const res = await fetchWithTimeout(API_PATH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

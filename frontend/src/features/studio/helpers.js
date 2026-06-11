@@ -1,6 +1,6 @@
 import { EC } from '../../config/errorCodes.js';
 import { sanitizeHex } from '../../utils/hex.js';
-import { getScriptHashFromAddress } from '../../utils/neo.js';
+import { getScriptHashFromAddress, reverseHex } from '../../utils/neo.js';
 
 export { sanitizeHex };
 
@@ -101,7 +101,13 @@ export function decodeStackByteStringHex(item) {
 export function decodeStackHash160(item) {
   if (!item || typeof item !== 'object') return '';
   if (item.type === 'Hash160') return sanitizeHex(item.value);
-  if (item.type === 'ByteString') return sanitizeHex(base64ToHex(item.value));
+  // Nodes return UInt160 stack values as ByteString of the internal
+  // little-endian bytes; reverse to the big-endian display form so the
+  // value round-trips through hash160Param and the update operations.
+  if (item.type === 'ByteString') {
+    const hex = sanitizeHex(base64ToHex(item.value));
+    return hex ? reverseHex(hex) : '';
+  }
   return '';
 }
 
