@@ -1,0 +1,95 @@
+using System.Numerics;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neo;
+using Neo.Extensions;
+using Neo.SmartContract.Testing.Exceptions;
+
+namespace AbstractAccount.Contracts.Tests;
+
+/// <summary>
+/// Regression for the MEDIUM finding: a SessionKey spending limit is only enforced for the
+/// literal method "transfer" (see SessionKeyVerifier.ExtractTransferValue). A wildcard ("*")
+/// or non-transfer session key configured with spendingLimit &gt; 0 would carry a cap that is
+/// never enforced. The fix fails closed in SetSessionKey by rejecting a positive spending limit
+/// unless the session key's method is "transfer".
+/// </summary>
+[TestClass]
+public class Fix_SessionKey_Tests
+{
+    private static readonly UInt160 AccountId =
+        UInt160.Parse("0x1111111111111111111111111111111111111111");
+
+    private sealed class Harness
+    {
+        public RuntimeFixture Fx { get; } = new();
+        public UInt160 Core { get; }
+        public UInt160 Target { get; }
+
+        public Harness()
+        {
+            Core = Fx.Deploy("MockVerifierCore");
+            Target = Fx.Deploy("MockTransferTarget");
+        }
+
+        public UInt160 DeployVerifier() => Fx.Deploy("verifiers/SessionKeyVerifier", Core.ToArray());
+
+        public void SetSessionKey(UInt160 verifier, byte[] pubKey, string method, BigInteger spendingLimit)
+        {
+            BigInteger validUntil = Fx.Now() + 86_400_000; // 24h
+            Fx.CallVoid(Core, "forward", verifier, "setSessionKey",
+                new object?[] { AccountId, pubKey, Target, method, validUntil, spendingLimit, "fix suite" });
+        }
+    }
+
+    [TestMethod]
+    public void WildcardSessionKey_WithSpendingLimit_IsRejectedAtConfig()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        TestException rejected = Assert.ThrowsExactly<TestException>(
+            () => h.SetSessionKey(verifier, key.CompressedPublicKey, "*", spendingLimit: 1000));
+        StringAssert.Contains(rejected.Message, "Spending limit only enforceable on transfer session keys");
+    }
+
+    [TestMethod]
+    public void NonTransferSessionKey_WithSpendingLimit_IsRejectedAtConfig()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        TestException rejected = Assert.ThrowsExactly<TestException>(
+            () => h.SetSessionKey(verifier, key.CompressedPublicKey, "burn", spendingLimit: 1000));
+        StringAssert.Contains(rejected.Message, "Spending limit only enforceable on transfer session keys");
+    }
+
+    [TestMethod]
+    public void WildcardSessionKey_WithZeroLimit_IsAllowed()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        // A wildcard key with no spending limit remains a legitimate configuration.
+        h.SetSessionKey(verifier, key.CompressedPublicKey, "*", spendingLimit: 0);
+
+        var stored = h.Fx.Call(verifier, "getSessionKey", AccountId);
+        Assert.AreNotEqual(Neo.VM.Types.StackItem.Null, stored, "Wildcard session key without a limit must be configurable");
+    }
+
+    [TestMethod]
+    public void TransferSessionKey_WithSpendingLimit_IsAllowed()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        // The enforceable transfer path keeps accepting a positive limit (no false rejection).
+        h.SetSessionKey(verifier, key.CompressedPublicKey, "transfer", spendingLimit: 1000);
+
+        var stored = h.Fx.Call(verifier, "getSessionKey", AccountId);
+        Assert.AreNotEqual(Neo.VM.Types.StackItem.Null, stored, "Transfer session key with a limit must be configurable");
+    }
+}

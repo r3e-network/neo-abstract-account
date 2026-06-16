@@ -12,6 +12,19 @@ namespace Neo.SmartContract.Examples
 {
     public partial class SocialRecoveryVerifier
     {
+        // Per-account GAS earmarked for funding that account's Morpheus oracle. Funded via
+        // OnNEP17Payment (memo = accountId) and spent only by the account owner through
+        // DepositOracleCredits. Prevents draining the shared pool across accounts.
+        private const byte PREFIX_ORACLE_CREDIT = 0x19;
+
+        [Safe]
+        public static BigInteger GetOracleCredit(ByteString accountId)
+        {
+            ValidateAccountId(accountId, "accountId");
+            ByteString? data = Storage.Get(Storage.CurrentContext, Key(PREFIX_ORACLE_CREDIT, accountId));
+            return data == null ? 0 : (BigInteger)data;
+        }
+
         public static void SubmitRecoveryTicket(
             ByteString accountId,
             UInt160 newOwner,
@@ -67,6 +80,26 @@ namespace Neo.SmartContract.Examples
             UInt160 oracle = GetMorpheusOracle(accountId);
             ExecutionEngine.Assert(oracle != UInt160.Zero, "Morpheus oracle not configured");
             ExecutionEngine.Assert(amount > 0, "invalid amount");
+
+            // Only the account owner may spend that account's earmarked credits, and only up to
+            // the balance funded for it. This closes the cross-account pool-drain.
+            ExecutionEngine.Assert(Runtime.CheckWitness(GetOwner(accountId)), "Not owner");
+
+            byte[] creditKey = Key(PREFIX_ORACLE_CREDIT, accountId);
+            ByteString? creditData = Storage.Get(Storage.CurrentContext, creditKey);
+            BigInteger credited = creditData == null ? 0 : (BigInteger)creditData;
+            ExecutionEngine.Assert(credited >= amount, "Insufficient oracle credit");
+
+            BigInteger remaining = credited - amount;
+            if (remaining == 0)
+            {
+                Storage.Delete(Storage.CurrentContext, creditKey);
+            }
+            else
+            {
+                Storage.Put(Storage.CurrentContext, creditKey, remaining);
+            }
+
             ExecutionEngine.Assert(
                 GAS.Transfer(Runtime.ExecutingScriptHash, oracle, amount, null),
                 "gas transfer failed");
@@ -75,7 +108,21 @@ namespace Neo.SmartContract.Examples
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
             ExecutionEngine.Assert(Runtime.CallingScriptHash == GAS.Hash, "only GAS accepted");
-            ExecutionEngine.Assert(amount >= 0, "invalid amount");
+            ExecutionEngine.Assert(amount > 0, "invalid amount");
+
+            // The payment must earmark which account it funds (memo = accountId), and that
+            // account must already be configured. The GAS is credited to that account only,
+            // so it can never be spent on behalf of a different account.
+            ByteString accountId = (ByteString)data;
+            ValidateAccountId(accountId, "accountId");
+            ExecutionEngine.Assert(
+                Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId)) != null,
+                "Recovery not setup");
+
+            byte[] creditKey = Key(PREFIX_ORACLE_CREDIT, accountId);
+            ByteString? creditData = Storage.Get(Storage.CurrentContext, creditKey);
+            BigInteger credited = creditData == null ? 0 : (BigInteger)creditData;
+            Storage.Put(Storage.CurrentContext, creditKey, credited + amount);
         }
 
         public static void OnOracleResult(BigInteger requestId, string requestType, bool success, ByteString result, string error)

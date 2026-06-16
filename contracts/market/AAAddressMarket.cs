@@ -26,6 +26,9 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_NextListingId = new byte[] { 0x01 };
         private static readonly byte[] Prefix_Listing = new byte[] { 0x02 };
         private static readonly byte[] Prefix_PendingPayment = new byte[] { 0x03 };
+        // Per-listing count of in-flight escrowed payments. While > 0 the listing has buyer
+        // capital locked, so the seller must not be able to invalidate it (cancel/reprice).
+        private static readonly byte[] Prefix_PendingCount = new byte[] { 0x04 };
         private static readonly byte[] Prefix_Admin = new byte[] { 0xF0 };
 
         private const byte StatusActive = 1;
@@ -117,6 +120,7 @@ namespace AbstractAccount
             Listing listing = GetExistingListing(listingId);
             ExecutionEngine.Assert(listing.Status == StatusActive, "Listing not active");
             ExecutionEngine.Assert(Runtime.CheckWitness(listing.Seller), "Seller witness required");
+            ExecutionEngine.Assert(GetPendingCount(listingId) == 0, "Pending payment in flight");
 
             listing.Price = newPrice;
             listing.UpdatedAt = Runtime.Time;
@@ -128,6 +132,7 @@ namespace AbstractAccount
             Listing listing = GetExistingListing(listingId);
             ExecutionEngine.Assert(listing.Status == StatusActive, "Listing not active");
             ExecutionEngine.Assert(Runtime.CheckWitness(listing.Seller), "Seller witness required");
+            ExecutionEngine.Assert(GetPendingCount(listingId) == 0, "Pending payment in flight");
 
             Contract.Call(listing.AAContract, "cancelMarketEscrow", CallFlags.All, new object[] { listing.AccountId, listingId });
 
@@ -286,6 +291,7 @@ namespace AbstractAccount
         private static void PutPendingPayment(BigInteger listingId, UInt160 payer, BigInteger amount)
         {
             Storage.Put(Storage.CurrentContext, PendingPaymentKey(listingId, payer), amount);
+            Storage.Put(Storage.CurrentContext, PendingCountKey(listingId), GetPendingCount(listingId) + 1);
         }
 
         private static BigInteger GetPendingPayment(BigInteger listingId, UInt160 payer)
@@ -297,6 +303,26 @@ namespace AbstractAccount
         private static void ClearPendingPayment(BigInteger listingId, UInt160 payer)
         {
             Storage.Delete(Storage.CurrentContext, PendingPaymentKey(listingId, payer));
+            BigInteger remaining = GetPendingCount(listingId) - 1;
+            if (remaining <= 0)
+            {
+                Storage.Delete(Storage.CurrentContext, PendingCountKey(listingId));
+            }
+            else
+            {
+                Storage.Put(Storage.CurrentContext, PendingCountKey(listingId), remaining);
+            }
+        }
+
+        private static byte[] PendingCountKey(BigInteger listingId)
+        {
+            return Helper.Concat(Prefix_PendingCount, listingId.ToByteArray());
+        }
+
+        private static BigInteger GetPendingCount(BigInteger listingId)
+        {
+            ByteString? count = Storage.Get(Storage.CurrentContext, PendingCountKey(listingId));
+            return count == null ? 0 : (BigInteger)count;
         }
 
         private static BigInteger ParseListingId(object data)

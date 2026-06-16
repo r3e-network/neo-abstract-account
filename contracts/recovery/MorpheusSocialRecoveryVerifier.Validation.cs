@@ -39,11 +39,23 @@ namespace Neo.SmartContract.Examples
             return CryptoLib.Sha256(payload);
         }
 
-        private static ByteString ComputeActionDigest(UInt160 executor, string actionId, ByteString actionNullifier)
+        private static ByteString ComputeActionDigest(
+            ByteString accountId,
+            UInt160 executor,
+            string actionId,
+            ulong expiresAt,
+            ByteString actionNullifier)
         {
+            // Bind the domain, this verifier contract, the network and the target account so an
+            // action signature cannot be replayed across contracts, networks or accounts; bind
+            // expiresAt so it cannot be replayed past its intended lifetime.
             ByteString payload = (ByteString)ACTION_DOMAIN;
+            payload = Helper.Concat(payload, EncodeSegment(GetNetwork(accountId)));
+            payload = Helper.Concat(payload, (ByteString)(byte[])Runtime.ExecutingScriptHash);
+            payload = Helper.Concat(payload, EncodeSegment(GetAccountIdText(accountId)));
             payload = Helper.Concat(payload, (ByteString)(byte[])executor);
             payload = Helper.Concat(payload, EncodeSegment(actionId));
+            payload = Helper.Concat(payload, EncodeSegment(expiresAt.ToString()));
             payload = Helper.Concat(payload, actionNullifier);
             return CryptoLib.Sha256(payload);
         }
