@@ -197,6 +197,18 @@ namespace AbstractAccount
             if (accountId == null) accountId = UInt160.Zero;
             if (targetContract == null) targetContract = UInt160.Zero;
 
+            // Audit fix MEDIUM-b: a global policy (accountId = Zero sponsors ANY account) must carry
+            // explicit, finite aggregate spend caps. With 0 treated as "unlimited", such a wildcard
+            // policy lets any relay drain the entire sponsor deposit at MaxPerOp per op with no daily
+            // or lifetime bound. For the global scope both DailyBudget and TotalBudget are therefore
+            // mandatory (0 is rejected here rather than meaning unlimited). Account-specific policies
+            // are inherently bounded to a single account and may keep 0 = unlimited.
+            if (accountId == UInt160.Zero)
+            {
+                ExecutionEngine.Assert(dailyBudget > 0, "DailyBudget required for global policy");
+                ExecutionEngine.Assert(totalBudget > 0, "TotalBudget required for global policy");
+            }
+
             SponsorshipPolicy policy = new SponsorshipPolicy
             {
                 TargetContract = targetContract,

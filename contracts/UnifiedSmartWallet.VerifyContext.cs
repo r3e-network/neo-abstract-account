@@ -69,13 +69,23 @@ namespace AbstractAccount
                 byte[] key = Helper.Concat(Prefix_VerifyContext, (byte[])accountId);
                 ByteString? expectedTarget = Storage.Get(Storage.CurrentContext, key);
                 if (expectedTarget == null) return VerifyScopedTransactionSigner(accountId);
-                if ((UInt160)expectedTarget == Runtime.CallingScriptHash) return true;
+                UInt160 activeTarget = (UInt160)expectedTarget;
+                if (activeTarget == Runtime.CallingScriptHash) return true;
 
-                // Target contracts often complete an authorized user operation by
-                // calling native NEO/GAS transfer or vote. During that nested native
-                // call the witness check is performed by the native asset contract,
-                // but it is still scoped to the active ExecuteUserOp target above.
-                return Runtime.CallingScriptHash == NEO.Hash || Runtime.CallingScriptHash == GAS.Hash;
+                // The active user operation may legitimately move native NEO/GAS, in which case
+                // the native asset contract (not the op target) performs the nested witness check
+                // and calls back here with NEO.Hash / GAS.Hash as the calling script.
+                //
+                // Security (audit fix): authorizing ANY native NEO/GAS call by calling-script
+                // hash alone lets a target authorized only for a single non-financial method move
+                // the account's full NEO/GAS, defeating session-key/method scoping. The native
+                // callback is therefore only honored when the user-signed operation explicitly
+                // targeted that same native asset (op.TargetContract == NEO/GAS) — i.e. the exact
+                // value transfer the owner authorized. A target authorized for some other contract
+                // can no longer pull the account's native assets.
+                if (Runtime.CallingScriptHash == NEO.Hash) return activeTarget == NEO.Hash;
+                if (Runtime.CallingScriptHash == GAS.Hash) return activeTarget == GAS.Hash;
+                return false;
             }
 
             return false;

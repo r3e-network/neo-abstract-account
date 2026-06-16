@@ -126,7 +126,7 @@ namespace Neo.SmartContract.Examples
             ExecutionEngine.Assert(expiresAt > Runtime.Time, "Session already expired");
             ExecutionEngine.Assert(!IsActionNullifierUsed(accountId, actionNullifier), "Action nullifier already used");
 
-            ByteString digest = ComputeActionDigest(executor, actionId, actionNullifier);
+            ByteString digest = ComputeActionDigest(accountId, executor, actionId, expiresAt, actionNullifier);
             bool validSignature = CryptoLib.VerifyWithECDsa(
                 digest,
                 GetMorpheusVerifier(accountId),

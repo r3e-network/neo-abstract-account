@@ -127,14 +127,24 @@ namespace AbstractAccount.Hooks
         public static void PreExecute(UInt160 accountId, object[] opParams)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
+
+            // Audit fix HIGH (daily-limit bypass): the per-token, direct-target check below only
+            // inspects op.TargetContract, so a call routed through a router/intermediary contract
+            // or the native NEO/GAS transfer path moves value WITHOUT the limited token being the
+            // direct target — slipping past the meter entirely. Mirroring TokenRestrictedHook,
+            // snapshot the account's balance of EVERY token that has a configured limit before the
+            // op runs; PostExecute then meters the realized outflow of each against its limit
+            // regardless of which contract was called directly. Native NEO/GAS are NEP-17 (they
+            // expose balanceOf), so a configured NEO/GAS limit is metered identically. Fails closed.
+            SnapshotAllLimitedBalances(accountId);
+
             if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount))
             {
-                // Audit fix H-4: a non-"transfer" call to a limited token still moves funds
-                // (transferFrom / withdraw / swap). Snapshot the account's balance of the
-                // directly-targeted limited token so PostExecute meters the real outflow.
-                SnapshotLimitedTokenBalance(accountId, opParams);
                 return;
             }
+            // Fail-fast pre-check for the common direct "transfer" path: reject an obviously
+            // over-limit transfer before execution. The authoritative accounting is the
+            // balance-delta metering in PostExecute, which catches every value-movement path.
             ExecutionEngine.Assert(amount > 0, "Transfer amount must be positive");
             ExecutionEngine.Assert(IsProtectedTransferSource(accountId, fromAccount), "Transfer source not permitted");
             LimitConfig? config = GetLimitConfig(accountId, targetContract);
@@ -164,29 +174,42 @@ namespace AbstractAccount.Hooks
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
             HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
-            if (!TryReadTrackedTransfer(opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount))
-            {
-                // Audit fix H-4: meter the actual balance delta for a non-"transfer" call
-                // to a limited token. Reverts the whole tx if the limit is exceeded.
-                MeterLimitedTokenOutflow(accountId, opParams, result);
-                return;
-            }
-            if (!IsProtectedTransferSource(accountId, fromAccount)) return;
+
+            // A failed op moves no funds, so nothing is accrued. The transient PreExecute
+            // snapshots left behind are harmless: every PreExecute re-snapshots ALL configured
+            // tokens (overwriting any stale value) before the next meter reads them.
             if (!DidExecutionSucceed(result)) return;
 
-            LimitConfig? config = GetLimitConfig(accountId, targetContract);
-            if (config == null) return;
+            // Account the directly-targeted "transfer" of a configured token by its declared
+            // amount (unchanged original behaviour), then exclude that token from the balance-delta
+            // pass below to avoid double counting.
+            UInt160 directlyRecorded = UInt160.Zero;
+            if (TryReadTrackedTransfer(opParams, out UInt160 targetContract, out UInt160 fromAccount, out BigInteger amount)
+                && IsProtectedTransferSource(accountId, fromAccount))
+            {
+                LimitConfig? config = GetLimitConfig(accountId, targetContract);
+                if (config != null)
+                {
+                    BigInteger currentTime = Runtime.Time;
+                    if (config.UseRollingWindow)
+                    {
+                        RecordTransaction(accountId, targetContract, currentTime, amount);
+                    }
+                    else
+                    {
+                        BigInteger spentToday = GetFixedWindowSpent(accountId, targetContract, currentTime);
+                        StoreFixedWindowSpent(accountId, targetContract, currentTime, spentToday + amount);
+                    }
+                    directlyRecorded = targetContract;
+                }
+            }
 
-            BigInteger currentTime = Runtime.Time;
-            if (config.UseRollingWindow)
-            {
-                RecordTransaction(accountId, targetContract, currentTime, amount);
-            }
-            else
-            {
-                BigInteger spentToday = GetFixedWindowSpent(accountId, targetContract, currentTime);
-                StoreFixedWindowSpent(accountId, targetContract, currentTime, spentToday + amount);
-            }
+            // Audit fix HIGH: meter the realized balance delta of EVERY OTHER configured-limit
+            // token against its limit. This covers transferFrom/withdraw/swap, router/intermediary-
+            // routed moves, and the native NEO/GAS path, so value moved without the limited token
+            // being the direct "transfer" target is still counted. Reverts the whole tx if any
+            // token's limit would be exceeded. Fails closed.
+            MeterAllLimitedOutflows(accountId, directlyRecorded);
         }
 
         public static void ClearAccount(UInt160 accountId)
@@ -240,7 +263,11 @@ namespace AbstractAccount.Hooks
             return true;
         }
 
-        // ---- Audit fix H-4: balance-delta metering for non-"transfer" outflows ----
+        // ---- Audit fix HIGH: balance-delta metering across ALL configured-limit tokens ----
+        // Closes the bypass where value is moved via an intermediary/router contract or the
+        // native NEO/GAS path so the limited token is never the direct call target. The meter is
+        // driven by the account's configured-limit set (not by the op target), so every configured
+        // token's realized outflow is counted no matter which contract was called.
 
         private static byte[] BuildBalanceSnapshotKey(UInt160 accountId, UInt160 token)
         {
@@ -253,63 +280,75 @@ namespace AbstractAccount.Hooks
         }
 
         /// <summary>
-        /// Records the account's balance of the directly-targeted token before execution,
-        /// but only when that token has a daily limit configured. No-op otherwise.
+        /// Snapshots the account's balance of every token that currently has a configured daily
+        /// limit, before the op runs. PostExecute compares against these to meter the realized
+        /// outflow of each token regardless of the call path (direct, intermediary, or native).
         /// </summary>
-        private static void SnapshotLimitedTokenBalance(UInt160 accountId, object[] opParams)
+        private static void SnapshotAllLimitedBalances(UInt160 accountId)
         {
-            if (opParams.Length < 1) return;
-            UInt160 target = (UInt160)opParams[0];
-            if (target is null || !target.IsValid || target == UInt160.Zero) return;
-            if (GetLimitConfig(accountId, target) == null) return;
-
-            BigInteger before = TokenBalanceOf(target, accountId);
-            Storage.Put(Storage.CurrentContext, BuildBalanceSnapshotKey(accountId, target), before);
+            byte[] prefix = Helper.Concat(Prefix_DailyLimit, (byte[])accountId);
+            Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly | FindOptions.RemovePrefix);
+            while (iterator.Next())
+            {
+                UInt160 token = (UInt160)(ByteString)iterator.Value;
+                BigInteger before = TokenBalanceOf(token, accountId);
+                Storage.Put(Storage.CurrentContext, BuildBalanceSnapshotKey(accountId, token), before);
+            }
         }
 
         /// <summary>
-        /// Meters the realized outflow (pre-balance minus post-balance) of a limited token
-        /// against the daily limit. Asserts (reverting the whole transaction) if exceeded,
-        /// then records the spend. Closes the bypass where any method other than "transfer"
-        /// moved funds without being counted.
+        /// For every configured-limit token other than <paramref name="directlyRecorded"/> (which
+        /// the direct "transfer" path already accounted by its declared amount), computes the
+        /// realized outflow (pre-balance minus post-balance) and meters it against that token's
+        /// daily limit. Asserts (reverting the whole transaction) if any token's limit is exceeded,
+        /// then records the spend. Every token's transient snapshot is cleared so stale snapshots
+        /// cannot leak into a later op. Driven by the configured-limit set, so an indirect/native
+        /// move is still counted no matter which contract was the direct call target. Only called
+        /// after PostExecute has confirmed the op succeeded.
         /// </summary>
-        private static void MeterLimitedTokenOutflow(UInt160 accountId, object[] opParams, object result)
+        private static void MeterAllLimitedOutflows(UInt160 accountId, UInt160 directlyRecorded)
         {
-            if (opParams.Length < 1) return;
-            UInt160 target = (UInt160)opParams[0];
-            if (target is null || !target.IsValid || target == UInt160.Zero) return;
-
-            byte[] snapKey = BuildBalanceSnapshotKey(accountId, target);
-            ByteString? snap = Storage.Get(Storage.CurrentContext, snapKey);
-            if (snap == null) return; // not a limited token (no snapshot taken)
-            Storage.Delete(Storage.CurrentContext, snapKey);
-
-            if (!DidExecutionSucceed(result)) return;
-            LimitConfig? config = GetLimitConfig(accountId, target);
-            if (config == null) return;
-
-            BigInteger before = (BigInteger)snap;
-            BigInteger after = TokenBalanceOf(target, accountId);
-            BigInteger outflow = before - after;
-            if (outflow <= 0) return; // inflow or no movement
-
             BigInteger currentTime = Runtime.Time;
-            BigInteger spentToday = config.UseRollingWindow
-                ? GetRollingWindowSpent(accountId, target, currentTime)
-                : GetFixedWindowSpent(accountId, target, currentTime);
 
-            BigInteger newTotal = spentToday + outflow;
-            ExecutionEngine.Assert(newTotal >= spentToday, "Integer overflow in daily limit check");
-            ExecutionEngine.Assert(newTotal <= config.MaxAmount, "Daily limit exceeded");
+            byte[] prefix = Helper.Concat(Prefix_DailyLimit, (byte[])accountId);
+            Iterator iterator = Storage.Find(Storage.CurrentContext, prefix, FindOptions.KeysOnly | FindOptions.RemovePrefix);
+            while (iterator.Next())
+            {
+                UInt160 token = (UInt160)(ByteString)iterator.Value;
+                byte[] snapKey = BuildBalanceSnapshotKey(accountId, token);
+                ByteString? snap = Storage.Get(Storage.CurrentContext, snapKey);
+                // Always clear the transient snapshot so it cannot bleed into a future op.
+                Storage.Delete(Storage.CurrentContext, snapKey);
 
-            if (config.UseRollingWindow)
-            {
-                ExecutionEngine.Assert(GetRollingWindowRecordCount(accountId, target, currentTime) < MaxHistorySize, "Daily limit history full");
-                RecordTransaction(accountId, target, currentTime, outflow);
-            }
-            else
-            {
-                StoreFixedWindowSpent(accountId, target, currentTime, spentToday + outflow);
+                // The directly-transferred token was already accounted by declared amount above.
+                if (token == directlyRecorded) continue;
+                if (snap == null) continue;            // limit added mid-op; nothing to compare against
+
+                LimitConfig? config = GetLimitConfig(accountId, token);
+                if (config == null) continue;          // limit cleared mid-op
+
+                BigInteger before = (BigInteger)snap;
+                BigInteger after = TokenBalanceOf(token, accountId);
+                BigInteger outflow = before - after;
+                if (outflow <= 0) continue;            // inflow or no movement
+
+                BigInteger spentToday = config.UseRollingWindow
+                    ? GetRollingWindowSpent(accountId, token, currentTime)
+                    : GetFixedWindowSpent(accountId, token, currentTime);
+
+                BigInteger newTotal = spentToday + outflow;
+                ExecutionEngine.Assert(newTotal >= spentToday, "Integer overflow in daily limit check");
+                ExecutionEngine.Assert(newTotal <= config.MaxAmount, "Daily limit exceeded");
+
+                if (config.UseRollingWindow)
+                {
+                    ExecutionEngine.Assert(GetRollingWindowRecordCount(accountId, token, currentTime) < MaxHistorySize, "Daily limit history full");
+                    RecordTransaction(accountId, token, currentTime, outflow);
+                }
+                else
+                {
+                    StoreFixedWindowSpent(accountId, token, currentTime, spentToday + outflow);
+                }
             }
         }
 

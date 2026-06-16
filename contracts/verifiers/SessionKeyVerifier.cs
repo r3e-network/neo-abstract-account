@@ -84,6 +84,10 @@ namespace AbstractAccount.Verifiers
             ExecutionEngine.Assert(validUntil > Runtime.Time, "Session key must expire in the future");
             ExecutionEngine.Assert(validUntil <= Runtime.Time + MaxSessionDurationMs, "Session key lifetime exceeds maximum of 30 days");
             ExecutionEngine.Assert(spendingLimit >= 0, "Spending limit must be non-negative");
+            // Fail closed: the spending limit can only be enforced on the value-moving "transfer"
+            // path (see ExtractTransferValue). Reject a positive limit on any wildcard or
+            // non-transfer session key so the configured cap is never silently unenforced.
+            ExecutionEngine.Assert(spendingLimit == 0 || method == "transfer", "Spending limit only enforceable on transfer session keys");
             ExecutionEngine.Assert(description == null || description.Length <= 128, "Description too long (max 128 chars)");
 
             // Enforce key rotation cooldown to prevent spending limit bypass via rapid key rotation

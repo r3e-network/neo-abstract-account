@@ -18,6 +18,18 @@ namespace AbstractAccount
         // 4. Core calls paymaster.settleReimbursement for atomic policy enforcement + relay reimbursement
 
         /// <summary>
+        /// Caps a relay-supplied reimbursement request to the actual gas cost the relay paid for the
+        /// enclosing transaction (system fee + network fee). This binds the sponsored reimbursement to
+        /// real cost so a relay cannot always claim its policy MaxPerOp regardless of the gas actually
+        /// consumed (audit MEDIUM-a). The paymaster still enforces MaxPerOp / budgets / deposit backing.
+        /// </summary>
+        private static BigInteger CapReimbursementToActualCost(BigInteger requested)
+        {
+            BigInteger actualCost = (BigInteger)Runtime.Transaction.SystemFee + (BigInteger)Runtime.Transaction.NetworkFee;
+            return requested < actualCost ? requested : actualCost;
+        }
+
+        /// <summary>
         /// Executes a single user operation with paymaster sponsorship.
         /// The relay (transaction sender) is reimbursed from the sponsor's deposit
         /// held in the paymaster contract after successful execution.
@@ -45,6 +57,11 @@ namespace AbstractAccount
             UInt160 paymasterCore = (UInt160)Contract.Call(paymaster!, "authorizedCore", CallFlags.ReadOnly, new object[] { });
             ExecutionEngine.Assert(paymasterCore == Runtime.ExecutingScriptHash, "Paymaster not bound to this core");
 
+            // Bind the relay-requested reimbursement to the actual gas cost of this transaction
+            // (audit MEDIUM-a): the relay cannot be reimbursed for more than it actually paid.
+            BigInteger settledAmount = CapReimbursementToActualCost(reimbursementAmount);
+            ExecutionEngine.Assert(settledAmount > 0, "Reimbursement exceeds actual gas cost");
+
             // Execute the operation (full validation + execution + hooks)
             object result = ExecuteUserOp(accountId!, op);
 
@@ -52,9 +69,9 @@ namespace AbstractAccount
             // Settlement does full policy validation atomically — no separate pre-check needed.
             Contract.Call(paymaster!, "settleReimbursement", CallFlags.All,
                 new object[] { sponsor!, accountId!, op.TargetContract, op.Method,
-                               Runtime.Transaction.Sender!, reimbursementAmount });
+                               Runtime.Transaction.Sender!, settledAmount });
 
-            OnSponsoredUserOpExecuted(accountId!, paymaster!, sponsor!, Runtime.Transaction.Sender!, reimbursementAmount);
+            OnSponsoredUserOpExecuted(accountId!, paymaster!, sponsor!, Runtime.Transaction.Sender!, settledAmount);
             return result;
         }
 
@@ -88,15 +105,20 @@ namespace AbstractAccount
                 ExecutionEngine.Assert(ops[i].Method == ops[0].Method, "Batch ops must share method");
             }
 
+            // Bind the relay-requested reimbursement to the actual gas cost of this transaction
+            // (audit MEDIUM-a): a single batch reimbursement cannot exceed the gas actually paid.
+            BigInteger settledAmount = CapReimbursementToActualCost(reimbursementAmount);
+            ExecutionEngine.Assert(settledAmount > 0, "Reimbursement exceeds actual gas cost");
+
             // Execute all operations atomically
             object[] results = ExecuteUserOps(accountId!, ops);
 
             // Single settlement for entire batch
             Contract.Call(paymaster!, "settleReimbursement", CallFlags.All,
                 new object[] { sponsor!, accountId!, ops[0].TargetContract, ops[0].Method,
-                               Runtime.Transaction.Sender!, reimbursementAmount });
+                               Runtime.Transaction.Sender!, settledAmount });
 
-            OnSponsoredUserOpExecuted(accountId!, paymaster!, sponsor!, Runtime.Transaction.Sender!, reimbursementAmount);
+            OnSponsoredUserOpExecuted(accountId!, paymaster!, sponsor!, Runtime.Transaction.Sender!, settledAmount);
             return results;
         }
     }

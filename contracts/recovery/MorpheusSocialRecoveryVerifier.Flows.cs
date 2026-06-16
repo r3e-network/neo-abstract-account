@@ -12,6 +12,11 @@ namespace Neo.SmartContract.Examples
 {
     public partial class SocialRecoveryVerifier
     {
+        // Minimum recovery timelock (milliseconds, matching Runtime.Time units). A zero or tiny
+        // timelock lets a met threshold seize the account instantly, leaving the owner no window
+        // to cancel a malicious recovery. 1 hour = 60 * 60 * 1000 ms.
+        private const ulong MIN_TIMELOCK = 3600000;
+
         public static void SetupRecovery(
             ByteString accountId,
             string accountIdText,
@@ -34,6 +39,7 @@ namespace Neo.SmartContract.Examples
             ValidateAddress(morpheusOracle, "morpheusOracle");
             ValidateVerifier(morpheusVerifier);
             ValidateMasterNullifiers(masterNullifiers, threshold);
+            ExecutionEngine.Assert(timelock >= MIN_TIMELOCK, "Timelock below minimum");
 
             ExecutionEngine.Assert(Runtime.CheckWitness(owner), "Not owner");
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId)) == null, "Recovery already setup");
@@ -56,6 +62,7 @@ namespace Neo.SmartContract.Examples
             ValidateAddress(morpheusOracle, "morpheusOracle");
             ValidateVerifier(morpheusVerifier);
             ValidateMasterNullifiers(masterNullifiers, threshold);
+            ExecutionEngine.Assert(timelock >= MIN_TIMELOCK, "Timelock below minimum");
             AssertOwner(accountId);
             ExecutionEngine.Assert(!GetPendingRecovery(accountId).Active, "Recovery in progress");
 
