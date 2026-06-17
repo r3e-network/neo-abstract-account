@@ -119,10 +119,7 @@ export function resolveMorpheusRuntimeToken(networkInput) {
   const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
   return trim(
     process.env[`MORPHEUS_${upper}_RUNTIME_TOKEN`]
-      || process.env[`MORPHEUS_${upper}_PHALA_API_TOKEN`]
       || process.env.MORPHEUS_RUNTIME_TOKEN
-      || process.env.PHALA_API_TOKEN
-      || process.env.PHALA_SHARED_SECRET
       || ''
   );
 }

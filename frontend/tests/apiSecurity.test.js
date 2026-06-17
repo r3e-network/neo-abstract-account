@@ -218,9 +218,17 @@ test('relay API binds paymaster requests to dapp and operation hashes', () => {
   assert.match(source, /userop_method/);
   assert.match(source, /sha256Hex\(metaInvocation\)/);
   assert.match(source, /paymaster \? \{ \.\.\.result, paymaster \} : result/);
-  assert.match(source, /callRemotePaymasterAuthorize/);
-  assert.match(source, /x-phala-token/);
   assert.match(source, /resolveMorpheusOracleCvmId/);
+});
+
+test('relay API no longer routes paymaster authorization through the retired Phala remote path', () => {
+  const source = fs.readFileSync(path.resolve('api/relay-transaction.js'), 'utf8');
+
+  assert.doesNotMatch(source, /phala-remote/);
+  assert.doesNotMatch(source, /callRemotePaymasterAuthorize/);
+  assert.doesNotMatch(source, /resolvePhalaCliCommand/);
+  assert.doesNotMatch(source, /x-phala-token/i);
+  assert.doesNotMatch(source, /PHALA_/);
 });
 
 test('paymaster authorization derives account and operation hash from the sanitized invocation', () => {

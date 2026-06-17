@@ -26,7 +26,7 @@
           {{
             t(
               `${i18nKeyPrefix}.paymasterValidationBody`,
-              "The latest suite verifies the on-chain sponsored execution path on Neo N3 testnet. Policy and relay authorization stages depend on Morpheus/Phala runtime secrets and are skipped when those credentials are not configured.",
+              "The latest suite verifies the on-chain sponsored execution path on Neo N3 testnet. Policy and relay authorization stages depend on Morpheus runtime secrets and are skipped when those credentials are not configured.",
             )
           }}
         </p>

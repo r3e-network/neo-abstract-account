@@ -51,19 +51,40 @@ test('morpheus runtime token prefers network-scoped values when present', () => 
     MORPHEUS_MAINNET_RUNTIME_TOKEN: process.env.MORPHEUS_MAINNET_RUNTIME_TOKEN,
     MORPHEUS_TESTNET_RUNTIME_TOKEN: process.env.MORPHEUS_TESTNET_RUNTIME_TOKEN,
     MORPHEUS_RUNTIME_TOKEN: process.env.MORPHEUS_RUNTIME_TOKEN,
-    MORPHEUS_TESTNET_PHALA_API_TOKEN: process.env.MORPHEUS_TESTNET_PHALA_API_TOKEN,
-    PHALA_API_TOKEN: process.env.PHALA_API_TOKEN,
   };
 
   process.env.MORPHEUS_MAINNET_RUNTIME_TOKEN = 'mainnet-runtime-token';
   process.env.MORPHEUS_TESTNET_RUNTIME_TOKEN = 'testnet-runtime-token';
   process.env.MORPHEUS_RUNTIME_TOKEN = 'global-runtime-token';
-  process.env.MORPHEUS_TESTNET_PHALA_API_TOKEN = 'testnet-phala-token';
-  process.env.PHALA_API_TOKEN = 'global-phala-token';
 
   try {
     assert.equal(resolveMorpheusRuntimeToken('mainnet'), 'mainnet-runtime-token');
     assert.equal(resolveMorpheusRuntimeToken('testnet'), 'testnet-runtime-token');
+  } finally {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('morpheus runtime token no longer falls back to retired Phala credentials', () => {
+  const snapshot = {
+    MORPHEUS_TESTNET_RUNTIME_TOKEN: process.env.MORPHEUS_TESTNET_RUNTIME_TOKEN,
+    MORPHEUS_RUNTIME_TOKEN: process.env.MORPHEUS_RUNTIME_TOKEN,
+    MORPHEUS_TESTNET_PHALA_API_TOKEN: process.env.MORPHEUS_TESTNET_PHALA_API_TOKEN,
+    PHALA_API_TOKEN: process.env.PHALA_API_TOKEN,
+    PHALA_SHARED_SECRET: process.env.PHALA_SHARED_SECRET,
+  };
+
+  delete process.env.MORPHEUS_TESTNET_RUNTIME_TOKEN;
+  delete process.env.MORPHEUS_RUNTIME_TOKEN;
+  process.env.MORPHEUS_TESTNET_PHALA_API_TOKEN = 'testnet-phala-token';
+  process.env.PHALA_API_TOKEN = 'global-phala-token';
+  process.env.PHALA_SHARED_SECRET = 'global-phala-secret';
+
+  try {
+    assert.equal(resolveMorpheusRuntimeToken('testnet'), '');
   } finally {
     for (const [key, value] of Object.entries(snapshot)) {
       if (value == null) delete process.env[key];
