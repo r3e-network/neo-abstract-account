@@ -9,7 +9,12 @@ const { validateHash160, validateAccountId, sanitizeHex } = require('./validatio
 /**
  * Result of a UserOperation simulation.
  * @typedef {Object} SimulationResult
- * @property {boolean} passed - Whether all checks passed
+ * @property {boolean} passed - Whether all PREVIEW checks passed. This does NOT
+ *   imply the operation is executable: the signature is never checked here
+ *   (see {@link signatureVerified}).
+ * @property {boolean} signatureVerified - Always false. simulate does not verify
+ *   the UserOperation signature or its session scope. Only the on-chain
+ *   executeUserOp (or the relay's full-op simulation) validates the signature.
  * @property {Object} checks - Individual check results
  * @property {boolean} checks.deadlineValid - Deadline is in the future
  * @property {boolean} checks.nonceAcceptable - Nonce is valid and unused
@@ -24,6 +29,14 @@ const { validateHash160, validateAccountId, sanitizeHex } = require('./validatio
  * Simulates a UserOperation before submission.
  * Calls getUserOpValidationPreview to check execution conditions.
  *
+ * IMPORTANT: This is a pre-flight preview only. It checks the deadline, nonce
+ * and verifier presence, but it does NOT verify the UserOperation signature or
+ * its session scope. A `passed: true` result therefore means "the previewed
+ * conditions look acceptable", NOT "this operation will execute". The returned
+ * {@link SimulationResult.signatureVerified} flag is always false to make this
+ * contract explicit. The signature is only validated by the on-chain
+ * executeUserOp (or by the relay's full-operation simulation).
+ *
  * @param {AbstractAccountClient} client - The SDK client instance
  * @param {Object} options - Simulation options
  * @param {string} options.accountIdHash - Account ID hash
@@ -33,7 +46,9 @@ const { validateHash160, validateAccountId, sanitizeHex } = require('./validatio
  * @param {Array} options.args - Method arguments
  * @param {string|number} options.nonce - Nonce value
  * @param {string|number} options.deadline - Deadline in Neo Runtime.Time milliseconds
- * @returns {Promise<SimulationResult>} Simulation results
+ * @returns {Promise<SimulationResult>} Simulation results. `passed` reflects the
+ *   preview checks only and never implies signature validity; `signatureVerified`
+ *   is always false.
  *
  * @example
  * const result = await simulateUserOperation(client, {
@@ -49,6 +64,8 @@ const { validateHash160, validateAccountId, sanitizeHex } = require('./validatio
  *   console.error('Simulation failed:', result.errors);
  *   throw new Error(result.errors[0]);
  * }
+ * // result.signatureVerified is always false: the signature must still be
+ * // validated on-chain by executeUserOp (or by the relay's full simulation).
  */
 async function simulateUserOperation(client, options) {
   const {
@@ -68,6 +85,7 @@ async function simulateUserOperation(client, options) {
   if (!accountIdHash && !accountAddress) {
     return {
       passed: false,
+      signatureVerified: false,
       checks: {},
       errors: ['Account ID hash or address is required'],
       warnings,
@@ -77,6 +95,7 @@ async function simulateUserOperation(client, options) {
   if (!targetContract) {
     return {
       passed: false,
+      signatureVerified: false,
       checks: {},
       errors: ['Target contract is required'],
       warnings,
@@ -86,6 +105,7 @@ async function simulateUserOperation(client, options) {
   if (!method) {
     return {
       passed: false,
+      signatureVerified: false,
       checks: {},
       errors: ['Method name is required'],
       warnings,
@@ -139,7 +159,10 @@ async function simulateUserOperation(client, options) {
     }
 
     return {
+      // passed reflects the preview checks only; the signature is never checked
+      // here, so this must not be treated as "executable".
       passed: errors.length === 0,
+      signatureVerified: false,
       checks,
       errors,
       warnings,
@@ -153,6 +176,7 @@ async function simulateUserOperation(client, options) {
     }
     return {
       passed: false,
+      signatureVerified: false,
       checks: {},
       errors,
       warnings,
