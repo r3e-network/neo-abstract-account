@@ -43,6 +43,16 @@ namespace AbstractAccount
             ExecutionEngine.Assert(marketContract != null && marketContract != UInt160.Zero, "Market contract required");
             ExecutionEngine.Assert(listingId > 0, "Listing id required");
 
+            // The (marketContract, listingId) binding must be established by the market itself.
+            // A listing's later abandon/settle/cancel calls are authorised purely by
+            // CallingScriptHash == the recorded marketContract, so allowing any backup owner to
+            // record an arbitrary (market, listingId) here would let an attacker point their own
+            // account's escrow at a victim's listing and then drive that victim's listing through
+            // the abandon path. Requiring the real market to be the caller that arms the escrow
+            // keeps the binding honest: the only on-chain path is the market's own CreateListing,
+            // which calls in passing itself (Runtime.ExecutingScriptHash) as marketContract.
+            ExecutionEngine.Assert(Runtime.CallingScriptHash == marketContract!, "Caller is not the market");
+
             byte[] marketKey = Helper.Concat(Prefix_MarketEscrowContract, (byte[])accountId);
             byte[] listingKey = Helper.Concat(Prefix_MarketEscrowListing, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, marketKey, (byte[])marketContract!);
@@ -58,7 +68,7 @@ namespace AbstractAccount
             AssertEscrowMarket(accountId, listingId);
             UInt160 market = GetMarketEscrowContract(accountId);
             ClearMarketEscrow(accountId);
-            NotifyMarketListingAbandoned(market, listingId);
+            NotifyMarketListingAbandoned(market, accountId, listingId);
             OnMarketEscrowCancelled(accountId);
         }
 
@@ -169,7 +179,7 @@ namespace AbstractAccount
             UInt160 market = GetMarketEscrowContract(accountId);
             BigInteger listingId = GetMarketEscrowListingId(accountId);
             ClearMarketEscrow(accountId);
-            NotifyMarketListingAbandoned(market, listingId);
+            NotifyMarketListingAbandoned(market, accountId, listingId);
             OnMarketEscrowOwnerCancelled(accountId);
         }
 
@@ -227,12 +237,12 @@ namespace AbstractAccount
         /// the owner from reclaiming the account, and the AbandonListing transition is idempotent
         /// so overlapping with the market's own cancel path is harmless.
         /// </summary>
-        private static void NotifyMarketListingAbandoned(UInt160 market, BigInteger listingId)
+        private static void NotifyMarketListingAbandoned(UInt160 market, UInt160 accountId, BigInteger listingId)
         {
             if (market == UInt160.Zero || listingId <= 0) return;
             try
             {
-                Contract.Call(market, "abandonListing", CallFlags.All, new object[] { listingId });
+                Contract.Call(market, "abandonListing", CallFlags.All, new object[] { accountId, listingId });
             }
             catch
             {

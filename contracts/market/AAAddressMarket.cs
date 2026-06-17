@@ -215,20 +215,26 @@ namespace AbstractAccount
         /// notably the backup owner's timelocked <c>ForceCancelMarketEscrow</c> escape — so the
         /// listing does not linger as a settleable zombie after the account is no longer escrowed.
         ///
-        /// Only the AA contract recorded on the listing may call it, which is exactly the contract
-        /// that holds (and has just released) the escrow, so no third party can grief an Active
-        /// listing. Any in-flight buyer deposits are deliberately left untouched: the listing
-        /// becoming Cancelled stops further <c>settleListing</c> attempts while
-        /// <c>RefundPendingPayment</c> stays open, so buyer capital is always recoverable.
+        /// The caller must be the AA contract recorded on the listing AND must name the listing's
+        /// own escrowed account: a single canonical AA core backs every listing, so
+        /// <c>CallingScriptHash == listing.AAContract</c> alone only proves "the canonical core
+        /// called", not "the core is acting for this listing's escrow". Binding the call to the
+        /// listing's <c>AccountId</c> — which the core forwards from its own escrow record — stops
+        /// an attacker from pointing a different account's escrow at a victim's listing and driving
+        /// the victim's Active listing through this abandon path. Any in-flight buyer deposits are
+        /// deliberately left untouched: the listing becoming Cancelled stops further
+        /// <c>settleListing</c> attempts while <c>RefundPendingPayment</c> stays open, so buyer
+        /// capital is always recoverable.
         ///
         /// The transition is idempotent: a listing that is already Cancelled or Sold is left as-is
         /// so the normal market-driven <c>cancelListing</c>/<c>settleListing</c> paths (which also
         /// notify the AA core) remain safe even when they overlap this callback.
         /// </summary>
-        public static void AbandonListing(BigInteger listingId)
+        public static void AbandonListing(UInt160 accountId, BigInteger listingId)
         {
             Listing listing = GetExistingListing(listingId);
             ExecutionEngine.Assert(Runtime.CallingScriptHash == listing.AAContract, "Only listed AA contract");
+            ExecutionEngine.Assert(accountId != null && listing.AccountId == accountId, "Account mismatch");
             if (listing.Status != StatusActive) return;
 
             listing.Status = StatusCancelled;
