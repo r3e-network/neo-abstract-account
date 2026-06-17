@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -184,12 +185,43 @@ internal sealed class RuntimeFixture
         return new object[] { targetContract, method, args, nonce, deadline, signature! };
     }
 
+    /// <summary>
+    /// Notifications (events) emitted by the most recent <see cref="Call"/>/<see cref="CallVoid"/>
+    /// against this fixture. Populated by capturing the executing <see cref="ApplicationEngine"/>,
+    /// then read after the call returns so suites can assert on emitted event state.
+    /// </summary>
+    public IReadOnlyList<NotifyEventArgs> LastNotifications { get; private set; } =
+        System.Array.Empty<NotifyEventArgs>();
+
+    /// <summary>
+    /// Returns the <c>State</c> array of the single notification with the given event name emitted
+    /// by the most recent call, asserting exactly one was emitted by <paramref name="emitter"/>.
+    /// </summary>
+    public Neo.VM.Types.Array SingleNotificationState(UInt160 emitter, string eventName)
+    {
+        NotifyEventArgs[] matches = LastNotifications
+            .Where(n => n.ScriptHash == emitter && n.EventName == eventName)
+            .ToArray();
+        Assert.AreEqual(1, matches.Length,
+            $"Expected exactly one '{eventName}' notification from {emitter}, saw {matches.Length}.");
+        return matches[0].State;
+    }
+
     private StackItem Run(ScriptBuilder scriptBuilder)
     {
-        return Engine.Execute(
+        ApplicationEngine? captured = null;
+        StackItem result = Engine.Execute(
             new Script(scriptBuilder.ToArray()),
             0,
-            applicationEngine => FeeAmountField.SetValue(applicationEngine, new BigInteger(long.MaxValue)));
+            applicationEngine =>
+            {
+                captured = applicationEngine;
+                FeeAmountField.SetValue(applicationEngine, new BigInteger(long.MaxValue));
+            });
+        // The configure callback hands back the same engine instance that runs the script, so its
+        // notification list is fully populated once Execute returns.
+        LastNotifications = captured?.Notifications ?? (IReadOnlyList<NotifyEventArgs>)System.Array.Empty<NotifyEventArgs>();
+        return result;
     }
 
     private static ContractParameter ToParameter(object? value) => value switch

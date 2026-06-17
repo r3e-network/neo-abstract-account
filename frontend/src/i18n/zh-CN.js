@@ -1320,6 +1320,11 @@ export default {
       presetDailyLimitDesc: '限制每日代币流出。',
       presetDIDDesc: '在目标访问前要求活跃的 NeoDID 注册表绑定。',
       presetMultiHookDesc: '在一个插槽后组合多个策略 hook。',
+      // 会话密钥金额暴露警告
+      sessionKeyUncappedWarning:
+        '此会话密钥不限额：通配符（"*"）方法或为零的支出上限会让被委托的签名者动用目标合约上的全部余额——它并未被限制为单一方法。请将方法设为 "transfer" 并填写正的支出上限（第 7 个参数）以强制限额。',
+      sessionKeyUncappedNativeWarning:
+        '此会话密钥在原生资产（{asset}）上不限额：通配符（"*"）方法或为零的支出上限会让被委托的签名者抽干你的全部 {asset} 余额——它并未被限制为单一方法。请将方法设为 "transfer" 并填写正的支出上限（第 7 个参数）以强制限额。',
       // 预设标签
       presetSessionKeyLabel: 'SessionKeyVerifier',
       presetSubscriptionLabel: 'SubscriptionVerifier',

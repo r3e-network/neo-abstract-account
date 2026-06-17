@@ -92,4 +92,52 @@ public class Fix_SessionKey_Tests
         var stored = h.Fx.Call(verifier, "getSessionKey", AccountId);
         Assert.AreNotEqual(Neo.VM.Types.StackItem.Null, stored, "Transfer session key with a limit must be configurable");
     }
+
+    // SessionKeyGranted state layout:
+    // [accountId, pubKey, targetContract, method, validUntil, spendingLimit, uncapped]
+    private const int UncappedFlagIndex = 6;
+
+    [TestMethod]
+    public void WildcardSessionKey_EmitsGrantEvent_FlaggedUncapped()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        // A wildcard key carries no enforceable cap (any method moves value); the grant event must
+        // advertise that so the UI can warn the key is value-uncapped, not "limited to one method".
+        h.SetSessionKey(verifier, key.CompressedPublicKey, "*", spendingLimit: 0);
+
+        Neo.VM.Types.Array state = h.Fx.SingleNotificationState(verifier, "SessionKeyGranted");
+        Assert.IsTrue(state[UncappedFlagIndex].GetBoolean(), "Wildcard session key must be flagged uncapped");
+    }
+
+    [TestMethod]
+    public void TransferSessionKey_WithSpendingLimit_EmitsGrantEvent_FlaggedCapped()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        // A transfer key with a positive limit is the one configuration with an enforced cap, so
+        // the grant event must report it as capped.
+        h.SetSessionKey(verifier, key.CompressedPublicKey, "transfer", spendingLimit: 1000);
+
+        Neo.VM.Types.Array state = h.Fx.SingleNotificationState(verifier, "SessionKeyGranted");
+        Assert.IsFalse(state[UncappedFlagIndex].GetBoolean(), "Capped transfer session key must not be flagged uncapped");
+    }
+
+    [TestMethod]
+    public void TransferSessionKey_WithoutSpendingLimit_EmitsGrantEvent_FlaggedUncapped()
+    {
+        Harness h = new();
+        using P256SessionKey key = new();
+        UInt160 verifier = h.DeployVerifier();
+
+        // A transfer key with no limit (0 = unlimited) is also value-uncapped and must be flagged.
+        h.SetSessionKey(verifier, key.CompressedPublicKey, "transfer", spendingLimit: 0);
+
+        Neo.VM.Types.Array state = h.Fx.SingleNotificationState(verifier, "SessionKeyGranted");
+        Assert.IsTrue(state[UncappedFlagIndex].GetBoolean(), "Zero-limit transfer session key must be flagged uncapped");
+    }
 }
