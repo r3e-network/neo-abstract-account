@@ -890,15 +890,8 @@ import {
   signUserOpWithEvm,
 } from "@/features/operations/useUserOpSigning.js";
 import { useDraftPersistence } from "@/features/operations/useDraftPersistence.js";
+import { useBroadcastReceipts } from "@/features/operations/useBroadcastReceipts.js";
 import { createOperationsWorkspace } from "@/features/operations/useOperationsWorkspace.js";
-import {
-  buildSubmissionReceipt,
-  resolveLatestSubmissionReceipt,
-} from "@/features/operations/submissionFeedback.js";
-import {
-  buildSubmissionReceiptHistoryItems,
-  createSubmissionReceiptEntry,
-} from "@/features/operations/submissionReceipts.js";
 import {
   getAbstractAccountHash,
   walletService,
@@ -1013,9 +1006,7 @@ const signingWithEvm = ref(false);
 const signingWithZkLogin = ref(false);
 const isAppendingSignature = ref(false);
 const lastBroadcastTxid = ref("");
-const pendingSubmissionAction = ref("");
 const isPersisting = ref(false);
-const submissionReceipt = ref(null);
 const {
   activityItems,
   submissionReceiptEntries,
@@ -1027,6 +1018,18 @@ const {
   getAccessMutationOptions: () => accessMutationOptions(),
   getOperatorMutationOptions: () => operatorMutationOptions(),
   devWarnTag: "HomeOperationsWorkspace",
+});
+const {
+  pendingSubmissionAction,
+  isSubmissionPending,
+  submissionReceiptHistoryItems,
+  activeSubmissionReceipt,
+  setSubmissionPending,
+  setSubmissionResult,
+} = useBroadcastReceipts({
+  submissionReceiptEntries,
+  explorerBaseUrl: runtime.explorerBaseUrl,
+  t,
 });
 const relayCheck = ref({
   level: "idle",
@@ -1312,24 +1315,6 @@ const canRelayBroadcast = computed(() =>
       relayCheck.value?.ok === true &&
       relayCheckMatchesCurrentPayload.value,
   ),
-);
-const isSubmissionPending = computed(() =>
-  Boolean(pendingSubmissionAction.value),
-);
-const submissionReceiptHistoryItems = computed(() =>
-  buildSubmissionReceiptHistoryItems(submissionReceiptEntries.value, {
-    explorerBaseUrl: runtime.explorerBaseUrl,
-    limit: 4,
-    t,
-  }),
-);
-const activeSubmissionReceipt = computed(
-  () =>
-    submissionReceipt.value ||
-    resolveLatestSubmissionReceipt(submissionReceiptEntries.value, {
-      explorerBaseUrl: runtime.explorerBaseUrl,
-      t,
-    }),
 );
 const activityActionContext = computed(() => ({
   shareUrl: shareUrl.value,
@@ -1732,33 +1717,6 @@ const exportPreview = computed(() =>
     2,
   ),
 );
-
-function setSubmissionPending(action) {
-  pendingSubmissionAction.value = action;
-  submissionReceipt.value = buildSubmissionReceipt({
-    action,
-    phase: "pending",
-    explorerBaseUrl: runtime.explorerBaseUrl,
-    t,
-  });
-}
-
-function setSubmissionResult(
-  action,
-  { phase = "success", detail = "", txid = "" } = {},
-) {
-  pendingSubmissionAction.value = "";
-  const entry = createSubmissionReceiptEntry({ action, phase, detail, txid });
-  submissionReceipt.value = buildSubmissionReceipt({
-    action,
-    phase,
-    detail,
-    txid,
-    explorerBaseUrl: runtime.explorerBaseUrl,
-    t,
-  });
-  return entry;
-}
 
 function buildCurrentDraftRecord({ draftId, shareSlug } = {}) {
   return createDraftRecord({
