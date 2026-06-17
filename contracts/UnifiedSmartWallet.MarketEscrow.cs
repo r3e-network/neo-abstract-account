@@ -56,7 +56,9 @@ namespace AbstractAccount
         public static void CancelMarketEscrow(UInt160 accountId, BigInteger listingId)
         {
             AssertEscrowMarket(accountId, listingId);
+            UInt160 market = GetMarketEscrowContract(accountId);
             ClearMarketEscrow(accountId);
+            NotifyMarketListingAbandoned(market, listingId);
             OnMarketEscrowCancelled(accountId);
         }
 
@@ -98,8 +100,16 @@ namespace AbstractAccount
             byte[] key = Helper.Concat(Prefix_AccountState, (byte[])accountId);
             Storage.Put(Storage.CurrentContext, key, StdLib.Serialize(state));
 
+            // Hand the buyer a genuinely clean shell: wipe every per-account marker the previous
+            // owner could have left behind. Beyond the pending plugin *updates*, this also clears
+            // any pending timelocked plugin *calls*, a stale escape-cooldown stamp (so the buyer is
+            // not locked out of InitiateEscape), and the seller's off-chain metadata URI.
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId));
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingVerifierCall, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingHookCall, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_EscapeLastInitiated, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_MetadataUri, (byte[])accountId));
 
             if (previousVerifier != UInt160.Zero)
             {
@@ -153,7 +163,13 @@ namespace AbstractAccount
             BigInteger initiatedAt = (BigInteger)initiated!;
             ExecutionEngine.Assert(Runtime.Time >= initiatedAt + MarketEscrowOwnerCancelTimelockMs, "Owner cancel timelock active");
 
+            // Capture the listing the escrow points at before wiping the local markers so the
+            // market can be told to retire the listing too — otherwise the owner reclaims the
+            // account but the market keeps an Active listing that can never settle (a zombie).
+            UInt160 market = GetMarketEscrowContract(accountId);
+            BigInteger listingId = GetMarketEscrowListingId(accountId);
             ClearMarketEscrow(accountId);
+            NotifyMarketListingAbandoned(market, listingId);
             OnMarketEscrowOwnerCancelled(accountId);
         }
 
@@ -201,6 +217,29 @@ namespace AbstractAccount
             Storage.Delete(Storage.CurrentContext, marketKey);
             Storage.Delete(Storage.CurrentContext, listingKey);
             Storage.Delete(Storage.CurrentContext, ownerCancelKey);
+        }
+
+        /// <summary>
+        /// Asks the market contract to retire the listing this escrow was bound to so a wallet-side
+        /// escrow clear (owner force-cancel or market-driven cancel) never leaves an Active listing
+        /// the market can no longer settle. The call is best-effort: a market that was destroyed or
+        /// upgraded away (the very situation the owner escape exists for) must not be able to block
+        /// the owner from reclaiming the account, and the AbandonListing transition is idempotent
+        /// so overlapping with the market's own cancel path is harmless.
+        /// </summary>
+        private static void NotifyMarketListingAbandoned(UInt160 market, BigInteger listingId)
+        {
+            if (market == UInt160.Zero || listingId <= 0) return;
+            try
+            {
+                Contract.Call(market, "abandonListing", CallFlags.All, new object[] { listingId });
+            }
+            catch
+            {
+                // Market unreachable/incompatible: the local escrow is already cleared, so the
+                // owner keeps control regardless. A still-Active listing on an unresponsive market
+                // cannot settle anyway because the wallet no longer recognises it as the escrow holder.
+            }
         }
     }
 }
