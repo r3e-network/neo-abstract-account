@@ -477,6 +477,227 @@ test('paymaster authorization rejects malformed account or target hashes', () =>
   }), /requires a supported account-bound operation/);
 });
 
+function feePolicyEnvSnapshot() {
+  return {
+    AA_RELAY_MAX_SYSTEM_FEE: process.env.AA_RELAY_MAX_SYSTEM_FEE,
+    AA_RELAY_MAX_NETWORK_FEE: process.env.AA_RELAY_MAX_NETWORK_FEE,
+    AA_RELAY_MAX_TOTAL_FEE: process.env.AA_RELAY_MAX_TOTAL_FEE,
+  };
+}
+
+function clearFeePolicyEnv() {
+  delete process.env.AA_RELAY_MAX_SYSTEM_FEE;
+  delete process.env.AA_RELAY_MAX_NETWORK_FEE;
+  delete process.env.AA_RELAY_MAX_TOTAL_FEE;
+}
+
+test('relay declares the network fee cap and a sponsored fee ceiling requirement', () => {
+  const source = fs.readFileSync(path.resolve('api/relay-transaction.js'), 'utf8');
+
+  assert.match(source, /AA_RELAY_MAX_NETWORK_FEE/);
+  assert.match(source, /resolveMaxNetworkFee/);
+  assert.match(source, /hasConfiguredFeeCeiling/);
+  assert.match(source, /relay_fee_ceiling_not_configured/);
+  // The fee policy is enforced before the funded transaction is signed/broadcast.
+  assert.match(source, /enforceRelayFeePolicy/);
+});
+
+test('relay blocks a sponsored op whose networkFee exceeds AA_RELAY_MAX_NETWORK_FEE before broadcast', () => {
+  assert.equal(typeof relayModule.enforceRelayFeePolicy, 'function');
+  const snapshot = feePolicyEnvSnapshot();
+  clearFeePolicyEnv();
+  process.env.AA_RELAY_MAX_NETWORK_FEE = '100000';
+  try {
+    assert.throws(
+      () => relayModule.enforceRelayFeePolicy({
+        operation: 'executeUserOp',
+        systemFee: '10',
+        networkFee: '200000',
+      }),
+      /networkFee 200000 exceeds AA_RELAY_MAX_NETWORK_FEE 100000/,
+    );
+  } finally {
+    restoreEnv(snapshot);
+  }
+});
+
+test('relay caps the system fee and combined total when both ceilings are configured', () => {
+  const snapshot = feePolicyEnvSnapshot();
+  clearFeePolicyEnv();
+  process.env.AA_RELAY_MAX_SYSTEM_FEE = '500000';
+  process.env.AA_RELAY_MAX_TOTAL_FEE = '600000';
+  try {
+    assert.throws(
+      () => relayModule.enforceRelayFeePolicy({
+        operation: 'executeUserOp',
+        systemFee: '600000',
+        networkFee: '1',
+      }),
+      /systemFee 600000 exceeds AA_RELAY_MAX_SYSTEM_FEE 500000/,
+    );
+    assert.throws(
+      () => relayModule.enforceRelayFeePolicy({
+        operation: 'executeUserOp',
+        systemFee: '400000',
+        networkFee: '300000',
+      }),
+      /total fee 700000 exceeds AA_RELAY_MAX_TOTAL_FEE 600000/,
+    );
+  } finally {
+    restoreEnv(snapshot);
+  }
+});
+
+test('relay rejects a paymaster approval whose operation_hash does not match the relayed op', () => {
+  assert.equal(typeof relayModule.verifyPaymasterApproval, 'function');
+
+  const expected = `0x${'ab'.repeat(32)}`;
+  // A positively approved payload bound to a different operation_hash is refused.
+  assert.throws(
+    () => relayModule.verifyPaymasterApproval(
+      { approved: true, operation_hash: `0x${'cd'.repeat(32)}` },
+      expected,
+    ),
+    /operation_hash does not match/,
+  );
+  // An "approved" that is merely not-false (e.g. a string/undefined) is refused.
+  assert.throws(
+    () => relayModule.verifyPaymasterApproval({ operation_hash: expected }, expected),
+    /not positively approved/,
+  );
+  assert.throws(
+    () => relayModule.verifyPaymasterApproval({ approved: 'yes', operation_hash: expected }, expected),
+    /not positively approved/,
+  );
+  // An explicit denial passes through untouched so callers can short-circuit.
+  const denied = relayModule.verifyPaymasterApproval({ approved: false, reason: 'over_budget' }, expected);
+  assert.equal(denied.approved, false);
+  assert.equal(denied.reason, 'over_budget');
+});
+
+test('relay binds a matching approval and enforces its approved spend ceiling', () => {
+  const expected = `0x${'ab'.repeat(32)}`;
+  const snapshot = feePolicyEnvSnapshot();
+  clearFeePolicyEnv();
+  try {
+    const bound = relayModule.verifyPaymasterApproval(
+      { approved: true, operation_hash: expected, approved_max_fee: '750000' },
+      expected,
+    );
+    assert.equal(bound.approved, true);
+    assert.equal(bound.operation_hash, expected);
+    assert.equal(bound.approvedMaxFee, '750000');
+
+    // The signing step must reject a total fee above the approved ceiling.
+    assert.throws(
+      () => relayModule.enforceRelayFeePolicy({
+        operation: 'executeUserOp',
+        systemFee: '500000',
+        networkFee: '300000',
+        approvedMaxFee: bound.approvedMaxFee,
+      }),
+      /total fee 800000 exceeds paymaster-approved maximum 750000/,
+    );
+  } finally {
+    restoreEnv(snapshot);
+  }
+});
+
+test('relay allows the canonical capped path when every fee is within bounds', () => {
+  const expected = `0x${'ab'.repeat(32)}`;
+  const snapshot = feePolicyEnvSnapshot();
+  clearFeePolicyEnv();
+  process.env.AA_RELAY_MAX_SYSTEM_FEE = '1000000';
+  process.env.AA_RELAY_MAX_NETWORK_FEE = '1000000';
+  process.env.AA_RELAY_MAX_TOTAL_FEE = '1500000';
+  try {
+    const bound = relayModule.verifyPaymasterApproval(
+      { approved: true, operation_hash: expected, approved_max_fee: '1500000' },
+      expected,
+    );
+    assert.equal(bound.approved, true);
+
+    const enforced = relayModule.enforceRelayFeePolicy({
+      operation: 'executeUserOp',
+      systemFee: '400000',
+      networkFee: '300000',
+      approvedMaxFee: bound.approvedMaxFee,
+    });
+    assert.equal(enforced.systemFee, '400000');
+    assert.equal(enforced.networkFee, '300000');
+  } finally {
+    restoreEnv(snapshot);
+  }
+});
+
+test('relay refuses to sponsor a broadcast when no fee ceiling is configured', async () => {
+  const snapshot = {
+    ...feePolicyEnvSnapshot(),
+    AA_RELAY_RPC_URL: process.env.AA_RELAY_RPC_URL,
+    AA_RELAY_WIF: process.env.AA_RELAY_WIF,
+    AA_RELAY_ALLOWED_HASH: process.env.AA_RELAY_ALLOWED_HASH,
+    AA_RELAY_ALLOW_UNSPONSORED: process.env.AA_RELAY_ALLOW_UNSPONSORED,
+    MORPHEUS_NETWORK: process.env.MORPHEUS_NETWORK,
+    MORPHEUS_PAYMASTER_ENDPOINT: process.env.MORPHEUS_PAYMASTER_ENDPOINT,
+    MORPHEUS_PAYMASTER_TESTNET_ENDPOINT: process.env.MORPHEUS_PAYMASTER_TESTNET_ENDPOINT,
+    MORPHEUS_PAYMASTER_API_TOKEN: process.env.MORPHEUS_PAYMASTER_API_TOKEN,
+  };
+
+  clearFeePolicyEnv();
+  delete process.env.AA_RELAY_ALLOW_UNSPONSORED;
+  const allowedHash = `0x${'ab'.repeat(20)}`;
+  process.env.AA_RELAY_RPC_URL = 'https://relay-rpc.invalid';
+  process.env.AA_RELAY_WIF = 'KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn';
+  process.env.AA_RELAY_ALLOWED_HASH = allowedHash;
+  process.env.MORPHEUS_NETWORK = 'testnet';
+  // Configure a paymaster (sponsoring path) but deliberately leave every fee
+  // ceiling unset so the relay must fail closed before broadcasting.
+  process.env.MORPHEUS_PAYMASTER_ENDPOINT = 'https://paymaster.invalid/authorize';
+
+  const originalFetch = globalThis.fetch;
+  let networkTouched = false;
+  globalThis.fetch = async () => {
+    networkTouched = true;
+    throw new Error('no network access is expected before the fee-ceiling gate blocks the relay');
+  };
+
+  const metaInvocation = {
+    scriptHash: 'ab'.repeat(20),
+    operation: 'executeUserOp',
+    args: [
+      { type: 'Hash160', value: `0x${'aa'.repeat(20)}` },
+      {
+        type: 'Struct',
+        value: [
+          { type: 'Hash160', value: `0x${'bb'.repeat(20)}` },
+          { type: 'String', value: 'transfer' },
+          { type: 'Array', value: [] },
+          { type: 'Integer', value: '1' },
+          { type: 'Integer', value: String(Date.now() + 3600_000) },
+          { type: 'ByteArray', value: '0x' },
+        ],
+      },
+    ],
+  };
+
+  const response = createResponse();
+  try {
+    await relayHandler({
+      method: 'POST',
+      headers: { 'x-forwarded-for': `relay-ceiling-${Date.now()}` },
+      socket: { remoteAddress: `relay-ceiling-${Date.now()}` },
+      body: { metaInvocation, request_id: `fee-ceiling-${Date.now()}` },
+    }, response);
+  } finally {
+    globalThis.fetch = originalFetch;
+    restoreEnv(snapshot);
+  }
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.payload?.error, 'relay_fee_ceiling_not_configured');
+  assert.equal(networkTouched, false);
+});
+
 test('rate limiter trusts only the configured proxy header', () => {
   const snapshot = {
     AA_TRUST_PROXY_HEADERS: process.env.AA_TRUST_PROXY_HEADERS,
