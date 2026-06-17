@@ -25,6 +25,11 @@ public class Fix_MarketZombie_Tests
     private static readonly UInt160 Buyer =
         UInt160.Parse("0x6666666666666666666666666666666666666666");
 
+    // A griefer who owns their own account and tries to weaponise the escrow/abandon path
+    // against a victim's listing.
+    private static readonly UInt160 Attacker =
+        UInt160.Parse("0x7777777777777777777777777777777777777777");
+
     private static readonly BigInteger Price = 100_000_000; // 1 GAS
 
     private const byte StatusActive = 1;
@@ -172,8 +177,90 @@ public class Fix_MarketZombie_Tests
 
         h.Fx.SetSigners(Seller);
         TestException blocked = Assert.ThrowsExactly<TestException>(
-            () => h.Fx.CallVoid(h.Market, "abandonListing", listingId));
+            () => h.Fx.CallVoid(h.Market, "abandonListing", accountId, listingId));
         StringAssert.Contains(blocked.Message, "Only listed AA contract");
         Assert.AreEqual((BigInteger)StatusActive, h.ListingStatus(listingId), "Listing stays Active");
+    }
+
+    [TestMethod]
+    public void EnterMarketEscrow_RejectsNonMarketCaller()
+    {
+        // The (market, listingId) escrow binding may only be armed by the market itself. A backup
+        // owner calling enterMarketEscrow directly (no market in the call chain) is refused, which
+        // is the root-cause guard for the abandon griefing vector.
+        Harness h = new();
+        UInt160 accountId = h.RegisterAccount(Attacker, 2_592_000);
+
+        h.Fx.SetSigners(Attacker);
+        // CallingScriptHash here is the test entry script, not the market, so the binding is rejected
+        // and no escrow is recorded against the attacker's account.
+        TestException blocked = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(h.Wallet, "enterMarketEscrow", accountId, h.Market, (BigInteger)1));
+        StringAssert.Contains(blocked.Message, "Caller is not the market");
+        Assert.IsFalse(h.Fx.CallBoolean(h.Wallet, "isMarketEscrowActive", accountId),
+            "No escrow may be armed by a non-market caller");
+    }
+
+    [TestMethod]
+    public void Attacker_CannotAbandonVictimListing_ViaOwnEscrow()
+    {
+        // The documented attack: the griefer owns account A, points an escrow at the VICTIM's
+        // listing, then drives the owner force-cancel escape so the wallet calls
+        // abandonListing(victimListing) with CallingScriptHash == the canonical core. After the
+        // fix the attacker cannot even arm that escrow (enterMarketEscrow requires the market to be
+        // the caller), so the victim's Active listing is never disturbed.
+        Harness h = new();
+
+        // The victim has a genuine, market-armed Active listing.
+        UInt160 victimAccount = h.RegisterAccount(Seller, 2_592_000);
+        BigInteger victimListing = h.CreateListing(victimAccount);
+        Assert.AreEqual((BigInteger)StatusActive, h.ListingStatus(victimListing), "Victim listing starts Active");
+
+        // The attacker owns a separate account and tries to bind its escrow to the victim's listing.
+        UInt160 attackerAccount = h.RegisterAccount(Attacker, 2_592_000);
+        h.Fx.SetSigners(Attacker);
+        TestException blocked = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(h.Wallet, "enterMarketEscrow", attackerAccount, h.Market, victimListing));
+        StringAssert.Contains(blocked.Message, "Caller is not the market");
+
+        // The attacker's account never entered escrow, so the timelocked escape path is unavailable
+        // and there is nothing to force-cancel.
+        Assert.IsFalse(h.Fx.CallBoolean(h.Wallet, "isMarketEscrowActive", attackerAccount));
+        h.Fx.SetSigners(Attacker);
+        TestException noEscrow = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(h.Wallet, "initiateMarketEscrowCancel", attackerAccount));
+        StringAssert.Contains(noEscrow.Message, "Market escrow not active");
+
+        // The victim's listing is untouched and still settleable by a real buyer.
+        Assert.AreEqual((BigInteger)StatusActive, h.ListingStatus(victimListing),
+            "Victim listing must remain Active");
+        h.Fx.FundGasFromValidators(Buyer, Price * 2);
+        h.Fx.SetSigners(Buyer);
+        h.Fx.TransferGas(Buyer, h.Market, Price, victimListing);
+        h.Fx.CallVoid(h.Market, "settleListing", victimListing, Buyer, Buyer);
+        Assert.AreEqual(Buyer, h.Fx.CallUInt160(h.Wallet, "getBackupOwner", victimAccount),
+            "Victim's legitimate sale still settles");
+    }
+
+    [TestMethod]
+    public void LegitSettle_StillWorksEndToEnd()
+    {
+        // The honest market-armed flow (createListing -> settleListing) is unaffected by the
+        // tightened enterMarketEscrow caller check, since createListing calls enterMarketEscrow with
+        // CallingScriptHash == the market == the marketContract argument.
+        Harness h = new();
+        UInt160 accountId = h.RegisterAccount(Seller, 2_592_000);
+        BigInteger listingId = h.CreateListing(accountId);
+        Assert.IsTrue(h.Fx.CallBoolean(h.Wallet, "isMarketEscrowActive", accountId),
+            "Legit createListing arms the escrow");
+
+        h.Fx.FundGasFromValidators(Buyer, Price * 2);
+        h.Fx.SetSigners(Buyer);
+        h.Fx.TransferGas(Buyer, h.Market, Price, listingId);
+        h.Fx.CallVoid(h.Market, "settleListing", listingId, Buyer, Buyer);
+
+        Assert.IsFalse(h.Fx.CallBoolean(h.Wallet, "isMarketEscrowActive", accountId));
+        Assert.AreEqual(Buyer, h.Fx.CallUInt160(h.Wallet, "getBackupOwner", accountId),
+            "Buyer receives the account on a legitimate settle");
     }
 }
