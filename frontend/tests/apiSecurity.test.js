@@ -9,6 +9,10 @@ import relayHandler, * as relayModule from '../api/relay-transaction.js';
 import draftOperatorHandler from '../api/draft-operator.js';
 import accountMetadataHandler from '../api/account-metadata.js';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from '../api/rateLimiter.js';
+import {
+  ALLOWED_RELAY_META_OPERATIONS,
+  sanitizeMetaInvocationForRelay,
+} from '../api/relayHelpers.js';
 
 const { resolveRelayExecutionConfig } = relayModule;
 
@@ -1081,4 +1085,74 @@ test('gitignore quarantines local testnet secret artifacts', () => {
   assert.match(source, /tests\/MIXED_VERIFICATION_PLAN\.md/);
   assert.match(source, /tests\/mixed-verification-test\.js/);
   assert.match(source, /tests\/run-mixed-verification\.js/);
+});
+
+test('sanitizeMetaInvocationForRelay allows sponsored user operations that carry the on-chain paymaster budget', () => {
+  const aaContractHash = '0x5be915aea3ce85e4752d522632f0a9520e377aaf';
+  assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeSponsoredUserOp'));
+  assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeSponsoredUserOps'));
+
+  const sponsoredOp = {
+    scriptHash: aaContractHash,
+    operation: 'executeSponsoredUserOp',
+    args: [
+      { type: 'Hash160', value: `0x${'aa'.repeat(20)}` },
+      {
+        type: 'Struct',
+        value: [
+          { type: 'Hash160', value: `0x${'bb'.repeat(20)}` },
+          { type: 'String', value: 'transfer' },
+          { type: 'Array', value: [] },
+          { type: 'Integer', value: '1' },
+          { type: 'Integer', value: '1710000000' },
+          { type: 'ByteArray', value: '0x' },
+        ],
+      },
+      { type: 'Hash160', value: `0x${'cc'.repeat(20)}` },
+      { type: 'Hash160', value: `0x${'dd'.repeat(20)}` },
+      { type: 'Integer', value: '1000000' },
+    ],
+    signers: [{ account: '0xattacker', scopes: 255 }],
+  };
+
+  const sanitized = sanitizeMetaInvocationForRelay(sponsoredOp, { aaContractHash });
+  assert.ok(sanitized, 'executeSponsoredUserOp should be relayable');
+  assert.equal(sanitized.operation, 'executeSponsoredUserOp');
+  assert.equal(sanitized.scriptHash, '5be915aea3ce85e4752d522632f0a9520e377aaf');
+  // Caller-supplied signers are stripped so the relay controls witness scope.
+  assert.equal(sanitized.signers, undefined);
+  assert.equal(sanitized.args.length, 5);
+
+  const sponsoredBatch = {
+    scriptHash: aaContractHash,
+    operation: 'executeSponsoredUserOps',
+    args: [
+      { type: 'Hash160', value: `0x${'aa'.repeat(20)}` },
+      { type: 'Array', value: [] },
+      { type: 'Hash160', value: `0x${'cc'.repeat(20)}` },
+      { type: 'Hash160', value: `0x${'dd'.repeat(20)}` },
+      { type: 'Integer', value: '1000000' },
+    ],
+  };
+  const sanitizedBatch = sanitizeMetaInvocationForRelay(sponsoredBatch, { aaContractHash });
+  assert.ok(sanitizedBatch, 'executeSponsoredUserOps should be relayable');
+  assert.equal(sanitizedBatch.operation, 'executeSponsoredUserOps');
+});
+
+test('sanitizeMetaInvocationForRelay rejects operations outside the relay allowlist', () => {
+  const aaContractHash = '0x5be915aea3ce85e4752d522632f0a9520e377aaf';
+  // An operation that is not part of the contract surface (and therefore not in
+  // the allowlist) must never be forwarded to the relay signer.
+  for (const operation of ['executeArbitrary', 'drainPaymaster', 'transfer']) {
+    assert.ok(!ALLOWED_RELAY_META_OPERATIONS.includes(operation));
+    assert.equal(
+      sanitizeMetaInvocationForRelay({
+        scriptHash: aaContractHash,
+        operation,
+        args: [],
+      }, { aaContractHash }),
+      null,
+      `${operation} must be rejected`,
+    );
+  }
 });

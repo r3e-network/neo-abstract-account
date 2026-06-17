@@ -308,7 +308,13 @@ function deriveUserOpFields(userOpParam) {
 function derivePaymasterInvocationFields(metaInvocation) {
   const args = Array.isArray(metaInvocation?.args) ? metaInvocation.args : [];
   const operation = trimString(metaInvocation?.operation || '');
-  if (operation === 'executeUserOp') {
+  // Sponsored ops share the same leading arg layout as their non-sponsored
+  // counterparts (accountId, op|ops, paymaster, sponsor, reimbursementAmount),
+  // so the downstream target/method are derived identically. The on-chain
+  // budget (CapReimbursement / MaxPerOp / DailyBudget) is enforced by the
+  // contract itself; this off-chain derivation only feeds an optional paymaster
+  // authorization request and the relay's own fee-cap policy.
+  if (operation === 'executeUserOp' || operation === 'executeSponsoredUserOp') {
     const userOp = deriveUserOpFields(args[1]);
     return {
       accountId: args[0]?.value ? normalizeHash(args[0].value) : '',
@@ -316,7 +322,7 @@ function derivePaymasterInvocationFields(metaInvocation) {
       downstreamMethod: userOp.downstreamMethod,
     };
   }
-  if (operation === 'executeUserOps') {
+  if (operation === 'executeUserOps' || operation === 'executeSponsoredUserOps') {
     const userOps = args[1]?.type === 'Array' && Array.isArray(args[1]?.value)
       ? args[1].value.map(deriveUserOpFields)
       : [];

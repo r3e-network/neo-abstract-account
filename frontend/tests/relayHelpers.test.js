@@ -27,6 +27,8 @@ test('sanitizeMetaInvocationForRelay only accepts configured AA wrapper invocati
   assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeUnified'));
   assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeUnifiedByAddress'));
   assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeUserOp'));
+  assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeSponsoredUserOp'));
+  assert.ok(ALLOWED_RELAY_META_OPERATIONS.includes('executeSponsoredUserOps'));
   assert.deepEqual(
     sanitizeMetaInvocationForRelay(metaInvocation, {
       aaContractHash: '0x5be915aea3ce85e4752d522632f0a9520e377aaf',
