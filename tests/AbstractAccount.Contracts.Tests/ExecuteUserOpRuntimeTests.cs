@@ -128,6 +128,76 @@ public class ExecuteUserOpRuntimeTests
     }
 
     [TestMethod]
+    public void ExecuteUserOp_ParallelChannel_AdvancesIndependentlyOfChannelZero()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(BackupOwner);
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+
+        // Channel 1 is a parallel lane: nonce = (channel << 64) | sequence. Its cursor must be
+        // reachable and independent of channel 0 — under the old value-threshold split this lane
+        // was dead because nonce >> 64 was always 0 for sub-threshold nonces.
+        BigInteger channelOneSeq0 = BigInteger.One << 64;
+
+        Assert.AreEqual(BigInteger.Zero, h.GetNonce(accountId, 1), "Fresh channel 1 starts at sequence 0");
+
+        // Consume channel 0 once; channel 1 must stay untouched.
+        Assert.IsTrue(h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: 0, deadline)));
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0), "Channel 0 advances");
+        Assert.AreEqual(BigInteger.Zero, h.GetNonce(accountId, 1), "Channel 0 activity must not touch channel 1");
+
+        // Channel 1, sequence 0 is accepted and advances ONLY channel 1.
+        Assert.IsTrue(h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: channelOneSeq0, deadline)));
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 1), "Channel 1 sequence advances exactly once");
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0), "Channel 1 activity must not touch channel 0");
+
+        // Channel 1, sequence 1 (the successor) is accepted next.
+        Assert.IsTrue(h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: channelOneSeq0 + 1, deadline)));
+        Assert.AreEqual((BigInteger)2, h.GetNonce(accountId, 1), "Channel 1 advances independently of channel 0");
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 0), "Channel 0 remains at its own cursor");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_ParallelChannel_RejectsReplayedSequence()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(BackupOwner);
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+        BigInteger channelOneSeq0 = BigInteger.One << 64;
+        object[] op = h.TransferOp(accountId, nonce: channelOneSeq0, deadline);
+
+        Assert.IsTrue(h.ExecuteUserOp(accountId, op));
+
+        TestException replay = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, op),
+            "Replaying a consumed channel-1 sequence must fault");
+        StringAssert.Contains(replay.Message, "Invalid sequence for channel");
+        Assert.AreEqual(BigInteger.One, h.GetNonce(accountId, 1), "Failed replay must not advance the channel-1 cursor");
+    }
+
+    [TestMethod]
+    public void ExecuteUserOp_ParallelChannel_RejectsOutOfOrderSequence()
+    {
+        WalletHarness h = new();
+        UInt160 accountId = h.RegisterAccount(UInt160.Zero, BackupOwner, EscapeTimelockSeconds);
+
+        h.Fx.SetSigners(BackupOwner);
+        BigInteger deadline = h.Fx.Now() + 3_600_000;
+        BigInteger channelOneSeq0 = BigInteger.One << 64;
+
+        // Skipping sequence 0 (the fresh cursor) and presenting sequence 1 first must be rejected.
+        TestException gap = Assert.ThrowsExactly<TestException>(
+            () => h.ExecuteUserOp(accountId, h.TransferOp(accountId, nonce: channelOneSeq0 + 1, deadline)),
+            "An out-of-order channel-1 sequence must fault");
+        StringAssert.Contains(gap.Message, "Invalid sequence for channel");
+        Assert.AreEqual(BigInteger.Zero, h.GetNonce(accountId, 1), "A rejected out-of-order op must not advance the cursor");
+    }
+
+    [TestMethod]
     public void ExecuteUserOp_RejectsExpiredDeadline()
     {
         WalletHarness h = new();

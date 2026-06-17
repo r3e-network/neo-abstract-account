@@ -29,6 +29,10 @@ namespace AbstractAccount
         // Per-listing count of in-flight escrowed payments. While > 0 the listing has buyer
         // capital locked, so the seller must not be able to invalidate it (cancel/reprice).
         private static readonly byte[] Prefix_PendingCount = new byte[] { 0x04 };
+        // Admin-managed allowlist of canonical AA core hashes a listing may be backed by. A
+        // listing trusts its AA contract for getBackupOwner/escrow calls, so only audited cores
+        // may be referenced — otherwise a seller could back a listing with a malicious contract.
+        private static readonly byte[] Prefix_AllowedAA = new byte[] { 0x05 };
         private static readonly byte[] Prefix_Admin = new byte[] { 0xF0 };
 
         private const byte StatusActive = 1;
@@ -82,9 +86,31 @@ namespace AbstractAccount
             ContractManagement.Update(nef, manifest);
         }
 
+        public static void SetAllowedAA(UInt160 core, bool allowed)
+        {
+            ValidateAdmin();
+            ExecutionEngine.Assert(core != null && core != UInt160.Zero && core.IsValid, "Invalid AA core");
+            if (allowed)
+            {
+                Storage.Put(Storage.CurrentContext, AllowedAAKey(core!), 1);
+            }
+            else
+            {
+                Storage.Delete(Storage.CurrentContext, AllowedAAKey(core!));
+            }
+        }
+
+        [Safe]
+        public static bool IsAllowedAA(UInt160 core)
+        {
+            if (core == null || core == UInt160.Zero) return false;
+            return Storage.Get(Storage.CurrentContext, AllowedAAKey(core)) != null;
+        }
+
         public static void CreateListing(UInt160 aaContract, UInt160 accountId, BigInteger price, string title, string metadataUri)
         {
             ExecutionEngine.Assert(aaContract != null && aaContract != UInt160.Zero, "AA contract required");
+            ExecutionEngine.Assert(IsAllowedAA(aaContract!), "AA core not allowlisted");
             ExecutionEngine.Assert(accountId != null && accountId != UInt160.Zero, "Account id required");
             ExecutionEngine.Assert(price >= MinListingPrice, "Price below minimum");
             ExecutionEngine.Assert(price <= MaxListingPrice, "Price exceeds maximum");
@@ -280,6 +306,11 @@ namespace AbstractAccount
         private static byte[] ListingKey(BigInteger listingId)
         {
             return Helper.Concat(Prefix_Listing, listingId.ToByteArray());
+        }
+
+        private static byte[] AllowedAAKey(UInt160 core)
+        {
+            return Helper.Concat(Prefix_AllowedAA, (byte[])core);
         }
 
         private static byte[] PendingPaymentKey(BigInteger listingId, UInt160 payer)

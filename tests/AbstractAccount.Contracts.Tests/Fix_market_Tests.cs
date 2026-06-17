@@ -36,6 +36,9 @@ public class FixMarketPendingPaymentTests
         {
             Wallet = Fx.Deploy("UnifiedSmartWalletV3");
             Market = Fx.Deploy("AAAddressMarket");
+            // The market admin (the deploying validators account) allowlists the genuine AA core
+            // so listings backed by it are accepted. Signers are the validators here by default.
+            Fx.CallVoid(Market, "setAllowedAA", Wallet, true);
         }
 
         public UInt160 RegisterAccount(UInt160 backupOwner, uint escapeTimelock)
@@ -138,5 +141,52 @@ public class FixMarketPendingPaymentTests
         h.Fx.SetSigners(Seller);
         h.Fx.CallVoid(h.Market, "cancelListing", listingId);
         Assert.IsFalse(h.Fx.CallBoolean(h.Wallet, "isMarketEscrowActive", accountId));
+    }
+
+    [TestMethod]
+    public void CreateListing_WithNonAllowlistedAaContract_Faults()
+    {
+        // A fresh market with no AA core allowlisted: any listing must be refused before the
+        // contract trusts the AA contract for getBackupOwner/escrow calls, so a malicious or
+        // arbitrary AA contract cannot be used to defraud buyers.
+        RuntimeFixture fx = new();
+        UInt160 wallet = fx.Deploy("UnifiedSmartWalletV3");
+        UInt160 market = fx.Deploy("AAAddressMarket");
+
+        UInt160 accountId = fx.CallUInt160(
+            wallet, "computeRegistrationAccountId",
+            UInt160.Zero, Array.Empty<byte>(), UInt160.Zero, Seller, 2_592_000u);
+        fx.SetSigners(Seller);
+        fx.CallVoid(
+            wallet, "registerAccount",
+            accountId, UInt160.Zero, Array.Empty<byte>(), UInt160.Zero, Seller, 2_592_000u);
+
+        Assert.IsFalse(fx.CallBoolean(market, "isAllowedAA", wallet));
+        fx.SetSigners(Seller);
+        TestException blocked = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(market, "createListing", wallet, accountId, Price, "AA address", ""));
+        StringAssert.Contains(blocked.Message, "AA core not allowlisted");
+    }
+
+    [TestMethod]
+    public void CreateListing_AfterAdminAllowlistsCore_Succeeds()
+    {
+        // The genuine AA core must be usable once the admin allowlists it: the standard
+        // list -> deposit -> settle path completes end to end.
+        MarketHarness h = new();
+        Assert.IsTrue(h.Fx.CallBoolean(h.Market, "isAllowedAA", h.Wallet));
+
+        UInt160 accountId = h.RegisterAccount(Seller, 2_592_000);
+        BigInteger listingId = h.CreateListing(accountId);
+
+        h.Fx.FundGasFromValidators(Buyer, Price * 2);
+        BigInteger sellerBefore = h.Fx.GasBalanceOf(Seller);
+
+        h.Fx.SetSigners(Buyer);
+        h.Fx.TransferGas(Buyer, h.Market, Price, listingId);
+        h.Fx.CallVoid(h.Market, "settleListing", listingId, Buyer, Buyer);
+
+        Assert.AreEqual(sellerBefore + Price, h.Fx.GasBalanceOf(Seller));
+        Assert.AreEqual(Buyer, h.Fx.CallUInt160(h.Wallet, "getBackupOwner", accountId));
     }
 }

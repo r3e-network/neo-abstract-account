@@ -41,6 +41,9 @@ public class MarketEscrowRuntimeTests
             Wallet = Fx.Deploy("UnifiedSmartWalletV3");
             Market = Fx.Deploy("AAAddressMarket");
             Target = Fx.Deploy("MockTransferTarget");
+            // The market admin (the deploying validators account) allowlists the genuine AA core
+            // so escrow listings backed by it are accepted. Signers are the validators by default.
+            Fx.CallVoid(Market, "setAllowedAA", Wallet, true);
         }
 
         public UInt160 RegisterAccount(UInt160 backupOwner, uint escapeTimelock)

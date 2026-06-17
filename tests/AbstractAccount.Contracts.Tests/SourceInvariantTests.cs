@@ -138,47 +138,53 @@ public class SourceInvariantTests
         var rng = Rng();
         var executionSource = Read("UnifiedSmartWallet.Execution.cs");
 
-        // Verify nonce system uses 2D spec
-        StringAssert.Contains(executionSource, "MAX_2D_NONCE");
+        // Verify nonce system uses the canonical 2D spec with no value-threshold split.
         StringAssert.Contains(executionSource, "channel = nonce >> 64");
         StringAssert.Contains(executionSource, "sequence = nonce & 0xFFFFFFFFFFFFFFFF");
         StringAssert.Contains(executionSource, "nonce < 0");
+        // The broken 1e18 value threshold (which made channel >= 1 unreachable) must be gone.
+        Assert.IsFalse(executionSource.Contains("MAX_2D_NONCE"),
+            "The value-threshold salt split must not be reintroduced");
 
-        // Runtime boundary check against the compiled contract: nonces >= MAX_2D_NONCE take the
-        // one-shot salt path, everything below is a 2D channel/sequence nonce. IsNonceAcceptable
-        // is observed through previewUserOpValidation, ConsumeNonce through executeUserOp.
-        BigInteger max2dNonce = BigInteger.Parse("1000000000000000000");
+        // Runtime check against the compiled contract: every nonce is a canonical (channel,
+        // sequence) pair where channel = nonce >> 64 and sequence = nonce & 0xFFFFFFFFFFFFFFFF.
+        // IsNonceAcceptable is observed through previewUserOpValidation, ConsumeNonce through
+        // executeUserOp.
+        const ulong sequenceSpan = 0xFFFFFFFFFFFFFFFFUL; // 2^64 - 1
+        BigInteger channelStride = (BigInteger)sequenceSpan + 1; // 2^64
         NonceProbeHarness probe = new();
 
-        Assert.IsTrue(probe.IsNonceAcceptable(0), "2D path: a fresh channel expects sequence 0");
-        Assert.IsFalse(probe.IsNonceAcceptable(1), "2D path: out-of-order sequence is rejected");
-        Assert.IsFalse(probe.IsNonceAcceptable(max2dNonce - 1),
-            "Below the boundary the 2D interpretation applies (channel 0, sequence != cursor)");
-        Assert.IsTrue(probe.IsNonceAcceptable(max2dNonce),
-            "At the boundary the salt path applies although the 2D interpretation would reject");
+        Assert.IsTrue(probe.IsNonceAcceptable(0), "Channel 0: a fresh lane expects sequence 0");
+        Assert.IsFalse(probe.IsNonceAcceptable(1), "Channel 0: out-of-order sequence is rejected");
 
-        // Consuming the boundary salt is one-shot and must not advance any 2D channel cursor.
-        probe.ExecuteWithNonce(max2dNonce);
-        Assert.IsFalse(probe.IsNonceAcceptable(max2dNonce), "Salt nonces are single-use");
-        Assert.AreEqual(BigInteger.Zero, probe.GetChannelSequence(0), "Salt path must not touch channel sequences");
-        Assert.IsTrue(probe.IsNonceAcceptable(0), "Channel 0 still expects sequence 0 after a salt consume");
+        // A high channel (channel >= 1) must be reachable — this was unreachable under the
+        // broken value-threshold split. Its sequence cursor starts independently at 0.
+        BigInteger highChannel = BigInteger.Parse("1000000000000000000");
+        BigInteger highChannelSeq0 = highChannel * channelStride; // (highChannel << 64) | 0
+        Assert.IsTrue(probe.IsNonceAcceptable(highChannelSeq0), "A fresh high channel expects sequence 0");
+        Assert.IsFalse(probe.IsNonceAcceptable(highChannelSeq0 + 1), "High channel: out-of-order sequence is rejected");
 
-        // Consuming a 2D nonce advances exactly its channel cursor.
+        // Consuming channel 0 advances ONLY channel 0's cursor and leaves other channels untouched.
         probe.ExecuteWithNonce(0);
-        Assert.AreEqual(BigInteger.One, probe.GetChannelSequence(0), "2D consume increments the channel cursor");
+        Assert.AreEqual(BigInteger.One, probe.GetChannelSequence(0), "Consume increments the channel-0 cursor");
         Assert.IsFalse(probe.IsNonceAcceptable(0), "A consumed sequence cannot be replayed");
         Assert.IsTrue(probe.IsNonceAcceptable(1), "The successor sequence becomes acceptable");
+        Assert.AreEqual(BigInteger.Zero, probe.GetChannelSequence(highChannel),
+            "Channel-0 activity must not advance an independent channel's cursor");
 
-        // Seeded randomized sweep (VM executions, so capped): unused salts are always acceptable;
-        // 2D nonces are acceptable exactly when the sequence matches the channel cursor (now 1).
+        // Consuming the high channel advances ONLY its cursor; channel 0 stays at its own cursor.
+        probe.ExecuteWithNonce(highChannelSeq0);
+        Assert.AreEqual(BigInteger.One, probe.GetChannelSequence(highChannel), "Consume increments the high-channel cursor");
+        Assert.IsFalse(probe.IsNonceAcceptable(highChannelSeq0), "A consumed high-channel sequence cannot be replayed");
+        Assert.IsTrue(probe.IsNonceAcceptable(highChannelSeq0 + 1), "The high channel's successor sequence becomes acceptable");
+        Assert.AreEqual(BigInteger.One, probe.GetChannelSequence(0),
+            "High-channel activity must not advance channel 0's cursor");
+
+        // Seeded randomized sweep over channel 0 (VM executions, so capped): a 2D nonce is
+        // acceptable exactly when its sequence matches the (now advanced) channel-0 cursor (1).
         int vmIterations = Math.Min(Iterations, 64);
         for (int i = 0; i < vmIterations; i++)
         {
-            var saltBytes = new byte[8];
-            rng.NextBytes(saltBytes);
-            BigInteger salt = max2dNonce + new BigInteger(saltBytes, isUnsigned: true);
-            Assert.IsTrue(probe.IsNonceAcceptable(salt), $"Unused salt must be acceptable (iteration {i})");
-
             BigInteger sequence = rng.Next(0, 100000);
             Assert.AreEqual(sequence == 1, probe.IsNonceAcceptable(sequence),
                 $"2D nonce acceptability must mirror the channel cursor (iteration {i})");
