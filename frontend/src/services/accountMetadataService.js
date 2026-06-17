@@ -29,6 +29,11 @@ export async function fetchAccountMetadataBatch(accountIdHashes) {
   return json.map;
 }
 
-export async function upsertAccountMetadata({ accountIdHash, description, logoUrl, metadataUri }) {
-  return apiPost({ action: 'upsert', accountIdHash, description, logoUrl, metadataUri });
+export async function upsertAccountMetadata({ accountIdHash, description, logoUrl, metadataUri, idToken, ownerProof }) {
+  const body = { action: 'upsert', accountIdHash, description, logoUrl, metadataUri };
+  // Proof of account control: the server requires either a Web3Auth idToken whose
+  // key controls the account, or a backup-owner signature bound to the account.
+  if (idToken) body.idToken = idToken;
+  if (ownerProof) body.ownerProof = ownerProof;
+  return apiPost(body);
 }

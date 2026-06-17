@@ -354,6 +354,7 @@ export default {
         connectWalletMatrix: '注册 .matrix 域名前请先连接 Neo 钱包。',
         invalidArgsJson: '参数 JSON 必须是 Neo RPC 参数数组。',
         metadataSaved: '账户元数据已保存。',
+        metadataOnChainOnly: '链上元数据已保存。使用您的账户身份登录以同步链下资料。',
         metadataSaveFailed: '元数据保存失败，请重试。',
         invalidJsonSyntax: 'JSON 语法无效，请检查输入。',
       },
