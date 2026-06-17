@@ -41,7 +41,7 @@ namespace AbstractAccount
             // callData params
             public object[] Args = new object[0];
 
-            // 2D Nonce or Salt
+            // ERC-4337 2D nonce: high 192 bits = channel, low 64 bits = sequence
             public BigInteger Nonce;
 
             // Replay protection expiry

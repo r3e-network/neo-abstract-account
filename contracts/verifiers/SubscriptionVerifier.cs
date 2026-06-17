@@ -124,8 +124,12 @@ namespace AbstractAccount.Verifiers
             ByteString? counterData = Storage.Get(Storage.CurrentContext, counterKey);
             BigInteger nonceCounter = counterData == null ? 0 : (BigInteger)counterData;
 
-            // Replay protection: nonce binds to subscription ID, billing period, and charge counter
-            BigInteger saltBase = 1_000_000_000_000_000_000;
+            // Replay protection via the AA core's canonical ERC-4337 2D nonce: each subscription
+            // gets its own parallel channel (derived from the subscription id) and the per-charge
+            // counter is the strictly incrementing sequence within that channel (starts at 0). The
+            // AA core enforces sequence == cursor and advances it, so a charge can never be replayed
+            // and charges from other subscriptions never collide. The billing-period gate above is
+            // the authoritative throttle; the nonce only fixes the in-channel ordering.
             ByteString digest = CryptoLib.Sha256(subId);
             byte[] digestBytes = (byte[])digest;
             BigInteger subTag = 0;
@@ -133,7 +137,7 @@ namespace AbstractAccount.Verifiers
             {
                 subTag = (subTag << 8) + digestBytes[i];
             }
-            BigInteger expectedNonce = saltBase + (subTag << 32) + currentPeriod + nonceCounter;
+            BigInteger expectedNonce = (subTag << 64) + nonceCounter;
             ExecutionEngine.Assert(op.Nonce == expectedNonce, "Subscription nonce mismatch");
 
             return true;

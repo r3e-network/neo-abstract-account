@@ -170,18 +170,15 @@ namespace AbstractAccount
         // 4. Replay Protection (ERC-4337 2D Nonce spec)
         // ========================================================================
 
+        // Canonical ERC-4337 2D nonce: the full nonce is split into a 192-bit channel (the
+        // parallel lane) and a 64-bit sequence (the strictly incrementing cursor within that
+        // lane). Every lane is independent and each starts at sequence 0, so a fresh, randomly
+        // chosen channel with sequence 0 yields one-shot ("salt") semantics for free without a
+        // separate code path. There is no value threshold: channel = nonce >> 64 is always the
+        // lane, which makes every channel (including channel >= 1) reachable.
         private static bool IsNonceAcceptable(UInt160 accountId, BigInteger nonce)
         {
             if (nonce < 0) return false;
-
-            BigInteger MAX_2D_NONCE = 1_000_000_000_000_000_000;
-
-            if (nonce >= MAX_2D_NONCE)
-            {
-                byte[] saltKey = Helper.Concat(Prefix_Nonce, (byte[])accountId);
-                saltKey = Helper.Concat(saltKey, nonce.ToByteArray());
-                return Storage.Get(Storage.CurrentContext, saltKey) == null;
-            }
 
             BigInteger channel = nonce >> 64;
             BigInteger sequence = nonce & 0xFFFFFFFFFFFFFFFF;
@@ -196,31 +193,23 @@ namespace AbstractAccount
 
         private static void ConsumeNonce(UInt160 accountId, BigInteger nonce)
         {
-            BigInteger MAX_2D_NONCE = 1_000_000_000_000_000_000;
+            ExecutionEngine.Assert(nonce >= 0, "Invalid sequence for channel");
 
-            if (nonce >= MAX_2D_NONCE)
-            {
-                // UUID / random salt mode
-                byte[] key = Helper.Concat(Prefix_Nonce, (byte[])accountId);
-                key = Helper.Concat(key, nonce.ToByteArray());
-                ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, key) == null, "Salt already used");
-                Storage.Put(Storage.CurrentContext, key, new byte[] { 1 });
-            }
-            else
-            {
-                // Strictly follow ERC-4337 channel incrementing mode (Key = Channel, Seq = Sequence)
-                BigInteger channel = nonce >> 64;
-                BigInteger sequence = nonce & 0xFFFFFFFFFFFFFFFF;
+            // Strictly follow ERC-4337 channel incrementing mode (Key = Channel, Seq = Sequence)
+            BigInteger channel = nonce >> 64;
+            BigInteger sequence = nonce & 0xFFFFFFFFFFFFFFFF;
 
-                byte[] key = Helper.Concat(Prefix_Nonce, (byte[])accountId);
-                key = Helper.Concat(key, channel.ToByteArray());
+            byte[] key = Helper.Concat(Prefix_Nonce, (byte[])accountId);
+            key = Helper.Concat(key, channel.ToByteArray());
 
-                ByteString? currentData = Storage.Get(Storage.CurrentContext, key);
-                BigInteger currentSeq = currentData == null ? 0 : (BigInteger)currentData;
+            ByteString? currentData = Storage.Get(Storage.CurrentContext, key);
+            BigInteger currentSeq = currentData == null ? 0 : (BigInteger)currentData;
 
-                ExecutionEngine.Assert(sequence == currentSeq, "Invalid sequence for channel");
-                Storage.Put(Storage.CurrentContext, key, currentSeq + 1);
-            }
+            // Replay protection: a (channel, sequence) pair is only valid when the sequence is the
+            // current cursor; consuming advances it by one, so the same pair can never be replayed
+            // and out-of-order sequences within a channel are rejected.
+            ExecutionEngine.Assert(sequence == currentSeq, "Invalid sequence for channel");
+            Storage.Put(Storage.CurrentContext, key, currentSeq + 1);
         }
     }
 }

@@ -146,20 +146,21 @@ public class SubscriptionVerifierRuntimeTests
     };
 
     /// <summary>
-    /// Reproduces the verifier's nonce derivation:
-    /// saltBase + (subTag &lt;&lt; 32) + currentPeriod + nonceCounter, where subTag is the first
-    /// eight bytes of SHA-256(subId) read big-endian.
+    /// Reproduces the verifier's canonical ERC-4337 2D nonce derivation:
+    /// (subTag &lt;&lt; 64) + nonceCounter, where subTag is the first eight bytes of SHA-256(subId)
+    /// read big-endian and forms the per-subscription channel, and nonceCounter is the in-channel
+    /// sequence. The billing period is enforced separately and is not encoded in the nonce.
     /// </summary>
     private static BigInteger ExpectedNonce(byte[] subId, BigInteger currentPeriod, BigInteger nonceCounter)
     {
-        BigInteger saltBase = BigInteger.Parse("1000000000000000000");
+        _ = currentPeriod;
         byte[] digest = SHA256.HashData(subId);
         BigInteger subTag = 0;
         for (int i = 0; i < 8 && i < digest.Length; i++)
         {
             subTag = (subTag << 8) + digest[i];
         }
-        return saltBase + (subTag << 32) + currentPeriod + nonceCounter;
+        return (subTag << 64) + nonceCounter;
     }
 
     private sealed class Harness
