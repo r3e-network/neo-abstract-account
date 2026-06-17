@@ -140,6 +140,53 @@ test('buildStagedTransactionBody prefers executeUserOp when accountIdHash is pre
   assert.ok(deadline <= Date.now() + 3_601_000, 'V3 fallback deadline should be one hour from now');
 });
 
+test('buildStagedTransactionBody labels the network from the active morpheus network', () => {
+  const baseArgs = {
+    aaContractHash: '5be915aea3ce85e4752d522632f0a9520e377aaf',
+    account: {
+      accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+      accountAddressScriptHash: '13ef519c362973f9a34648a9eac5b71250b2a80a',
+    },
+    operationBody: {
+      kind: 'invoke',
+      targetContract: 'd2a4cff31913016155e38e474a2c06d08be276cf',
+      method: 'balanceOf',
+      args: [],
+    },
+    signerAddress: 'NdzSignerAddress',
+  };
+
+  assert.equal(
+    buildStagedTransactionBody({ ...baseArgs, morpheusNetwork: 'mainnet' }).network,
+    'neo-n3-mainnet',
+  );
+  assert.equal(
+    buildStagedTransactionBody({ ...baseArgs, morpheusNetwork: 'testnet' }).network,
+    'neo-n3-testnet',
+  );
+  // An explicit network label wins over the morpheus network heuristic.
+  assert.equal(
+    buildStagedTransactionBody({ ...baseArgs, network: 'neo-n3-privatenet', morpheusNetwork: 'mainnet' }).network,
+    'neo-n3-privatenet',
+  );
+});
+
+test('buildDraftApprovalTypedData binds the domain chainId to the active network magic', () => {
+  const draftRecord = {
+    draft_id: 'draft-1',
+    share_slug: 'share-1',
+    account: { accountIdHex: 'aa11', accountAddressScriptHash: 'bb22' },
+    transaction_body: { txHex: 'deadbeef', method: 'executeUnifiedByAddress' },
+    broadcast_mode: 'relay',
+  };
+
+  // Explicit chain id is honoured for both mainnet and testnet magics.
+  assert.equal(buildDraftApprovalTypedData({ draftRecord, chainId: 860833102 }).domain.chainId, 860833102);
+  assert.equal(buildDraftApprovalTypedData({ draftRecord, chainId: 894710606 }).domain.chainId, 894710606);
+  // The implicit default tracks RUNTIME_CONFIG.networkMagic (mainnet by default).
+  assert.equal(buildDraftApprovalTypedData({ draftRecord }).domain.chainId, 860833102);
+});
+
 test('buildDraftApprovalTypedData creates an EVM-friendly approval payload from an immutable draft', () => {
   const typedData = buildDraftApprovalTypedData({
     draftRecord: {

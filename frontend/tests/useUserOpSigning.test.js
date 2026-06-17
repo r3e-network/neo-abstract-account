@@ -135,6 +135,59 @@ test('signUserOpWithEvm returns a contract-aligned signature record and invocati
   assert.equal(result.metaInvocation.operation, 'executeUserOp');
 });
 
+test('signUserOpWithEvm binds the EIP-712 domain chainId to the active network magic', async () => {
+  const operationBody = {
+    targetContract: AA_CONTRACT_HASH,
+    method: 'balanceOf',
+    args: [{ type: 'Hash160', value: `0x${ACCOUNT_ID_HASH}` }],
+  };
+
+  // The on-chain V3 verifier checks the domain chainId against the network magic
+  // of the connected network, so signing on each network must use its own magic.
+  const MAINNET_MAGIC = 860833102;
+  const TESTNET_MAGIC = 894710606;
+
+  for (const chainId of [MAINNET_MAGIC, TESTNET_MAGIC]) {
+    const signer = Wallet.createRandom();
+    const { deps } = makeDeps();
+    const result = await signUserOpWithEvm({
+      rpcUrl: 'https://rpc.example',
+      aaContractHash: AA_CONTRACT_HASH,
+      accountIdHash: ACCOUNT_ID_HASH,
+      operationBody,
+      signerId: signer.address.toLowerCase(),
+      chainId,
+      signTypedData: (typedData) =>
+        signer.signTypedData(typedData.domain, typedData.types, typedData.message),
+      deps,
+    });
+
+    assert.equal(
+      result.typedData.domain.chainId,
+      chainId,
+      `signed domain chainId must equal the active network magic (${chainId})`,
+    );
+    assert.equal(result.signatureRecord.metadata.typedData.domain.chainId, chainId);
+  }
+});
+
+test('signUserOpWithEvm falls back to the legacy testnet chain id when none is supplied', async () => {
+  const signer = Wallet.createRandom();
+  const { deps } = makeDeps();
+  const result = await signUserOpWithEvm({
+    rpcUrl: 'https://rpc.example',
+    aaContractHash: AA_CONTRACT_HASH,
+    accountIdHash: ACCOUNT_ID_HASH,
+    operationBody: { targetContract: AA_CONTRACT_HASH, method: 'balanceOf', args: [] },
+    signerId: signer.address.toLowerCase(),
+    signTypedData: (typedData) =>
+      signer.signTypedData(typedData.domain, typedData.types, typedData.message),
+    deps,
+  });
+
+  assert.equal(result.typedData.domain.chainId, V3_USER_OP_CHAIN_ID);
+});
+
 test('signUserOpWithEvm rejects when no signer is supplied', async () => {
   const { deps } = makeDeps();
   await assert.rejects(

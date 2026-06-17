@@ -36,6 +36,7 @@ import {
   sanitizeHex
 } from './helpers';
 import { EC, translateError } from '../../config/errorCodes.js';
+import { TX_STATUS, waitForTransactionConfirmation } from './txConfirmation.js';
 
 export function useStudioController() {
   const toast = useToast();
@@ -169,15 +170,85 @@ export function useStudioController() {
   }
 
   function pushTransaction(label, txid) {
+    const entry = {
+      label,
+      txid,
+      when: new Date().toLocaleString(),
+      status: TX_STATUS.PENDING,
+    };
     recentTransactions.value = [
-      {
-        label,
-        txid,
-        when: new Date().toLocaleString()
-      },
+      entry,
       ...recentTransactions.value
     ].slice(0, DEFAULT_RECENT_TRANSACTIONS_LIMIT);
     persistRecentTransactions();
+    return entry;
+  }
+
+  function applyTransactionStatus(txid, status, statusDetail = '') {
+    let mutated = false;
+    recentTransactions.value = recentTransactions.value.map((item) => {
+      if (item.txid !== txid) return item;
+      mutated = true;
+      const next = { ...item, status };
+      if (statusDetail) next.statusDetail = statusDetail;
+      else delete next.statusDetail;
+      return next;
+    });
+    if (mutated) persistRecentTransactions();
+    return mutated;
+  }
+
+  /**
+   * Resolve the on-chain outcome of a submitted transaction without blocking the
+   * UI: poll getapplicationlog until HALT/FAULT or a bounded timeout, then update
+   * the persisted recent-transaction entry and surface a follow-up toast. A
+   * timeout or unreachable node degrades to 'pending confirmation' so a relayed
+   * tx that FAULTed can never be reported as a success.
+   */
+  async function confirmTransaction(label, txid) {
+    const { status, exception } = await waitForTransactionConfirmation(
+      resolveRpcUrl(walletService),
+      txid,
+    );
+
+    if (status === TX_STATUS.CONFIRMED) {
+      applyTransactionStatus(txid, TX_STATUS.CONFIRMED);
+      toast.success(
+        t('studio.toast.txConfirmed', '{label} confirmed on-chain.').replace('{label}', label),
+      );
+      return status;
+    }
+
+    if (status === TX_STATUS.FAILED) {
+      applyTransactionStatus(txid, TX_STATUS.FAILED, exception);
+      const detail = exception
+        ? t('studio.toast.txFailedDetail', '{label} failed on-chain: {detail}')
+            .replace('{label}', label)
+            .replace('{detail}', exception)
+        : t('studio.toast.txFailed', '{label} failed on-chain.').replace('{label}', label);
+      toast.error(detail);
+      return status;
+    }
+
+    applyTransactionStatus(txid, TX_STATUS.PENDING);
+    toast.warning(
+      t(
+        'studio.toast.txPendingConfirmation',
+        '{label} submitted but not yet confirmed. Check the explorer for the final result.',
+      ).replace('{label}', label),
+    );
+    return status;
+  }
+
+  function trackConfirmation(label, txid) {
+    if (!txid) return;
+    // Fire-and-forget: confirmation runs asynchronously and updates state/toasts
+    // without blocking the submit handler. waitForTransactionConfirmation never
+    // throws, but guard the chain defensively so a rejected promise cannot
+    // surface as an unhandled rejection.
+    void confirmTransaction(label, txid).catch((err) => {
+      if (import.meta.env.DEV) console.warn('[useStudioController] confirmTransaction failed:', err?.message);
+    });
   }
 
   async function computeAA() {
@@ -267,7 +338,10 @@ export function useStudioController() {
     }
 
     pushTransaction(label, txid);
-    toast.success(t('studio.toast.txSubmitted', '{label} transaction submitted.').replace('{label}', label));
+    toast.info(
+      t('studio.toast.txSubmitted', '{label} submitted. Waiting for on-chain confirmation…').replace('{label}', label),
+    );
+    trackConfirmation(label, txid);
   }
 
   async function loadAccountConfiguration() {
@@ -395,8 +469,10 @@ export function useStudioController() {
         });
         const txid = result?.txid || result?.transaction || '';
         if (!txid) throw new Error(EC.noTxId);
-        pushTransaction(`Register V3 account + register ${matrixDomain}`, txid);
-        toast.success(t('studio.toast.registerAccountMatrix', 'Register V3 account + {domain} registration submitted.').replace('{domain}', matrixDomain));
+        const matrixLabel = `Register V3 account + register ${matrixDomain}`;
+        pushTransaction(matrixLabel, txid);
+        toast.info(t('studio.toast.registerAccountMatrix', 'Register V3 account + {domain} registration submitted. Waiting for confirmation…').replace('{domain}', matrixDomain));
+        trackConfirmation(matrixLabel, txid);
       } else {
         await invokeOperation('Register V3 account', 'registerAccount', createInvocation.args);
       }

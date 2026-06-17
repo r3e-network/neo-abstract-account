@@ -7,6 +7,8 @@ export function getOperationsRuntime(config = RUNTIME_CONFIG) {
   return {
     collaborationEnabled,
     relayEnabled,
+    morpheusNetwork: config.morpheusNetwork,
+    networkMagic: config.networkMagic,
     relayEndpoint: config.relayEndpoint,
     relayRpcUrl: config.relayRpcUrl,
     relayMetaEnabled: Boolean(config.relayMetaEnabled),

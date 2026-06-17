@@ -291,7 +291,17 @@
             class="text-sm border border-aa-border rounded-lg bg-aa-dark/40 p-4 hover:bg-aa-dark/60 hover:border-aa-border transition-all duration-200"
           >
             <div class="flex justify-between items-start mb-2">
-              <p class="font-bold text-aa-text">{{ tx.label }}</p>
+              <div class="min-w-0">
+                <p class="font-bold text-aa-text">{{ tx.label }}</p>
+                <span
+                  class="inline-flex items-center gap-1.5 mt-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                  :class="txStatusBadgeClass(tx.status)"
+                  :title="tx.statusDetail || ''"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full" :class="txStatusDotClass(tx.status)"></span>
+                  {{ txStatusLabel(tx.status) }}
+                </span>
+              </div>
               <router-link
                 :to="`/transaction-info/${tx.txid}`"
                 class="inline-flex items-center gap-1.5 text-aa-orange hover:text-aa-text font-bold text-[11px] uppercase bg-aa-orange/20 hover:bg-aa-orange/30 px-2.5 py-1.5 rounded transition-colors duration-200"
@@ -336,4 +346,22 @@ const {
   validCreateAdmins,
   recentTransactions,
 } = studio;
+
+function txStatusLabel(status) {
+  if (status === "confirmed") return t("studioPanels.txStatusConfirmed", "Confirmed");
+  if (status === "failed") return t("studioPanels.txStatusFailed", "Failed");
+  return t("studioPanels.txStatusPending", "Pending");
+}
+
+function txStatusBadgeClass(status) {
+  if (status === "confirmed") return "bg-green-500/15 text-green-400";
+  if (status === "failed") return "bg-red-500/15 text-red-400";
+  return "bg-aa-orange/15 text-aa-orange";
+}
+
+function txStatusDotClass(status) {
+  if (status === "confirmed") return "bg-green-400";
+  if (status === "failed") return "bg-red-400";
+  return "bg-aa-orange animate-pulse";
+}
 </script>

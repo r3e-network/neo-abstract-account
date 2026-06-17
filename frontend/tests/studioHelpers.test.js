@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { decodeStackHash160, decodeStackHashArray, hash160Param } from '../src/features/studio/helpers.js';
+import { decodeStackHash160, decodeStackHashArray, hash160Param, parseRecentTransactions } from '../src/features/studio/helpers.js';
 
 const controllerPath = path.resolve('src/features/studio/useStudioController.js');
 const manifestPath = path.resolve('../contracts/build/UnifiedSmartWalletV3.manifest.json');
@@ -65,4 +65,29 @@ test('every studio contract operation exists in the UnifiedSmartWalletV3 ABI', (
   }
   // Regression: the metadata save flow used the phantom 'SetMetadataUri'.
   assert.ok(operations.has('setMetadataUri'));
+});
+
+test('parseRecentTransactions defaults missing status to pending and preserves valid statuses', () => {
+  const raw = JSON.stringify([
+    { label: 'Confirmed op', txid: '0xaaa', when: '2026-06-17', status: 'confirmed' },
+    { label: 'Failed op', txid: '0xbbb', when: '2026-06-17', status: 'failed', statusDetail: 'ASSERT' },
+    { label: 'Legacy op', txid: '0xccc', when: '2026-06-17' },
+    { label: 'Bogus status', txid: '0xddd', when: '2026-06-17', status: 'weird' },
+  ]);
+  const parsed = parseRecentTransactions(raw, []);
+
+  assert.equal(parsed.length, 4);
+  assert.equal(parsed[0].status, 'confirmed');
+  assert.equal(parsed[0].statusDetail, undefined);
+  assert.equal(parsed[1].status, 'failed');
+  assert.equal(parsed[1].statusDetail, 'ASSERT');
+  // Legacy entries written before confirmation tracking default to pending.
+  assert.equal(parsed[2].status, 'pending');
+  // Unknown status strings are normalized to pending rather than trusted.
+  assert.equal(parsed[3].status, 'pending');
+});
+
+test('parseRecentTransactions still drops entries without a txid', () => {
+  const raw = JSON.stringify([{ label: 'no txid', when: '2026-06-17', status: 'confirmed' }]);
+  assert.deepEqual(parseRecentTransactions(raw, []), []);
 });

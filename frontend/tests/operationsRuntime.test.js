@@ -20,6 +20,7 @@ test('getRuntimeConfig exposes Supabase and relay settings', () => {
     abstractAccountHash: '1111111111111111111111111111111111111111',
     abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://rpc.example.org',
+    networkMagic: 860833102,
     supabaseUrl: 'https://example.supabase.co',
     supabaseAnonKey: 'public-anon-key',
     relayEndpoint: DEFAULT_RELAY_ENDPOINT,
@@ -111,6 +112,8 @@ test('getRuntimeConfig switches implicit defaults to testnet when selected', () 
 
 test('getOperationsRuntime derives collaboration and relay flags', () => {
   const runtime = getOperationsRuntime({
+    morpheusNetwork: 'testnet',
+    networkMagic: 894710606,
     supabaseUrl: 'https://example.supabase.co',
     supabaseAnonKey: 'anon',
     relayEndpoint: '/api/relay-transaction',
@@ -127,6 +130,8 @@ test('getOperationsRuntime derives collaboration and relay flags', () => {
   assert.deepEqual(runtime, {
     collaborationEnabled: true,
     relayEnabled: true,
+    morpheusNetwork: 'testnet',
+    networkMagic: 894710606,
     relayEndpoint: '/api/relay-transaction',
     relayRpcUrl: 'https://rpc.example.org',
     relayMetaEnabled: true,

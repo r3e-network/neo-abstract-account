@@ -25,6 +25,12 @@ export const DEFAULT_MORPHEUS_TOPOLOGY = { ...MORPHEUS_RUNTIME_TOPOLOGY };
 export const DEFAULT_MORPHEUS_RISK_ACTIONS = [...MORPHEUS_RISK_ACTIONS];
 export const DEFAULT_MORPHEUS_AUTOMATION_TRIGGER_KINDS = [...MORPHEUS_AUTOMATION_TRIGGER_KINDS];
 
+// Neo N3 network magic per network. The V3 UserOperation verifier bakes this
+// value into the EIP-712 domain chainId it checks on-chain, so signing must use
+// the magic of the *connected* network rather than a single hardcoded constant.
+export const DEFAULT_NETWORK_MAGIC = MAINNET_REGISTRY.networkMagic;
+export const DEFAULT_NETWORK_MAGIC_TESTNET = TESTNET_REGISTRY.networkMagic;
+
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaCore);
 export const DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET = stripHexPrefix(TESTNET_REGISTRY.contracts.aaCore);
 export const DEFAULT_AA_ADDRESS_MARKET_HASH = stripHexPrefix(MAINNET_REGISTRY.contracts.aaAddressMarket);
@@ -68,6 +74,7 @@ export const MORPHEUS_NETWORK_DEFAULTS = {
     addressMarketHash: DEFAULT_AA_ADDRESS_MARKET_HASH,
     paymasterHash: DEFAULT_AA_PAYMASTER_HASH,
     rpcUrl: MAINNET_REGISTRY.rpcUrl,
+    networkMagic: DEFAULT_NETWORK_MAGIC,
     n3IndexNetwork: 'mainnet',
     neoDidDomain: MAINNET_REGISTRY.domains.neodid,
     morpheusApiBaseUrl: MAINNET_REGISTRY.morpheus.publicApiUrl,
@@ -78,6 +85,7 @@ export const MORPHEUS_NETWORK_DEFAULTS = {
     addressMarketHash: DEFAULT_AA_ADDRESS_MARKET_HASH_TESTNET,
     paymasterHash: DEFAULT_AA_PAYMASTER_HASH_TESTNET,
     rpcUrl: TESTNET_REGISTRY.rpcUrl,
+    networkMagic: DEFAULT_NETWORK_MAGIC_TESTNET,
     n3IndexNetwork: 'testnet',
     neoDidDomain: TESTNET_REGISTRY.domains.neodid,
     morpheusApiBaseUrl: TESTNET_REGISTRY.morpheus.publicApiUrl,
@@ -92,6 +100,11 @@ export function resolveRuntimeNetwork(env = import.meta.env ?? {}) {
       || DEFAULT_N3INDEX_NETWORK
   ).trim().toLowerCase();
   return normalized === 'testnet' ? 'testnet' : 'mainnet';
+}
+
+export function resolveNetworkMagic(value, fallback = DEFAULT_NETWORK_MAGIC) {
+  const normalized = Number.parseInt(String(value ?? '').trim(), 10);
+  return Number.isFinite(normalized) && normalized > 0 ? normalized : fallback;
 }
 
 export function resolveAbstractAccountHash(value, fallback = DEFAULT_ABSTRACT_ACCOUNT_HASH) {
@@ -152,6 +165,10 @@ export function getRuntimeConfig(env = import.meta.env ?? {}) {
     rpcUrl: resolveRpcUrl(
       env.VITE_AA_RPC_URL || env.VITE_NEO_RPC_URL,
       networkDefaults.rpcUrl
+    ),
+    networkMagic: resolveNetworkMagic(
+      env.VITE_AA_NETWORK_MAGIC || env.VITE_NEO_NETWORK_MAGIC,
+      networkDefaults.networkMagic
     ),
     supabaseUrl: resolveOptionalUrl(
       env.VITE_SUPABASE_URL || env.VITE_SUPABASE_PROJECT_URL
