@@ -54,8 +54,8 @@ function shouldAllowUnsponsoredRelay() {
   return resolveOptionalBoolean(process.env.AA_RELAY_ALLOW_UNSPONSORED, false);
 }
 
-function resolveMaxSystemFee() {
-  const raw = trimString(process.env.AA_RELAY_MAX_SYSTEM_FEE || '');
+function resolvePositiveBigIntEnv(name) {
+  const raw = trimString(process.env[name] || '');
   if (!raw) return null;
   let parsed;
   try {
@@ -64,6 +64,106 @@ function resolveMaxSystemFee() {
     return null;
   }
   return parsed > 0n ? parsed : null;
+}
+
+function resolveMaxSystemFee() {
+  return resolvePositiveBigIntEnv('AA_RELAY_MAX_SYSTEM_FEE');
+}
+
+function resolveMaxNetworkFee() {
+  return resolvePositiveBigIntEnv('AA_RELAY_MAX_NETWORK_FEE');
+}
+
+function resolveMaxTotalFee() {
+  return resolvePositiveBigIntEnv('AA_RELAY_MAX_TOTAL_FEE');
+}
+
+// A sponsored relay must never default to unbounded spend from its WIF. The
+// operator has to bound the per-op cost via at least one of: a systemFee cap,
+// a networkFee cap, or a combined total-fee cap.
+//
+// NOTE (deferred): these env-driven ceilings + the off-chain approval binding
+// are pragmatic hardening. The durable fix is to reroute sponsored broadcasts
+// through an on-chain executeSponsored budget so the relay is reimbursed (or
+// pre-funded) from a contract-enforced allowance rather than spending its own
+// WIF on every op. That rerouting is intentionally out of scope here.
+function hasConfiguredFeeCeiling() {
+  return Boolean(resolveMaxSystemFee() || resolveMaxNetworkFee() || resolveMaxTotalFee());
+}
+
+function toBigIntOrNull(value) {
+  if (value == null) return null;
+  try {
+    if (typeof value === 'bigint') return value;
+    const text = trimString(typeof value === 'number' ? String(value) : value);
+    if (!text || !/^-?\d+$/.test(text)) return null;
+    return BigInt(text);
+  } catch {
+    return null;
+  }
+}
+
+// Enforce every configured spend ceiling against a concrete systemFee +
+// networkFee pair before the funded transaction is signed/broadcast. Throws a
+// descriptive error on the first breach so the relay fails closed. Caps are
+// read from the environment; `approvedMaxFee` is the per-op ceiling carried by
+// a paymaster approval (if any).
+export function enforceRelayFeePolicy({ operation = 'relay', systemFee, networkFee, approvedMaxFee } = {}) {
+  const maxSystemFee = resolveMaxSystemFee();
+  const maxNetworkFee = resolveMaxNetworkFee();
+  const maxTotalFee = resolveMaxTotalFee();
+  const approvedMax = toBigIntOrNull(approvedMaxFee);
+
+  const systemFeeBig = toBigIntOrNull(systemFee);
+  if (maxSystemFee != null && (systemFeeBig == null || systemFeeBig > maxSystemFee)) {
+    throw new Error(`${operation} systemFee ${systemFee} exceeds AA_RELAY_MAX_SYSTEM_FEE ${maxSystemFee.toString()}`);
+  }
+
+  const networkFeeBig = toBigIntOrNull(networkFee);
+  if (maxNetworkFee != null && (networkFeeBig == null || networkFeeBig > maxNetworkFee)) {
+    throw new Error(`${operation} networkFee ${networkFee} exceeds AA_RELAY_MAX_NETWORK_FEE ${maxNetworkFee.toString()}`);
+  }
+
+  if (maxTotalFee != null || approvedMax != null) {
+    if (systemFeeBig == null || networkFeeBig == null) {
+      throw new Error(`${operation} total fee could not be determined for the configured fee ceiling`);
+    }
+    const totalFeeBig = systemFeeBig + networkFeeBig;
+    if (maxTotalFee != null && totalFeeBig > maxTotalFee) {
+      throw new Error(`${operation} total fee ${totalFeeBig.toString()} exceeds AA_RELAY_MAX_TOTAL_FEE ${maxTotalFee.toString()}`);
+    }
+    if (approvedMax != null && totalFeeBig > approvedMax) {
+      throw new Error(`${operation} total fee ${totalFeeBig.toString()} exceeds paymaster-approved maximum ${approvedMax.toString()}`);
+    }
+  }
+
+  return {
+    systemFee: systemFeeBig != null ? systemFeeBig.toString() : String(systemFee),
+    networkFee: networkFeeBig != null ? networkFeeBig.toString() : String(networkFee),
+  };
+}
+
+// Extract a sponsored/approved maximum fee (in GAS fractions) from a paymaster
+// approval payload, tolerating the field-name variants the service may emit.
+function resolveApprovalMaxFee(approval) {
+  if (!approval || typeof approval !== 'object') return null;
+  const candidates = [
+    approval.approved_max_fee,
+    approval.approvedMaxFee,
+    approval.max_fee,
+    approval.maxFee,
+    approval.sponsored_max_fee,
+    approval.sponsoredMaxFee,
+    approval.approved_amount,
+    approval.approvedAmount,
+    approval.max_total_fee,
+    approval.maxTotalFee,
+  ];
+  for (const candidate of candidates) {
+    const parsed = toBigIntOrNull(candidate);
+    if (parsed != null && parsed > 0n) return parsed;
+  }
+  return null;
 }
 
 function sha256Hex(value) {
@@ -299,7 +399,36 @@ async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estim
   if (!response.ok) {
     throw new Error(payload?.error || payload?.message || 'Paymaster authorization failed.');
   }
-  return payload;
+
+  return verifyPaymasterApproval(payload, requestBody.operation_hash);
+}
+
+// Bind an off-chain paymaster approval to the exact operation it sponsors
+// before it can authorize a broadcast. The relay must not sign unless the
+// approval is (a) positively approved (approved === true, not merely
+// !== false) and (b) echoes the same operation_hash that was sent. The
+// approved spend ceiling (if any) is surfaced so the signing step can enforce
+// systemFee + networkFee <= approvedMax. An explicit denial passes through so
+// callers can short-circuit with paymaster_denied.
+export function verifyPaymasterApproval(payload, expectedOperationHash) {
+  if (payload && payload.approved === false) {
+    return payload;
+  }
+  if (!payload || payload.approved !== true) {
+    throw new Error('Paymaster authorization was not positively approved.');
+  }
+  const expected = trimString(expectedOperationHash || '');
+  const echoedHash = trimString(payload.operation_hash || payload.operationHash || '');
+  if (!expected || !echoedHash || echoedHash.toLowerCase() !== expected.toLowerCase()) {
+    throw new Error('Paymaster approval operation_hash does not match the relayed operation.');
+  }
+
+  const approvedMaxFee = resolveApprovalMaxFee(payload);
+  return {
+    ...payload,
+    operation_hash: expected,
+    approvedMaxFee: approvedMaxFee != null ? approvedMaxFee.toString() : undefined,
+  };
 }
 
 function buildInvocationScript({ invocation, sc, u }) {
@@ -387,7 +516,7 @@ async function simulateMetaInvocation({ rpcUrl, relayWif, invocation }) {
   };
 }
 
-async function relayMetaInvocation({ rpcUrl, relayWif, invocation }) {
+async function relayMetaInvocation({ rpcUrl, relayWif, invocation, feePolicy = {} }) {
   const { rpc, tx, sc, u, rpcClient, account } = loadRelayInvocationContext({ rpcUrl, relayWif });
   const magic = await getNetworkMagic(rpcClient, rpc);
   const signers = resolveInvocationSigners({ account, tx });
@@ -399,17 +528,12 @@ async function relayMetaInvocation({ rpcUrl, relayWif, invocation }) {
   }
 
   const systemFee = simulation?.gasconsumed || '1000000';
+  // The relay pays systemFee from its own WIF, so cap it before doing any more
+  // work and fail closed on an unparseable/over-cap value.
   const maxSystemFee = resolveMaxSystemFee();
-  if (maxSystemFee != null) {
-    let consumed;
-    try {
-      consumed = BigInt(systemFee);
-    } catch {
-      consumed = null;
-    }
-    if (consumed == null || consumed > maxSystemFee) {
-      throw new Error(`${invocation.operation} systemFee ${systemFee} exceeds AA_RELAY_MAX_SYSTEM_FEE ${maxSystemFee.toString()}`);
-    }
+  const systemFeeBig = toBigIntOrNull(systemFee);
+  if (maxSystemFee != null && (systemFeeBig == null || systemFeeBig > maxSystemFee)) {
+    throw new Error(`${invocation.operation} systemFee ${systemFee} exceeds AA_RELAY_MAX_SYSTEM_FEE ${maxSystemFee.toString()}`);
   }
 
   const validUntilBlock = (await rpcClient.getBlockCount()) + 1000;
@@ -423,6 +547,16 @@ async function relayMetaInvocation({ rpcUrl, relayWif, invocation }) {
   let transaction = new tx.Transaction(basePayload);
   transaction.sign(account, magic);
   const networkFee = await rpcClient.calculateNetworkFee(transaction);
+
+  // networkFee (calculateNetworkFee) is otherwise unbounded; enforce the
+  // systemFee/networkFee/total caps plus any per-op ceiling carried by the
+  // paymaster approval BEFORE the funded transaction is re-signed and broadcast.
+  enforceRelayFeePolicy({
+    operation: invocation.operation,
+    systemFee,
+    networkFee: networkFee?.toString?.() ?? networkFee,
+    approvedMaxFee: feePolicy?.approvedMaxFee,
+  });
 
   transaction = new tx.Transaction({
     ...basePayload,
@@ -591,6 +725,19 @@ export default async function handler(req, res) {
     return sendJson(res, 402, body, requestId);
   }
 
+  // When the relay is about to sponsor a broadcast (configured paymaster or an
+  // explicit unsponsored opt-in), there must be at least one configured fee
+  // ceiling so the WIF can never be drained by an unbounded systemFee +
+  // networkFee. Fail closed if none is set rather than defaulting to no cap.
+  if (!simulate && !hasConfiguredFeeCeiling()) {
+    const body = {
+      error: 'relay_fee_ceiling_not_configured',
+      message: 'A relay fee ceiling (AA_RELAY_MAX_SYSTEM_FEE, AA_RELAY_MAX_NETWORK_FEE, or AA_RELAY_MAX_TOTAL_FEE) must be configured before sponsoring a broadcast.',
+    };
+    await failDurableRequest(durable.context, { statusCode: 400, error: body.error, phase: 'config' });
+    return sendJson(res, 400, body, requestId);
+  }
+
   let failurePhase = simulate ? 'simulation' : 'preview';
   try {
     if (simulate) {
@@ -656,6 +803,7 @@ export default async function handler(req, res) {
       rpcUrl,
       relayWif,
       invocation: sanitizedMetaInvocation,
+      feePolicy: { approvedMaxFee: paymaster?.approvedMaxFee },
     });
     failurePhase = 'response';
     const body = paymaster ? { ...result, paymaster } : result;
