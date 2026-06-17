@@ -34,7 +34,7 @@ test('buildV3UserOp constructs valid layout', () => {
   assert.equal(op.Nonce, 1);
 });
 
-test('buildEIP712PayloadForWeb3AuthVerifier derives argsHash when omitted', () => {
+test('buildEIP712PayloadForWeb3AuthVerifier uses the supplied on-chain argsHash', () => {
   const op = buildV3UserOp({
     targetContract: '1234567890123456789012345678901234567890',
     method: 'transfer',
@@ -43,15 +43,42 @@ test('buildEIP712PayloadForWeb3AuthVerifier derives argsHash when omitted', () =
     deadline: 9999999999,
   });
 
+  const argsHash = `0x${'cd'.repeat(32)}`;
   const payload = buildEIP712PayloadForWeb3AuthVerifier({
     chainId: 894710606,
     verifierHash: '0x1234',
     accountId: 'abcd',
     userOp: op,
+    argsHash,
   });
 
   assert.equal(payload.domain.name, 'Neo N3 Abstract Account');
   assert.equal(payload.message.method, 'transfer');
+  // The supplied on-chain argsHash must be carried through verbatim, never
+  // re-derived locally.
+  assert.equal(payload.message.argsHash, argsHash);
+});
+
+test('buildEIP712PayloadForWeb3AuthVerifier throws when argsHash is omitted', () => {
+  const op = buildV3UserOp({
+    targetContract: '1234567890123456789012345678901234567890',
+    method: 'transfer',
+    args: [{ type: 'Integer', value: '1' }],
+    nonce: 1,
+    deadline: 9999999999,
+  });
+
+  // A locally derived hash diverges from keccak256(StdLib.Serialize(args)), so
+  // the helper must refuse rather than silently produce a non-verifying digest.
+  assert.throws(
+    () => buildEIP712PayloadForWeb3AuthVerifier({
+      chainId: 894710606,
+      verifierHash: '0x1234',
+      accountId: 'abcd',
+      userOp: op,
+    }),
+    /requires argsHash.*computeArgsHash/s,
+  );
 });
 
 test('buildV3UserOperationTypedData constructs correct domain and message', () => {
@@ -105,6 +132,56 @@ test('UserOperation helpers use Runtime.Time millisecond deadlines', async () =>
   });
   assert.equal(result.checks.deadlineValid, false);
   assert.match(result.errors.join('\n'), /Deadline has passed/);
+});
+
+test('simulateUserOperation never reports the signature as verified', async () => {
+  // A preview where every check the simulator can see passes must still flag
+  // signatureVerified=false: the signature/session scope is only validated
+  // on-chain by executeUserOp (or the relay's full-op simulation).
+  const passing = await simulateUserOperation({
+    async getUserOpValidationPreview() {
+      return {
+        deadlineValid: true,
+        nonceAcceptable: true,
+        hasVerifier: true,
+        verifier: 'b4107cb2cb4bace0ebe15bc4842890734abe133a',
+        hook: '',
+      };
+    },
+  }, {
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    targetContract: '49c095ce04d38642e39155f5481615c58227a498',
+    method: 'transfer',
+    args: [],
+    nonce: 0,
+    deadline: Date.now() + 3_600_000,
+  });
+  assert.equal(passing.passed, true, 'preview checks should pass');
+  assert.equal(passing.signatureVerified, false, 'passed must not imply a verified signature');
+
+  // The early validation-error return shapes carry the same explicit flag.
+  const missingAccount = await simulateUserOperation({}, {
+    targetContract: '49c095ce04d38642e39155f5481615c58227a498',
+    method: 'transfer',
+  });
+  assert.equal(missingAccount.passed, false);
+  assert.equal(missingAccount.signatureVerified, false);
+
+  // And the catch path (preview RPC failure) reports it too.
+  const previewThrew = await simulateUserOperation({
+    async getUserOpValidationPreview() {
+      throw new Error('rpc unavailable');
+    },
+  }, {
+    accountIdHash: 'f951cd3eb5196dacde99b339c5dcca37ac38cc22',
+    targetContract: '49c095ce04d38642e39155f5481615c58227a498',
+    method: 'transfer',
+    args: [],
+    nonce: 0,
+    deadline: Date.now() + 3_600_000,
+  });
+  assert.equal(previewThrew.passed, false);
+  assert.equal(previewThrew.signatureVerified, false);
 });
 
 test('escape status compares millisecond trigger time with second timelock', async () => {
