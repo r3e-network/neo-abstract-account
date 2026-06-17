@@ -241,24 +241,28 @@ test('testnet validation suite includes smoke, plugin matrix, market escrow, and
   assert.match(readme, /testnet:validate:paymaster-onchain/);
 });
 
-test('paymaster policy validator falls back to remote worker on direct transport failures', () => {
+test('paymaster validators use the direct authorize path without the retired Phala tooling', () => {
   const paymasterPolicySource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_policy.mjs'), 'utf8');
   const paymasterRelaySource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'v3_testnet_paymaster_relay.mjs'), 'utf8');
   const localPaymasterHandlerSource = fs.readFileSync(path.join(repoRoot, 'sdk', 'js', 'tests', 'local-paymaster-handler.js'), 'utf8');
 
-  assert.match(paymasterPolicySource, /try\s*{\s*direct = await callDirectPaymaster\(payload\);/);
-  assert.match(paymasterPolicySource, /catch \(error\) {[\s\S]*retrying via Phala CLI remote worker path[\s\S]*return callRemotePaymaster\(payload\);/);
+  assert.match(paymasterPolicySource, /return callDirectPaymaster\(payload\);/);
   assert.match(paymasterPolicySource, /resolveLocalPaymasterHandlerPath/);
   assert.match(paymasterRelaySource, /resolveLocalPaymasterHandlerPath/);
   assert.match(localPaymasterHandlerSource, /MORPHEUS_LOCAL_PAYMASTER_HANDLER_PATH/);
   assert.match(localPaymasterHandlerSource, /neo-morpheus-oracle/);
-  assert.match(paymasterPolicySource, /redactRuntimeSecrets/);
   assert.match(paymasterPolicySource, /LOCAL_PAYMASTER_RUNTIME_ENV_KEYS/);
   assert.match(paymasterRelaySource, /&& !LOCAL_PAYMASTER_HANDLER_PATH/);
   assert.match(paymasterRelaySource, /pathToFileURL\(LOCAL_PAYMASTER_HANDLER_PATH\)\.href/);
-  assert.match(paymasterRelaySource, /catch \(error\) {[\s\S]*direct authorize endpoint failed[\s\S]*retrying via Phala CLI remote worker path/);
   assert.match(paymasterRelaySource, /LOCAL_PAYMASTER_RUNTIME_ENV_KEYS/);
-  assert.match(paymasterRelaySource, /redactRuntimeSecrets/);
+
+  for (const source of [paymasterPolicySource, paymasterRelaySource]) {
+    assert.doesNotMatch(source, /phala-cli/);
+    assert.doesNotMatch(source, /resolvePhalaCliCommand/);
+    assert.doesNotMatch(source, /runPhalaRemoteShell/);
+    assert.doesNotMatch(source, /PHALA_CLI_COMMAND/);
+    assert.doesNotMatch(source, /remote worker path/);
+  }
 });
 
 test('live testnet deploy scripts use entropy-backed deployment tags for reruns', () => {
