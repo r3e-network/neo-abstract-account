@@ -7,7 +7,7 @@
 当前前端口径：
 
 - `AAPaymaster` 链上赞助执行路径已有 testnet 验证依据。
-- `Morpheus policy` 与 `relay-backed authorization` 需要服务端配置 `MORPHEUS_RUNTIME_TOKEN`、`PHALA_API_TOKEN` 或 `PHALA_SHARED_SECRET` 后才能作为可用的无 Gas 广播路径展示。
+- `Morpheus policy` 与 `relay-backed authorization` 需要服务端配置 `MORPHEUS_RUNTIME_TOKEN`（AWS Nitro 运行时令牌）后才能作为可用的无 Gas 广播路径展示。
 - 最新 `v3-testnet-validation-suite.latest.json` 在缺少这些运行时凭证时会跳过 `paymaster_policy` 与 `paymaster` 阶段；界面不能把该状态显示为无条件完整可用。
 
 链上验证组件：
@@ -90,4 +90,4 @@
 - 旧账户回放
 - 新账户注册到赞助执行的完整路径
 
-这意味着前端可以展示“链上赞助路径已验证”。但在当前部署或本地 suite 缺少 Morpheus/Phala 运行时凭证时，界面必须明确显示 policy/relay 阶段尚未就绪，不能承诺启用 paymaster 后一定能完成无 Gas relay 广播。
+这意味着前端可以展示“链上赞助路径已验证”。但在当前部署或本地 suite 缺少 Morpheus 运行时凭证时，界面必须明确显示 policy/relay 阶段尚未就绪，不能承诺启用 paymaster 后一定能完成无 Gas relay 广播。

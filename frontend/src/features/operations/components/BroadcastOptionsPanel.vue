@@ -258,7 +258,7 @@
             {{
               t(
                 "operations.paymasterCredentialNote",
-                "Current validation suite skips policy/relay stages when MORPHEUS_RUNTIME_TOKEN, PHALA_API_TOKEN, or PHALA_SHARED_SECRET is missing.",
+                "Current validation suite skips policy/relay stages when MORPHEUS_RUNTIME_TOKEN is missing.",
               )
             }}
           </p>

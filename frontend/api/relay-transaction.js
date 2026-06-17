@@ -6,7 +6,6 @@ import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvoca
 import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure, sanitizeError } from './rateLimiter.js';
 import { resolveMorpheusOracleCvmId, resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeToken, resolveNetwork } from './morpheus-base.js';
-import { callRemotePaymasterAuthorize, resolvePhalaCliCommand } from './phala-remote.js';
 
 const RAW_TRANSACTION_PATTERN = /^(0x)?[0-9a-fA-F]+$/;
 const MAX_RAW_TRANSACTION_LENGTH = 200000;
@@ -36,10 +35,6 @@ function loadRelayInvocationContext({ rpcUrl, relayWif }) {
 
 function trimString(value) {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function isAuthFailureStatus(status) {
-  return Number(status) === 401 || Number(status) === 403;
 }
 
 function normalizeHash(value) {
@@ -160,12 +155,6 @@ function resolvePaymasterConfig(network) {
     endpoint,
     apiToken,
     appId: trimString(resolveMorpheusOracleCvmId(network)),
-    remoteWorkerService: trimString(
-      process.env.MORPHEUS_REMOTE_WORKER_SERVICE
-        || process.env.MORPHEUS_PAYMASTER_REMOTE_WORKER_SERVICE
-        || 'testnet-request-worker'
-    ),
-    phalaCliCommand: resolvePhalaCliCommand(process.env),
     enabled: Boolean(endpoint),
   };
 }
@@ -261,7 +250,6 @@ async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estim
   const headers = { 'content-type': 'application/json' };
   if (config.apiToken) {
     headers.authorization = `Bearer ${config.apiToken}`;
-    headers['x-phala-token'] = config.apiToken;
   }
 
   const response = await fetch(config.endpoint, {
@@ -271,19 +259,6 @@ async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estim
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (isAuthFailureStatus(response.status) && config.apiToken && config.appId && config.phalaCliCommand) {
-      const remoteResponse = await callRemotePaymasterAuthorize({
-        payload: requestBody,
-        apiToken: config.apiToken,
-        appId: config.appId,
-        remoteWorkerService: config.remoteWorkerService,
-        cliCommand: config.phalaCliCommand,
-      });
-      if (Number(remoteResponse?.status) !== 200) {
-        throw new Error(remoteResponse?.body?.error || remoteResponse?.body?.message || 'Paymaster authorization failed.');
-      }
-      return remoteResponse?.body || remoteResponse;
-    }
     throw new Error(payload?.error || payload?.message || 'Paymaster authorization failed.');
   }
   return payload;
