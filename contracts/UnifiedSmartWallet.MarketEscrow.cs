@@ -15,8 +15,18 @@ namespace AbstractAccount
         // ========================================================================
 
         // Storage prefix for the owner-driven, timelocked escrow cancellation marker.
-        // Distinct from every prefix declared in UnifiedSmartWallet.Internal.cs (0x01-0x12)
-        // and from Prefix_ContractAdmin (0x11) in UnifiedSmartWallet.Admin.cs.
+        //
+        // NOTE: the byte 0x13 is REUSED across partials — it is also used by
+        // UnifiedSmartWallet.Admin.cs (Prefix_PendingUpdateManifestHash). This is collision-SAFE
+        // only because the two keys have different SHAPES: this prefix is always concatenated with
+        // a 20-byte accountId (Helper.Concat(Prefix_MarketEscrowCancelInitiated, accountId), a
+        // 21-byte key), whereas the admin key is the bare 1-byte prefix 0x13 with no suffix. A bare
+        // 1-byte key and a 21-byte accountId-suffixed key can never alias. The same is true of the
+        // byte 0x12 (Admin Prefix_PendingUpdateNefHash, bare; Internal Prefix_VerifyScopeTarget,
+        // accountId-suffixed). The authoritative cross-partial allocation, with each prefix's owning
+        // partial and key shape, lives in the STORAGE PREFIX MAP in UnifiedSmartWallet.cs, and is
+        // pinned by StoragePrefixMapTests. Renumbering these to make every byte globally unique is
+        // deferred because it would change the storage layout (redeploy/migration).
         private static readonly byte[] Prefix_MarketEscrowCancelInitiated = new byte[] { 0x13 };
 
         // Delay the backup owner must wait between requesting and forcing an escrow

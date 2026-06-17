@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Numerics;
 using Neo;
 using Neo.SmartContract.Framework;
@@ -22,6 +23,36 @@ namespace AbstractAccount
         private static readonly byte[] Prefix_PendingUpdateManifestHash = new byte[] { 0x13 };
         private static readonly byte[] Prefix_UpdateTimelock = new byte[] { 0x14 };
         private static readonly BigInteger MinUpgradeDelayMs = 7L * 24 * 60 * 60 * 1000;
+
+        // AA-D-02: rotating the contract admin is itself timelocked. An instant Storage.Put
+        // hand-off (the old TransferAdmin) was inconsistent with every other privileged role
+        // rotation in the project (VerifierAuthority / HookAuthority / PaymasterAuthority all
+        // use ProposeAdminTransfer/RotateAdmin -> a 7-day window -> ConfirmAdminRotation gated
+        // on CheckWitness(newAdmin)). It also let a leaked admin key silently and instantly
+        // burn the role to an address nobody controls. The hardened flow proposes the new
+        // admin (current-admin-gated), then requires the new admin to confirm in person after
+        // the same >= 7-day window, giving account owners an escape window and proving the new
+        // admin key is live before the role moves. These prefixes were never written by
+        // previous deployments. Reuses MinUpgradeDelayMs so the rotation window matches the
+        // upgrade window. The renumber of the value-colliding prefixes (0x12/0x13) to make
+        // every byte globally unique is intentionally DEFERRED: it would change the storage
+        // layout and require a redeploy/migration. See the STORAGE PREFIX MAP in
+        // UnifiedSmartWallet.cs for why the current allocation is collision-safe today.
+        private static readonly byte[] Prefix_PendingContractAdmin = new byte[] { 0x15 };
+        private static readonly byte[] Prefix_AdminTransferTimelock = new byte[] { 0x16 };
+
+        public delegate void AdminTransferDelegate(UInt160 currentAdmin, UInt160 newAdmin, BigInteger availableAt);
+
+        [DisplayName("AdminTransferProposed")]
+        public static event AdminTransferDelegate OnAdminTransferProposed = null!;
+
+        public delegate void AdminTransferConfirmedDelegate(UInt160 previousAdmin, UInt160 newAdmin);
+
+        [DisplayName("AdminTransferConfirmed")]
+        public static event AdminTransferConfirmedDelegate OnAdminTransferConfirmed = null!;
+
+        [DisplayName("AdminTransferCancelled")]
+        public static event AccountOnlyDelegate OnAdminTransferCancelled = null!;
 
         public static void _deploy(object data, bool update)
         {
@@ -91,11 +122,70 @@ namespace AbstractAccount
             return val == null ? UInt160.Zero : (UInt160)val;
         }
 
-        public static void TransferAdmin(UInt160 newAdmin)
+        /// <summary>
+        /// Proposes a timelocked transfer of the contract admin role. The current admin pins the
+        /// proposed successor; the transfer can only be applied via <see cref="ConfirmAdminTransfer"/>
+        /// after the <see cref="MinUpgradeDelayMs"/> (7-day) window elapses, and only by the proposed
+        /// admin itself. There is intentionally no instant transfer path, mirroring the project's
+        /// existing authority rotations (e.g. <c>HookAuthority.RotateAdmin/ConfirmAdminRotation</c>).
+        /// Re-proposing overwrites the pending proposal and restarts the window.
+        /// </summary>
+        public static void ProposeAdminTransfer(UInt160 newAdmin)
         {
             ValidateAdmin();
-            ExecutionEngine.Assert(newAdmin != null && newAdmin != UInt160.Zero, "Invalid admin");
-            Storage.Put(Storage.CurrentContext, Prefix_ContractAdmin, (ByteString)(byte[])newAdmin!);
+            ExecutionEngine.Assert(newAdmin != null && newAdmin != UInt160.Zero && newAdmin.IsValid, "Invalid admin");
+            UInt160 current = (UInt160)Storage.Get(Storage.CurrentContext, Prefix_ContractAdmin)!;
+            ExecutionEngine.Assert(newAdmin != current, "New admin must differ from current");
+            Storage.Put(Storage.CurrentContext, Prefix_PendingContractAdmin, (ByteString)(byte[])newAdmin!);
+            Storage.Put(Storage.CurrentContext, Prefix_AdminTransferTimelock, Runtime.Time);
+            OnAdminTransferProposed(current, newAdmin!, Runtime.Time + MinUpgradeDelayMs);
+        }
+
+        /// <summary>Clears a pending admin-transfer proposal without applying it. Current-admin gated.</summary>
+        public static void CancelAdminTransfer()
+        {
+            ValidateAdmin();
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingContractAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_AdminTransferTimelock);
+            OnAdminTransferCancelled(GetContractAdmin());
+        }
+
+        /// <summary>
+        /// Applies a previously proposed admin transfer. Requires an existing proposal, the elapsed
+        /// 7-day timelock, and the witness of the proposed admin (so the role can only move to a key
+        /// that is provably live and consents). The proposal is single-use: a further transfer needs a
+        /// fresh <see cref="ProposeAdminTransfer"/> plus another window.
+        /// </summary>
+        public static void ConfirmAdminTransfer()
+        {
+            ByteString? pending = Storage.Get(Storage.CurrentContext, Prefix_PendingContractAdmin);
+            ExecutionEngine.Assert(pending != null, "No pending admin transfer");
+            ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_AdminTransferTimelock);
+            ExecutionEngine.Assert(timelockData != null, "No timelock set");
+            ExecutionEngine.Assert(Runtime.Time >= (BigInteger)timelockData! + MinUpgradeDelayMs, "Admin transfer timelock not expired");
+            UInt160 newAdmin = (UInt160)pending!;
+            ExecutionEngine.Assert(Runtime.CheckWitness(newAdmin), "New admin must confirm transfer");
+            UInt160 previousAdmin = GetContractAdmin();
+            Storage.Put(Storage.CurrentContext, Prefix_ContractAdmin, (ByteString)(byte[])newAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingContractAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_AdminTransferTimelock);
+            OnAdminTransferConfirmed(previousAdmin, newAdmin);
+        }
+
+        /// <summary>The pending proposed admin, or <see cref="UInt160.Zero"/> when no transfer is pending.</summary>
+        [Safe]
+        public static UInt160 GetPendingContractAdmin()
+        {
+            ByteString? val = Storage.Get(Storage.CurrentContext, Prefix_PendingContractAdmin);
+            return val == null ? UInt160.Zero : (UInt160)val;
+        }
+
+        /// <summary>Block time (ms) at which a pending admin transfer may be confirmed, or 0 when none is pending.</summary>
+        [Safe]
+        public static BigInteger GetAdminTransferAvailableAt()
+        {
+            ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_AdminTransferTimelock);
+            return timelockData == null ? 0 : (BigInteger)timelockData + MinUpgradeDelayMs;
         }
 
         private static void ValidateAdmin()

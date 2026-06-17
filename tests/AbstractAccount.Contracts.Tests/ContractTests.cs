@@ -140,7 +140,9 @@ public class ContractTests
             "_deploy",
             "Update",
             "GetContractAdmin",
-            "TransferAdmin"
+            "ProposeAdminTransfer",
+            "ConfirmAdminTransfer",
+            "CancelAdminTransfer"
         };
 
         string[] exportedMethods = ContractType
