@@ -4,6 +4,28 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createHandler as createDidNotifyHandler } from "../api/did-notify.js";
+
+function createResponse() {
+  return {
+    statusCode: 200,
+    headers: {},
+    payload: null,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    setHeader(name, value) {
+      this.headers[String(name).toLowerCase()] = value;
+      return this;
+    },
+    json(value) {
+      this.payload = value;
+      return this;
+    },
+  };
+}
+
 const frontendRoot = fileURLToPath(new URL("..", import.meta.url));
 const read = (relativePath) =>
   fs.readFileSync(path.join(frontendRoot, relativePath), "utf8");
@@ -158,4 +180,103 @@ test("main layout and home workspace expose a DID connection path", () => {
   assert.match(panel, /formatScheduledTimestamp/);
   assert.match(panel, /ZK Login Verifier Params/);
   assert.match(panel, /notificationService/);
+});
+
+test("did-notify binds the recipient to the verified identity and allowlists templates", async () => {
+  const snapshot = {
+    WEB3AUTH_CLIENT_ID: process.env.WEB3AUTH_CLIENT_ID,
+    DID_EMAIL_WEBHOOK_URL: process.env.DID_EMAIL_WEBHOOK_URL,
+    DID_EMAIL_WEBHOOK_TOKEN: process.env.DID_EMAIL_WEBHOOK_TOKEN,
+  };
+  const originalFetch = global.fetch;
+
+  process.env.WEB3AUTH_CLIENT_ID = "test-client-id";
+  process.env.DID_EMAIL_WEBHOOK_URL = "https://hooks.example/email";
+  delete process.env.DID_EMAIL_WEBHOOK_TOKEN;
+
+  const calls = [];
+  global.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ delivered: true }),
+    };
+  };
+
+  // jwtVerify is injected via the createHandler seam so the test never reaches
+  // the real Web3Auth JWKS endpoint.
+  const handler = createDidNotifyHandler({
+    verifyToken: async () => ({ email: "a@x.com" }),
+  });
+
+  try {
+    // (a) A recipient that does not match the verified identity is rejected with
+    // 403 and the webhook is never invoked.
+    const victimRes = createResponse();
+    await handler(
+      {
+        method: "POST",
+        headers: {},
+        socket: { remoteAddress: `did-notify-victim-${Date.now()}` },
+        body: {
+          channel: "email",
+          to: "victim@y.com",
+          idToken: "token",
+        },
+      },
+      victimRes,
+    );
+    assert.equal(victimRes.statusCode, 403);
+    assert.equal(victimRes.payload?.error, "recipient_does_not_match_identity");
+    assert.equal(calls.length, 0);
+
+    // (b) The caller's own verified email proceeds to the webhook.
+    const ownerRes = createResponse();
+    await handler(
+      {
+        method: "POST",
+        headers: {},
+        socket: { remoteAddress: `did-notify-owner-${Date.now()}` },
+        body: {
+          channel: "email",
+          to: "a@x.com",
+          idToken: "token",
+        },
+      },
+      ownerRes,
+    );
+    assert.equal(ownerRes.statusCode, 200);
+    assert.equal(ownerRes.payload?.ok, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, "https://hooks.example/email");
+
+    // (c) A non-allowlisted template is coerced to the default aa_recovery.
+    const templateRes = createResponse();
+    await handler(
+      {
+        method: "POST",
+        headers: {},
+        socket: { remoteAddress: `did-notify-template-${Date.now()}` },
+        body: {
+          channel: "email",
+          to: "a@x.com",
+          template: "arbitrary",
+          idToken: "token",
+        },
+      },
+      templateRes,
+    );
+    assert.equal(templateRes.statusCode, 200);
+    assert.equal(calls.length, 2);
+    const forwarded = JSON.parse(calls[1].options.body);
+    assert.equal(forwarded.template, "aa_recovery");
+    assert.equal(forwarded.to, "a@x.com");
+  } finally {
+    global.fetch = originalFetch;
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });

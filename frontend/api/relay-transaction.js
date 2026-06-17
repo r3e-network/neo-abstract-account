@@ -50,6 +50,22 @@ function shouldIncludeRawRelayErrors() {
   );
 }
 
+function shouldAllowUnsponsoredRelay() {
+  return resolveOptionalBoolean(process.env.AA_RELAY_ALLOW_UNSPONSORED, false);
+}
+
+function resolveMaxSystemFee() {
+  const raw = trimString(process.env.AA_RELAY_MAX_SYSTEM_FEE || '');
+  if (!raw) return null;
+  let parsed;
+  try {
+    parsed = BigInt(raw);
+  } catch {
+    return null;
+  }
+  return parsed > 0n ? parsed : null;
+}
+
 function sha256Hex(value) {
   return createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value ?? null)).digest('hex');
 }
@@ -141,6 +157,22 @@ export function resolveRelayExecutionConfig({ req = {}, requestPayload = {}, pay
   };
 }
 
+function hasExplicitPaymasterConfig(network) {
+  const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
+  // Only an operator-set endpoint/token/app id counts as "configured". The
+  // public registry fallback URL must not silently enable unsponsored signing.
+  return Boolean(
+    trimString(process.env[`MORPHEUS_PAYMASTER_${upper}_ENDPOINT`])
+      || trimString(process.env.MORPHEUS_PAYMASTER_ENDPOINT)
+      || trimString(process.env.AA_PAYMASTER_ENDPOINT)
+      || trimString(process.env[`MORPHEUS_PAYMASTER_${upper}_API_TOKEN`])
+      || trimString(process.env.MORPHEUS_PAYMASTER_API_TOKEN)
+      || trimString(process.env.AA_PAYMASTER_API_TOKEN)
+      || trimString(process.env[`MORPHEUS_${upper}_PAYMASTER_APP_ID`])
+      || trimString(process.env.MORPHEUS_PAYMASTER_APP_ID),
+  );
+}
+
 function resolvePaymasterConfig(network) {
   const endpoint = trimString(resolveMorpheusPaymasterEndpoint(network));
   const apiToken = trimString(
@@ -155,7 +187,7 @@ function resolvePaymasterConfig(network) {
     endpoint,
     apiToken,
     appId: trimString(resolveMorpheusOracleCvmId(network)),
-    enabled: Boolean(endpoint),
+    enabled: Boolean(endpoint) && hasExplicitPaymasterConfig(network),
   };
 }
 
@@ -238,7 +270,13 @@ export function buildPaymasterRequest({ metaInvocation, paymaster = {}, estimate
 
 async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estimatedGasUnits = 0, network = 'mainnet' }) {
   const config = resolvePaymasterConfig(network);
-  if (!config.enabled) return null;
+  if (!config.enabled) {
+    // Fail closed: with no paymaster the relay would sign and broadcast while
+    // paying an uncapped systemFee from its own WIF. Only permit unsponsored
+    // relays when an operator explicitly opts in.
+    if (shouldAllowUnsponsoredRelay()) return null;
+    return { approved: false, reason: 'paymaster_not_configured' };
+  }
 
   const requestBody = buildPaymasterRequest({
     metaInvocation,
@@ -360,12 +398,26 @@ async function relayMetaInvocation({ rpcUrl, relayWif, invocation }) {
     throw new Error(`${invocation.operation} simulation fault: ${simulation.exception || 'VM fault'}`);
   }
 
+  const systemFee = simulation?.gasconsumed || '1000000';
+  const maxSystemFee = resolveMaxSystemFee();
+  if (maxSystemFee != null) {
+    let consumed;
+    try {
+      consumed = BigInt(systemFee);
+    } catch {
+      consumed = null;
+    }
+    if (consumed == null || consumed > maxSystemFee) {
+      throw new Error(`${invocation.operation} systemFee ${systemFee} exceeds AA_RELAY_MAX_SYSTEM_FEE ${maxSystemFee.toString()}`);
+    }
+  }
+
   const validUntilBlock = (await rpcClient.getBlockCount()) + 1000;
   const basePayload = {
     signers,
     validUntilBlock,
     script,
-    systemFee: simulation?.gasconsumed || '1000000',
+    systemFee,
   };
 
   let transaction = new tx.Transaction(basePayload);
@@ -382,7 +434,7 @@ async function relayMetaInvocation({ rpcUrl, relayWif, invocation }) {
   return {
     txid,
     networkFee: networkFee?.toString?.() || String(networkFee),
-    systemFee: simulation?.gasconsumed || '0',
+    systemFee: systemFee || '0',
     invocation: {
       scriptHash: invocation.scriptHash,
       operation: invocation.operation,
@@ -521,6 +573,22 @@ export default async function handler(req, res) {
   if (!relayWif) {
     await failDurableRequest(durable.context, { statusCode: 501, error: 'relay_signer_not_configured', phase: 'config' });
     return sendJson(res, 501, { error: 'relay_signer_not_configured' }, requestId);
+  }
+
+  // Fail closed before any sign/broadcast: without a configured paymaster the
+  // relay would pay an uncapped systemFee from its own WIF for an unsponsored
+  // operation. Block the broadcast path unless an operator explicitly opts in.
+  // (Read-only simulations carry no funds risk and still report the denial.)
+  if (!simulate
+    && !resolvePaymasterConfig(relayConfig.network).enabled
+    && !shouldAllowUnsponsoredRelay()) {
+    const body = {
+      error: 'paymaster_denied',
+      message: 'Paymaster denied sponsorship.',
+      paymaster: { approved: false, reason: 'paymaster_not_configured' },
+    };
+    await failDurableRequest(durable.context, { statusCode: 402, error: 'paymaster_denied', phase: 'paymaster' });
+    return sendJson(res, 402, body, requestId);
   }
 
   let failurePhase = simulate ? 'simulation' : 'preview';

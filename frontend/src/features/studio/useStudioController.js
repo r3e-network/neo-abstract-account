@@ -2,6 +2,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS, MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS, createVerifyScript, deriveAccountIdHash, deriveRegistrationAccountIdHash, getAddressFromScriptHash, hash160, invokeReadFunction, reverseHex } from '@/utils/neo.js';
 import { useToast } from 'vue-toastification';
 import { connectedAccount } from '@/utils/wallet';
+import { connectedDidProfile } from '@/utils/did';
 import { walletService, getAbstractAccountHash } from '@/services/walletService';
 import { buildMatrixRegistrationInvocation, isMatrixDomain } from '@/services/matrixDomainService.js';
 import { loadContractSourceFiles } from './contractSources';
@@ -494,15 +495,29 @@ export function useStudioController() {
         { type: 'String', value: metadataUri },
       ]);
 
-      // Off-chain: save description + logo
-      await upsertAccountMetadata({
-        accountIdHash,
-        description: metadataForm.value.description.trim(),
-        logoUrl: metadataForm.value.logoUrl.trim(),
-        metadataUri,
-      });
-
-      toast.success(t('studio.toast.metadataSaved', 'Account metadata saved.'));
+      // Off-chain: save description + logo. The on-chain setMetadataUri above is the
+      // authoritative record; the off-chain mirror requires proof of account control
+      // (Web3Auth idToken whose key is the account's backup owner). When that proof is
+      // unavailable, keep the on-chain save successful and surface a soft warning rather
+      // than failing the whole operation.
+      try {
+        await upsertAccountMetadata({
+          accountIdHash,
+          description: metadataForm.value.description.trim(),
+          logoUrl: metadataForm.value.logoUrl.trim(),
+          metadataUri,
+          idToken: (connectedDidProfile.value?.idToken || '').trim() || undefined,
+        });
+        toast.success(t('studio.toast.metadataSaved', 'Account metadata saved.'));
+      } catch (offChainErr) {
+        toast.warning(
+          t(
+            'studio.toast.metadataOnChainOnly',
+            'On-chain metadata saved. Sign in with your account identity to also sync the off-chain profile.',
+          ),
+        );
+        if (import.meta.env.DEV) console.error('[studio] off-chain metadata sync failed:', offChainErr?.apiDetail || offChainErr?.message);
+      }
     } catch (err) {
       toast.error(translateError(err?.message, t));
     } finally {

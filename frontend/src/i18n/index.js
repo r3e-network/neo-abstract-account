@@ -362,6 +362,7 @@ const MESSAGES = {
         connectWalletMatrix: 'Connect a Neo wallet before registering a .matrix domain.',
         invalidArgsJson: 'Arguments JSON must be an array of Neo RPC params.',
         metadataSaved: 'Account metadata saved.',
+        metadataOnChainOnly: 'On-chain metadata saved. Sign in with your account identity to also sync the off-chain profile.',
         metadataSaveFailed: 'Metadata save failed. Please try again.',
         invalidJsonSyntax: 'Invalid JSON syntax. Please check your input.',
       },
