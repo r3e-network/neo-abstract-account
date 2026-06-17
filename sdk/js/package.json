@@ -4,7 +4,13 @@
   "description": "Neo N3 Abstract Account SDK",
   "license": "MIT",
   "main": "src/index.js",
-  "exports": "./src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
   "homepage": "https://github.com/r3e-network/neo-abstract-account",
   "repository": {
     "type": "git",
@@ -18,6 +24,7 @@
   ],
   "scripts": {
     "test": "node --test tests/*.unit.test.js",
+    "types:check": "tsc --noEmit --project tsconfig.types.json",
     "testnet:validate": "./run_testnet_validation_suite.sh",
     "testnet:validate:dry-run": "./run_testnet_validation_suite.sh --dry-run",
     "testnet:validate:report": "./run_testnet_validation_suite.sh",
@@ -37,6 +44,7 @@
     "lodash": "4.18.1"
   },
   "devDependencies": {
-    "@cityofzion/neon-js": "^5.8.1"
+    "@cityofzion/neon-js": "^5.8.1",
+    "typescript": "^5.4.5"
   }
 }
