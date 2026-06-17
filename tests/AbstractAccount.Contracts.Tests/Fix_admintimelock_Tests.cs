@@ -184,8 +184,13 @@ public class Fix_AdminTimelock_Tests
         UInt160 wallet = fx.Deploy(WalletArtifact);
         (byte[] nef, string manifest) = ReadArtifact(WalletArtifact);
 
-        // The deploying validator is the initial admin; hand the role to NewAdmin.
-        fx.CallVoid(wallet, "transferAdmin", NewAdmin);
+        // The deploying validator is the initial admin; hand the role to NewAdmin via the
+        // timelocked propose/confirm flow (there is no instant transfer path).
+        fx.CallVoid(wallet, "proposeAdminTransfer", NewAdmin);
+        fx.AdvanceTime(Window);
+        fx.SetSigners(NewAdmin);
+        fx.CallVoid(wallet, "confirmAdminTransfer");
+        fx.SetSigners(fx.Engine.ValidatorsAddress);
         Assert.AreEqual(NewAdmin, fx.CallUInt160(wallet, "getContractAdmin"), "Admin transferred");
 
         // The previous admin can no longer pin a proposal.
@@ -204,5 +209,138 @@ public class Fix_AdminTimelock_Tests
         fx.AdvanceTime(Window);
         fx.CallVoid(wallet, "update", nef, manifest);
         Assert.AreEqual(BigInteger.One, UpdateCounter(fx, wallet), "New admin upgrade applies after the window");
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // AA-D-02: the contract admin role transfer is itself timelocked + new-admin-confirmed.
+    //
+    // The old TransferAdmin did an instant Storage.Put with only the current-admin witness —
+    // a single leaked admin key could silently and instantly burn the role to an address nobody
+    // controls, with no escape window. The hardened flow mirrors the project's other authority
+    // rotations: proposeAdminTransfer (current-admin gated) -> 7-day window ->
+    // confirmAdminTransfer (gated on CheckWitness(newAdmin)).
+    // ------------------------------------------------------------------------------------------
+
+    [TestMethod]
+    public void TransferAdmin_InstantPath_IsGone()
+    {
+        RuntimeFixture fx = new();
+        UInt160 wallet = fx.Deploy(WalletArtifact);
+
+        // The legacy instant entrypoint must no longer exist on the contract ABI: a call to it
+        // faults (the dispatcher finds no matching method) rather than instantly moving the role.
+        Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "transferAdmin", NewAdmin),
+            "The instant transferAdmin entrypoint must be removed");
+
+        // The admin role is unchanged: still the deploying validator.
+        Assert.AreEqual(fx.Engine.ValidatorsAddress, fx.CallUInt160(wallet, "getContractAdmin"),
+            "Admin role must be unchanged when no transfer was confirmed");
+    }
+
+    [TestMethod]
+    public void AdminTransfer_HonorsWindowAndRequiresNewAdminWitness()
+    {
+        RuntimeFixture fx = new();
+        UInt160 wallet = fx.Deploy(WalletArtifact);
+        UInt160 initialAdmin = fx.Engine.ValidatorsAddress;
+
+        // A stranger cannot propose a transfer.
+        fx.SetSigners(Stranger);
+        Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "proposeAdminTransfer", NewAdmin),
+            "Non-admin proposeAdminTransfer must be rejected");
+
+        // The current admin pins the proposed successor.
+        fx.SetSigners(initialAdmin);
+        fx.CallVoid(wallet, "proposeAdminTransfer", NewAdmin);
+        Assert.AreEqual(NewAdmin, fx.CallUInt160(wallet, "getPendingContractAdmin"), "Proposal pinned");
+        Assert.AreEqual(initialAdmin, fx.CallUInt160(wallet, "getContractAdmin"),
+            "Admin role must not move on propose");
+
+        // Confirming inside the window is rejected, including one second before expiry.
+        fx.SetSigners(NewAdmin);
+        TestException early = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "confirmAdminTransfer"),
+            "Confirm inside the window must be rejected");
+        StringAssert.Contains(early.Message, "Admin transfer timelock not expired");
+
+        fx.AdvanceTime(Window - TimeSpan.FromSeconds(1));
+        Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "confirmAdminTransfer"),
+            "Confirm one second before expiry must be rejected");
+
+        fx.AdvanceTime(TimeSpan.FromSeconds(1));
+
+        // After the window, only the proposed admin's witness can confirm.
+        fx.SetSigners(Stranger);
+        TestException notNew = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "confirmAdminTransfer"),
+            "A witness other than the proposed admin must be rejected");
+        StringAssert.Contains(notNew.Message, "New admin must confirm transfer");
+
+        // The (still-current) initial admin cannot confirm on the new admin's behalf either.
+        fx.SetSigners(initialAdmin);
+        Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "confirmAdminTransfer"),
+            "Even the current admin cannot confirm without the new admin's witness");
+
+        // The proposed admin confirms and takes the role.
+        fx.SetSigners(NewAdmin);
+        fx.CallVoid(wallet, "confirmAdminTransfer");
+        Assert.AreEqual(NewAdmin, fx.CallUInt160(wallet, "getContractAdmin"), "Role moved to the new admin");
+        Assert.AreEqual(UInt160.Zero, fx.CallUInt160(wallet, "getPendingContractAdmin"),
+            "Pending proposal cleared after confirm");
+
+        // The proposal is single-use: replay needs a fresh propose + window.
+        TestException replay = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "confirmAdminTransfer"),
+            "A confirmed transfer must not be replayable");
+        StringAssert.Contains(replay.Message, "No pending admin transfer");
+
+        // The former admin has lost all admin rights.
+        fx.SetSigners(initialAdmin);
+        Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "proposeAdminTransfer", initialAdmin),
+            "Former admin must lose the ability to propose a transfer");
+    }
+
+    [TestMethod]
+    public void CancelAdminTransfer_ClearsPendingProposal()
+    {
+        RuntimeFixture fx = new();
+        UInt160 wallet = fx.Deploy(WalletArtifact);
+        UInt160 initialAdmin = fx.Engine.ValidatorsAddress;
+
+        fx.CallVoid(wallet, "proposeAdminTransfer", NewAdmin);
+        fx.AdvanceTime(Window);
+        fx.CallVoid(wallet, "cancelAdminTransfer");
+        Assert.AreEqual(UInt160.Zero, fx.CallUInt160(wallet, "getPendingContractAdmin"), "Proposal cleared");
+
+        // A cancelled proposal cannot be confirmed, and the role stays with the original admin.
+        fx.SetSigners(NewAdmin);
+        TestException cancelled = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "confirmAdminTransfer"));
+        StringAssert.Contains(cancelled.Message, "No pending admin transfer");
+        Assert.AreEqual(initialAdmin, fx.CallUInt160(wallet, "getContractAdmin"),
+            "Role unchanged after cancel");
+    }
+
+    [TestMethod]
+    public void ProposeAdminTransfer_RejectsInvalidAndIdentitySuccessor()
+    {
+        RuntimeFixture fx = new();
+        UInt160 wallet = fx.Deploy(WalletArtifact);
+        UInt160 initialAdmin = fx.Engine.ValidatorsAddress;
+
+        TestException zero = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "proposeAdminTransfer", UInt160.Zero),
+            "The zero address must be rejected as a successor");
+        StringAssert.Contains(zero.Message, "Invalid admin");
+
+        TestException same = Assert.ThrowsExactly<TestException>(
+            () => fx.CallVoid(wallet, "proposeAdminTransfer", initialAdmin),
+            "Proposing the current admin as successor must be rejected");
+        StringAssert.Contains(same.Message, "New admin must differ from current");
     }
 }
