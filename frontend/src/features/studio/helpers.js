@@ -142,14 +142,22 @@ export function parseRecentTransactions(raw, fallback = []) {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return fallback;
+    const allowedStatuses = ['pending', 'confirmed', 'failed'];
     return parsed
       .filter((item) => item && typeof item === 'object')
       .filter((item) => typeof item.txid === 'string' && item.txid.length > 0)
-      .map((item) => ({
-        label: String(item.label || 'Transaction'),
-        txid: String(item.txid),
-        when: String(item.when || new Date().toLocaleString())
-      }));
+      .map((item) => {
+        const status = allowedStatuses.includes(item.status) ? item.status : 'pending';
+        return {
+          label: String(item.label || 'Transaction'),
+          txid: String(item.txid),
+          when: String(item.when || new Date().toLocaleString()),
+          status,
+          ...(typeof item.statusDetail === 'string' && item.statusDetail
+            ? { statusDetail: item.statusDetail }
+            : {}),
+        };
+      });
   } catch (_) {
     if (import.meta.env.DEV) console.warn('[helpers] parseTransactionHistory failed:', _?.message);
     return fallback;

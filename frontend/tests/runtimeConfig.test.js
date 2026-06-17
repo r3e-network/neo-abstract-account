@@ -35,6 +35,7 @@ import {
   getRuntimeConfig,
   resolveRuntimeNetwork,
   resolveAbstractAccountHash,
+  resolveNetworkMagic,
   resolveOptionalHash,
   resolveRpcUrl,
   sanitizeHex
@@ -119,6 +120,7 @@ test('getRuntimeConfig prefers Vite overrides', () => {
     abstractAccountHash: '1111111111111111111111111111111111111111',
     abstractAccountDomain: 'smartwallet.neo',
     rpcUrl: 'https://rpc.example.org',
+    networkMagic: 860833102,
     supabaseUrl: '',
     supabaseAnonKey: '',
     relayEndpoint: '/api/relay-transaction',
@@ -183,10 +185,25 @@ test('getRuntimeConfig uses testnet defaults when the selected runtime network i
   assert.equal(config.abstractAccountDomain, '');
   assert.equal(config.rpcUrl, DEFAULT_RPC_URL_TESTNET);
   assert.equal(config.relayRpcUrl, DEFAULT_RPC_URL_TESTNET);
+  assert.equal(config.networkMagic, 894710606);
   assert.equal(config.n3IndexNetwork, 'testnet');
   assert.equal(config.neoDidDomain, '');
   assert.equal(config.morpheusNetwork, 'testnet');
   assert.equal(config.morpheusApiBaseUrl, DEFAULT_MORPHEUS_API_BASE_URL_TESTNET);
+});
+
+test('network magic follows the active runtime network', () => {
+  assert.equal(getRuntimeConfig({ VITE_AA_NETWORK: 'mainnet' }).networkMagic, 860833102);
+  assert.equal(getRuntimeConfig({ VITE_AA_NETWORK: 'testnet' }).networkMagic, 894710606);
+  // Implicit default (no network override) resolves to mainnet, matching walletService.
+  assert.equal(getRuntimeConfig({}).networkMagic, 860833102);
+});
+
+test('network magic honours an explicit override and rejects junk', () => {
+  assert.equal(resolveNetworkMagic('123456789'), 123456789);
+  assert.equal(getRuntimeConfig({ VITE_AA_NETWORK: 'testnet', VITE_AA_NETWORK_MAGIC: '111222333' }).networkMagic, 111222333);
+  // Non-numeric / non-positive values fall back to the network default.
+  assert.equal(getRuntimeConfig({ VITE_AA_NETWORK: 'testnet', VITE_AA_NETWORK_MAGIC: 'nope' }).networkMagic, 894710606);
 });
 
 test('network defaults keep mainnet and testnet anchors explicit', () => {
@@ -196,6 +213,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
     addressMarketHash: 'ae7afe3a85ab08bfd1d4907b35ae8b80c75b3a69',
     paymasterHash: 'a0defa2bc6d7a71ba1e237149287c8ca4ff46caf',
     rpcUrl: 'https://api.n3index.dev/mainnet',
+    networkMagic: 860833102,
     n3IndexNetwork: 'mainnet',
     neoDidDomain: 'neodid.morpheus.neo',
     morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL,
@@ -206,6 +224,7 @@ test('network defaults keep mainnet and testnet anchors explicit', () => {
     addressMarketHash: '',
     paymasterHash: '',
     rpcUrl: 'https://api.n3index.dev/testnet',
+    networkMagic: 894710606,
     n3IndexNetwork: 'testnet',
     neoDidDomain: '',
     morpheusApiBaseUrl: DEFAULT_MORPHEUS_API_BASE_URL_TESTNET,

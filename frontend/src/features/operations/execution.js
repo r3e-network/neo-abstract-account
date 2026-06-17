@@ -139,6 +139,13 @@ export function resolveRelayPayloadMode({ relayPayloadMode = 'best', availableMo
   return availableModes[0];
 }
 
+function resolveNetworkLabel(network, morpheusNetwork) {
+  const explicit = String(network || '').trim();
+  if (explicit) return explicit;
+  const normalized = String(morpheusNetwork || RUNTIME_CONFIG.morpheusNetwork || '').trim().toLowerCase();
+  return normalized === 'testnet' ? 'neo-n3-testnet' : 'neo-n3-mainnet';
+}
+
 export function buildStagedTransactionBody({
   aaContractHash = '',
   account = {},
@@ -146,6 +153,8 @@ export function buildStagedTransactionBody({
   signerAddress = '',
   rawTransaction = '',
   notes = '',
+  network = '',
+  morpheusNetwork = RUNTIME_CONFIG.morpheusNetwork,
   createdAt = new Date().toISOString(),
 } = {}) {
   const legacyInvocationBase = buildExecuteUnifiedByAddressInvocation({
@@ -178,7 +187,7 @@ export function buildStagedTransactionBody({
 
   return cloneImmutable({
     version: 1,
-    network: 'neo-n3-testnet',
+    network: resolveNetworkLabel(network, morpheusNetwork),
     accountAddressScriptHash: account.accountAddressScriptHash || '',
     accountIdHash: account.accountIdHash || '',
     kind: operationBody?.kind || 'invoke',
@@ -191,7 +200,7 @@ export function buildStagedTransactionBody({
   });
 }
 
-export function buildDraftApprovalTypedData({ draftRecord, chainId = 894710606 } = {}) {
+export function buildDraftApprovalTypedData({ draftRecord, chainId = RUNTIME_CONFIG.networkMagic } = {}) {
   const payloadDigest = buildPayloadDigest(draftRecord);
 
   return {

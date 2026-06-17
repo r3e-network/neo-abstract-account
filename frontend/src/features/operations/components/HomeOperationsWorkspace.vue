@@ -1950,6 +1950,7 @@ function stageOperation() {
       signerAddress: walletService.address,
       rawTransaction: rawTransaction.value,
       notes: notes.value,
+      morpheusNetwork: runtime.morpheusNetwork,
       createdAt: nextOperationBody.createdAt,
     }),
   );
@@ -2100,6 +2101,7 @@ async function signWithEvmWallet() {
       accountIdHash: workspace.account.value.accountIdHash,
       operationBody: workspace.operationBody.value,
       signerId: evmAddress.value,
+      chainId: runtime.networkMagic,
       signTypedData: (typedData) => walletService.signTypedDataWithEvm(typedData),
       missingAccountError: EC.v3AccountIdHashMissing,
       missingVerifierError: EC.noVerifierConfigured,

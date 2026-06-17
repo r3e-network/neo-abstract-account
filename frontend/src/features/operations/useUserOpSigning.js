@@ -9,9 +9,13 @@ import {
 } from './metaTx.js';
 import { EC } from '../../config/errorCodes.js';
 
-// The V3 verifier binds UserOperation signatures to the Neo N3 testnet magic;
-// both signing surfaces (home workspace and shared draft view) sign for the
-// same deployment, so the chain id lives here instead of being duplicated.
+// The V3 verifier binds UserOperation signatures to the Neo N3 network magic of
+// the *connected* network: the magic is baked into the EIP-712 domain chainId
+// the on-chain verifier checks, so a testnet-signed domain fails to verify on
+// mainnet and vice versa. Callers thread the active network magic
+// (RUNTIME_CONFIG.networkMagic / runtime.networkMagic) into `chainId`; this
+// constant remains only as the legacy testnet fallback for callers that have no
+// runtime network resolved yet.
 export const V3_USER_OP_CHAIN_ID = 894710606;
 
 // Signatures stay valid for one hour, matching the contract-side deadline

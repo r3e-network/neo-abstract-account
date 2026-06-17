@@ -1081,6 +1081,7 @@ async function signWithEvmWallet() {
       accountIdHash: draft.value.account?.accountIdHash,
       operationBody: draft.value.operation_body,
       signerId: evmAddress.value,
+      chainId: runtime.networkMagic,
       signTypedData: (typedData) => walletService.signTypedDataWithEvm(typedData),
       missingAccountError: EC.v3AccountRequired,
       missingVerifierError: EC.noVerifierPlugin,
