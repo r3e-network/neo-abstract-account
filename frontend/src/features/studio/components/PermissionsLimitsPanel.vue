@@ -215,6 +215,16 @@
                 {{ verifierArgsError }}
               </p>
             </div>
+            <div
+              v-if="sessionKeyValueWarning"
+              role="alert"
+              class="flex items-start gap-2 rounded-lg border border-aa-warning/40 bg-aa-warning/10 px-3 py-2"
+            >
+              <span class="text-aa-warning text-sm leading-none mt-0.5" aria-hidden="true">⚠</span>
+              <p class="text-xs text-aa-warning-light leading-relaxed">
+                {{ sessionKeyValueWarning }}
+              </p>
+            </div>
             <button
               type="button"
               :aria-label="t('studioPanels.ariaCallVerifier', 'Call verifier')"
@@ -362,8 +372,9 @@
 </template>
 
 <script setup>
-import { inject, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import { useI18n } from "@/i18n";
+import { analyzeSessionKeyScope } from "@/features/studio/sessionKeyScope";
 
 const { t } = useI18n();
 
@@ -419,6 +430,34 @@ function validateHookArgsJson() {
     hookArgsError.value = t("studioPanels.invalidJson", "Invalid JSON format");
   }
 }
+
+// setSessionKey is value-uncapped unless it is a "transfer" method with a positive spending limit
+// (the only path SessionKeyVerifier enforces). Surface that distinctly so the one-target/one-method
+// preset is not mistaken for a bounded grant. Detection lives in sessionKeyScope.js (unit-tested).
+const sessionKeyValueWarning = computed(() => {
+  if (permissionsForm.value.verifierMethod !== "setSessionKey") return "";
+
+  let args;
+  try {
+    args = JSON.parse(permissionsForm.value.verifierArgsJson || "");
+  } catch {
+    return "";
+  }
+
+  const scope = analyzeSessionKeyScope(args);
+  if (!scope.applies || !scope.uncapped) return "";
+
+  if (scope.nativeAsset) {
+    return t(
+      "studioPanels.sessionKeyUncappedNativeWarning",
+      'This session key is VALUE-UNCAPPED on a native asset ({asset}): a wildcard ("*") method or a zero spending limit lets the delegated signer drain your entire {asset} balance — it is not limited to one method. Set method to "transfer" and add a positive spending limit (7th arg) to enforce a cap.',
+    ).replace(/{asset}/g, scope.nativeAsset);
+  }
+  return t(
+    "studioPanels.sessionKeyUncappedWarning",
+    'This session key is VALUE-UNCAPPED: a wildcard ("*") method or a zero spending limit lets the delegated signer move the whole balance on the target contract — it is not limited to one method. Set method to "transfer" and add a positive spending limit (7th arg) to enforce a cap.',
+  );
+});
 
 const verifierPresets = [
   {

@@ -49,3 +49,26 @@ test('studio panels that call t() bind it from useI18n', () => {
     assert.match(source, /const \{ t \} = useI18n\(\);/);
   }
 });
+
+test('permissions panel surfaces the value-uncapped session-key warning', () => {
+  const source = fs.readFileSync(
+    path.resolve('src/features/studio/components/PermissionsLimitsPanel.vue'),
+    'utf8',
+  );
+  // The panel computes the warning from the shared, unit-tested scope analyzer and renders it.
+  assert.match(source, /analyzeSessionKeyScope/);
+  assert.match(source, /sessionKeyValueWarning/);
+  assert.match(source, /studioPanels\.sessionKeyUncappedWarning/);
+  assert.match(source, /studioPanels\.sessionKeyUncappedNativeWarning/);
+});
+
+test('both locales define the session-key value-uncapped warning keys', () => {
+  const en = fs.readFileSync(path.resolve('src/i18n/index.js'), 'utf8');
+  const zh = fs.readFileSync(path.resolve('src/i18n/zh-CN.js'), 'utf8');
+  for (const source of [en, zh]) {
+    assert.match(source, /sessionKeyUncappedWarning:/);
+    assert.match(source, /sessionKeyUncappedNativeWarning:/);
+    // The native-asset message must keep its {asset} interpolation placeholder.
+    assert.match(source, /sessionKeyUncappedNativeWarning:[\s\S]{0,400}\{asset\}/);
+  }
+});

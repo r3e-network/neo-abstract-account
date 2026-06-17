@@ -37,6 +37,18 @@ namespace AbstractAccount.Verifiers
         // Maximum session key lifetime: 30 days in milliseconds
         private static readonly BigInteger MaxSessionDurationMs = 30L * 24 * 60 * 60 * 1000;
 
+        // Emitted whenever a session key is configured so off-chain consumers can audit its real
+        // scope. The uncapped flag is true when the key carries no enforceable spending cap for its
+        // target: a wildcard ("*") method authorizes value movement under any method, and a zero
+        // SpendingLimit means no cap is tracked. Either way the key can move the account's whole
+        // balance on a value-bearing target, which the one-target/one-method UI does not imply.
+        public delegate void SessionKeyGrantedDelegate(
+            UInt160 accountId, ByteString pubKey, UInt160 targetContract, string method,
+            BigInteger validUntil, BigInteger spendingLimit, bool uncapped);
+
+        [DisplayName("SessionKeyGranted")]
+        public static event SessionKeyGrantedDelegate OnSessionKeyGranted = null!;
+
         public static void _deploy(object data, bool update) => VerifierAuthority.Initialize(data, update);
 
         [Safe]
@@ -126,6 +138,12 @@ namespace AbstractAccount.Verifiers
             Storage.Put(Storage.CurrentContext, rotationTsKey, Runtime.Time);
 
             // Do NOT reset spending tracking — prevent spending limit bypass via key rotation
+
+            // Surface the key's true value exposure. A wildcard method, or any key with no spending
+            // limit, can move the whole balance on a value-bearing target with no on-chain cap; the
+            // SetSessionKey assert above only blocks a *positive* limit on a non-transfer key.
+            bool uncapped = method == "*" || spendingLimit == 0;
+            OnSessionKeyGranted(accountId, pubKey, targetContract, method, validUntil, spendingLimit, uncapped);
         }
 
         /// <summary>
