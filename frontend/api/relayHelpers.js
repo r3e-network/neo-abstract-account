@@ -5,6 +5,8 @@ export const ALLOWED_RELAY_META_OPERATIONS = [
   'executeUnifiedByAddress',
   'executeUserOp',
   'executeUserOps',
+  'executeSponsoredUserOp',
+  'executeSponsoredUserOps',
 ];
 
 function asArray(value) {
