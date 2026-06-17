@@ -102,8 +102,15 @@ namespace AbstractAccount
             byte[] escapeKey = Helper.Concat(Prefix_EscapeLastInitiated, (byte[])accountId);
             Storage.Delete(Storage.CurrentContext, escapeKey);
 
+            // Escape is the clean-slate path: clear every stale per-account marker so the rotated
+            // configuration is genuinely fresh. Besides the pending plugin *updates*, this also
+            // drops any in-flight timelocked plugin *calls* and the off-chain metadata URI left by
+            // the prior (possibly compromised) configuration.
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingVerifierUpdate, (byte[])accountId));
             Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingHookUpdate, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingVerifierCall, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_PendingHookCall, (byte[])accountId));
+            Storage.Delete(Storage.CurrentContext, Helper.Concat(Prefix_MetadataUri, (byte[])accountId));
 
             // The old hook is unconditionally removed on escape.
             if (previousHook != UInt160.Zero)

@@ -209,6 +209,33 @@ namespace AbstractAccount
                 "Refund failed");
         }
 
+        /// <summary>
+        /// Flips a listing out of the Active state at the request of the AA core that backs it.
+        /// The AA core invokes this whenever it unilaterally clears its side of the escrow — most
+        /// notably the backup owner's timelocked <c>ForceCancelMarketEscrow</c> escape — so the
+        /// listing does not linger as a settleable zombie after the account is no longer escrowed.
+        ///
+        /// Only the AA contract recorded on the listing may call it, which is exactly the contract
+        /// that holds (and has just released) the escrow, so no third party can grief an Active
+        /// listing. Any in-flight buyer deposits are deliberately left untouched: the listing
+        /// becoming Cancelled stops further <c>settleListing</c> attempts while
+        /// <c>RefundPendingPayment</c> stays open, so buyer capital is always recoverable.
+        ///
+        /// The transition is idempotent: a listing that is already Cancelled or Sold is left as-is
+        /// so the normal market-driven <c>cancelListing</c>/<c>settleListing</c> paths (which also
+        /// notify the AA core) remain safe even when they overlap this callback.
+        /// </summary>
+        public static void AbandonListing(BigInteger listingId)
+        {
+            Listing listing = GetExistingListing(listingId);
+            ExecutionEngine.Assert(Runtime.CallingScriptHash == listing.AAContract, "Only listed AA contract");
+            if (listing.Status != StatusActive) return;
+
+            listing.Status = StatusCancelled;
+            listing.UpdatedAt = Runtime.Time;
+            PutListing(listing);
+        }
+
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
         {
             if (Runtime.CallingScriptHash != GAS.Hash)
