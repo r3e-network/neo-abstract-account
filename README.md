@@ -81,12 +81,14 @@ When this repo references Morpheus-integrated addresses, treat the following as 
 | --- | --- | --- |
 | AA core | `0x0268a387913b250166ddec032b03332690a1ef78` | `0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2` |
 | AA runtime label | `UnifiedSmartWalletV3` | `UnifiedSmartWalletV3` |
-| Morpheus Oracle | `0x5b492098fc094c760402e01f7e0b631b939d2bea` | `0x4b882e94ed766807c4fd728768f972e13008ad52` |
+| Morpheus Oracle | `0xf54d8584ef82315c1800373272ab08ae0db2d5ef` | `0xf54d8584ef82315c1800373272ab08ae0db2d5ef` |
 | Morpheus DataFeed | `0x03013f49c42a14546c8bbe58f9d434c3517fccab` | `0x9bea75cf702f6afc09125aa6d22f082bfd2ee064` |
-| Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x6af95dac2c55d4af01f657c86b83583b6dd2fabe` |
+| Oracle callback consumer | `0xe1226268f2fe08bea67fb29e1c8fda0d7c8e9844` | `0x8c506f224d82e67200f20d9d5361f767f0756e3b` |
 | NeoDIDRegistry | `0xb81f31ea81e279793b30411b82c2e82078b63105` | unpublished in the shared registry |
 | AA Web3AuthVerifier | `0xf5c452cd4ba29dcdc47026383568c0d8b38d9272` | `0x7147f9a508594a7656a25f45d0a7a7dede7c227f` |
 | SocialRecoveryVerifier | `0x198b3a9cec9bccc2110d19bd929b10374a9d034d` | `recovery.smartwallet.neo` |
+
+The Morpheus Oracle (MiniApp-OS kernel v2) has the same contract hash on mainnet and testnet. The testnet hash `0x4b882e94ed766807c4fd728768f972e13008ad52` still seen in older records is the retired v1 oracle — do not integrate against it.
 
 Domain rules:
 
@@ -286,6 +288,6 @@ verbatim in
 
 ## Frontend Security Status
 
-As of **April 23, 2026**, `frontend` still passes the repo audit gate with **0 high/critical vulnerabilities**.
+The repository verification gate requires **0 high/critical production vulnerabilities** in both the frontend and JavaScript SDK.
 
-The remaining findings are the current upstream Web3Auth/Torus/MetaMask/Solana dependency chain required by the active NeoDID/Web3Auth login flow: **16 low** and **14 moderate** findings across the latest published `@web3auth/modal` / `@web3auth/no-modal` `10.15.0` stack. `scripts/check_frontend_audit_allowlist.mjs` is part of `scripts/verify_repo.sh` and fails if anything outside that accepted upstream baseline appears or if any finding rises to `high` / `critical`.
+The frontend still carries a bounded upstream Web3Auth/Torus/MetaMask/Solana dependency chain for the active NeoDID/Web3Auth login flow. `scripts/check_frontend_audit_allowlist.mjs` permits only the reviewed low/moderate package families and fails when a new package appears, an allowed package exceeds its reviewed severity, or any finding rises to high/critical. The SDK runs a separate production-only audit so its smaller dependency surface cannot regress silently.

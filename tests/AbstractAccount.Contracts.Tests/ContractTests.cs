@@ -650,7 +650,8 @@ public class ContractTests
         // Find the method body
         int braceStart = source.IndexOf('{', safeIdx);
         int depth = 1, pos = braceStart + 1;
-        while (pos < source.Length && depth > 0) {
+        while (pos < source.Length && depth > 0)
+        {
             if (source[pos] == '{') depth++;
             else if (source[pos] == '}') depth--;
             pos++;

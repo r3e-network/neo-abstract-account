@@ -758,7 +758,7 @@ export declare class AbstractAccountClient {
   buildVerifyScript(accountIdHex: string): string;
   /** Derives the account id hash from a seed or existing hash. */
   deriveAccountIdHash(accountIdHexOrSeed: string): Hash160;
-  /** Derives the registration-bound account id hash used by V3 creation. */
+  /** Derives the registration-bound account id hash used by V3 creation (big-endian display form, matching the on-chain ComputeRegistrationAccountId display string). */
   deriveRegistrationAccountIdHash(
     options?: RegistrationAccountIdOptions,
   ): Hash160;

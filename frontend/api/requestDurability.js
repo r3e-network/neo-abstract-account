@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { apiFetch } from './outboundFetch.js';
 
 const DEFAULT_JOURNAL_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -33,7 +34,7 @@ async function upstashPipeline(commands = []) {
   const client = getUpstashClient();
   if (!client) return null;
 
-  const response = await fetch(`${client.url}/pipeline`, {
+  const response = await apiFetch(`${client.url}/pipeline`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${client.token}`,
@@ -53,7 +54,7 @@ async function upstashGetJson(key) {
   const client = getUpstashClient();
   if (!client) return null;
 
-  const response = await fetch(`${client.url}/get/${encodeURIComponent(key)}`, {
+  const response = await apiFetch(`${client.url}/get/${encodeURIComponent(key)}`, {
     headers: { authorization: `Bearer ${client.token}` },
   });
   if (!response.ok) return null;
@@ -126,7 +127,11 @@ function deriveIdempotencyKey(req, payload = {}, fingerprint = null) {
 }
 
 function buildJournalKey(routeName, requestId) {
-  return `aa:request:journal:${routeName}:${requestId}`;
+  // L3: the request id can be client-supplied (x-request-id header / request_id payload
+  // field), so it must never become a Redis key verbatim — raw ids give callers unbounded
+  // key cardinality and key-injection into the shared aa:request:* namespace. Hash it like
+  // the lock/response siblings do; the raw value stays available for logs/echo responses.
+  return `aa:request:journal:${routeName}:${sha256Hex(requestId)}`;
 }
 
 function buildLockKey(routeName, idempotencyKey) {

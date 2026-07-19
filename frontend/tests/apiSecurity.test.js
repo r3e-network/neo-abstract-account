@@ -812,7 +812,7 @@ test('rate limiter formats missing client identity without retry-after', () => {
   assert.equal(failure.retryAfter, 0);
 });
 
-test('relay execution config prefers network-scoped server settings when request network is testnet', () => {
+test('relay execution config prefers network-scoped server settings when the server network is testnet', () => {
   const snapshot = {
     AA_RELAY_MAINNET_RPC_URL: process.env.AA_RELAY_MAINNET_RPC_URL,
     AA_RELAY_TESTNET_RPC_URL: process.env.AA_RELAY_TESTNET_RPC_URL,
@@ -826,6 +826,7 @@ test('relay execution config prefers network-scoped server settings when request
     AA_RELAY_MAINNET_ALLOW_RAW_FORWARD: process.env.AA_RELAY_MAINNET_ALLOW_RAW_FORWARD,
     AA_RELAY_TESTNET_ALLOW_RAW_FORWARD: process.env.AA_RELAY_TESTNET_ALLOW_RAW_FORWARD,
     AA_RELAY_ALLOW_RAW_FORWARD: process.env.AA_RELAY_ALLOW_RAW_FORWARD,
+    MORPHEUS_NETWORK: process.env.MORPHEUS_NETWORK,
   };
 
   process.env.AA_RELAY_MAINNET_RPC_URL = 'https://mainnet.rpc.example';
@@ -840,6 +841,9 @@ test('relay execution config prefers network-scoped server settings when request
   process.env.AA_RELAY_MAINNET_ALLOW_RAW_FORWARD = '0';
   process.env.AA_RELAY_TESTNET_ALLOW_RAW_FORWARD = '1';
   process.env.AA_RELAY_ALLOW_RAW_FORWARD = '0';
+  // AA-08: the request-payload network is ignored by default; the server env selects the
+  // network whose scoped settings (RPC URL, WIF, allowed hash, raw-forward) must win.
+  process.env.MORPHEUS_NETWORK = 'testnet';
 
   try {
     const config = resolveRelayExecutionConfig({

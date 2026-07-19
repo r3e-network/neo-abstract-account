@@ -1,5 +1,12 @@
+import { isProductionDeployment } from './deploymentEnv.js';
+import { apiFetch } from './outboundFetch.js';
+
 const WINDOW_MS = 60000;
 const MAX_REQUESTS = 10;
+// AA-07: default cap for the in-memory fallback store (override via
+// AA_RATE_LIMIT_IN_MEMORY_MAX). Without a bound the Map grew forever per instance under
+// hostile identifier churn.
+const IN_MEMORY_MAX_ENTRIES_DEFAULT = 10000;
 const TRUSTED_PROXY_HEADER_NAMES = new Set([
   'x-vercel-forwarded-for',
   'cf-connecting-ip',
@@ -76,7 +83,7 @@ async function rateLimitWithRedis(identifier) {
   const key = `ratelimit:${identifier}`;
 
   try {
-    const response = await fetch(`${client.url}/pipeline`, {
+    const response = await apiFetch(`${client.url}/pipeline`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${client.token}`,
@@ -94,7 +101,7 @@ async function rateLimitWithRedis(identifier) {
     let ttl = Number(result?.[1]?.result || -1);
 
     if (count <= 1 || ttl < 0) {
-      await fetch(`${client.url}/pipeline`, {
+      await apiFetch(`${client.url}/pipeline`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${client.token}`,
@@ -123,23 +130,42 @@ async function rateLimitWithRedis(identifier) {
 
 const inMemoryRequests = new Map();
 
+function inMemoryMaxEntries() {
+  const raw = trimString(process.env.AA_RATE_LIMIT_IN_MEMORY_MAX || '');
+  if (!raw) return IN_MEMORY_MAX_ENTRIES_DEFAULT;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : IN_MEMORY_MAX_ENTRIES_DEFAULT;
+}
+
+// AA-07: bound the fallback store. Map iteration follows insertion order and entries are
+// re-inserted on every hit (see rateLimitInMemory), so the first keys are the
+// least-recently-used identifiers — evict those first.
+function evictInMemoryOverflow() {
+  let excess = inMemoryRequests.size - inMemoryMaxEntries();
+  if (excess <= 0) return;
+  for (const key of inMemoryRequests.keys()) {
+    if (excess <= 0) break;
+    inMemoryRequests.delete(key);
+    excess -= 1;
+  }
+}
+
 function rateLimitInMemory(identifier) {
   const now = Date.now();
   const key = String(identifier);
 
-  if (!inMemoryRequests.has(key)) {
-    inMemoryRequests.set(key, [now]);
-    return { allowed: true, remaining: MAX_REQUESTS - 1 };
-  }
-
-  const timestamps = inMemoryRequests.get(key).filter(t => now - t < WINDOW_MS);
+  const existing = inMemoryRequests.get(key);
+  const timestamps = (existing || []).filter(t => now - t < WINDOW_MS);
 
   if (timestamps.length >= MAX_REQUESTS) {
     return { allowed: false, remaining: 0, retryAfter: Math.ceil((timestamps[0] + WINDOW_MS - now) / 1000) };
   }
 
   timestamps.push(now);
+  // Delete-then-set refreshes recency so the eviction sweep is LRU-ordered.
+  if (existing) inMemoryRequests.delete(key);
   inMemoryRequests.set(key, timestamps);
+  evictInMemoryOverflow();
 
   return { allowed: true, remaining: MAX_REQUESTS - timestamps.length };
 }
@@ -153,8 +179,25 @@ export async function checkRateLimit(identifier) {
       error: 'client_identity_unavailable',
     };
   }
+  const redisConfigured = Boolean(getRedisClient());
   const redisResult = await rateLimitWithRedis(identifier);
   if (redisResult !== null) return redisResult;
+  if (redisConfigured) {
+    // AA-07: Redis IS configured but the call failed (HTTP error or fetch threw). Previously
+    // this silently failed OPEN — requests flowed with no limiting and no signal. Fail
+    // closed in production with a loud log; outside production fall back to the best-effort
+    // in-memory limiter with a warning.
+    if (isProductionDeployment()) {
+      console.error('[rateLimiter] CRITICAL: Redis rate-limit backend failed in production deployment; failing closed (rate_limit_backend_unavailable).');
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfter: 60,
+        error: 'rate_limit_backend_unavailable',
+      };
+    }
+    console.warn('[rateLimiter] Redis rate-limit backend failed outside production; falling back to the in-memory limiter.');
+  }
   return rateLimitInMemory(identifier);
 }
 
@@ -164,6 +207,16 @@ export function resolveRateLimitFailure(rateLimit = {}) {
       statusCode: 400,
       error: 'client_identity_unavailable',
       retryAfter: 0,
+    };
+  }
+
+  if (rateLimit?.error === 'rate_limit_backend_unavailable') {
+    // AA-07: a production backend outage is a server-side failure — surface a clear 5xx,
+    // not a client-blaming 429.
+    return {
+      statusCode: 503,
+      error: 'rate_limit_backend_unavailable',
+      retryAfter: Number(rateLimit?.retryAfter || 60),
     };
   }
 

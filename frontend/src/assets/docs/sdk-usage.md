@@ -33,7 +33,7 @@ The derived address corresponds to the deterministic `verify(accountId)` script 
 
 ## 3. Build an Account-Creation Payload
 
-Use `deriveRegistrationAccountIdHash` when you want the SDK, frontend, and contract to agree on the exact `accountId` that `registerAccount` will accept.
+Use `deriveRegistrationAccountIdHash` so the SDK, frontend, and contract agree on the exact `accountId` that `registerAccount` will accept: all three share one derivation (single-sourced in `shared/registrationAccountId.mjs`). The returned value is the big-endian display form — identical to the on-chain `ComputeRegistrationAccountId` display string — so pass it directly as the `{ type: 'Hash160' }` accountId argument. (Only raw script pushes, e.g. building a verify script by hand, need the byte-reversed internal form.)
 
 ```javascript
 const verifierParamsHex = evmPubKey.slice(2);

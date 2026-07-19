@@ -608,14 +608,9 @@ import {
   extractLatestTransactionId,
 } from "@/features/operations/explorer.js";
 import {
-  buildSubmissionReceipt,
   getSubmissionButtonLabel,
-  resolveLatestSubmissionReceipt,
 } from "@/features/operations/submissionFeedback.js";
-import {
-  buildSubmissionReceiptHistoryItems,
-  createSubmissionReceiptEntry,
-} from "@/features/operations/submissionReceipts.js";
+import { useBroadcastReceipts } from "@/features/operations/useBroadcastReceipts.js";
 import { EC, translateError } from "@/config/errorCodes.js";
 import RelayPreflightPanel from "@/features/operations/components/RelayPreflightPanel.vue";
 import DraftStatusBanner from "@/features/operations/components/DraftStatusBanner.vue";
@@ -681,8 +676,6 @@ const relayCheck = ref({
   stack: [],
 });
 const relayCheckRequest = ref(null);
-const pendingSubmissionAction = ref("");
-const submissionReceipt = ref(null);
 
 const signerProgress = computed(() =>
   summarizeSignerProgress(
@@ -774,9 +767,6 @@ const canRelayBroadcast = computed(() =>
 const clientBroadcastReady = computed(() =>
   Boolean(draft.value?.transaction_body?.clientInvocation),
 );
-const isSubmissionPending = computed(() =>
-  Boolean(pendingSubmissionAction.value),
-);
 const selectedRelayPayloadLabel = computed(
   () =>
     ({
@@ -796,6 +786,18 @@ const activityEvents = computed(
 const persistedSubmissionReceiptEntries = computed(
   () => draft.value?.metadata?.submissionReceipts || [],
 );
+const {
+  pendingSubmissionAction,
+  isSubmissionPending,
+  submissionReceiptHistoryItems,
+  activeSubmissionReceipt,
+  setSubmissionPending,
+  setSubmissionResult,
+} = useBroadcastReceipts({
+  submissionReceiptEntries: persistedSubmissionReceiptEntries,
+  explorerBaseUrl: runtime.explorerBaseUrl,
+  t,
+});
 const latestBroadcastTxid = computed(() =>
   extractLatestTransactionId(activityEvents.value),
 );
@@ -807,21 +809,6 @@ const latestBroadcastExplorerUrl = computed(() =>
 );
 const submittedTxExplorerUrl = computed(() =>
   buildTransactionExplorerUrl(runtime.explorerBaseUrl, props.txid),
-);
-const submissionReceiptHistoryItems = computed(() =>
-  buildSubmissionReceiptHistoryItems(persistedSubmissionReceiptEntries.value, {
-    explorerBaseUrl: runtime.explorerBaseUrl,
-    limit: 4,
-    t,
-  }),
-);
-const activeSubmissionReceipt = computed(
-  () =>
-    submissionReceipt.value ||
-    resolveLatestSubmissionReceipt(persistedSubmissionReceiptEntries.value, {
-      explorerBaseUrl: runtime.explorerBaseUrl,
-      t,
-    }),
 );
 const collaborationAccess = computed(() =>
   String(route.query.access || "").trim(),
@@ -893,33 +880,6 @@ const {
   },
   t,
 });
-
-function setSubmissionPending(action) {
-  pendingSubmissionAction.value = action;
-  submissionReceipt.value = buildSubmissionReceipt({
-    action,
-    phase: "pending",
-    explorerBaseUrl: runtime.explorerBaseUrl,
-    t,
-  });
-}
-
-function setSubmissionResult(
-  action,
-  { phase = "success", detail = "", txid = "" } = {},
-) {
-  pendingSubmissionAction.value = "";
-  const entry = createSubmissionReceiptEntry({ action, phase, detail, txid });
-  submissionReceipt.value = buildSubmissionReceipt({
-    action,
-    phase,
-    detail,
-    txid,
-    explorerBaseUrl: runtime.explorerBaseUrl,
-    t,
-  });
-  return entry;
-}
 
 async function loadDraft() {
   if (!props.draftId) return;

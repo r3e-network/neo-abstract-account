@@ -42,7 +42,13 @@
           "
           @click="selectTab(tab.key)"
           @keydown="handleTabKeydown($event, tabIndex)"
-          :tabindex="studio.activePanel.value === tab.key ? 0 : -1"
+          :tabindex="
+            studio.walletConnected.value && studio.activePanel.value === tab.key
+              ? 0
+              : -1
+          "
+          :disabled="!studio.walletConnected.value"
+          :aria-disabled="!studio.walletConnected.value"
           :role="'tab'"
           :aria-selected="studio.activePanel.value === tab.key"
           :id="'tab-' + tab.key"
@@ -75,7 +81,7 @@
     <!-- Guided onboarding state when wallet not connected -->
     <div
       v-if="!studio.walletConnected.value"
-      class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.85fr)]"
+      class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]"
     >
       <div class="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div class="mb-8">

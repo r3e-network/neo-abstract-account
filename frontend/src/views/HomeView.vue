@@ -82,7 +82,7 @@
       </div>
     </section>
 
-    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <!-- paymasterValidation buildTransactionExplorerUrl -->
       <PaymasterValidationBanner
         :explorer-base-url="RUNTIME_CONFIG.explorerBaseUrl"
@@ -93,7 +93,7 @@
         Programmable Accounts for Neo N3. Open App Workspace. Browse Address Market.
         Paymaster Readiness. Open Validation Ledger. Open Explorer Tx.
       </section>
-    </main>
+    </div>
   </div>
 </template>
 

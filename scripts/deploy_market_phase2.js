@@ -6,10 +6,11 @@
  *
  * This was originally a one-shot follow-up to a specific phase-1 run of
  * deploy_market_and_list.js (which had deployed NeoNativeVerifier where
- * TEEVerifier was needed). The phase-1 contract hashes from that run remain
- * the defaults, but every deployment-specific value can now be overridden:
+ * TEEVerifier was needed). The phase-1 market hash from that run remains the
+ * default (the core default now tracks the canonical testnet deployment), but
+ * every deployment-specific value can now be overridden:
  *
- *   AA_TESTNET_CORE_HASH    already-deployed AA core (default: 2026-03 phase 1)
+ *   AA_TESTNET_CORE_HASH    already-deployed AA core (default: canonical testnet UnifiedSmartWalletV3)
  *   AA_TESTNET_MARKET_HASH  already-deployed AAAddressMarket (default: 2026-03 phase 1)
  *   MARKET_DEPLOY_TAG       manifest suffix tag for the TEEVerifier deployment
  *   MARKET_DEPLOY_WIF / NEO_TESTNET_WIF   funded deployer WIF
@@ -49,14 +50,16 @@ const RPC_URL = 'http://seed1t5.neo.org:20332';
 const NEON_DB_URL = process.env.NEON_DB_URL || '';
 const TESTNET_NETWORK_MAGIC = 894710606;
 
-// Already-deployed contracts; defaults are the 2026-03 phase-1 deployment.
-const CORE_HASH = normalizeHash(process.env.AA_TESTNET_CORE_HASH || '0x2818ce328d6a7a92ff2c0200fe7cb2c76bee8870');
+// Already-deployed contracts. The core default is the canonical testnet
+// UnifiedSmartWalletV3 (the 2026-03 phase-1 core 0x2818ce32… is superseded);
+// the market default is still the 2026-03 phase-1 deployment.
+const CORE_HASH = normalizeHash(process.env.AA_TESTNET_CORE_HASH || '0xdbf38e7b2117186bf7a5e17ead702322c0c5b6f2');
 const MARKET_HASH = normalizeHash(process.env.AA_TESTNET_MARKET_HASH || '0x8dbd4cf6fc47afc013e7fd7128d028db2985bddf');
 
 const DEPLOY_TAG = process.env.MARKET_DEPLOY_TAG || 'market-mneku8bc';
 const ZERO_HASH160 = '0000000000000000000000000000000000000000';
 
-const RESULTS_FILE = path.resolve(__dirname, '..', 'market-deployment-results.json');
+const RESULTS_FILE = path.resolve(__dirname, '..', 'docs', 'reports', 'market-deployment-results.json');
 
 // ── Main ────────────────────────────────────────────────────────────────────
 

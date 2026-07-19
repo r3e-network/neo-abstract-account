@@ -94,8 +94,8 @@ This architecture completely abandons the attack-prone and extremely GAS-heavy O
 
 1. **Setup Backup**: The user sets a physical cold wallet address (Native N3 address) as the `BackupOwner` within TEE/Web3Auth and sets a 30-day `Timelock`.
 2. **Initiate Escape**: If the TEE/Web2 service goes down, the user initiates `InitiateEscape` via the gateway using the cold wallet, starting a 30-day on-chain countdown.
-3. **Anti-Theft Cancel**: If the cold wallet is stolen and a hacker triggers the escape, the user will receive an alert on their mobile App. As long as the user initiates **any routine transaction** via the TEE during this period, the AA gateway will **silently and automatically** interrupt the escape countdown at the protocol level, instantly crushing the hacker's attempt (zero operational friction).
-4. **Finalize Takeover**: After 30 days without routine activity interruption, the cold wallet gains supreme authority and resets the entire AA account's Verifier plugin, achieving absolute L1 asset sovereignty.
+3. **Anti-Theft Cancel**: A pending escape is **not** silently auto-cancelled by routine activity — that design would let an attacker who triggers a malicious escape keep the countdown frozen indefinitely. On-chain (`UnifiedSmartWallet.Execution.cs`), an active escape is cancelled only by an operation authorized by the `BackupOwner` itself (`Only backup owner can cancel escape`), so the user stays in control and the attacker's attempt dies with the countdown. If the cold wallet is stolen and a hacker triggers the escape, the user receives an alert on their mobile App and cancels the pending escape with a backup-owner-authorized action from a key they still control.
+4. **Finalize Takeover**: If the escape window elapses without a backup-owner-authorized cancellation, the cold wallet gains supreme authority and resets the entire AA account's Verifier plugin, achieving absolute L1 asset sovereignty.
 
 ---
 

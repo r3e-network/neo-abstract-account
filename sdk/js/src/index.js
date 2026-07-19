@@ -14,9 +14,13 @@ const {
   validateRpcUrl,
   sanitizeHex,
 } = require('./validation');
+// Shared registration account-id deriver (single source of truth for the
+// payload layout and byte-order conventions; also consumed by the frontend).
+const { createRegistrationAccountIdDeriver } = require('../../../shared/registrationAccountId.mjs');
 
-const MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 7 * 24 * 60 * 60;
-const MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 90 * 24 * 60 * 60;
+const registrationAccountIdDeriver = createRegistrationAccountIdDeriver({
+  hash160: (value) => sanitizeHex(u.hash160(value)),
+});
 
 /**
  * Normalizes an address or contract hash to a 40-character hex string.
@@ -48,26 +52,6 @@ function normalizeAddress(addressHex) {
   validateHash160(hex);
 
   return hex.toLowerCase();
-}
-
-function validateRegistrationEscapeTimelock(uint32) {
-  if (!Number.isInteger(uint32) || uint32 < 0 || uint32 > 0xffffffff) {
-    throw new Error('Invalid escape timelock');
-  }
-  if (uint32 < MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS || uint32 > MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS) {
-    throw new Error('Invalid escape timelock: expected 7-90 days');
-  }
-}
-
-function toUint32LittleEndianHex(uint32) {
-  validateRegistrationEscapeTimelock(uint32);
-
-  return [
-    uint32 & 0xff,
-    (uint32 >>> 8) & 0xff,
-    (uint32 >>> 16) & 0xff,
-    (uint32 >>> 24) & 0xff,
-  ].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -209,13 +193,19 @@ class AbstractAccountClient {
   /**
    * Derives the registration-bound account ID hash used by V3 account creation.
    *
+   * Returns the big-endian display form, identical to the on-chain
+   * ComputeRegistrationAccountId display string and exactly what
+   * registerAccount expects as its Hash160 accountId argument. The payload
+   * layout is single-sourced in shared/registrationAccountId.mjs with the
+   * frontend; address/hash normalization keeps this SDK's validation errors.
+   *
    * @param {Object} options - Registration options
    * @param {string} [options.verifierContractHash=''] - Verifier contract hash
    * @param {string} [options.verifierParamsHex=''] - Verifier parameters hex
    * @param {string} [options.hookContractHash=''] - Hook contract hash
    * @param {string} options.backupOwnerAddress - Backup owner address or hash160
    * @param {number} [options.escapeTimelock=2592000] - Escape hatch timelock in seconds
-   * @returns {string} 40-character account ID hash
+   * @returns {string} 40-character account ID hash (big-endian display form)
    */
   deriveRegistrationAccountIdHash(options = {}) {
     const {
@@ -227,17 +217,16 @@ class AbstractAccountClient {
     } = options;
 
     const backupOwner = normalizeAddress(backupOwnerAddress);
-    const verifierHash = verifierContractHash ? normalizeAddress(verifierContractHash) : '00'.repeat(20);
-    const hookHash = hookContractHash ? normalizeAddress(hookContractHash) : '00'.repeat(20);
+    const verifierHash = verifierContractHash ? normalizeAddress(verifierContractHash) : '';
+    const hookHash = hookContractHash ? normalizeAddress(hookContractHash) : '';
 
-    return sanitizeHex(u.hash160([
-      'aa524701',
-      backupOwner,
-      verifierHash,
-      hookHash,
-      toUint32LittleEndianHex(escapeTimelock),
-      sanitizeHex(verifierParamsHex || ''),
-    ].join('')));
+    return registrationAccountIdDeriver.deriveRegistrationAccountIdDisplayHex({
+      backupOwnerHash160: backupOwner,
+      verifierHash160: verifierHash,
+      hookHash160: hookHash,
+      escapeTimelock,
+      verifierParamsHex,
+    });
   }
 
   /**

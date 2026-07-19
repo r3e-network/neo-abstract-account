@@ -52,7 +52,7 @@
       </div>
     </section>
 
-    <main class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[260px_1fr_320px] lg:px-8">
+    <div class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[260px_1fr_320px] lg:px-8">
       <aside class="space-y-3">
         <div class="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -217,7 +217,7 @@
           </dl>
         </div>
       </aside>
-    </main>
+    </div>
   </div>
 </template>
 

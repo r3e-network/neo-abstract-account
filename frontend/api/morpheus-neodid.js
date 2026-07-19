@@ -1,5 +1,6 @@
 import { resolveMorpheusRuntimeBase } from './morpheus-base.js';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from './rateLimiter.js';
+import { apiFetch } from './outboundFetch.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(url, options);
+  const response = await apiFetch(url, options);
   const text = await response.text();
   let body = {};
   try {

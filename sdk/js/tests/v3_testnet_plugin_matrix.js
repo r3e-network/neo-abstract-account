@@ -37,7 +37,6 @@ if (!TEST_WIF) {
 }
 
 const GAS_HASH = CONST.NATIVE_CONTRACT_HASH.GasToken;
-const STDLIB_HASH = CONST.NATIVE_CONTRACT_HASH.StdLib;
 const REGISTRATION_ESCAPE_TIMELOCK = 604800;
 
 function sleep(ms) {
@@ -159,10 +158,6 @@ function loadOracleArtifact(baseName, uniqueSuffix) {
 function normalizeHash(value) {
   const hex = sanitizeHex(value || "");
   return hex ? `0x${hex}` : "";
-}
-
-function reverseHex(hexValue) {
-  return sanitizeHex(hexValue).match(/../g).reverse().join("");
 }
 
 function buildConfig(account, networkMagic) {
@@ -503,70 +498,6 @@ function validationRunId() {
 
 function logSection(title) {
   console.log(`\n== ${title} ==`);
-}
-
-function bigIntToNeoLE(value) {
-  let next = BigInt(value);
-  if (next === 0n) return Buffer.from([0]);
-  let hex = next.toString(16);
-  if (hex.length % 2 !== 0) hex = `0${hex}`;
-  let out = Buffer.from(hex, "hex").reverse();
-  if (out[out.length - 1] & 0x80) {
-    out = Buffer.concat([out, Buffer.from([0])]);
-  }
-  return out;
-}
-
-async function stdLibSerialize(client, param) {
-  const result = await invokeRead(client, STDLIB_HASH, "serialize", [param]);
-  const state = String(result?.state || "");
-  if (state.includes("FAULT")) {
-    throw new Error(
-      `StdLib.serialize fault: ${result.exception || "VM fault"}`,
-    );
-  }
-  return Buffer.from(result?.stack?.[0]?.value || "", "base64");
-}
-
-function base64UrlDecode(value) {
-  const normalized = String(value).replace(/-/g, "+").replace(/_/g, "/");
-  const pad =
-    normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
-  return Buffer.from(`${normalized}${pad}`, "base64");
-}
-
-function createP256Signer() {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("ec", {
-    namedCurve: "P-256",
-  });
-  const jwk = publicKey.export({ format: "jwk" });
-  const x = base64UrlDecode(jwk.x);
-  const y = base64UrlDecode(jwk.y);
-  const prefix = (y[y.length - 1] & 1) === 1 ? 0x03 : 0x02;
-  const compressed = Buffer.concat([Buffer.from([prefix]), x]).toString("hex");
-  return { privateKey, compressedPublicKey: compressed };
-}
-
-async function buildP256Payload(
-  client,
-  { accountId, targetContract, method, args, nonce, deadline },
-) {
-  const methodBytes = await stdLibSerialize(client, stringParam(method));
-  const argsBytes = await stdLibSerialize(client, arrayParam(args));
-  return Buffer.concat([
-    Buffer.from(reverseHex(accountId), "hex"),
-    Buffer.from(reverseHex(targetContract), "hex"),
-    methodBytes,
-    argsBytes,
-    bigIntToNeoLE(nonce),
-    bigIntToNeoLE(deadline),
-  ]);
-}
-
-function signP256Payload(privateKey, payload) {
-  return crypto
-    .sign("sha256", payload, { key: privateKey, dsaEncoding: "ieee-p1363" })
-    .toString("hex");
 }
 
 function expectedSubscriptionNonce(subIdHex, periodSeconds, runtimeMs = Date.now()) {

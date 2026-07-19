@@ -2,13 +2,18 @@ import { ripemd160, sha256 } from 'ethers';
 import { EC } from '../config/errorCodes.js';
 import { sanitizeHex } from './hex.js';
 import { fetchWithTimeout } from './fetchWithTimeout.js';
+import { createRegistrationAccountIdDeriver } from '../../../shared/registrationAccountId.mjs';
 
 export const DEFAULT_NEO_ADDRESS_VERSION = 53;
 const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const BASE58_INDEX = new Map([...BASE58_ALPHABET].map((char, index) => [char, index]));
 
-export const MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 7 * 24 * 60 * 60;
-export const MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS = 90 * 24 * 60 * 60;
+// The escape-timelock bounds live in shared/registrationAccountId.mjs so the
+// frontend, the SDK, and the on-chain registration guard cannot drift apart.
+export {
+  MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS,
+  MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS,
+} from '../../../shared/registrationAccountId.mjs';
 export const MIN_REGISTRATION_ESCAPE_TIMELOCK_DAYS = 7;
 export const MAX_REGISTRATION_ESCAPE_TIMELOCK_DAYS = 90;
 
@@ -140,26 +145,6 @@ function normalizeHash160Input(value) {
   return sanitizeHex(trimmed);
 }
 
-function validateRegistrationEscapeTimelock(uint32) {
-  if (!Number.isInteger(uint32) || uint32 < 0 || uint32 > 0xffffffff) {
-    throw new Error('Invalid escape timelock');
-  }
-  if (uint32 < MIN_REGISTRATION_ESCAPE_TIMELOCK_SECONDS || uint32 > MAX_REGISTRATION_ESCAPE_TIMELOCK_SECONDS) {
-    throw new Error('Invalid escape timelock: expected 7-90 days');
-  }
-}
-
-function toUint32LittleEndianHex(uint32) {
-  validateRegistrationEscapeTimelock(uint32);
-
-  return [
-    uint32 & 0xff,
-    (uint32 >>> 8) & 0xff,
-    (uint32 >>> 16) & 0xff,
-    (uint32 >>> 24) & 0xff,
-  ].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 export function deriveAccountIdHash(accountIdHexOrSeed) {
   const normalized = sanitizeHex(accountIdHexOrSeed || '');
   if (!normalized) {
@@ -171,7 +156,11 @@ export function deriveAccountIdHash(accountIdHexOrSeed) {
   return hash160Hex(normalized);
 }
 
-export function deriveRegistrationAccountIdHash({
+const registrationAccountIdDeriver = createRegistrationAccountIdDeriver({ hash160: hash160Hex });
+
+// Maps the public address/hash options onto the shared deriver's normalized
+// display-form hash160 inputs, keeping this module's EC-coded validation errors.
+function normalizeRegistrationOptions({
   verifierContractHash = '',
   verifierParamsHex = '',
   hookContractHash = '',
@@ -185,26 +174,50 @@ export function deriveRegistrationAccountIdHash({
 
   const verifierHash = verifierContractHash
     ? normalizeHash160Input(verifierContractHash)
-    : '00'.repeat(20);
+    : '';
   const hookHash = hookContractHash
     ? normalizeHash160Input(hookContractHash)
-    : '00'.repeat(20);
+    : '';
 
-  if (!/^[0-9a-f]{40}$/i.test(verifierHash) || !/^[0-9a-f]{40}$/i.test(hookHash)) {
+  if ((verifierHash && !/^[0-9a-f]{40}$/i.test(verifierHash)) || (hookHash && !/^[0-9a-f]{40}$/i.test(hookHash))) {
     throw new Error(EC.addressValidationFailed);
   }
 
-  // The contract's ComputeRegistrationAccountId returns (UInt160)ReverseBytes(ripemd160(sha256(payload))),
-  // i.e. the final hash is byte-reversed. Mirror that here so the frontend-derived accountId matches
-  // the on-chain assert (verified against computeRegistrationAccountId: contract=reverse(rawHash)).
-  return reverseHex(hash160Hex([
-    'aa524701',
-    backupOwner,
-    verifierHash,
-    hookHash,
-    toUint32LittleEndianHex(escapeTimelock),
-    sanitizeHex(verifierParamsHex || ''),
-  ].join('')));
+  return {
+    backupOwnerHash160: backupOwner,
+    verifierHash160: verifierHash,
+    hookHash160: hookHash,
+    escapeTimelock,
+    verifierParamsHex,
+  };
+}
+
+/**
+ * Derives the registration-bound account id in big-endian display form.
+ *
+ * Single-sourced in shared/registrationAccountId.mjs with the SDK and the
+ * on-chain ComputeRegistrationAccountId: the returned value equals the
+ * contract's UInt160 display string and is exactly what registerAccount
+ * expects as its {type:'Hash160'} accountId argument. (An earlier version
+ * returned the byte-reversed internal form here, which faults the on-chain
+ * account-id assert when passed as a Hash160 RPC param.)
+ */
+export function deriveRegistrationAccountIdHash(options = {}) {
+  return registrationAccountIdDeriver.deriveRegistrationAccountIdDisplayHex(
+    normalizeRegistrationOptions(options)
+  );
+}
+
+/**
+ * Derives the same account id in the internal little-endian VM byte order
+ * (reverseHex of the display form). Only use this when pushing the raw 20
+ * bytes into a script (e.g. createVerifyScript), where pushed bytes are read
+ * as the UInt160 internal representation — never for RPC Hash160 params.
+ */
+export function deriveRegistrationAccountIdChainHex(options = {}) {
+  return registrationAccountIdDeriver.deriveRegistrationAccountIdChainHex(
+    normalizeRegistrationOptions(options)
+  );
 }
 
 export function getAddressFromScriptHash(scriptHash, addressVersion = DEFAULT_NEO_ADDRESS_VERSION) {

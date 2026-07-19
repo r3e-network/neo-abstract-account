@@ -34,6 +34,15 @@ namespace AbstractAccount
         // may be referenced — otherwise a seller could back a listing with a malicious contract.
         private static readonly byte[] Prefix_AllowedAA = new byte[] { 0x05 };
         private static readonly byte[] Prefix_Admin = new byte[] { 0xF0 };
+        // AA-D-01 (audit fix H6): timelocked contract upgrade. The admin first proposes the
+        // sha256 of the new NEF and manifest, then can only apply that exact artifact pair
+        // after the 7-day window. AA-D-02 (audit fix H6): admin rotation is timelocked the
+        // same way. New prefixes — never written by previous deployments.
+        private static readonly byte[] Prefix_PendingUpdateNefHash = new byte[] { 0xF1 };
+        private static readonly byte[] Prefix_PendingUpdateManifestHash = new byte[] { 0xF2 };
+        private static readonly byte[] Prefix_UpdateTimelock = new byte[] { 0xF3 };
+        private static readonly byte[] Prefix_PendingAdmin = new byte[] { 0xF4 };
+        private static readonly byte[] Prefix_AdminRotationTimelock = new byte[] { 0xF5 };
 
         private const byte StatusActive = 1;
         private const byte StatusSold = 2;
@@ -44,6 +53,10 @@ namespace AbstractAccount
         // Price bounds (GAS has 8 decimals, so 1000 GAS = 100_000_000_000)
         private static readonly BigInteger MinListingPrice = 1_000_000;  // Minimum 0.01 GAS
         private static readonly BigInteger MaxListingPrice = 100_000_000_000;  // Maximum 1000 GAS
+
+        // 7-day window shared by the timelocked upgrade and admin rotation (H6), matching
+        // the VerifierAuthority window used across the rest of the repo.
+        private static readonly BigInteger AdminRotationTimelockMs = 7L * 24 * 60 * 60 * 1000;
 
         public class Listing
         {
@@ -73,17 +86,85 @@ namespace AbstractAccount
             return data == null ? UInt160.Zero : (UInt160)data;
         }
 
-        public static void SetAdmin(UInt160 newAdmin)
+        // AA-D-01 (audit fix H6): contract upgrade is timelocked. This contract holds
+        // in-flight buyer escrow (pending GAS payments), so a single admin key must not be
+        // able to instantly replace the contract logic. ProposeUpdate pins the sha256 of the
+        // new NEF and manifest; Update/ConfirmUpdate applies exactly that artifact pair only
+        // after the 7-day window. One-way: once deployed, every future upgrade waits 7 days.
+        // Mirrors VerifierAuthority.
+        public static void ProposeUpdate(UInt256 nefHash, UInt256 manifestHash)
         {
             ValidateAdmin();
-            ExecutionEngine.Assert(newAdmin != null && newAdmin.IsValid, "Invalid admin");
-            Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin!);
+            ExecutionEngine.Assert(nefHash != UInt256.Zero && nefHash.IsValid, "Invalid NEF hash");
+            ExecutionEngine.Assert(manifestHash != UInt256.Zero && manifestHash.IsValid, "Invalid manifest hash");
+            Storage.Put(Storage.CurrentContext, Prefix_PendingUpdateNefHash, (byte[])nefHash);
+            Storage.Put(Storage.CurrentContext, Prefix_PendingUpdateManifestHash, (byte[])manifestHash);
+            Storage.Put(Storage.CurrentContext, Prefix_UpdateTimelock, Runtime.Time);
+        }
+
+        public static void CancelUpdate()
+        {
+            ValidateAdmin();
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingUpdateNefHash);
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingUpdateManifestHash);
+            Storage.Delete(Storage.CurrentContext, Prefix_UpdateTimelock);
         }
 
         public static void Update(ByteString nef, string manifest)
         {
             ValidateAdmin();
+            ByteString? pendingNef = Storage.Get(Storage.CurrentContext, Prefix_PendingUpdateNefHash);
+            ExecutionEngine.Assert(pendingNef != null, "No pending update");
+            ByteString? pendingManifest = Storage.Get(Storage.CurrentContext, Prefix_PendingUpdateManifestHash);
+            ExecutionEngine.Assert(pendingManifest != null, "No pending update");
+            ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_UpdateTimelock);
+            ExecutionEngine.Assert(timelockData != null, "No timelock set");
+            ExecutionEngine.Assert(Runtime.Time >= (BigInteger)timelockData + AdminRotationTimelockMs, "Update timelock not expired");
+            ExecutionEngine.Assert((UInt256)CryptoLib.Sha256(nef) == (UInt256)pendingNef!, "NEF hash mismatch");
+            ExecutionEngine.Assert((UInt256)CryptoLib.Sha256(manifest) == (UInt256)pendingManifest!, "Manifest hash mismatch");
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingUpdateNefHash);
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingUpdateManifestHash);
+            Storage.Delete(Storage.CurrentContext, Prefix_UpdateTimelock);
             ContractManagement.Update(nef, manifest);
+        }
+
+        /// <summary>Alias for <see cref="Update"/>, mirroring the verifier/paymaster upgrade naming.</summary>
+        public static void ConfirmUpdate(ByteString nef, string manifest) => Update(nef, manifest);
+
+        // AA-D-02 (audit fix H6): rotating the contract admin is itself timelocked. The old
+        // SetAdmin did an instant Storage.Put with only the current-admin witness — a single
+        // leaked admin key could silently and instantly burn the role to an address nobody
+        // controls. The hardened flow mirrors VerifierAuthority.RotateAdmin/
+        // ConfirmAdminRotation: propose (current-admin gated) -> 7-day window -> confirm gated
+        // on CheckWitness(newAdmin), proving the new admin key is live before the role moves.
+        public static void RotateAdmin(UInt160 newAdmin)
+        {
+            ValidateAdmin();
+            ExecutionEngine.Assert(newAdmin != null && newAdmin != UInt160.Zero && newAdmin.IsValid, "Invalid admin");
+            ExecutionEngine.Assert(newAdmin != Admin(), "New admin must differ from current");
+            Storage.Put(Storage.CurrentContext, Prefix_PendingAdmin, (byte[])newAdmin!);
+            Storage.Put(Storage.CurrentContext, Prefix_AdminRotationTimelock, Runtime.Time);
+        }
+
+        public static void ConfirmAdminRotation(UInt160 newAdmin)
+        {
+            ByteString? pending = Storage.Get(Storage.CurrentContext, Prefix_PendingAdmin);
+            ExecutionEngine.Assert(pending != null, "No pending admin rotation");
+            ByteString? timelockData = Storage.Get(Storage.CurrentContext, Prefix_AdminRotationTimelock);
+            ExecutionEngine.Assert(timelockData != null, "No timelock set");
+            ExecutionEngine.Assert(Runtime.Time >= (BigInteger)timelockData + AdminRotationTimelockMs, "Admin rotation timelock not expired");
+            ExecutionEngine.Assert((UInt160)pending! == newAdmin, "Pending admin mismatch");
+            ExecutionEngine.Assert(Runtime.CheckWitness(newAdmin), "New admin must confirm rotation");
+            Storage.Put(Storage.CurrentContext, Prefix_Admin, (byte[])newAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_AdminRotationTimelock);
+        }
+
+        public static void CancelAdminRotation()
+        {
+            ValidateAdmin();
+            Storage.Delete(Storage.CurrentContext, Prefix_PendingAdmin);
+            Storage.Delete(Storage.CurrentContext, Prefix_AdminRotationTimelock);
         }
 
         public static void SetAllowedAA(UInt160 core, bool allowed)

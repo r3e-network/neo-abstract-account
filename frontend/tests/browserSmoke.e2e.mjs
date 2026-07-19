@@ -158,7 +158,10 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
   const baseUrl = server.baseUrl;
 
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await waitForVisible(page.getByRole("link", { name: /Open Console/i }).first(), "open console link");
+  await waitForVisible(
+    page.getByRole("link", { name: /Open App Workspace/i }).first(),
+    "open app workspace link"
+  );
   await waitForVisible(page.getByRole("heading", { name: /Neo AA Operations Console/i }), "home hero");
   await assert.doesNotReject(() => page.title(), "home title should be readable");
   await captureScreenshot(page, "desktop-home");
@@ -177,13 +180,22 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
   await captureScreenshot(page, "desktop-identity");
 
   await page.goto(`${baseUrl}/market`, { waitUntil: "domcontentloaded" });
-  await waitForVisible(page.getByText(/Trustless escrow for AA address transfers/i).first(), "market subtitle");
-  await waitForVisible(page.getByText(/Vanity Address Generator/i).first(), "market vanity generator");
+  await waitForVisible(
+    page.getByRole("heading", { name: /Create or settle an AA listing/i }),
+    "market heading"
+  );
+  await waitForVisible(
+    page.getByRole("heading", { name: /Vanity Address Generator/i }),
+    "market vanity generator"
+  );
   await page.locator("#vanity-generator").getByRole("button", { name: /^Suffix$/i }).click();
   await waitForText(page.locator("#vanity-generator"), /end of the address/i, "suffix vanity hint");
   await page.locator("#vanity-generator").getByRole("button", { name: /^Contains$/i }).click();
   await waitForText(page.locator("#vanity-generator"), /anywhere after N/i, "contains vanity hint");
-  await waitForVisible(page.getByText(/Create Escrow Listing/i).first(), "market listing form");
+  await waitForVisible(
+    page.getByRole("heading", { name: /Create Escrow Listing/i }),
+    "market listing form"
+  );
   await captureScreenshot(page, "desktop-market");
 
   await page.goto(`${baseUrl}/docs`, { waitUntil: "domcontentloaded" });
@@ -206,7 +218,10 @@ test("browser smoke covers home, identity, app workspace, market, and docs", asy
   await captureScreenshot(page, "mobile-identity");
 
   await page.goto(`${baseUrl}/market`, { waitUntil: "domcontentloaded" });
-  await waitForVisible(page.getByText(/Vanity Address Generator/i).first(), "market vanity generator (mobile)");
+  await waitForVisible(
+    page.getByRole("heading", { name: /Vanity Address Generator/i }),
+    "market vanity generator (mobile)"
+  );
   await captureScreenshot(page, "mobile-market");
 
   await page.goto(`${baseUrl}/docs`, { waitUntil: "domcontentloaded" });

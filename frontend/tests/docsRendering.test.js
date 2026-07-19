@@ -363,9 +363,9 @@ test("frontend pins a non-vulnerable vite release in both manifest and lockfile"
   const packageLock = JSON.parse(read("package-lock.json"));
   const viteEntry = packageLock.packages?.["node_modules/vite"];
 
-  assert.equal(frontendPackage.devDependencies?.vite, "^6.4.2");
+  assert.equal(frontendPackage.devDependencies?.vite, "^6.4.3");
   assert.ok(viteEntry);
-  assert.match(viteEntry.version, /^6\.4\.[2-9]|^[7-9]\./);
+  assert.match(viteEntry.version, /^6\.4\.[3-9]|^[7-9]\./);
 });
 
 test("vite config aliases vm to a local browser shim instead of bundling vm-browserify", () => {
@@ -476,6 +476,23 @@ test("AbstractAccountTool lazy-loads heavy studio panels", () => {
     /import\(["']@\/features\/studio\/components\/ContractSourcePanel\.vue["']\)/,
   );
   assert.doesNotMatch(studioToolSource, /import CreateAccountPanel from/);
+});
+
+test("AbstractAccountTool keeps wallet-gated tabs out of the keyboard order", () => {
+  const studioToolSource = read("src/components/AbstractAccountTool.vue");
+
+  assert.match(
+    studioToolSource,
+    /:disabled="!studio\.walletConnected\.value"/,
+  );
+  assert.match(
+    studioToolSource,
+    /:aria-disabled="!studio\.walletConnected\.value"/,
+  );
+  assert.match(
+    studioToolSource,
+    /studio\.walletConnected\.value && studio\.activePanel\.value === tab\.key/,
+  );
 });
 
 test("AbstractAccountTool does not present paymaster relay as operational before preflight", () => {

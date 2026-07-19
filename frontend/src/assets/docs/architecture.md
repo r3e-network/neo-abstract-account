@@ -105,7 +105,7 @@ V3 supports several authorization modes, but they all converge on `executeUserOp
 
 - **Backup-owner native witness** when no verifier plugin is configured.
 - **Web3Auth / EIP-712 verifier** for secp256k1 typed-data approvals.
-- **TEE / WebAuthn / SessionKey / MultiSig / ZKEmail / ZkLogin** verifier plugins.
+- **TEE / WebAuthn / SessionKey / MultiSig / ZkLogin** verifier plugins. (**ZKEmail** is deployed but intentionally disabled pending real proof verification — it faults on every use today.)
 - **Custom hooks** for policy enforcement or post-execution bookkeeping.
 
 This is the critical boundary: verifier plugins decide **who may authorize**, while hook plugins decide **what extra policy runs around execution**.

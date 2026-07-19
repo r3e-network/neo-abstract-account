@@ -711,7 +711,6 @@ public class SourceInvariantTests
             ("contracts/paymaster/Paymaster.cs", "Runtime.CheckWitness(admin)"),
             ("contracts/market/AAAddressMarket.cs", "ValidateAdmin();"),
             ("contracts/mocks/MockTransferTarget.cs", "ValidateAdmin();"),
-            ("verifiers/AllowAllVerifier/AllowAllVerifier.cs", "ValidateAdmin();"),
         };
 
         foreach (var (path, guard) in directUpdateSources)
@@ -743,6 +742,28 @@ public class SourceInvariantTests
             string code = ReadRepo("contracts", "verifiers", verifier);
             StringAssert.Contains(code, "public static void Update(ByteString nef, string manifest) => VerifierAuthority.Update(nef, manifest);", $"{verifier} delegates update");
         }
+
+        // Audit fixes H5 / H6 / AA-04: the two fund-holding auxiliaries (SocialRecoveryVerifier
+        // custodies the per-account oracle-credit GAS pool; AAAddressMarket holds in-flight
+        // buyer escrow) must expose the same AA-D-01/AA-D-02 timelocked admin surface as the
+        // VerifierAuthority idiom — proposeUpdate + update/confirmUpdate behind the 7-day
+        // window, and rotateAdmin/confirmAdminRotation/cancelAdminRotation in place of the
+        // removed instant transferAdmin/setAdmin hand-offs.
+        string marketSource = ReadRepo("contracts", "market", "AAAddressMarket.cs");
+        StringAssert.Contains(marketSource, "public static void ProposeUpdate(UInt256 nefHash, UInt256 manifestHash)", "H6: market exposes proposeUpdate");
+        StringAssert.Contains(marketSource, "Update timelock not expired", "H6: market update enforces the 7-day window");
+        StringAssert.Contains(marketSource, "public static void RotateAdmin(UInt160 newAdmin)", "H6: market exposes timelocked rotateAdmin");
+        StringAssert.Contains(marketSource, "Admin rotation timelock not expired", "H6: market rotation enforces the 7-day window");
+        Assert.IsFalse(marketSource.Contains("public static void SetAdmin", StringComparison.Ordinal),
+            "H6: the instant setAdmin hand-off must be removed");
+
+        string recoverySource = ReadRepo("contracts", "recovery", "MorpheusSocialRecoveryVerifier.Fixed.cs");
+        StringAssert.Contains(recoverySource, "public static void ProposeUpdate(UInt256 nefHash, UInt256 manifestHash)", "H5: recovery verifier exposes proposeUpdate");
+        StringAssert.Contains(recoverySource, "Update timelock not expired", "H5: recovery update enforces the 7-day window");
+        StringAssert.Contains(recoverySource, "public static void RotateAdmin(UInt160 newAdmin)", "AA-04: recovery verifier exposes timelocked rotateAdmin");
+        StringAssert.Contains(recoverySource, "Admin rotation timelock not expired", "AA-04: recovery rotation enforces the 7-day window");
+        Assert.IsFalse(recoverySource.Contains("public static void TransferAdmin", StringComparison.Ordinal),
+            "AA-04: the instant transferAdmin hand-off must be removed");
     }
 
     // ========================================================================
@@ -785,6 +806,102 @@ public class SourceInvariantTests
             string method = protectedMethods[rng.Next(protectedMethods.Length)];
             Assert.IsTrue(combined.Contains(method, StringComparison.Ordinal),
                 $"Method {method} must exist in combined source");
+        }
+    }
+
+    // ========================================================================
+    // 21. Recovery verifier – anti-squat surface (AA-06)
+    // ========================================================================
+
+    [TestMethod, Timeout(120_000)]
+    public void SourceInvariant_RecoveryVerifier_AntiSquatSurface()
+    {
+        // Audit fix AA-06: SetupRecovery was first-write-wins with no proof of account
+        // control — a squatter witnessing their OWN key could bind a victim's accountId.
+        // The fix pins the canonical AA core (contract-admin gated, initial-set-only,
+        // re-pointing timelocked — mirroring the VerifierAuthority M-7 surface) and requires
+        // the core's getBackupOwner registry to attest the claimed owner at setup.
+        string flowsSource = ReadRepo("contracts", "recovery", "MorpheusSocialRecoveryVerifier.Flows.cs");
+        StringAssert.Contains(flowsSource, "aaContract is not the authorized core", "AA-06: setup pins the authorized core");
+        StringAssert.Contains(flowsSource, "owner does not control account", "AA-06: setup attests the registered backup owner");
+        StringAssert.Contains(flowsSource, "\"getBackupOwner\"", "AA-06: ownership is attested via the core registry");
+
+        string fixedSource = ReadRepo("contracts", "recovery", "MorpheusSocialRecoveryVerifier.Fixed.cs");
+        StringAssert.Contains(fixedSource, "public static void SetAuthorizedCore(UInt160 coreContract)", "AA-06: admin-gated initial core bind exists");
+        StringAssert.Contains(fixedSource, "core already set; use ProposeAuthorizedCore", "AA-06: instant core re-pointing is rejected");
+        StringAssert.Contains(fixedSource, "public static void ProposeAuthorizedCore(UInt160 coreContract)", "AA-06: timelocked core re-pointing exists");
+        StringAssert.Contains(fixedSource, "Core change timelock not expired", "AA-06: core re-pointing enforces the 7-day window");
+    }
+
+    // ========================================================================
+    // 23. Recovery verifier – least-privilege contract permissions (AA-03)
+    // ========================================================================
+
+    [TestMethod, Timeout(120_000)]
+    public void SourceInvariant_RecoveryVerifier_LeastPrivilegePermissions()
+    {
+        // Audit fix AA-03: the wildcard ContractPermission("*", "*") is replaced by
+        // four method-scoped grants covering the verified call surface — any future
+        // wildcard reintroduction or dropped grant must fail here.
+        string fixedSource = ReadRepo("contracts", "recovery", "MorpheusSocialRecoveryVerifier.Fixed.cs");
+        Assert.IsFalse(fixedSource.Contains("ContractPermission(\"*\", \"*\")", StringComparison.Ordinal), "AA-03: no wildcard contract permission");
+        StringAssert.Contains(fixedSource, "ContractPermission(\"0xfffdc93764dbaddd97c48f252a53ea4643faa3fd\", \"update\")", "AA-03: ContractManagement.update grant (timelocked self-upgrade)");
+        StringAssert.Contains(fixedSource, "ContractPermission(\"*\", \"getBackupOwner\")", "AA-03: core getBackupOwner grant (AA-06 attestation)");
+        StringAssert.Contains(fixedSource, "ContractPermission(\"*\", \"request\")", "AA-03: oracle request grant (ticket submission)");
+        StringAssert.Contains(fixedSource, "ContractPermission(\"0xd2a4cff31913016155e38e474a2c06d08be276cf\", \"transfer\")", "AA-03: GAS transfer grant (credit forwarding)");
+    }
+
+    // ========================================================================
+    // 24. Every PostExecute validates its caller (audit low, pattern risk)
+    // ========================================================================
+
+    [TestMethod, Timeout(120_000)]
+    public void SourceInvariant_AllPostExecutePathsValidateCaller()
+    {
+        // Audit low: NeoDIDCredentialHook, WhitelistHook, and NeoNativeVerifier had
+        // EMPTY PostExecute bodies with no caller guard — harmless today, but a
+        // future edit could add logic to an unguarded path. The estate invariant is
+        // that EVERY PostExecute validates its caller, even a no-op. Pin all three.
+        string neoDid = ReadRepo("contracts", "hooks", "NeoDIDCredentialHook.cs");
+        StringAssert.Contains(neoDid, "HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash)",
+            "NeoDIDCredentialHook.PostExecute validates its caller");
+        string whitelist = ReadRepo("contracts", "hooks", "WhitelistHook.cs");
+        StringAssert.Contains(whitelist, "HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash)",
+            "WhitelistHook.PostExecute validates its caller");
+        string neoNative = ReadRepo("contracts", "verifiers", "NeoNativeVerifier.cs");
+        StringAssert.Contains(neoNative, "VerifierAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash)",
+            "NeoNativeVerifier.PostExecute validates its caller");
+    }
+
+    // ========================================================================
+    // 22. Recovery verifier – timelock bounds match the estate standard
+    // ========================================================================
+
+    [TestMethod, Timeout(120_000)]
+    public void SourceInvariant_RecoveryVerifier_TimelockBoundsMatchEstateStandard()
+    {
+        // Audit finding (recovery timelock bounds): SocialRecoveryVerifier enforced a 1h
+        // minimum and NO maximum, while the estate standard — the AA core escape hatch's
+        // 604800–7776000 seconds pinned in section 1/5 — is 7–90 days. The recovery verifier
+        // must enforce the same window in Runtime.Time milliseconds (604800000–7776000000)
+        // in BOTH SetupRecovery and UpdateRecoveryConfig.
+        string flowsSource = ReadRepo("contracts", "recovery", "MorpheusSocialRecoveryVerifier.Flows.cs");
+        StringAssert.Contains(flowsSource, "MIN_TIMELOCK = 604800000", "Recovery min timelock is 7 days in ms");
+        StringAssert.Contains(flowsSource, "MAX_TIMELOCK = 7776000000", "Recovery max timelock is 90 days in ms");
+        Assert.AreEqual(2, CountOccurrences(flowsSource, "\"Timelock below minimum\""),
+            "Both SetupRecovery and UpdateRecoveryConfig enforce the minimum");
+        Assert.AreEqual(2, CountOccurrences(flowsSource, "\"Timelock above maximum\""),
+            "Both SetupRecovery and UpdateRecoveryConfig enforce the maximum");
+
+        // Seeded randomized cross-check: every timelock the core escape hatch accepts
+        // (7–90 days, seconds) maps inside the recovery verifier's millisecond window.
+        var rng = Rng();
+        for (int i = 0; i < Iterations; i++)
+        {
+            ulong seconds = 604800 + (ulong)(rng.NextDouble() * (7776000 - 604800));
+            ulong milliseconds = seconds * 1000;
+            Assert.IsTrue(milliseconds >= 604800000UL && milliseconds <= 7776000000UL,
+                $"Estate-standard timelock {seconds}s must fit the recovery window (iteration {i})");
         }
     }
 

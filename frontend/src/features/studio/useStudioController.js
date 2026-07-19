@@ -278,7 +278,10 @@ export function useStudioController() {
         backupOwnerAddress: createForm.value.backupOwner,
         escapeTimelock: Math.floor(escapeTimelockDays * 24 * 60 * 60),
       });
-      const script = createVerifyScript(aaHash, accountIdHash);
+      // The verify script pushes the raw account-id bytes, which the VM reads
+      // as the UInt160 internal (little-endian) form — the reverse of the
+      // big-endian display hex shown to the user and sent to RPC params.
+      const script = createVerifyScript(aaHash, reverseHex(accountIdHash));
 
       computedAccountIdHash.value = accountIdHash;
       computedScriptHex.value = script;
@@ -443,6 +446,9 @@ export function useStudioController() {
         scriptHash: getAbstractAccountHash(),
         operation: 'registerAccount',
         args: [
+          // Display-form account id: matches the on-chain
+          // ComputeRegistrationAccountId assert (the byte-reversed internal
+          // form would fault here under the standard Hash160 convention).
           { type: 'Hash160', value: accountIdHash },
           { type: 'Hash160', value: verifierHash },
           { type: 'ByteArray', value: verifierParamsHex ? `0x${verifierParamsHex}` : '0x' },

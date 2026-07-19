@@ -6,6 +6,7 @@ import { fileURLToPath, URL } from "node:url";
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const deferredIdentityChunks = [
   "identity-runtime",
+  "identity-analytics-runtime",
   "walletconnect-runtime",
   "react-runtime",
 ];
@@ -95,11 +96,8 @@ export default defineConfig({
             id.includes("ripple-keypairs")
           )
             return "walletconnect-runtime";
-          if (
-            id.includes("@toruslabs") ||
-            id.includes("@metamask") ||
-            id.includes("@segment")
-          )
+          if (id.includes("@segment")) return "identity-analytics-runtime";
+          if (id.includes("@metamask") || id.includes("@toruslabs"))
             return "identity-runtime";
           // NOTE: ethers, @web3auth, buffer, @noble, @scure are NOT split
           // into manual chunks. ethers v6 has circular internal deps that

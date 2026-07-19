@@ -20,3 +20,9 @@ mainnet-aa-*-results.json
 .omx/
 .vercel
 .automation-logs/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+missfont.log

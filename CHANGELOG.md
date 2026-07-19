@@ -25,6 +25,9 @@ and this project adheres to Semantic Versioning.
 - Updated recovery deployment docs to remove plaintext secrets, reflect real deployed hashes, and point at the validated package-script flows.
 - Refined the repo and docs test suites so preserved docs, recovery validator wiring, API rate-limit behavior, and verification-script expectations stay covered.
 
+### Removed
+- Removed the legacy V1/V2 `verifiers/AllowAllVerifier` stub (top-level, superseded by the V3 verifiers under `contracts/verifiers/`) along with its source-invariant pin and dedicated `nccs` step in `scripts/verify_repo.sh`.
+
 ### Security
 - Deployed and validated the recovery verifier contracts on Neo N3 testnet:
   - Argent `0xaa25d77353fbc4cceb372f91ebccf5fb726ed10f`
@@ -38,7 +41,7 @@ and this project adheres to Semantic Versioning.
 ### Added
 - Added GitHub Actions CI to validate contract, frontend, and SDK workflows.
 - Added a testnet validation runbook and dedicated SDK validators for threshold multisig, custom verifier, dome/oracle, concurrency, and approve/allowance live checks.
-- Added standalone auxiliary contracts for live validation: `verifiers/AllowAllVerifier` and `tokens/TestAllowanceToken`.
+- Added standalone auxiliary contracts for live validation: `verifiers/AllowAllVerifier`.
 - Added a repository quickstart covering install, test, and build flows.
 - Added regression coverage for hardened docs/runtime expectations, SDK package metadata, contract safety checks, oracle callback handling, and repo verification coverage.
 

@@ -9,6 +9,7 @@ import {
   resolveAbstractAccountHash,
 } from '../src/config/runtimeConfig.js';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure, sanitizeError } from './rateLimiter.js';
+import { apiFetch } from './outboundFetch.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -86,7 +87,7 @@ async function readBackupOwnerScriptHash({ accountIdHash, network }) {
   if (!rpcUrl || !aaHash) return '';
 
   const { u } = getNeonWallet();
-  const response = await fetch(rpcUrl, {
+  const response = await apiFetch(rpcUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({

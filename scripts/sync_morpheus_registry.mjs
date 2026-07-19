@@ -19,7 +19,7 @@ const oracleRoot = process.env.MORPHEUS_ORACLE_ROOT
 // the pin below is updated.
 const CANONICAL_ENVELOPE_RELATIVE_PATH = 'packages/shared/src/confidential-envelope.js';
 const CANONICAL_ENVELOPE_SHA256 =
-  '33fd895327ad670b1fa1119396c865afa98bbd7ab773fc2ca115b49114beb943';
+  '508329d6f14974733d8f1ca5fb7d3ac6e9b1dc21820e3f12131098de4bb3e129';
 const LOCAL_ENVELOPE_RELATIVE_PATH = 'frontend/src/utils/morpheusEncryption.js';
 
 async function loadOracleModule(moduleName, exportName) {
@@ -37,6 +37,11 @@ async function loadOracleModule(moduleName, exportName) {
   return loader({ oracleRoot });
 }
 
+// Dry-run mode (--dry-run flag or SYNC_DRY_RUN=1): verify parity and report
+// what the regenerated exports would change without writing any files. Use it
+// whenever the oracle workspace may be mid-change.
+const DRY_RUN = process.argv.includes('--dry-run') || process.env.SYNC_DRY_RUN === '1';
+
 function writeGeneratedJs(targetPath, exportName, value, commentLine) {
   const body = [
     '/* eslint-disable */',
@@ -47,7 +52,37 @@ function writeGeneratedJs(targetPath, exportName, value, commentLine) {
     '',
   ].join('\n');
 
-  fs.writeFileSync(targetPath, body, 'utf8');
+  if (!DRY_RUN) {
+    fs.writeFileSync(targetPath, body, 'utf8');
+    return;
+  }
+
+  const relativeTarget = path.relative(repoRoot, targetPath);
+  const previous = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, 'utf8') : null;
+  if (previous === null) {
+    console.log(`[dry-run] would create ${relativeTarget} (${body.length} bytes)`);
+    return;
+  }
+  if (previous === body) {
+    console.log(`[dry-run] unchanged: ${relativeTarget}`);
+    return;
+  }
+
+  const previousLines = previous.split('\n');
+  const nextLines = body.split('\n');
+  const changed = [];
+  for (let i = 0; i < Math.max(previousLines.length, nextLines.length); i += 1) {
+    if (previousLines[i] !== nextLines[i]) {
+      changed.push(`  line ${i + 1}:\n    - ${previousLines[i] ?? '<missing>'}\n    + ${nextLines[i] ?? '<missing>'}`);
+    }
+  }
+  console.log(`[dry-run] would update ${relativeTarget}: ${changed.length} line(s) differ`);
+  for (const line of changed.slice(0, 40)) {
+    console.log(line);
+  }
+  if (changed.length > 40) {
+    console.log(`  … and ${changed.length - 40} more differing line(s)`);
+  }
 }
 
 async function assertConfidentialEnvelopeParity() {
@@ -123,7 +158,9 @@ async function main() {
     '// Generated from neo-morpheus-oracle/scripts/export-public-runtime-catalog.mjs.'
   );
 
-  console.log(`Synced Morpheus generated config from ${oracleRoot}`);
+  console.log(DRY_RUN
+    ? `[dry-run] Verified Morpheus generated config against ${oracleRoot} (no files written)`
+    : `Synced Morpheus generated config from ${oracleRoot}`);
   console.log('Confidential envelope parity verified against the canonical oracle module');
 }
 

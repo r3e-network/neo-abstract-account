@@ -33,7 +33,11 @@ function createResponse() {
 
 test('morpheus runtime base prefers direct testnet runtime domains', async () => {
   const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+  const originalNetwork = process.env.MORPHEUS_NETWORK;
   process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://oracle.meshmini.app/testnet';
+  // AA-08: the network is server-determined from the deployment env; the client query field
+  // is ignored by default, so the test pins the server-side selection instead.
+  process.env.MORPHEUS_NETWORK = 'testnet';
 
   try {
     assert.equal(
@@ -43,6 +47,8 @@ test('morpheus runtime base prefers direct testnet runtime domains', async () =>
   } finally {
     if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
     else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+    if (originalNetwork == null) delete process.env.MORPHEUS_NETWORK;
+    else process.env.MORPHEUS_NETWORK = originalNetwork;
   }
 });
 
@@ -97,6 +103,7 @@ test('morpheus neodid proxy routes GET requests through the resolved runtime pat
   const originalFetch = global.fetch;
   const originalBaseUrl = process.env.MORPHEUS_API_BASE_URL;
   const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+  const originalNetwork = process.env.MORPHEUS_NETWORK;
   const calls = [];
 
   global.fetch = async (url, options) => {
@@ -108,6 +115,8 @@ test('morpheus neodid proxy routes GET requests through the resolved runtime pat
   };
   delete process.env.MORPHEUS_API_BASE_URL;
   process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://oracle.meshmini.app/testnet';
+  // AA-08: the client query network is ignored by default; the server env selects testnet.
+  process.env.MORPHEUS_NETWORK = 'testnet';
 
   try {
     const res = createResponse();
@@ -131,6 +140,8 @@ test('morpheus neodid proxy routes GET requests through the resolved runtime pat
     else process.env.MORPHEUS_API_BASE_URL = originalBaseUrl;
     if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
     else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+    if (originalNetwork == null) delete process.env.MORPHEUS_NETWORK;
+    else process.env.MORPHEUS_NETWORK = originalNetwork;
   }
 });
 
@@ -186,6 +197,7 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
   const originalFetch = global.fetch;
   const originalBaseUrl = process.env.MORPHEUS_API_BASE_URL;
   const originalRuntimeUrl = process.env.MORPHEUS_TESTNET_RUNTIME_URL;
+  const originalNetwork = process.env.MORPHEUS_NETWORK;
   const calls = [];
 
   global.fetch = async (url, options) => {
@@ -197,6 +209,8 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
   };
   delete process.env.MORPHEUS_API_BASE_URL;
   process.env.MORPHEUS_TESTNET_RUNTIME_URL = 'https://oracle.meshmini.app/testnet';
+  // AA-08: the client query network is ignored by default; the server env selects testnet.
+  process.env.MORPHEUS_NETWORK = 'testnet';
 
   try {
     const res = createResponse();
@@ -219,6 +233,8 @@ test('morpheus oracle key proxy routes GET requests through the unified edge pat
     else process.env.MORPHEUS_API_BASE_URL = originalBaseUrl;
     if (originalRuntimeUrl == null) delete process.env.MORPHEUS_TESTNET_RUNTIME_URL;
     else process.env.MORPHEUS_TESTNET_RUNTIME_URL = originalRuntimeUrl;
+    if (originalNetwork == null) delete process.env.MORPHEUS_NETWORK;
+    else process.env.MORPHEUS_NETWORK = originalNetwork;
   }
 });
 

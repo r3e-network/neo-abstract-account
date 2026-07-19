@@ -61,7 +61,7 @@ const TESTNET_NETWORK_MAGIC = 894710606;
 const DEPLOY_TAG = `market-${Date.now().toString(36)}`;
 const ZERO_HASH160 = '0000000000000000000000000000000000000000';
 
-const RESULTS_FILE = path.resolve(__dirname, '..', 'market-deployment-results.json');
+const RESULTS_FILE = path.resolve(__dirname, '..', 'docs', 'reports', 'market-deployment-results.json');
 
 // ── Multi-call invoke (unique to this script) ───────────────────────────────
 

@@ -6,6 +6,7 @@ import { convertContractParamFromJson, normalizeRelayPayload, sanitizeMetaInvoca
 import { attachRequestId, beginDurableRequest, completeDurableRequest, failDurableRequest } from './requestDurability.js';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure, sanitizeError } from './rateLimiter.js';
 import { resolveMorpheusOracleCvmId, resolveMorpheusPaymasterEndpoint, resolveMorpheusRuntimeToken, resolveNetwork } from './morpheus-base.js';
+import { apiFetch } from './outboundFetch.js';
 
 const RAW_TRANSACTION_PATTERN = /^(0x)?[0-9a-fA-F]+$/;
 const MAX_RAW_TRANSACTION_LENGTH = 200000;
@@ -42,12 +43,11 @@ function normalizeHash(value) {
   return /^[0-9a-f]{40}$/.test(hex) ? `0x${hex}` : '';
 }
 
-function shouldIncludeRawRelayErrors() {
-  return resolveOptionalBoolean(
-    process.env.AA_RELAY_INCLUDE_RAW_ERRORS
-      || process.env.VITE_AA_RELAY_INCLUDE_RAW_ERRORS,
-    false,
-  );
+// L2: stack-trace/raw-error leakage is a server security switch — it must read server-only
+// env. VITE_* vars are inlined into the client build, so VITE_AA_RELAY_INCLUDE_RAW_ERRORS is
+// deliberately no longer honored here.
+export function shouldIncludeRawRelayErrors() {
+  return resolveOptionalBoolean(process.env.AA_RELAY_INCLUDE_RAW_ERRORS, false);
 }
 
 function shouldAllowUnsponsoredRelay() {
@@ -225,13 +225,11 @@ function resolveAllowedAaContractHash(network) {
   const defaultHash = network === 'testnet'
     ? DEFAULT_ABSTRACT_ACCOUNT_HASH_TESTNET
     : DEFAULT_ABSTRACT_ACCOUNT_HASH;
-  const fallbackClientHash = network === 'testnet'
-    ? process.env.VITE_AA_HASH_TESTNET || process.env.VITE_ABSTRACT_ACCOUNT_HASH_TESTNET
-    : process.env.VITE_AA_HASH || process.env.VITE_ABSTRACT_ACCOUNT_HASH;
+  // L2: the relay allowlist is a server security boundary — it gates which contract the
+  // operator WIF will fund invocations against. Only server env or the compiled canonical
+  // default may set it; the VITE_* client-build fallbacks are deliberately removed.
   return resolveAbstractAccountHash(
     resolveRelayEnv(network, 'ALLOWED_HASH')
-      || fallbackClientHash
-      || process.env.VITE_ABSTRACT_ACCOUNT_HASH
       || defaultHash,
     defaultHash,
   );
@@ -249,9 +247,9 @@ export function resolveRelayExecutionConfig({ req = {}, requestPayload = {}, pay
     ),
     relayWif: trimString(resolveRelayEnv(network, 'WIF') || ''),
     allowedAaContractHash: resolveAllowedAaContractHash(network),
+    // L2: raw-forward enable is a server security switch — server-only env, no VITE_ fallback.
     allowRawRelayForwarding: resolveOptionalBoolean(
-      resolveRelayEnv(network, 'ALLOW_RAW_FORWARD')
-        || process.env.VITE_AA_RELAY_RAW_ENABLED,
+      resolveRelayEnv(network, 'ALLOW_RAW_FORWARD'),
       false,
     ),
   };
@@ -396,7 +394,7 @@ async function maybeAuthorizePaymaster({ metaInvocation, paymaster = null, estim
     headers.authorization = `Bearer ${config.apiToken}`;
   }
 
-  const response = await fetch(config.endpoint, {
+  const response = await apiFetch(config.endpoint, {
     method: 'POST',
     headers,
     body: JSON.stringify(requestBody),
@@ -468,7 +466,7 @@ async function fetchValidationPreview({ rpcUrl, invocation }) {
   if (invocation?.operation !== 'executeUserOp') return null;
   if (!Array.isArray(invocation?.args) || invocation.args.length < 2) return null;
 
-  const response = await fetch(rpcUrl, {
+  const response = await apiFetch(rpcUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -662,7 +660,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const response = await fetch(rpcUrl, {
+      const response = await apiFetch(rpcUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({

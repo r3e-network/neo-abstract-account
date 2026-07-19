@@ -12,10 +12,14 @@ namespace Neo.SmartContract.Examples
 {
     public partial class SocialRecoveryVerifier
     {
-        // Minimum recovery timelock (milliseconds, matching Runtime.Time units). A zero or tiny
-        // timelock lets a met threshold seize the account instantly, leaving the owner no window
-        // to cancel a malicious recovery. 1 hour = 60 * 60 * 1000 ms.
-        private const ulong MIN_TIMELOCK = 3600000;
+        // Recovery timelock bounds (milliseconds, matching Runtime.Time units), aligned with
+        // the estate standard enforced by the AA core escape hatch (7–90 days;
+        // UnifiedSmartWallet.Accounts.cs rejects escapeTimelock outside 604800–7776000
+        // seconds). A shorter window leaves the owner too little time to cancel a malicious
+        // recovery after the threshold is met; an unbounded one lets a pending recovery
+        // linger forever. Audit finding: bounds were previously 1h minimum / no maximum.
+        private const ulong MIN_TIMELOCK = 604800000;    // 7 days  = 7 * 24 * 60 * 60 * 1000 ms
+        private const ulong MAX_TIMELOCK = 7776000000;   // 90 days = 90 * 24 * 60 * 60 * 1000 ms
 
         public static void SetupRecovery(
             ByteString accountId,
@@ -40,9 +44,30 @@ namespace Neo.SmartContract.Examples
             ValidateVerifier(morpheusVerifier);
             ValidateMasterNullifiers(masterNullifiers, threshold);
             ExecutionEngine.Assert(timelock >= MIN_TIMELOCK, "Timelock below minimum");
+            ExecutionEngine.Assert(timelock <= MAX_TIMELOCK, "Timelock above maximum");
 
             ExecutionEngine.Assert(Runtime.CheckWitness(owner), "Not owner");
             ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, Key(PREFIX_OWNER, accountId)) == null, "Recovery already setup");
+
+            // AA-06: setup was first-write-wins with NO proof of account control — a squatter
+            // could witness their OWN key as `owner` and bind a victim's known accountId to
+            // attacker-controlled nullifiers/verifier, permanently DoSing the legit owner's
+            // setup and becoming the recovery root for that accountId. Require the
+            // caller-supplied aaContract to be the admin-pinned canonical core (a squatter
+            // cannot point the attestation at a fake core that answers favorably) and require
+            // the core's registry of record to attest that `owner` is the account's
+            // registered backup owner.
+            ExecutionEngine.Assert(accountId.Length == 20, "accountId must be a 20-byte AA account id");
+            UInt160 authorizedCore = AuthorizedCore();
+            ExecutionEngine.Assert(authorizedCore != UInt160.Zero, "Authorized AA core not configured");
+            ExecutionEngine.Assert(aaContract == authorizedCore, "aaContract is not the authorized core");
+            // The wildcard ContractPermission("*", "*") (AA-03, tracked separately) already
+            // permits this cross-contract read. An unknown accountId faults inside the core
+            // ("Account not found"); a registered account returns its backup owner, which
+            // must equal the witnessed `owner`.
+            UInt160 registeredOwner = (UInt160)Contract.Call(
+                aaContract, "getBackupOwner", CallFlags.ReadOnly, new object[] { (UInt160)accountId });
+            ExecutionEngine.Assert(registeredOwner == owner, "owner does not control account");
 
             StoreConfig(accountId, accountIdText, network, owner, aaContract, accountAddress, morpheusOracle, masterNullifiers, threshold, timelock, morpheusVerifier);
             Storage.Put(Storage.CurrentContext, Key(PREFIX_RECOVERY_NONCE, accountId), 0);
@@ -63,6 +88,7 @@ namespace Neo.SmartContract.Examples
             ValidateVerifier(morpheusVerifier);
             ValidateMasterNullifiers(masterNullifiers, threshold);
             ExecutionEngine.Assert(timelock >= MIN_TIMELOCK, "Timelock below minimum");
+            ExecutionEngine.Assert(timelock <= MAX_TIMELOCK, "Timelock above maximum");
             AssertOwner(accountId);
             ExecutionEngine.Assert(!GetPendingRecovery(accountId).Active, "Recovery in progress");
 

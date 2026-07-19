@@ -1,5 +1,6 @@
 import { MORPHEUS_PUBLIC_REGISTRY } from '../src/config/generatedMorpheusRegistry.js';
 import { MORPHEUS_PUBLIC_RUNTIME_CATALOG } from '../src/config/generatedMorpheusRuntimeCatalog.js';
+import { envFlagEnabled, isProductionDeployment } from './deploymentEnv.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -9,14 +10,30 @@ export function normalizeNetwork(value) {
   return trim(value).toLowerCase() === 'testnet' ? 'testnet' : 'mainnet';
 }
 
+// AA-08: which network pays for a relay (which operator WIF signs, mainnet vs testnet) is a
+// server-side operator decision, not a client choice — otherwise an anonymous caller can
+// pass `morpheus_network` to make the MAINNET operator fund their testnet relay (or vice
+// versa). Client-supplied selection (query/body/header) is therefore IGNORED unless the
+// operator explicitly opts in via AA_RELAY_ALLOW_CLIENT_NETWORK=1, and that override is
+// itself ignored in production (fail closed — default safe, explicit dev opt-in, production
+// ignores the override, mirroring the morpheus sandbox guard).
+function allowsClientNetworkSelection() {
+  if (isProductionDeployment()) return false;
+  return envFlagEnabled(process.env.AA_RELAY_ALLOW_CLIENT_NETWORK || '');
+}
+
 export function resolveNetwork(req) {
+  const serverNetwork = normalizeNetwork(
+    process.env.MORPHEUS_NETWORK
+      || process.env.VITE_AA_NETWORK
+      || process.env.VITE_MORPHEUS_NETWORK
+  );
+  if (!allowsClientNetworkSelection()) return serverNetwork;
   return normalizeNetwork(
     req.query?.morpheus_network
       || req.body?.morpheus_network
       || req.headers?.['x-morpheus-network']
-      || process.env.MORPHEUS_NETWORK
-      || process.env.VITE_AA_NETWORK
-      || process.env.VITE_MORPHEUS_NETWORK
+      || serverNetwork
   );
 }
 
@@ -64,8 +81,11 @@ export function resolveMorpheusWorkflowIds() {
   return MORPHEUS_PUBLIC_RUNTIME_CATALOG.workflows.map((item) => item.id);
 }
 
-export function resolveMorpheusRuntimeBase(req) {
-  const network = resolveNetwork(req);
+export function resolveMorpheusRuntimeBase(req, networkOverride = '') {
+  // AA-08: req-driven resolution is gated server-side (see resolveNetwork). Internal callers
+  // that already resolved the network from server-side state pass it explicitly via
+  // networkOverride instead of smuggling it through a synthetic client query.
+  const network = trim(networkOverride) ? normalizeNetwork(networkOverride) : resolveNetwork(req);
   const upper = network === 'testnet' ? 'TESTNET' : 'MAINNET';
   const registryDefaults = getRegistryRuntimeDefaults(network);
   const candidates = [
@@ -96,7 +116,7 @@ export function resolveMorpheusPaymasterEndpoint(networkInput) {
       || ''
   );
   if (explicit) return explicit;
-  const base = resolveMorpheusRuntimeBase({ query: { morpheus_network: network } });
+  const base = resolveMorpheusRuntimeBase({}, network);
   const paymasterRoute = resolveWorkflowRoute('paymaster.authorize') || '/paymaster/authorize';
   return base ? `${base}${paymasterRoute}` : '';
 }

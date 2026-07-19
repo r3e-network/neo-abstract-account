@@ -1,5 +1,6 @@
 import { resolveMorpheusRuntimeBase } from './morpheus-base.js';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from './rateLimiter.js';
+import { apiFetch } from './outboundFetch.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -18,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   const baseUrl = resolveMorpheusRuntimeBase(req);
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/oracle/public-key`, {
+  const response = await apiFetch(`${baseUrl.replace(/\/$/, '')}/oracle/public-key`, {
     method: 'GET',
     headers: { accept: 'application/json' },
   });

@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { checkRateLimit, resolveClientIp, resolveRateLimitFailure } from './rateLimiter.js';
+import { apiFetch } from './outboundFetch.js';
 
 function trim(value) {
   return String(value || '').trim();
@@ -141,7 +142,7 @@ export function createHandler({ verifyToken = defaultVerifyToken } = {}) {
       headers['x-notification-token'] = config.token;
     }
 
-    const response = await fetch(config.url, {
+    const response = await apiFetch(config.url, {
       method: 'POST',
       headers,
       body: JSON.stringify({

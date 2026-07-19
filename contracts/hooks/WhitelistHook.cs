@@ -72,6 +72,9 @@ namespace AbstractAccount.Hooks
 
         public static void PostExecute(UInt160 accountId, object[] opParams, object result)
         {
+            // Invariant (audit low): every exec path validates its caller, even a
+            // no-op — future logic added here is guarded by construction.
+            HookAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
         }
 
         [Safe]

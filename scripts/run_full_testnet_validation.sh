@@ -7,7 +7,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 run_local=1
 run_live=1
 live_args=()
-live_args=()
 
 usage() {
   cat <<'EOF'
@@ -48,7 +47,7 @@ done
 cd "$REPO_ROOT"
 
 if [[ $run_local -eq 1 ]]; then
-  bash "$SCRIPT_DIR/run_local_validation_gates.sh"
+  bash "$SCRIPT_DIR/verify_repo.sh" --skip-contract-build --skip-e2e
 fi
 
 if [[ $run_live -eq 1 ]]; then

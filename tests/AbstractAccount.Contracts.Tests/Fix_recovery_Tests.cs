@@ -18,15 +18,21 @@ namespace AbstractAccount.Contracts.Tests;
 ///   2. Domain separation for action-session signatures — <c>ComputeActionDigest</c> binds the
 ///      verifier contract, network, account and expiry so a signature cannot be replayed for a
 ///      different account.
-///   3. Minimum recovery timelock — <c>SetupRecovery</c> / <c>UpdateRecoveryConfig</c> reject a
-///      timelock below one hour.
+///   3. Recovery timelock bounds — <c>SetupRecovery</c> / <c>UpdateRecoveryConfig</c> enforce
+///      the estate-standard 7–90 day window (rejecting both shorter and longer timelocks),
+///      matching the AA core escape-hatch bounds. Previously 1h minimum / no maximum
+///      (audit finding: recovery timelock bounds).
 /// Executed against the compiled contract under <c>contracts/bin/v3</c> through a real Neo VM.
 /// </summary>
 [TestClass]
 public class FixRecoveryTests
 {
     private const string Network = "neo3-testnet";
-    private const ulong OneHourMs = 3_600_000;
+
+    // Estate-standard recovery timelock window (Runtime.Time milliseconds): 7–90 days,
+    // mirroring the AA core escape hatch's 604800–7776000 seconds.
+    private const ulong MinRecoveryTimelockMs = 604_800_000;
+    private const ulong MaxRecoveryTimelockMs = 7_776_000_000;
 
     // ASCII("neodid-action-v1") — the action domain tag baked into the contract.
     private static readonly byte[] ActionDomain = Encoding.ASCII.GetBytes("neodid-action-v1");
@@ -35,8 +41,6 @@ public class FixRecoveryTests
         UInt160.Parse("0x1111111111111111111111111111111111111111");
     private static readonly UInt160 OwnerB =
         UInt160.Parse("0x2222222222222222222222222222222222222222");
-    private static readonly UInt160 AaContract =
-        UInt160.Parse("0x3333333333333333333333333333333333333333");
     private static readonly UInt160 AccountAddress =
         UInt160.Parse("0x4444444444444444444444444444444444444444");
     private static readonly UInt160 Oracle =
@@ -49,26 +53,49 @@ public class FixRecoveryTests
     private sealed class RecoveryHarness
     {
         public RuntimeFixture Fx { get; } = new();
+        public UInt160 Core { get; }
         public UInt160 Verifier { get; }
 
         public RecoveryHarness()
         {
+            Core = Fx.Deploy("UnifiedSmartWalletV3");
             Verifier = Fx.Deploy("SocialRecoveryVerifier");
+            // AA-06: setup is only accepted for accounts attested by the admin-pinned
+            // canonical AA core (deployer = validators is the contract admin).
+            Fx.CallVoid(Verifier, "setAuthorizedCore", Core);
+        }
+
+        /// <summary>
+        /// Registers an account on the real AA core with <paramref name="owner"/> as its backup
+        /// owner and returns the core-derived 20-byte account id. <c>getBackupOwner</c> on the
+        /// core then attests the owner — the AA-06 anti-squat precondition for setup.
+        /// </summary>
+        public byte[] RegisterAccount(UInt160 owner)
+        {
+            UInt160 accountId = Fx.CallUInt160(
+                Core, "computeRegistrationAccountId",
+                UInt160.Zero, Array.Empty<byte>(), UInt160.Zero, owner, 2_592_000u);
+
+            Fx.SetSigners(owner);
+            Fx.CallVoid(
+                Core, "registerAccount",
+                accountId, UInt160.Zero, Array.Empty<byte>(), UInt160.Zero, owner, 2_592_000u);
+            return accountId.ToArray();
         }
 
         public byte[] SetupAccount(
             string accountIdText,
             UInt160 owner,
             byte[] verifierPubKey,
-            ulong timelock = OneHourMs)
+            ulong timelock = MinRecoveryTimelockMs)
         {
-            byte[] accountId = Encoding.ASCII.GetBytes(accountIdText);
+            byte[] accountId = RegisterAccount(owner);
             byte[] factor = Factor();
 
             Fx.SetSigners(owner);
             Fx.CallVoid(
                 Verifier, "setupRecovery",
-                accountId, accountIdText, Network, owner, AaContract, AccountAddress, Oracle,
+                accountId, accountIdText, Network, owner, Core, AccountAddress, Oracle,
                 new object?[] { factor }, (BigInteger)1, timelock, verifierPubKey);
             return accountId;
         }
@@ -246,7 +273,7 @@ public class FixRecoveryTests
     }
 
     // ========================================================================
-    // Fix 3 — minimum recovery timelock
+    // Fix 3 — recovery timelock bounds (estate-standard 7–90 day window)
     // ========================================================================
 
     [TestMethod]
@@ -256,7 +283,10 @@ public class FixRecoveryTests
         using P256SessionKey verifierKey = new();
         byte[] keyBytes = verifierKey.CompressedPublicKey;
 
-        byte[] accountId = Encoding.ASCII.GetBytes("acct-fix3-setup");
+        // AA-06: setup now requires a core-registered account; register one up front. The
+        // timelock assert runs before the anti-squat checks, so the rejections below fault
+        // on the timelock alone.
+        byte[] accountId = h.RegisterAccount(OwnerA);
         byte[] factor = Factor();
 
         h.Fx.SetSigners(OwnerA);
@@ -265,24 +295,60 @@ public class FixRecoveryTests
         TestException zero = Assert.ThrowsExactly<TestException>(
             () => h.Fx.CallVoid(
                 h.Verifier, "setupRecovery",
-                accountId, "acct-fix3-setup", Network, OwnerA, AaContract, AccountAddress, Oracle,
+                accountId, "acct-fix3-setup", Network, OwnerA, h.Core, AccountAddress, Oracle,
                 new object?[] { factor }, (BigInteger)1, (ulong)0, keyBytes));
         StringAssert.Contains(zero.Message, "Timelock below minimum");
 
-        // Just below one hour is rejected.
+        // The old 1h floor is also below the estate-standard minimum now.
+        TestException oldFloor = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(
+                h.Verifier, "setupRecovery",
+                accountId, "acct-fix3-setup", Network, OwnerA, h.Core, AccountAddress, Oracle,
+                new object?[] { factor }, (BigInteger)1, (ulong)3_600_000, keyBytes));
+        StringAssert.Contains(oldFloor.Message, "Timelock below minimum");
+
+        // Just below the 7-day minimum is rejected.
         TestException tooSmall = Assert.ThrowsExactly<TestException>(
             () => h.Fx.CallVoid(
                 h.Verifier, "setupRecovery",
-                accountId, "acct-fix3-setup", Network, OwnerA, AaContract, AccountAddress, Oracle,
-                new object?[] { factor }, (BigInteger)1, OneHourMs - 1, keyBytes));
+                accountId, "acct-fix3-setup", Network, OwnerA, h.Core, AccountAddress, Oracle,
+                new object?[] { factor }, (BigInteger)1, MinRecoveryTimelockMs - 1, keyBytes));
         StringAssert.Contains(tooSmall.Message, "Timelock below minimum");
 
-        // Exactly one hour is accepted.
+        // Exactly 7 days (MIN boundary) is accepted.
         h.Fx.CallVoid(
             h.Verifier, "setupRecovery",
-            accountId, "acct-fix3-setup", Network, OwnerA, AaContract, AccountAddress, Oracle,
-            new object?[] { factor }, (BigInteger)1, OneHourMs, keyBytes);
-        Assert.AreEqual((BigInteger)OneHourMs, h.Fx.CallInteger(h.Verifier, "getTimelock", accountId));
+            accountId, "acct-fix3-setup", Network, OwnerA, h.Core, AccountAddress, Oracle,
+            new object?[] { factor }, (BigInteger)1, MinRecoveryTimelockMs, keyBytes);
+        Assert.AreEqual((BigInteger)MinRecoveryTimelockMs, h.Fx.CallInteger(h.Verifier, "getTimelock", accountId));
+    }
+
+    [TestMethod]
+    public void Fix3_SetupRecovery_RejectsTimelockAboveMaximum()
+    {
+        RecoveryHarness h = new();
+        using P256SessionKey verifierKey = new();
+        byte[] keyBytes = verifierKey.CompressedPublicKey;
+
+        byte[] accountId = h.RegisterAccount(OwnerA);
+        byte[] factor = Factor();
+
+        h.Fx.SetSigners(OwnerA);
+
+        // Just above the 90-day maximum is rejected.
+        TestException tooLarge = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(
+                h.Verifier, "setupRecovery",
+                accountId, "acct-fix3-setup-max", Network, OwnerA, h.Core, AccountAddress, Oracle,
+                new object?[] { factor }, (BigInteger)1, MaxRecoveryTimelockMs + 1, keyBytes));
+        StringAssert.Contains(tooLarge.Message, "Timelock above maximum");
+
+        // Exactly 90 days (MAX boundary) is accepted.
+        h.Fx.CallVoid(
+            h.Verifier, "setupRecovery",
+            accountId, "acct-fix3-setup-max", Network, OwnerA, h.Core, AccountAddress, Oracle,
+            new object?[] { factor }, (BigInteger)1, MaxRecoveryTimelockMs, keyBytes);
+        Assert.AreEqual((BigInteger)MaxRecoveryTimelockMs, h.Fx.CallInteger(h.Verifier, "getTimelock", accountId));
     }
 
     [TestMethod]
@@ -291,7 +357,7 @@ public class FixRecoveryTests
         RecoveryHarness h = new();
         using P256SessionKey verifierKey = new();
         byte[] keyBytes = verifierKey.CompressedPublicKey;
-        byte[] accountId = h.SetupAccount("acct-fix3-update", OwnerA, keyBytes, OneHourMs);
+        byte[] accountId = h.SetupAccount("acct-fix3-update", OwnerA, keyBytes, MinRecoveryTimelockMs);
 
         byte[] factor = Factor();
 
@@ -302,10 +368,43 @@ public class FixRecoveryTests
                 accountId, Oracle, new object?[] { factor }, (BigInteger)1, (ulong)0, keyBytes));
         StringAssert.Contains(tooSmall.Message, "Timelock below minimum");
 
+        // Just below the 7-day minimum is rejected as well.
+        TestException belowMin = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(
+                h.Verifier, "updateRecoveryConfig",
+                accountId, Oracle, new object?[] { factor }, (BigInteger)1, MinRecoveryTimelockMs - 1, keyBytes));
+        StringAssert.Contains(belowMin.Message, "Timelock below minimum");
+
         // A valid update at twice the minimum succeeds.
         h.Fx.CallVoid(
             h.Verifier, "updateRecoveryConfig",
-            accountId, Oracle, new object?[] { factor }, (BigInteger)1, OneHourMs * 2, keyBytes);
-        Assert.AreEqual((BigInteger)(OneHourMs * 2), h.Fx.CallInteger(h.Verifier, "getTimelock", accountId));
+            accountId, Oracle, new object?[] { factor }, (BigInteger)1, MinRecoveryTimelockMs * 2, keyBytes);
+        Assert.AreEqual((BigInteger)(MinRecoveryTimelockMs * 2), h.Fx.CallInteger(h.Verifier, "getTimelock", accountId));
+    }
+
+    [TestMethod]
+    public void Fix3_UpdateRecoveryConfig_RejectsTimelockAboveMaximum()
+    {
+        RecoveryHarness h = new();
+        using P256SessionKey verifierKey = new();
+        byte[] keyBytes = verifierKey.CompressedPublicKey;
+        byte[] accountId = h.SetupAccount("acct-fix3-update-max", OwnerA, keyBytes);
+
+        byte[] factor = Factor();
+
+        h.Fx.SetSigners(OwnerA);
+
+        // Just above the 90-day maximum is rejected.
+        TestException tooLarge = Assert.ThrowsExactly<TestException>(
+            () => h.Fx.CallVoid(
+                h.Verifier, "updateRecoveryConfig",
+                accountId, Oracle, new object?[] { factor }, (BigInteger)1, MaxRecoveryTimelockMs + 1, keyBytes));
+        StringAssert.Contains(tooLarge.Message, "Timelock above maximum");
+
+        // Exactly 90 days (MAX boundary) is accepted.
+        h.Fx.CallVoid(
+            h.Verifier, "updateRecoveryConfig",
+            accountId, Oracle, new object?[] { factor }, (BigInteger)1, MaxRecoveryTimelockMs, keyBytes);
+        Assert.AreEqual((BigInteger)MaxRecoveryTimelockMs, h.Fx.CallInteger(h.Verifier, "getTimelock", accountId));
     }
 }

@@ -102,6 +102,9 @@ namespace AbstractAccount.Verifiers
 
         public static void PostExecute(UInt160 accountId, UserOperation op, object result)
         {
+            // Invariant (audit low): every exec path validates its caller, even a
+            // no-op — future logic added here is guarded by construction.
+            VerifierAuthority.ValidateExecutionCaller(accountId, Runtime.CallingScriptHash, Runtime.ExecutingScriptHash);
         }
 
         /// <summary>

@@ -35,9 +35,8 @@ export function sanitizeHex(value) {
  *
  * @param {string} hex - Hex string (no 0x prefix, even length)
  * @returns {string} Byte-reversed hex string
- * @private
  */
-function reverseHex(hex) {
+export function reverseHex(hex) {
   const pairs = String(hex || '').match(/.{2}/g);
   return pairs ? pairs.reverse().join('') : '';
 }
